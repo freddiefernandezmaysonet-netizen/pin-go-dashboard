@@ -29,8 +29,18 @@ import ForgotPasswordPage from "../../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../../pages/auth/ResetPasswordPage";
 import AutomationHistoryPage from "../../pages/AutomationHistoryPage";
 import MessagesPage from "../../pages/messages/MessagesPage";
+import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
+import LandingPage from "../../pages/LandingPage";
+import TermsPage from "../../pages/TermsPage";
+import PrivacyPage from "../../pages/PrivacyPage";
+
 
 export const router = createBrowserRouter([
+ 
+  {
+  path: "/home",
+  element: <LandingPage />,
+  },
   {
     path: "/login",
     element: <LoginPage />,
@@ -38,6 +48,14 @@ export const router = createBrowserRouter([
   {
     path: "/signup",
     element: <SignupPage />,
+  },
+  { 
+    path: "/legal/terms",
+    element: <TermsPage /> 
+  },
+  { 
+    path: "/legal/privacy",
+    element: <PrivacyPage /> 
   },
   {
     path: "/signup/success",
@@ -80,7 +98,7 @@ export const router = createBrowserRouter([
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
-
+           
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
@@ -91,5 +109,14 @@ export const router = createBrowserRouter([
       { path: "/integrations/tuya", element: <TuyaIntegrationPage /> },
       { path: "/integrations/pms/listings-mapping", element: <ListingsMappingPage /> },
     ],
+  },
+
+ {
+    path: "/admin/financial",
+    element: (
+      <RequireAuth>
+        <AdminFinancialPage />
+      </RequireAuth>
+    ),
   },
 ]);
