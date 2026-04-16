@@ -302,18 +302,10 @@ export function LockDetailPage() {
       setInventoryMessage(null);
 
       try {
-        const organizationId = getOrganizationId();
-
-        if (!organizationId) {
-          setAvailableLocks([]);
-          setAvailableLocksError("Organization id is required.");
-          return;
-        }
-
-        const qs = new URLSearchParams({
-          propertyId,
-          organizationId,
-        }).toString();
+       
+       const qs = new URLSearchParams({
+         propertyId,
+       }).toString();
 
         const r = await fetch(`${API_BASE}/api/org/ttlock/inventory?${qs}`, {
           credentials: "include",
@@ -468,13 +460,12 @@ export function LockDetailPage() {
       return;
     }
 
-    const organizationId = getOrganizationId();
-
-    if (!organizationId) {
-      setSwapError("Organization id is required.");
-      setSwapSuccess(null);
-      return;
-    }
+    body: JSON.stringify({
+  propertyId: lock.property.id,
+  oldTtlockLockId: lock.ttlockLockId,
+  newTtlockLockId: parsedNewId,
+  newTtlockLockName: newTtlockLockName.trim() || undefined,
+}),
 
     setSwapLoading(true);
     setSwapError(null);
