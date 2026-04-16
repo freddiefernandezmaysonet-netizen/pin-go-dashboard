@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { getOrganizationId } from "../../lib/getOrganizationId";
+
 
 type LockRow = {
   id: string;
@@ -460,13 +460,6 @@ export function LockDetailPage() {
       return;
     }
 
-    body: JSON.stringify({
-  propertyId: lock.property.id,
-  oldTtlockLockId: lock.ttlockLockId,
-  newTtlockLockId: parsedNewId,
-  newTtlockLockName: newTtlockLockName.trim() || undefined,
-}),
-
     setSwapLoading(true);
     setSwapError(null);
     setSwapSuccess(null);
@@ -479,7 +472,6 @@ export function LockDetailPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          organizationId,
           propertyId: lock.property.id,
           oldTtlockLockId: lock.ttlockLockId,
           newTtlockLockId: parsedNewId,
