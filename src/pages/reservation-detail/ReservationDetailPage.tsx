@@ -52,7 +52,7 @@ function fmt(d?: string | null) {
   if (isNaN(dt.getTime())) return d;
 
   return dt.toLocaleString("en-US", {
-    timeZone: "America/Puerto_Rico",
+    timeZone: "UTC",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
