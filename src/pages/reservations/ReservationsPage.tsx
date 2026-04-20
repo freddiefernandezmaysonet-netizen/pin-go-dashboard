@@ -44,7 +44,15 @@ function fmt(d: string) {
 
   if (isNaN(dt.getTime())) return d;
 
-  return dt.toLocaleString();
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Puerto_Rico",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(dt);
 }
 
 function statusStyles(status: OperationalStatus) {
