@@ -45,7 +45,7 @@ function fmt(d: string) {
   if (isNaN(dt.getTime())) return d;
 
   return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Puerto_Rico",
+    timeZone: "UTC",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
