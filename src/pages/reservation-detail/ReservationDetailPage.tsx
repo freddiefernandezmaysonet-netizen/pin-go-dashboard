@@ -39,27 +39,27 @@ type Reservation = {
   checkIn: string;
   checkOut: string;
   operationalStatus: string;
-  property?: { id: string; name: string } | null;
+  property?: { id: string; name: string; timezone?: string } | null;
   passcodes?: Passcode[];
   nfc?: Nfc[];
 };
 
-function fmt(d?: string | null) {
+function fmt(d?: string | null, timezone?: string) {
   if (!d) return "—";
 
   const dt = new Date(d);
 
   if (isNaN(dt.getTime())) return d;
 
-  return dt.toLocaleString("en-US", {
-    timeZone: "UTC",
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone ?? "UTC",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  });
+  }).format(dt);
 }
 
 function labelizeStatus(value?: string | null) {
@@ -323,8 +323,8 @@ export function ReservationDetailPage() {
           gap: 16,
         }}
       >
-        <Stat title="Check-in" value={fmt(data.checkIn)} />
-        <Stat title="Check-out" value={fmt(data.checkOut)} />
+        <Stat title="Check-in" value={fmt(data.checkIn, data.property?.timezone)} />
+        <Stat title="Check-out" value={fmt(data.checkOut, data.property?.timezone)} />
         <Stat title="Operational Status" value={statusPill(data.operationalStatus)} />
         <Stat title="Room" value={data.roomName ?? "—"} />
       </div>
@@ -397,7 +397,8 @@ export function ReservationDetailPage() {
                   </div>
 
                   <div>
-                    <b>Access Period:</b> {fmt(p.startsAt)} — {fmt(p.endsAt)}
+                    <b>Access Period:</b> {fmt(p.startsAt, data.property?.timezone)} — {fmt(p.endsAt,   
+                    data.property?.timezone)}
                   </div>
 
                   <div>
@@ -448,7 +449,8 @@ export function ReservationDetailPage() {
                   </div>
 
                   <div>
-                    <b>Access Period:</b> {fmt(n.startsAt)} — {fmt(n.endsAt)}
+                    <b>Access Period:</b> {fmt(n.startsAt, data.property?.timezone)} — {fmt(n.endsAt, 
+                    data.property?.timezone)}
                   </div>
 
                   <div>
