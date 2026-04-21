@@ -15,7 +15,7 @@ type ReservationRow = {
   operationalStatus: OperationalStatus;
   source?: string | null;
   externalProvider?: string | null;
-  property?: { id: string; name: string } | null;
+  property?: { id: string; name: string; timezone?: string } | null;
   propertyId?: string | null;
 };
 
@@ -39,13 +39,13 @@ async function api<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function fmt(d: string) {
+function fmt(d: string, timezone?: string) {
   const dt = new Date(d);
 
   if (isNaN(dt.getTime())) return d;
 
   return new Intl.DateTimeFormat("en-US", {
-    timeZone: "UTC",
+    timeZone: timezone ?? "UTC",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -292,10 +292,11 @@ export function ReservationsPage() {
                         <div style={{ fontWeight: 600, color: "#111827" }}>{propertyLabel(r)}</div>
                       </td>
 
-                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>{fmt(r.checkIn)}</td>
+                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>{fmt(r.checkIn,         
+                       r.property?.timezone)}</td>
 
-                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>{fmt(r.checkOut)}</td>
-
+                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>{fmt(r.checkOut, 
+                       r.property?.timezone)}</td>
                       <td style={{ padding: 12 }}>
                         <span
                           style={{
