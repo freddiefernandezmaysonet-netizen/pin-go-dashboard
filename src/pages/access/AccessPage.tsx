@@ -1,11 +1,28 @@
 import { useEffect, useState } from "react";
 
+function fmt(d: string, timezone?: string) {
+  const dt = new Date(d);
+
+  if (isNaN(dt.getTime())) return d;
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone ?? "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(dt);
+}
+
 type AccessRow = {
   id: string;
   type: "PASSCODE" | "NFC";
   name: string;
   lock: string;
   property: string;
+  propertyTimezone?: string;
   startsAt: string;
   endsAt: string;
   status: string;
@@ -18,7 +35,7 @@ type AccessResp = {
     reservationId: string | null;
     guestName: string;
     roomName: string | null;
-    property: { id: string; name: string } | null;
+    property: { id: string; name: string; timezone?: string } | null;
     lock: { ttlockLockId: number; name: string | null } | null;
     startsAt: string;
     endsAt: string;
@@ -31,7 +48,7 @@ type AccessResp = {
     reservationId: string;
     guestName: string;
     roomName: string | null;
-    property: { id: string; name: string };
+    property: { id: string; name: string; timezone?: string };
     role: string;
     status: string;
     card: { id: string; label: string | null; ttlockCardId: number };
@@ -70,6 +87,7 @@ export function AccessPage() {
             name: g.guestName ?? "Guest",
             lock: g.lock?.name ?? (g.lock?.ttlockLockId ? String(g.lock.ttlockLockId) : "—"),
             property: g.property?.name ?? "—",
+            propertyTimezone: g.property?.timezone,
             startsAt: g.startsAt,
             endsAt: g.endsAt,
             status: "ACTIVE",
@@ -83,6 +101,7 @@ export function AccessPage() {
             name: `${n.role}${n.guestName ? ` - ${n.guestName}` : ""}`,
             lock: n.card?.label ?? `Card #${n.card?.ttlockCardId ?? ""}`,
             property: n.property?.name ?? "—",
+            propertyTimezone: n.property?.timezone,
             startsAt: n.startsAt,
             endsAt: n.endsAt,
             status: n.status ?? "ACTIVE",
@@ -147,8 +166,8 @@ export function AccessPage() {
                   <td style={{ padding: 12 }}>{r.name}</td>
                   <td style={{ padding: 12 }}>{r.property}</td>
                   <td style={{ padding: 12 }}>{r.lock}</td>
-                  <td style={{ padding: 12 }}>{new Date(r.startsAt).toLocaleString()}</td>
-                  <td style={{ padding: 12 }}>{new Date(r.endsAt).toLocaleString()}</td>
+                  <td style={{ padding: 12 }}>{fmt(r.startsAt, r.propertyTimezone)}</td>
+                  <td style={{ padding: 12 }}>{fmt(r.endsAt, r.propertyTimezone)}</td>                
                   <td style={{ padding: 12 }}>{r.status}</td>
                 </tr>
               ))
