@@ -23,6 +23,7 @@ type AccessRow = {
   lock: string;
   property: string;
   propertyTimezone?: string;
+  staffName?: string | null;
   startsAt: string;
   endsAt: string;
   status: string;
@@ -47,6 +48,7 @@ type AccessResp = {
     assignmentId: string;
     reservationId: string;
     guestName: string;
+    staffName?: string | null;
     roomName: string | null;
     property: { id: string; name: string; timezone?: string };
     role: string;
@@ -98,10 +100,14 @@ export function AccessPage() {
           list.push({
             id: n.assignmentId,
             type: "NFC",
-            name: `${n.role}${n.guestName ? ` - ${n.guestName}` : ""}`,
+           name:
+             n.role === "CLEANING"
+               ? `${n.role}${n.staffName ? ` - ${n.staffName}` : ""}`
+               : `${n.role}${n.guestName ? ` - ${n.guestName}` : ""}`,
             lock: n.card?.label ?? `Card #${n.card?.ttlockCardId ?? ""}`,
             property: n.property?.name ?? "—",
             propertyTimezone: n.property?.timezone,
+            staffName: n.staffName ?? null,  
             startsAt: n.startsAt,
             endsAt: n.endsAt,
             status: n.status ?? "ACTIVE",
