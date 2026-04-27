@@ -372,8 +372,8 @@ export default function SignupPage() {
                   }
                   style={inputStyle}
                 >
-                  <option value="monthly">Monthly - $9.99 / lock / month</option>
-                  <option value="yearly">Yearly - annual billing</option>
+                  <option value="monthly">Monthly - $12.99 / lock / month</option>
+                  <option value="yearly">Yearly - $129.90 / lock /annual </option>
                 </select>
               }
             />
