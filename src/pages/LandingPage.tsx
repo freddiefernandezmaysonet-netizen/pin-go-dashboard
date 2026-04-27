@@ -16,7 +16,7 @@ export default function LandingPage() {
           heroSubtitle:
             "Convierte cada cerradura en una operación automática: menos llamadas, menos errores y una mejor experiencia para tus huéspedes.",
           heroPricePrefix: "Desde",
-          heroPriceLocks: "$9.99 / cerradura / mes",
+          heroPriceLocks: "$12.49 / cerradura / mes",
           heroPriceSmart: "$14.99 / propiedad / mes",
           heroCtaPrimary: "Empezar ahora",
           heroCtaSecondary: "Iniciar sesión",
@@ -50,7 +50,7 @@ export default function LandingPage() {
 
           sectionPricingTitle: "Pricing simple y claro",
           pricingLocksTitle: "🔐 Access Control",
-          pricingLocksPrice: "$9.99",
+          pricingLocksPrice: "$12.49",
           pricingLocksPeriod: "/ cerradura / mes",
           pricingLocksFeature1: "Códigos automáticos por reserva",
           pricingLocksFeature2: " Acceso tarjeta NFC",
@@ -70,9 +70,9 @@ export default function LandingPage() {
           pricingSmartCta: "Activar",
 
           exampleTitle: "Ejemplo de facturación",
-          exampleText1: "10 cerraduras = $99.90 / mes",
+          exampleText1: "10 cerraduras = $124.90 / mes",
           exampleText2: "5 propiedades inteligentes = $74.95 / mes",
-          exampleText3: "Total = $174.85 / mes",
+          exampleText3: "Total = $199.85 / mes",
 
           faqTitle: "Preguntas frecuentes",
           faq1Q: "¿Necesito hardware especial?",
@@ -99,7 +99,7 @@ export default function LandingPage() {
           heroSubtitle:
             "Turn every lock into an automated operation: fewer calls, fewer errors, and a better guest experience.",
           heroPricePrefix: "Starting at",
-          heroPriceLocks: "$9.99 / lock / month",
+          heroPriceLocks: "$12.49 / lock / month",
           heroPriceSmart: "$14.99 / property / month",
           heroCtaPrimary: "Get started",
           heroCtaSecondary: "Log in",
@@ -133,7 +133,7 @@ export default function LandingPage() {
 
           sectionPricingTitle: "Simple, transparent pricing",
           pricingLocksTitle: "🔐 Access Control",
-          pricingLocksPrice: "$9.99",
+          pricingLocksPrice: "$12.49",
           pricingLocksPeriod: "/ lock / month",
           pricingLocksFeature1: "Automatic reservation-based codes",
           pricingLocksFeature2: "NFC access",
@@ -155,7 +155,7 @@ export default function LandingPage() {
           exampleTitle: "Billing example",
           exampleText1: "10 locks = $99.90 / month",
           exampleText2: "5 smart properties = $74.95 / month",
-          exampleText3: "Total = $174.85 / month",
+          exampleText3: "Total = $199.85 / month",
 
           faqTitle: "Frequently asked questions",
           faq1Q: "Do I need special hardware?",
