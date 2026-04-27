@@ -22,7 +22,7 @@ export default function LandingPage() {
           heroCtaSecondary: "Iniciar sesión",
           heroTrust: " • Configuración en minutos",
 
-          slogan: "Your lock works for you",
+          slogan: "Secure Access Made Simple",
 
           sectionBenefitsTitle: "Todo en una sola plataforma",
           benefit1Title: "🔐 Control de acceso ",
@@ -105,7 +105,7 @@ export default function LandingPage() {
           heroCtaSecondary: "Log in",
           heroTrust: " • Setup in minutes",
 
-          slogan: "Your lock works for you",
+          slogan: "Secure Access Made Simple",
 
           sectionBenefitsTitle: "Everything in one platform",
           benefit1Title: "🔐 Access Control",
