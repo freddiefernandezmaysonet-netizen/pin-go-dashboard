@@ -168,7 +168,7 @@ export default function SignupPage() {
               <div>
                 <div style={{ fontSize: 24, fontWeight: 800 }}>Pin&Go</div>
                 <div style={{ fontSize: 13, color: "#cbd5e1" }}>
-                  Control total para propiedades inteligentes
+                  Secure Access Made Simple
                 </div>
               </div>
             </Link>
