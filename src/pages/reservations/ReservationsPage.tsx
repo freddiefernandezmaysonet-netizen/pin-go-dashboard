@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 type ReservationStatus = "ACTIVE" | "CANCELLED";
 type OperationalStatus = "UPCOMING" | "IN_HOUSE" | "CHECKED_OUT" | "CANCELLED";
+type PaymentState = "NONE" | "PAID" | "FAILED" | "PENDING";
 
 type ReservationRow = {
   id: string;
@@ -13,6 +14,7 @@ type ReservationRow = {
   checkOut: string;
   status: ReservationStatus;
   operationalStatus: OperationalStatus;
+  paymentState: PaymentState;
   source?: string | null;
   externalProvider?: string | null;
   property?: { id: string; name: string; timezone?: string } | null;
@@ -84,6 +86,38 @@ function statusStyles(status: OperationalStatus) {
   };
 }
 
+function paymentStyles(state: PaymentState) {
+  if (state === "PAID") {
+    return {
+      background: "#ecfdf5",
+      color: "#065f46",
+      border: "1px solid #a7f3d0",
+    };
+  }
+
+  if (state === "PENDING") {
+    return {
+      background: "#fffbeb",
+      color: "#92400e",
+      border: "1px solid #fde68a",
+    };
+  }
+
+  if (state === "FAILED") {
+    return {
+      background: "#fef2f2",
+      color: "#991b1b",
+      border: "1px solid #fecaca",
+    };
+  }
+
+  return {
+    background: "#f3f4f6",
+    color: "#4b5563",
+    border: "1px solid #e5e7eb",
+  };
+}
+
 function sourceLabel(r: ReservationRow) {
   return r.externalProvider ?? r.source ?? "—";
 }
@@ -131,7 +165,7 @@ export function ReservationsPage() {
 
   const filteredItems =
     status === "ALL"
-      ? (data?.items ?? [])
+      ? data?.items ?? []
       : (data?.items ?? []).filter((r) => r.operationalStatus === status);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
@@ -229,42 +263,45 @@ export function ReservationsPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ background: "#f9fafb" }}>
               <tr>
-                {["Guest", "Property", "Check-in", "Check-out", "Operational", "Source"].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      textAlign: "left",
-                      fontSize: 12,
-                      color: "#666",
-                      padding: 12,
-                      borderBottom: "1px solid #e5e7eb",
-                      whiteSpace: "nowrap",
-                      fontWeight: 700,
-                      letterSpacing: 0.2,
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
+                {["Guest", "Property", "Check-in", "Check-out", "Operational", "Payment", "Source"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: "left",
+                        fontSize: 12,
+                        color: "#666",
+                        padding: 12,
+                        borderBottom: "1px solid #e5e7eb",
+                        whiteSpace: "nowrap",
+                        fontWeight: 700,
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      {h}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: 16, color: "#666" }}>
+                  <td colSpan={7} style={{ padding: 16, color: "#666" }}>
                     Loading…
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: 16, color: "#666" }}>
+                  <td colSpan={7} style={{ padding: 16, color: "#666" }}>
                     No reservations found for this filter.
                   </td>
                 </tr>
               ) : (
                 filteredItems.map((r) => {
                   const styles = statusStyles(r.operationalStatus);
+                  const payment = paymentStyles(r.paymentState);
 
                   return (
                     <tr
@@ -292,11 +329,14 @@ export function ReservationsPage() {
                         <div style={{ fontWeight: 600, color: "#111827" }}>{propertyLabel(r)}</div>
                       </td>
 
-                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>{fmt(r.checkIn,         
-                       r.property?.timezone)}</td>
+                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>
+                        {fmt(r.checkIn, r.property?.timezone)}
+                      </td>
 
-                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>{fmt(r.checkOut, 
-                       r.property?.timezone)}</td>
+                      <td style={{ padding: 12, color: "#333", whiteSpace: "nowrap" }}>
+                        {fmt(r.checkOut, r.property?.timezone)}
+                      </td>
+
                       <td style={{ padding: 12 }}>
                         <span
                           style={{
@@ -313,6 +353,25 @@ export function ReservationsPage() {
                           }}
                         >
                           {r.operationalStatus}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: 12 }}>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            padding: "5px 10px",
+                            borderRadius: 999,
+                            background: payment.background,
+                            color: payment.color,
+                            border: payment.border,
+                            fontWeight: 700,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          {r.paymentState}
                         </span>
                       </td>
 
