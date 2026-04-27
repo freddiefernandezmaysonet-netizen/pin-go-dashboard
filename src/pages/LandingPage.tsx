@@ -84,7 +84,7 @@ export default function LandingPage() {
           faq3Q: "¿Puedo cancelar cuando quiera?",
           faq3A: "Sí. Puedes ajustar o cancelar tu servicio según tu operación.",
           faq4Q: "¿Es difícil configurarlo?",
-          faq4A: "No. El flujo está pensado para una configuración rápida y fácil de operar.",              
+          faq4A: "No. El flujo está pensado para una configuración rápida y fácil de operar.",
           finalTitle: "Empieza hoy con Pin&Go",
           finalSubtitle:
             "Haz tus operaciones más simples, más seguras y más profesionales.",
@@ -167,8 +167,7 @@ export default function LandingPage() {
           faq3Q: "Can I cancel anytime?",
           faq3A: "Yes. You can adjust or cancel your service based on your operation.",
           faq4Q: "Is setup difficult?",
-          faq4A:
-            "No. The flow is designed for fast setup and easy operation.",
+          faq4A: "No. The flow is designed for fast setup and easy operation.",
 
           finalTitle: "Start with Pin&Go today",
           finalSubtitle:
@@ -178,7 +177,7 @@ export default function LandingPage() {
         };
   }, [lang]);
 
-    return (
+  return (
     <div style={styles.page}>
       <header style={styles.header}>
         <div style={styles.headerInner}>
@@ -191,12 +190,12 @@ export default function LandingPage() {
                 (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
-                <div>
-                  <div style={styles.brandName}>Pin&Go</div>
-                 <div style={styles.slogan}>{t.slogan}</div>
-                </div>
+            <div>
+              <div style={styles.brandName}>Pin&Go</div>
+              <div style={styles.slogan}>{t.slogan}</div>
+            </div>
           </div>
-          
+
           <div style={styles.headerActions}>
             <div style={styles.langSwitcher}>
               <button
@@ -245,7 +244,45 @@ export default function LandingPage() {
               <div style={styles.priceLine}>
                 {t.heroPricePrefix} <strong>{t.heroPriceLocks}</strong>
               </div>
+
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: 13,
+                  color: "#059669",
+                  fontWeight: 700,
+                }}
+              >
+                {lang === "es"
+                  ? "Ahorra 20% con facturación anual"
+                  : "Save 20% with yearly billing"}
+              </div>
+
               <div style={styles.priceLineSecondary}>{t.heroPriceSmart}</div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 12,
+                  color: "#6b7280",
+                }}
+              >
+                {lang === "es" ? "¿No tienes PMS?" : "Don’t have a PMS?"}{" "}
+                <a
+                  href="https://app.lodgify.com/signup/"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    color: "#2563eb",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
+                >
+                  {lang === "es"
+                    ? "Crea tu cuenta en Lodgify"
+                    : "Create a Lodgify account"}
+                </a>
+              </div>
             </div>
 
             <div style={styles.ctaRow}>
@@ -370,29 +407,29 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-<footer style={styles.footer}>
-  <div style={styles.container}>
-    <div>{t.footerText}</div>
 
-    <div style={{ marginTop: 8 }}>
-      <Link
-        to="/legal/terms"
-        style={{ color: "#64748b", textDecoration: "none", marginRight: 12 }}
-      >
-        Terms
-      </Link>
+      <footer style={styles.footer}>
+        <div style={styles.container}>
+          <div>{t.footerText}</div>
 
-      <Link
-        to="/legal/privacy"
-        style={{ color: "#64748b", textDecoration: "none" }}
-      >
-        Privacy
-      </Link>
+          <div style={{ marginTop: 8 }}>
+            <Link
+              to="/legal/terms"
+              style={{ color: "#64748b", textDecoration: "none", marginRight: 12 }}
+            >
+              Terms
+            </Link>
+
+            <Link
+              to="/legal/privacy"
+              style={{ color: "#64748b", textDecoration: "none" }}
+            >
+              Privacy
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
-  </div>
-</footer>
-
-         </div>
   );
 }
 
