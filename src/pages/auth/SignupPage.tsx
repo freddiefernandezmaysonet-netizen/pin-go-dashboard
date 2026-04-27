@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [locks, setLocks] = useState(1);
+  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
   const [error, setError] = useState("");
   const [details, setDetails] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -26,29 +27,12 @@ export default function SignupPage() {
     const trimmed = String(passwordValue ?? "").trim();
     const errors: string[] = [];
 
-    if (trimmed.length < 12) {
-      errors.push("At least 12 characters.");
-    }
-
-    if (!/[A-Z]/.test(trimmed)) {
-      errors.push("1 uppercase letter required.");
-    }
-
-    if (!/[a-z]/.test(trimmed)) {
-      errors.push("1 lowercase letter required.");
-    }
-
-    if (!/[0-9]/.test(trimmed)) {
-      errors.push("1 number required.");
-    }
-
-    if (!/[^A-Za-z0-9]/.test(trimmed)) {
-      errors.push("1 symbol required.");
-    }
-
-    if (passwordValue !== trimmed) {
-      errors.push("No spaces at start/end.");
-    }
+    if (trimmed.length < 12) errors.push("At least 12 characters.");
+    if (!/[A-Z]/.test(trimmed)) errors.push("1 uppercase letter required.");
+    if (!/[a-z]/.test(trimmed)) errors.push("1 lowercase letter required.");
+    if (!/[0-9]/.test(trimmed)) errors.push("1 number required.");
+    if (!/[^A-Za-z0-9]/.test(trimmed)) errors.push("1 symbol required.");
+    if (passwordValue !== trimmed) errors.push("No spaces at start/end.");
 
     const normalizedEmail = String(emailValue ?? "").trim().toLowerCase();
     const emailLocal = normalizedEmail.split("@")[0];
@@ -100,6 +84,7 @@ export default function SignupPage() {
           phone: phone.trim(),
           password,
           locks: safeLocks,
+          billingInterval,
         }),
       });
 
@@ -142,7 +127,6 @@ export default function SignupPage() {
           overflow: "hidden",
         }}
       >
-        {/* LEFT BRAND PANEL */}
         <div
           style={{
             background:
@@ -230,13 +214,7 @@ export default function SignupPage() {
               </p>
             </div>
 
-            <div
-              style={{
-                marginTop: 30,
-                display: "grid",
-                gap: 14,
-              }}
-            >
+            <div style={{ marginTop: 30, display: "grid", gap: 14 }}>
               <FeatureItem text="Automatic access codes by reservation" />
               <FeatureItem text="NFC-enabled guest access workflows" />
               <FeatureItem text="PMS + lock + automation in one platform" />
@@ -257,13 +235,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* RIGHT FORM PANEL */}
-        <div
-          style={{
-            padding: 32,
-            background: "#ffffff",
-          }}
-        >
+        <div style={{ padding: 32, background: "#ffffff" }}>
           <div style={{ marginBottom: 24 }}>
             <div
               style={{
@@ -276,13 +248,7 @@ export default function SignupPage() {
               Create your account
             </div>
 
-            <div
-              style={{
-                fontSize: 14,
-                color: "#6b7280",
-                lineHeight: 1.6,
-              }}
-            >
+            <div style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6 }}>
               Set up your organization and continue to secure checkout to
               activate your Pin&amp;Go account.
             </div>
@@ -368,13 +334,7 @@ export default function SignupPage() {
                 lineHeight: 1.7,
               }}
             >
-              <div
-                style={{
-                  fontWeight: 800,
-                  color: "#111827",
-                  marginBottom: 6,
-                }}
-              >
+              <div style={{ fontWeight: 800, color: "#111827", marginBottom: 6 }}>
                 Password requirements
               </div>
               <div>• At least 12 characters</div>
@@ -399,6 +359,22 @@ export default function SignupPage() {
                   }
                   style={inputStyle}
                 />
+              }
+            />
+
+            <Field
+              label="Billing interval"
+              input={
+                <select
+                  value={billingInterval}
+                  onChange={(e) =>
+                    setBillingInterval(e.target.value as "monthly" | "yearly")
+                  }
+                  style={inputStyle}
+                >
+                  <option value="monthly">Monthly - $9.99 / lock / month</option>
+                  <option value="yearly">Yearly - annual billing</option>
+                </select>
               }
             />
 
@@ -457,37 +433,34 @@ export default function SignupPage() {
                   : "0 10px 24px rgba(37, 99, 235, 0.22)",
               }}
             >
-   
-            {submitting
-                ? "Redirecting to checkout..."
-                : "Continue to secure checkout"}
+              {submitting ? "Redirecting to checkout..." : "Continue to secure checkout"}
             </button>
           </form>
 
-       <div
-  style={{
-    marginTop: 12,
-    fontSize: 12,
-    color: "#6b7280",
-    textAlign: "center",
-    lineHeight: 1.6,
-  }}
->
-  By continuing, you agree to our{" "}
-  <Link
-    to="/legal/terms"
-    style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
-  >
-    Terms of Service
-  </Link>{" "}
-  and{" "}
-  <Link
-    to="/legal/privacy"
-    style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
-  >
-    Privacy Policy
-  </Link>.
-</div>
+          <div
+            style={{
+              marginTop: 12,
+              fontSize: 12,
+              color: "#6b7280",
+              textAlign: "center",
+              lineHeight: 1.6,
+            }}
+          >
+            By continuing, you agree to our{" "}
+            <Link
+              to="/legal/terms"
+              style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
+            >
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link
+              to="/legal/privacy"
+              style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
+            >
+              Privacy Policy
+            </Link>.
+          </div>
 
           <div
             style={{
@@ -515,13 +488,7 @@ export default function SignupPage() {
   );
 }
 
-function Field({
-  label,
-  input,
-}: {
-  label: string;
-  input: React.ReactNode;
-}) {
+function Field({ label, input }: { label: string; input: React.ReactNode }) {
   return (
     <div>
       <label
