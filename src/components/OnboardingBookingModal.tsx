@@ -3,9 +3,14 @@ import { useState } from "react";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  lang?: "es" | "en";
 };
 
-export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
+export default function OnboardingBookingModal({
+  isOpen,
+  onClose,
+  lang = "es",
+}: Props) {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -18,6 +23,41 @@ export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
   const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  const t =
+    lang === "es"
+      ? {
+          title: "Agendar onboarding",
+          subtitle:
+            "Agenda una sesión con nuestro equipo para ayudarte a configurar Pin&Go.",
+          name: "Nombre",
+          email: "Email",
+          phone: "Teléfono",
+          topic: "¿Qué necesitas configurar?",
+          date: "Fecha y hora",
+          submit: "Confirmar cita",
+          loading: "Agendando...",
+          successTitle: "Cita agendada",
+          successText:
+            "Te contactaremos para confirmar tu sesión de onboarding.",
+          close: "Cerrar",
+        }
+      : {
+          title: "Book onboarding",
+          subtitle:
+            "Schedule a session with our team to help you set up Pin&Go.",
+          name: "Name",
+          email: "Email",
+          phone: "Phone",
+          topic: "What do you need help with?",
+          date: "Date & time",
+          submit: "Confirm booking",
+          loading: "Booking...",
+          successTitle: "Appointment scheduled",
+          successText:
+            "We will contact you to confirm your onboarding session.",
+          close: "Close",
+        };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,11 +92,18 @@ export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
       <div style={styles.modal}>
         {!success ? (
           <>
-            <h2 style={styles.title}>Agendar onboarding</h2>
+            <div style={styles.header}>
+              <h2 style={styles.title}>{t.title}</h2>
+              <button onClick={onClose} style={styles.closeIcon}>
+                ×
+              </button>
+            </div>
+
+            <p style={styles.subtitle}>{t.subtitle}</p>
 
             <form onSubmit={handleSubmit} style={styles.form}>
               <input
-                placeholder="Nombre"
+                placeholder={t.name}
                 value={form.name}
                 onChange={(e) =>
                   setForm({ ...form, name: e.target.value })
@@ -67,7 +114,7 @@ export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
 
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={t.email}
                 value={form.email}
                 onChange={(e) =>
                   setForm({ ...form, email: e.target.value })
@@ -77,7 +124,7 @@ export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
               />
 
               <input
-                placeholder="Teléfono"
+                placeholder={t.phone}
                 value={form.phone}
                 onChange={(e) =>
                   setForm({ ...form, phone: e.target.value })
@@ -86,7 +133,7 @@ export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
               />
 
               <input
-                placeholder="¿Qué necesitas configurar?"
+                placeholder={t.topic}
                 value={form.topic}
                 onChange={(e) =>
                   setForm({ ...form, topic: e.target.value })
@@ -109,23 +156,17 @@ export default function OnboardingBookingModal({ isOpen, onClose }: Props) {
                 disabled={loading}
                 style={styles.primaryButton}
               >
-                {loading ? "Agendando..." : "Confirmar cita"}
+                {loading ? t.loading : t.submit}
               </button>
             </form>
-
-            <button onClick={onClose} style={styles.closeButton}>
-              Cerrar
-            </button>
           </>
         ) : (
           <>
-            <h2 style={styles.title}>✅ Cita agendada</h2>
-            <p style={{ textAlign: "center", marginTop: 10 }}>
-              Te contactaremos para confirmar tu onboarding.
-            </p>
+            <h2 style={styles.title}>✅ {t.successTitle}</h2>
+            <p style={styles.subtitle}>{t.successText}</p>
 
             <button onClick={onClose} style={styles.primaryButton}>
-              Cerrar
+              {t.close}
             </button>
           </>
         )}
@@ -141,22 +182,45 @@ const styles: Record<string, React.CSSProperties> = {
     left: 0,
     right: 0,
     bottom: 0,
-    background: "rgba(0,0,0,0.5)",
+    background: "rgba(15, 23, 42, 0.6)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
+    padding: 20,
   },
   modal: {
-    background: "#fff",
-    padding: 30,
-    borderRadius: 12,
+    background: "#ffffff",
+    borderRadius: 18,
+    padding: 28,
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 420,
+    boxShadow: "0 20px 40px rgba(15, 23, 42, 0.15)",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
-    textAlign: "center",
+    margin: 0,
+    fontSize: 22,
+    fontWeight: 800,
+    color: "#0f172a",
+  },
+  closeIcon: {
+    background: "transparent",
+    border: "none",
+    fontSize: 22,
+    cursor: "pointer",
+    color: "#64748b",
+  },
+  subtitle: {
+    marginTop: 10,
     marginBottom: 20,
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 1.6,
   },
   form: {
     display: "flex",
@@ -164,25 +228,19 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   input: {
-    padding: 10,
-    borderRadius: 8,
-    border: "1px solid #ccc",
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #e2e8f0",
+    fontSize: 14,
   },
   primaryButton: {
     marginTop: 10,
-    padding: 12,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 12,
     border: "none",
     background: "#0f172a",
-    color: "#fff",
-    cursor: "pointer",
+    color: "#ffffff",
     fontWeight: 700,
-  },
-  closeButton: {
-    marginTop: 10,
-    background: "transparent",
-    border: "none",
     cursor: "pointer",
-    color: "#555",
   },
 };
