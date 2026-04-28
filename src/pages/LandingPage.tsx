@@ -514,11 +514,13 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      <OnboardingBookingModal
-        isOpen={openBooking}
-        onClose={() => setOpenBooking(false)}
-      />
-    </div>
+       <OnboardingBookingModal
+  isOpen={openBooking}
+  onClose={() => setOpenBooking(false)}
+  lang={lang}
+/>
+
+          </div>
   );
 }
 
