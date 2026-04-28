@@ -15,10 +15,9 @@ export default function LandingPage() {
           heroTitle: "Automatiza tus propiedades y elimina problemas de acceso",
           heroSubtitle:
             "Convierte cada cerradura en una operación automática: menos llamadas, menos errores y una mejor experiencia para tus huéspedes.",
-            "Convierte cada propiedad en una operación inteligente: control de aire acondicionado, luces y alarmas, tu bolsillo te lo agradecerá.",
           heroPricePrefix: "Desde",
-          heroPriceLocks: "$12.49 / cerradura / mensual",
-          heroPriceSmart: "$14.99 / propiedad inteligente / mensual",
+          heroPriceLocks: "$12.49 / cerradura / mes",
+          heroPriceSmart: "$14.99 / propiedad inteligente / mes",
           heroCtaPrimary: "Empezar ahora",
           heroCtaSecondary: "Iniciar sesión",
           heroTrust: " • Configuración en minutos",
@@ -71,9 +70,9 @@ export default function LandingPage() {
           pricingSmartCta: "Activar",
 
           exampleTitle: "Ejemplo de facturación",
-          exampleText1: "10 cerraduras = $124.90 / mes",
-          exampleText2: "5 propiedades inteligentes = $74.95 / mes",
-          exampleText3: "Total = $199.85 / mes",
+          exampleText1: "2 cerraduras = $24.98 / mes",
+          exampleText2: "1 propiedades inteligentes = $14.99 / mes",
+          exampleText3: "Total = $39.97 / mes",
 
           faqTitle: "Preguntas frecuentes",
           faq1Q: "¿Necesito hardware especial?",
@@ -101,7 +100,7 @@ export default function LandingPage() {
             "Turn every lock into an automated operation: fewer calls, fewer errors, and a better guest experience.",
           heroPricePrefix: "Starting at",
           heroPriceLocks: "$12.49 / lock / month",
-          heroPriceSmart: "$14.99 / property / month",
+          heroPriceSmart: "$14.99 / smart property / month",
           heroCtaPrimary: "Get started",
           heroCtaSecondary: "Log in",
           heroTrust: " • Setup in minutes",
@@ -154,9 +153,9 @@ export default function LandingPage() {
           pricingSmartCta: "Activate",
 
           exampleTitle: "Billing example",
-          exampleText1: "10 locks = $99.90 / month",
-          exampleText2: "5 smart properties = $74.95 / month",
-          exampleText3: "Total = $199.85 / month",
+          exampleText1: "2 locks = $24.98 / month",
+          exampleText2: "1 smart properties = $14.99 / month",
+          exampleText3: "Total = $39.97 / month",
 
           faqTitle: "Frequently asked questions",
           faq1Q: "Do I need special hardware?",
