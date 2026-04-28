@@ -266,8 +266,8 @@ export default function LandingPage() {
                }}
              >
                {lang === "es"
-                 ? "Ahorra alrededor de $30 por cerradura al año"
-                 : "Save about $30 per lock per year"}
+                 ? "$30 por cerradura al año"
+                 : "$30 per lock per year"}
               </div>
 
               <div style={{ marginTop: 12 }}>
