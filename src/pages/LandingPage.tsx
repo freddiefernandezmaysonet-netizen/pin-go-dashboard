@@ -325,7 +325,68 @@ export default function LandingPage() {
             <p style={styles.heroTrust}>{t.heroTrust}</p>
           </div>
         </section>
+        // 🔽 TODO TU ARCHIVO ORIGINAL SE MANTIENE IGUAL HASTA AQUÍ
 
+// ... (NO CAMBIO NADA ARRIBA, TODO IGUAL)
+
+// 🔽 INSERTADO JUSTO ANTES DEL FAQ
+
+        <section style={styles.sectionAlt}>
+          <div style={styles.containerNarrow}>
+            
+            <h2 style={styles.sectionTitle}>
+              {lang === "es"
+                ? "¿Prefieres ayuda configurando Pin&Go?"
+                : "Prefer help setting up Pin&Go?"}
+            </h2>
+
+            <p style={styles.sectionText}>
+              {lang === "es"
+                ? "Si no deseas hacerlo por tu cuenta, nuestro equipo puede ayudarte a conectar tu PMS, TTLock, propiedades, dispositivos inteligentes y automatizaciones en una sesión guiada."
+                : "If you prefer not to set it up yourself, our team can help you connect your PMS, TTLock, properties, smart devices, and automations in a guided session."}
+            </p>
+
+            <div
+              style={{
+                marginTop: 24,
+                display: "flex",
+                gap: 12,
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <a
+                href="https://calendly.com/TU-LINK"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.ctaPrimary}
+              >
+                {lang === "es" ? "Agendar onboarding" : "Book onboarding"}
+              </a>
+
+              <a
+                href="https://wa.me/17874294117"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.ctaSecondary}
+              >
+                {lang === "es" ? "Asistencia remota" : "Remote assistance"}
+              </a>
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <Link
+                to="/onboarding"
+                style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+              >
+                {lang === "es"
+                  ? "Ver guía paso a paso"
+                  : "View step-by-step guide"}
+              </Link>
+            </div>
+
+          </div>
+        </section>
         <section style={styles.sectionAlt}>
           <div style={styles.container}>
             <h2 style={styles.sectionTitle}>{t.sectionBenefitsTitle}</h2>
