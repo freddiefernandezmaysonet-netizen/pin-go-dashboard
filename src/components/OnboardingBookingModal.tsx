@@ -67,7 +67,9 @@ export default function OnboardingBookingModal({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/onboarding/appointments", {
+     const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+     const res = await fetch(`${API_BASE}/api/onboarding/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
