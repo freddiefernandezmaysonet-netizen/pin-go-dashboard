@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
+import OnboardingBookingModal from "../components/OnboardingBookingModal";
 
 type Lang = "es" | "en";
 
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("es");
+  const [openBooking, setOpenBooking] = useState(false);
 
   const t = useMemo(() => {
     return lang === "es"
@@ -263,11 +265,11 @@ export default function LandingPage() {
                   fontSize: 12,
                   color: "#047857",
                   fontWeight: 600,
-               }}
-             >
-               {lang === "es"
-                 ? "$30 por cerradura al año"
-                 : "$30 per lock per year"}
+                }}
+              >
+                {lang === "es"
+                  ? "$30 por cerradura al año"
+                  : "$30 per lock per year"}
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -277,16 +279,16 @@ export default function LandingPage() {
                     color: "#475569",
                     marginBottom: 6,
                   }}
-               >
+                >
                   {lang === "es"
                     ? "Convierte cada propiedad en una operación inteligente: controla aire acondicionado, luces y                alarmas automáticamente según la reserva."
-      : "Turn every property into a smart operation: automate AC, lights, and alarms based on reservations."}
-  </div>
+                    : "Turn every property into a smart operation: automate AC, lights, and alarms based on reservations."}
+                </div>
 
-  <div style={styles.priceLineSecondary}>
-    {t.heroPriceSmart}
-  </div>
-</div>
+                <div style={styles.priceLineSecondary}>
+                  {t.heroPriceSmart}
+                </div>
+              </div>
               <div
                 style={{
                   marginTop: 10,
@@ -294,7 +296,9 @@ export default function LandingPage() {
                   color: "#6b7280",
                 }}
               >
-                {lang === "es" ? "¿No tienes Plataforma de Conectividad y Reservas?" : "Don’t have a Connectivity and Booking Platform?"}{" "}
+                {lang === "es"
+                  ? "¿No tienes Plataforma de Conectividad y Reservas?"
+                  : "Don’t have a Connectivity and Booking Platform?"}{" "}
                 <a
                   href="https://app.lodgify.com/signup/"
                   target="_blank"
@@ -325,10 +329,9 @@ export default function LandingPage() {
             <p style={styles.heroTrust}>{t.heroTrust}</p>
           </div>
         </section>
-       
+
         <section style={styles.sectionAlt}>
           <div style={styles.containerNarrow}>
-            
             <h2 style={styles.sectionTitle}>
               {lang === "es"
                 ? "¿Prefieres ayuda configurando Pin&Go?"
@@ -350,14 +353,12 @@ export default function LandingPage() {
                 flexWrap: "wrap",
               }}
             >
-              <a
-                href="https://calendly.com/TU-LINK"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setOpenBooking(true)}
                 style={styles.ctaPrimary}
               >
                 {lang === "es" ? "Agendar onboarding" : "Book onboarding"}
-              </a>
+              </button>
 
               <a
                 href="https://wa.me/17874294117"
@@ -379,9 +380,9 @@ export default function LandingPage() {
                   : "View step-by-step guide"}
               </Link>
             </div>
-
           </div>
         </section>
+
         <section style={styles.sectionAlt}>
           <div style={styles.container}>
             <h2 style={styles.sectionTitle}>{t.sectionBenefitsTitle}</h2>
@@ -512,6 +513,11 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <OnboardingBookingModal
+        isOpen={openBooking}
+        onClose={() => setOpenBooking(false)}
+      />
     </div>
   );
 }
