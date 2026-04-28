@@ -325,12 +325,7 @@ export default function LandingPage() {
             <p style={styles.heroTrust}>{t.heroTrust}</p>
           </div>
         </section>
-        // 🔽 TODO TU ARCHIVO ORIGINAL SE MANTIENE IGUAL HASTA AQUÍ
-
-// ... (NO CAMBIO NADA ARRIBA, TODO IGUAL)
-
-// 🔽 INSERTADO JUSTO ANTES DEL FAQ
-
+       
         <section style={styles.sectionAlt}>
           <div style={styles.containerNarrow}>
             
