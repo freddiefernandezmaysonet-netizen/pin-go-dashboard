@@ -16,8 +16,9 @@ export default function LandingPage() {
           heroSubtitle:
             "Convierte cada cerradura en una operación automática: menos llamadas, menos errores y una mejor experiencia para tus huéspedes.",
           heroPricePrefix: "Desde",
-          heroPriceLocks: "$12.49 / cerradura / mes",
-          heroPriceSmart: "$14.99 / propiedad / mes",
+          heroPriceLocks: "$12.49 / cerradura / mensual",
+            "Convierte cada propiedad en una operación inteligente: control de aire acondicionado, luces y alarmas, tu bolsillo te lo agradecerá.",
+          heroPriceSmart: "$14.99 / propiedad inteligente / mensual",
           heroCtaPrimary: "Empezar ahora",
           heroCtaSecondary: "Iniciar sesión",
           heroTrust: " • Configuración en minutos",
