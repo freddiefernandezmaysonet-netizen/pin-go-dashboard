@@ -257,6 +257,18 @@ export default function LandingPage() {
                   ? "Ahorra 20% con facturación anual"
                   : "Save 20% with yearly billing"}
               </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 12,
+                  color: "#047857",
+                  fontWeight: 600,
+               }}
+             >
+               {lang === "es"
+                 ? "Ahorra alrededor de $30 por cerradura al año"
+                 : "Save about $30 per lock per year"}
+              </div>
 
               <div style={{ marginTop: 12 }}>
                 <div
@@ -282,7 +294,7 @@ export default function LandingPage() {
                   color: "#6b7280",
                 }}
               >
-                {lang === "es" ? "¿No tienes PMS?" : "Don’t have a PMS?"}{" "}
+                {lang === "es" ? "¿No tienes Plataforma de Conectividad y Reservas?" : "Don’t have a Connectivity and Booking Platform?"}{" "}
                 <a
                   href="https://app.lodgify.com/signup/"
                   target="_blank"
