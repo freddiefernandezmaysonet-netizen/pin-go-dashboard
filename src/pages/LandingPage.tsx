@@ -258,8 +258,23 @@ export default function LandingPage() {
                   : "Save 20% with yearly billing"}
               </div>
 
-              <div style={styles.priceLineSecondary}>{t.heroPriceSmart}</div>
+              <div style={{ marginTop: 12 }}>
+                <div
+                  style={{
+                    fontSize: 15,
+                    color: "#475569",
+                    marginBottom: 6,
+                  }}
+               >
+                  {lang === "es"
+                    ? "Convierte cada propiedad en una operación inteligente: controla aire acondicionado, luces y                alarmas automáticamente según la reserva."
+      : "Turn every property into a smart operation: automate AC, lights, and alarms based on reservations."}
+  </div>
 
+  <div style={styles.priceLineSecondary}>
+    {t.heroPriceSmart}
+  </div>
+</div>
               <div
                 style={{
                   marginTop: 10,
