@@ -33,7 +33,7 @@ import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
 import LandingPage from "../../pages/LandingPage";
 import TermsPage from "../../pages/TermsPage";
 import PrivacyPage from "../../pages/PrivacyPage";
-
+import OnboardingPage from "../../pages/OnboardingPage";
 
 export const router = createBrowserRouter([
  
@@ -78,6 +78,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/", element: <Navigate to="/overview" replace /> },
+      { path: "/onboarding", element: <OnboardingPage /> },
       { path: "/onboarding/property", element: <CreatePropertyPage /> },
       { path: "/overview", element: <OverviewPage /> },
 
