@@ -7,6 +7,7 @@ type Lang = "es" | "en";
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("es");
   const [openBooking, setOpenBooking] = useState(false);
+  const [bookingType, setBookingType] = useState<"onboarding" | "demo">("onboarding");
 
   const t = useMemo(() => {
     return lang === "es"
@@ -353,12 +354,27 @@ export default function LandingPage() {
     flexWrap: "wrap",
   }}
 >
-  <button
-    onClick={() => setOpenBooking(true)}
-    style={styles.ctaPrimary}
-  >
-    {lang === "es" ? "Agendar onboarding" : "Book onboarding"}
-  </button>
+ <button
+  onClick={() => {
+    setBookingType("onboarding");
+    setOpenBooking(true);
+  }}
+  style={styles.ctaPrimary}
+>
+  {lang === "es" ? "Agendar onboarding" : "Book onboarding"}
+</button>
+
+<button
+  onClick={() => {
+    setBookingType("demo");
+    setOpenBooking(true);
+  }}
+  style={styles.ctaSecondary}
+>
+  {lang === "es"
+    ? "Agendar llamada informativa"
+    : "Book info call"}
+</button> 
 </div>
  
          </div>
