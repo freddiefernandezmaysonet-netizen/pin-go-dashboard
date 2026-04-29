@@ -74,7 +74,10 @@ export default function OnboardingBookingModal({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+  ...form,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+}),
       });
 
       const data = await res.json();
