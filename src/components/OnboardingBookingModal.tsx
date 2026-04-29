@@ -83,26 +83,31 @@ const t =
           "Recibirás una invitación de Google Calendar con el link de Google Meet.",
         close: "Cerrar",
       }
-       : {
-          title: "Book onboarding",
-          subtitle: "Choose an available date and time for your session.",
-          name: "Name",
-          email: "Email",
-          phone: "Phone",
-          topic: "What do you need help with?",
-          date: "Date",
-          remote: "I need remote assistance",
-          submit: "Confirm booking",
-          loading: "Booking...",
-          loadingSlots: "Loading availability...",
-          selectDate: "Select a date to view available times.",
-          noSlots: "No available times for this date.",
-          successTitle: "Appointment scheduled",
-          successText:
-            "You will receive a Google Calendar invitation with the Google Meet link.",
-          close: "Close",
-        };
-
+      : {
+  title: isDemo ? "Book an info call" : "Book onboarding",
+  subtitle: isDemo
+    ? "Schedule a call to learn how Pin&Go works and ask your questions."
+    : "Choose an available date and time for your session.",
+  name: "Name",
+  email: "Email",
+  phone: "Phone",
+  topic: isDemo
+    ? "What would you like to learn?"
+    : "What do you need help with?",
+  date: "Date",
+  remote: "I need remote assistance",
+  submit: isDemo ? "Book info call" : "Confirm booking",
+  loading: isDemo ? "Booking call..." : "Booking...",
+  loadingSlots: "Loading availability...",
+  selectDate: "Select a date to view available times.",
+  noSlots: "No available times for this date.",
+  successTitle: isDemo
+    ? "Info call scheduled"
+    : "Appointment scheduled",
+  successText:
+    "You will receive a Google Calendar invitation with the Google Meet link.",
+  close: "Close",
+}
   useEffect(() => {
     if (!isOpen || !selectedDate) {
       setSlots([]);
