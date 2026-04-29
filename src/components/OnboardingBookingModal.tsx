@@ -4,6 +4,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   lang?: "es" | "en";
+  bookingType?: "onboarding" | "demo";
 };
 
 type Slot = {
@@ -15,6 +16,7 @@ export default function OnboardingBookingModal({
   isOpen,
   onClose,
   lang = "es",
+  bookingType = "onboarding",
 }: Props) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const API_BASE = import.meta.env.VITE_API_BASE ?? "";
@@ -27,6 +29,19 @@ export default function OnboardingBookingModal({
     remoteAssistanceRequested: false,
   });
 
+useEffect(() => {
+  if (bookingType === "demo") {
+    setForm((prev) => ({
+      ...prev,
+      topic:
+        prev.topic ||
+        (lang === "es"
+          ? "Llamada informativa sobre Pin&Go"
+          : "Informational call about Pin&Go"),
+    }));
+  }
+}, [bookingType, lang]);
+
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -35,28 +50,40 @@ export default function OnboardingBookingModal({
   const [success, setSuccess] = useState(false);
   const [meetLink, setMeetLink] = useState<string | null>(null);
 
-  const t =
-    lang === "es"
-      ? {
-          title: "Agendar onboarding",
-          subtitle: "Escoge una fecha y horario disponible para tu sesión.",
-          name: "Nombre",
-          email: "Email",
-          phone: "Teléfono",
-          topic: "¿Qué necesitas configurar?",
-          date: "Fecha",
-          remote: "Necesito asistencia remota",
-          submit: "Confirmar cita",
-          loading: "Agendando...",
-          loadingSlots: "Buscando horarios...",
-          selectDate: "Selecciona una fecha para ver horarios disponibles.",
-          noSlots: "No hay horarios disponibles para esta fecha.",
-          successTitle: "Cita agendada",
-          successText:
-            "Recibirás una invitación de Google Calendar con el link de Google Meet.",
-          close: "Cerrar",
-        }
-      : {
+const isDemo = bookingType === "demo";
+
+const t =
+  lang === "es"
+    ? {
+        title: isDemo
+          ? "Agendar llamada informativa"
+          : "Agendar onboarding",
+        subtitle: isDemo
+          ? "Agenda una llamada para conocer cómo Pin&Go puede ayudarte."
+          : "Escoge una fecha y horario disponible para tu sesión.",
+        name: "Nombre",
+        email: "Email",
+        phone: "Teléfono",
+        topic: isDemo
+          ? "¿Qué te gustaría conocer?"
+          : "¿Qué necesitas configurar?",
+        date: "Fecha",
+        remote: "Necesito asistencia remota",
+        submit: isDemo
+          ? "Agendar llamada"
+          : "Confirmar cita",
+        loading: isDemo ? "Agendando llamada..." : "Agendando...",
+        loadingSlots: "Buscando horarios...",
+        selectDate: "Selecciona una fecha para ver horarios disponibles.",
+        noSlots: "No hay horarios disponibles para esta fecha.",
+        successTitle: isDemo
+          ? "Llamada agendada"
+          : "Cita agendada",
+        successText:
+          "Recibirás una invitación de Google Calendar con el link de Google Meet.",
+        close: "Cerrar",
+      }
+       : {
           title: "Book onboarding",
           subtitle: "Choose an available date and time for your session.",
           name: "Name",
