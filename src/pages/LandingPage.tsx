@@ -372,8 +372,8 @@ export default function LandingPage() {
   style={styles.ctaSecondary}
 >
   {lang === "es"
-    ? "Agendar llamada informativa"
-    : "Book info call"}
+    ? "Agendar llamada"
+    : "Book call"}
 </button> 
 </div>
  
@@ -515,8 +515,8 @@ export default function LandingPage() {
   isOpen={openBooking}
   onClose={() => setOpenBooking(false)}
   lang={lang}
+  bookingType={bookingType}
 />
-
           </div>
   );
 }
