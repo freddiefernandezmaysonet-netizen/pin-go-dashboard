@@ -162,11 +162,12 @@ const t =
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...form,
-          scheduledAt: `${selectedDate}T${selectedTime}`,
-          timezone,
-        }),
+       body: JSON.stringify({
+  ...form,
+  scheduledAt: `${selectedDate}T${selectedTime}`,
+  timezone,
+  bookingType: isDemo ? "DEMO" : "ONBOARDING",
+}),
       });
 
       const data = await res.json();
