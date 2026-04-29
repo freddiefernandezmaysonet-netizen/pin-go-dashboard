@@ -344,7 +344,6 @@ export default function LandingPage() {
                 : "If you prefer not to set it up yourself, our team can help you connect your PMS, TTLock, properties, smart devices, and automations in a guided session."}
             </p>
 
-            <div
              <div
   style={{
     marginTop: 24,
