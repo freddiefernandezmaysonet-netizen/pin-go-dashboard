@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
   isOpen: boolean;
@@ -6,86 +6,144 @@ type Props = {
   lang?: "es" | "en";
 };
 
+type Slot = {
+  time: string;
+  available: boolean;
+};
+
 export default function OnboardingBookingModal({
   isOpen,
   onClose,
   lang = "es",
 }: Props) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const API_BASE = import.meta.env.VITE_API_BASE ?? "";
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     topic: "",
-    scheduledAt: "",
     remoteAssistanceRequested: false,
   });
 
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  if (!isOpen) return null;
+  const [meetLink, setMeetLink] = useState<string | null>(null);
 
   const t =
     lang === "es"
       ? {
           title: "Agendar onboarding",
-          subtitle:
-            "Agenda una sesión con nuestro equipo para ayudarte a configurar Pin&Go.",
+          subtitle: "Escoge una fecha y horario disponible para tu sesión.",
           name: "Nombre",
           email: "Email",
           phone: "Teléfono",
           topic: "¿Qué necesitas configurar?",
-          date: "Fecha y hora",
+          date: "Fecha",
           remote: "Necesito asistencia remota",
           submit: "Confirmar cita",
           loading: "Agendando...",
+          loadingSlots: "Buscando horarios...",
+          selectDate: "Selecciona una fecha para ver horarios disponibles.",
+          noSlots: "No hay horarios disponibles para esta fecha.",
           successTitle: "Cita agendada",
           successText:
-            "Te contactaremos para confirmar tu sesión. Si solicitaste asistencia remota, te guiaremos durante la llamada.",
+            "Recibirás una invitación de Google Calendar con el link de Google Meet.",
           close: "Cerrar",
         }
       : {
           title: "Book onboarding",
-          subtitle:
-            "Schedule a session with our team to help you set up Pin&Go.",
+          subtitle: "Choose an available date and time for your session.",
           name: "Name",
           email: "Email",
           phone: "Phone",
           topic: "What do you need help with?",
-          date: "Date & time",
+          date: "Date",
           remote: "I need remote assistance",
           submit: "Confirm booking",
           loading: "Booking...",
+          loadingSlots: "Loading availability...",
+          selectDate: "Select a date to view available times.",
+          noSlots: "No available times for this date.",
           successTitle: "Appointment scheduled",
           successText:
-            "We will contact you to confirm your session. If you requested remote assistance, we will guide you during the call.",
+            "You will receive a Google Calendar invitation with the Google Meet link.",
           close: "Close",
         };
 
+  useEffect(() => {
+    if (!isOpen || !selectedDate) {
+      setSlots([]);
+      setSelectedTime("");
+      return;
+    }
+
+    async function loadAvailability() {
+      setLoadingSlots(true);
+      setSelectedTime("");
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/onboarding/appointments/availability?date=${encodeURIComponent(
+            selectedDate
+          )}&timezone=${encodeURIComponent(timezone)}`
+        );
+
+        const data = await res.json();
+
+        if (data.ok) {
+          setSlots(data.slots ?? []);
+        } else {
+          setSlots([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setSlots([]);
+      } finally {
+        setLoadingSlots(false);
+      }
+    }
+
+    loadAvailability();
+  }, [API_BASE, isOpen, selectedDate, timezone]);
+
+  if (!isOpen) return null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!selectedDate || !selectedTime) {
+      alert(lang === "es" ? "Selecciona fecha y hora." : "Select date and time.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-     const API_BASE = import.meta.env.VITE_API_BASE ?? "";
-
-     const res = await fetch(`${API_BASE}/api/onboarding/appointments`, {
+      const res = await fetch(`${API_BASE}/api/onboarding/appointments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-  ...form,
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-}),
+          ...form,
+          scheduledAt: `${selectedDate}T${selectedTime}`,
+          timezone,
+        }),
       });
 
       const data = await res.json();
 
       if (data.ok) {
+        setMeetLink(data.googleMeetLink ?? null);
         setSuccess(true);
       } else {
-        alert("Error creating appointment");
+        alert(data.error ?? "Error creating appointment");
       }
     } catch (err) {
       console.error(err);
@@ -144,15 +202,41 @@ export default function OnboardingBookingModal({
               />
 
               <input
-                type="datetime-local"
+                type="date"
                 aria-label={t.date}
-                value={form.scheduledAt}
-                onChange={(e) =>
-                  setForm({ ...form, scheduledAt: e.target.value })
-                }
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
                 style={styles.input}
                 required
               />
+
+              {!selectedDate ? (
+                <p style={styles.helperText}>{t.selectDate}</p>
+              ) : loadingSlots ? (
+                <p style={styles.helperText}>{t.loadingSlots}</p>
+              ) : slots.filter((slot) => slot.available).length === 0 ? (
+                <p style={styles.helperText}>{t.noSlots}</p>
+              ) : (
+                <div style={styles.slotGrid}>
+                  {slots.map((slot) => (
+                    <button
+                      key={slot.time}
+                      type="button"
+                      disabled={!slot.available}
+                      onClick={() => setSelectedTime(slot.time)}
+                      style={{
+                        ...styles.slotButton,
+                        ...(selectedTime === slot.time
+                          ? styles.slotButtonActive
+                          : {}),
+                        ...(!slot.available ? styles.slotButtonDisabled : {}),
+                      }}
+                    >
+                      {slot.time}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <label style={styles.checkboxRow}>
                 <input
@@ -170,11 +254,14 @@ export default function OnboardingBookingModal({
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !selectedDate || !selectedTime}
                 style={{
                   ...styles.primaryButton,
-                  opacity: loading ? 0.7 : 1,
-                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading || !selectedDate || !selectedTime ? 0.7 : 1,
+                  cursor:
+                    loading || !selectedDate || !selectedTime
+                      ? "not-allowed"
+                      : "pointer",
                 }}
               >
                 {loading ? t.loading : t.submit}
@@ -185,6 +272,17 @@ export default function OnboardingBookingModal({
           <>
             <h2 style={styles.title}>✅ {t.successTitle}</h2>
             <p style={styles.subtitle}>{t.successText}</p>
+
+            {meetLink && (
+              <a
+                href={meetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.meetLink}
+              >
+                Google Meet
+              </a>
+            )}
 
             <button type="button" onClick={onClose} style={styles.primaryButton}>
               {t.close}
@@ -212,7 +310,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 18,
     padding: 28,
     width: "100%",
-    maxWidth: 440,
+    maxWidth: 460,
     boxShadow: "0 20px 40px rgba(15, 23, 42, 0.18)",
     border: "1px solid #e2e8f0",
   },
@@ -260,6 +358,35 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#0f172a",
     outline: "none",
   },
+  helperText: {
+    margin: "4px 0",
+    color: "#64748b",
+    fontSize: 13,
+  },
+  slotGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 8,
+    marginTop: 4,
+  },
+  slotButton: {
+    padding: "10px 8px",
+    borderRadius: 10,
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    color: "#0f172a",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  slotButtonActive: {
+    background: "#0f172a",
+    color: "#fff",
+    border: "1px solid #0f172a",
+  },
+  slotButtonDisabled: {
+    opacity: 0.35,
+    cursor: "not-allowed",
+  },
   checkboxRow: {
     display: "flex",
     alignItems: "center",
@@ -276,5 +403,13 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#ffffff",
     fontWeight: 700,
     cursor: "pointer",
+  },
+  meetLink: {
+    display: "inline-block",
+    marginTop: 10,
+    marginBottom: 12,
+    color: "#2563eb",
+    fontWeight: 700,
+    textDecoration: "none",
   },
 };
