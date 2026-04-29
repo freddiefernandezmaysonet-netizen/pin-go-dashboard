@@ -361,17 +361,7 @@ export default function LandingPage() {
   </button>
 </div>
  
-            <div style={{ marginTop: 16 }}>
-              <Link
-                to="/onboarding"
-                style={{ color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
-              >
-                {lang === "es"
-                  ? "Ver guía paso a paso"
-                  : "View step-by-step guide"}
-              </Link>
-            </div>
-          </div>
+         </div>
         </section>
 
         <section style={styles.sectionAlt}>
