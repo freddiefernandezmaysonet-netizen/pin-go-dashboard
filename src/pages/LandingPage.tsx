@@ -345,31 +345,23 @@ export default function LandingPage() {
             </p>
 
             <div
-              style={{
-                marginTop: 24,
-                display: "flex",
-                gap: 12,
-                justifyContent: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                onClick={() => setOpenBooking(true)}
-                style={styles.ctaPrimary}
-              >
-                {lang === "es" ? "Agendar onboarding" : "Book onboarding"}
-              </button>
-
-              <a
-                href="https://wa.me/17874294117"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={styles.ctaSecondary}
-              >
-                {lang === "es" ? "Asistencia remota" : "Remote assistance"}
-              </a>
-            </div>
-
+             <div
+  style={{
+    marginTop: 24,
+    display: "flex",
+    gap: 12,
+    justifyContent: "center",
+    flexWrap: "wrap",
+  }}
+>
+  <button
+    onClick={() => setOpenBooking(true)}
+    style={styles.ctaPrimary}
+  >
+    {lang === "es" ? "Agendar onboarding" : "Book onboarding"}
+  </button>
+</div>
+ 
             <div style={{ marginTop: 16 }}>
               <Link
                 to="/onboarding"
