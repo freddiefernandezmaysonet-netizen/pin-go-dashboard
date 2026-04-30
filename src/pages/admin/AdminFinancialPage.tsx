@@ -89,7 +89,7 @@ export default function AdminFinancialPage() {
 
   const endpoint = useMemo(() => {
     if (!API) return null;
-    return `${API}/api/admin/financial/overview`;
+    return `${API}/api/internal/financial/overview`;
   }, []);
 
   useEffect(() => {
