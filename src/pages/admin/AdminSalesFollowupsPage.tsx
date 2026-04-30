@@ -209,7 +209,22 @@ async function sendEmail(id: string) {
                   </div>
                 </div>
 
-                <span style={styles.badge}>{f.status}</span>
+                <span
+  style={{
+    ...styles.badge,
+    ...(f.dueAt &&
+    new Date(f.dueAt).getTime() < Date.now() &&
+    f.status === "READY_TO_SEND"
+      ? styles.badgeOverdue
+      : {}),
+  }}
+>
+  {f.dueAt &&
+  new Date(f.dueAt).getTime() < Date.now() &&
+  f.status === "READY_TO_SEND"
+    ? "OVERDUE"
+    : f.status}
+</span>
               </div>
 
               <div style={styles.infoGrid}>
@@ -438,6 +453,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "6px 9px",
     whiteSpace: "nowrap",
   },
+  badgeOverdue: {
+  color: "#991b1b",
+  background: "#fee2e2",
+  border: "1px solid #fecaca",
+},
   infoGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
