@@ -2,169 +2,225 @@ import { useEffect, useMemo, useState } from "react";
 
 const API = import.meta.env.VITE_API_BASE;
 
+type AdminFinancialData = any;
+
+function money(value: unknown) {
+  const n = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(n);
+}
+
+function number(value: unknown) {
+  const n = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return new Intl.NumberFormat("en-US").format(n);
+}
+
+function percent(value: unknown) {
+  const n = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  return `${n.toFixed(2)}%`;
+}
+
+function shortId(value?: string | null) {
+  if (!value) return "—";
+  if (value.length <= 14) return value;
+  return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
 export default function AdminFinancialPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AdminFinancialData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const endpoint = useMemo(() => {
     if (!API) return null;
     return `${API}/api/internal/financial/overview`;
   }, []);
 
-  async function load() {
-    if (!endpoint) return;
-
-    setLoading(true);
-
-    const res = await fetch(endpoint, {
-      credentials: "include",
-    });
-
-    const json = await res.json();
-    setData(json);
-    setLoading(false);
-  }
-
   useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        if (!endpoint) throw new Error("Missing VITE_API_BASE");
+
+        const res = await fetch(endpoint, {
+          credentials: "include",
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) throw new Error(json?.error);
+
+        if (!cancelled) setData(json);
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
     load();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [endpoint]);
 
-  if (loading) {
-    return <div style={{ padding: 24 }}>Loading financial data...</div>;
-  }
+  if (loading) return <PageState text="Loading financial data..." />;
+  if (error) return <PageError error={error} />;
 
-  const orgs = data?.organizations ?? [];
+  const organizations = data?.organizations ?? [];
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div style={{ padding: 24 }}>
       {/* HEADER */}
-      <div>
-        <h1 style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>
-          Admin Financial
-        </h1>
-        <p style={{ color: "#666", marginTop: 8 }}>
-          Platform financial overview (Last 30 Days)
-        </p>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ margin: 0 }}>Admin Financial</h2>
+
+        <div style={{ marginTop: 6, display: "flex", gap: 10 }}>
+          <Badge text="Last 30 Days" />
+          <span style={{ color: "#64748b" }}>
+            Platform-wide financial overview
+          </span>
+        </div>
       </div>
 
-      {/* KPI */}
-      <div
-        style={{
-          display: "grid",
-          gap: 16,
-          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-        }}
-      >
-        <Stat title="MRR" value={data?.revenue?.total} money />
-        <Stat title="Costs" value={data?.costs?.total} money />
-        <Stat title="Net" value={data?.profit?.net} money />
-        <Stat title="Margin" value={data?.profit?.margin} percent />
+      {/* KPI CARDS */}
+      <div style={grid4}>
+        <Card title="MRR" value={money(data?.revenue?.total)} />
+        <Card title="Costs" value={money(data?.costs?.total)} />
+        <Card title="Net" value={money(data?.profit?.net)} />
+        <Card title="Margin" value={percent(data?.profit?.margin)} />
       </div>
 
       {/* SUMMARY */}
-      <SectionCard title="Platform Summary">
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(5,1fr)" }}>
-          <StatSmall label="Organizations" value={data?.summary?.totalOrgs} />
-          <StatSmall label="Subscribed" value={data?.summary?.subscribedOrgs} />
-          <StatSmall label="Reservations" value={data?.summary?.totalReservations} />
-          <StatSmall label="SMS" value={data?.summary?.totalSmsMessages} />
-          <StatSmall label="Automation" value={data?.summary?.totalAutomationExecutions} />
-        </div>
-      </SectionCard>
+      <Section title="Platform">
+        <Grid>
+          <Metric label="Organizations" value={number(data?.summary?.totalOrgs)} />
+          <Metric label="Subscribed" value={number(data?.summary?.subscribedOrgs)} />
+          <Metric label="Reservations" value={number(data?.summary?.totalReservations)} />
+          <Metric label="SMS Sent" value={number(data?.summary?.totalSmsMessages)} />
+          <Metric label="Automations" value={number(data?.summary?.totalAutomationExecutions)} />
+        </Grid>
+      </Section>
 
       {/* COSTS */}
-      <SectionCard title="Cost Breakdown">
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(3,1fr)" }}>
-          <StatSmall label="Stripe" value={data?.costs?.stripe} money />
-          <StatSmall label="Twilio" value={data?.costs?.twilio} money />
-          <StatSmall label="Tuya" value={data?.costs?.tuya} money />
-        </div>
-      </SectionCard>
+      <Section title="Costs Breakdown">
+        <Grid>
+          <Metric label="Stripe" value={money(data?.costs?.stripe)} />
+          <Metric label="Twilio" value={money(data?.costs?.twilio)} />
+          <Metric label="Tuya" value={money(data?.costs?.tuya)} />
+        </Grid>
+      </Section>
 
-      {/* ORGS TABLE */}
-      <SectionCard
-        title={`Organizations (${orgs.length})`}
-        right={
-          <button onClick={load} style={refreshButton}>
-            Refresh
-          </button>
-        }
-      >
-        <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 14 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
-            <thead>
-              <tr style={{ background: "#f9fafb" }}>
-                <Th>Org</Th>
-                <Th>MRR</Th>
-                <Th>Locks</Th>
-                <Th>Smart</Th>
-                <Th>SMS</Th>
-                <Th>Automation</Th>
-                <Th>Reservations</Th>
+      {/* TABLE */}
+      <Section title="Organizations">
+        <table style={table}>
+          <thead>
+            <tr>
+              <Th>Org</Th>
+              <Th>MRR</Th>
+              <Th>Locks</Th>
+              <Th>Smart</Th>
+              <Th>SMS</Th>
+              <Th>Automation</Th>
+              <Th>Reservations</Th>
+              <Th>Stripe</Th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {organizations.map((org: any) => (
+              <tr key={org.organizationId}>
+                <Td>{org.organizationName}</Td>
+                <Td>{money(org.revenue?.estimatedMonthly)}</Td>
+
+                <Td>
+                  {org.usage?.locksUsed} /{" "}
+                  {org.subscription?.entitledLocks ?? 0}
+                </Td>
+
+                <Td>
+                  {org.usage?.smartPropertiesUsed} /{" "}
+                  {org.subscription?.entitledSmartProperties ?? 0}
+                </Td>
+
+                <Td>{number(org.usage?.smsUsed)}</Td>
+                <Td>{number(org.usage?.automationExecutions)}</Td>
+                <Td>{number(org.usage?.reservations)}</Td>
+
+                <Td>
+                  {shortId(org.subscription?.stripeSubscriptionId)}
+                </Td>
               </tr>
-            </thead>
-
-            <tbody>
-              {orgs.map((o: any, i: number) => (
-                <tr key={o.organizationId} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <Td>{o.organizationName}</Td>
-                  <Td>{money(o.revenue?.estimatedMonthly)}</Td>
-
-                  <Td>
-                    {o.usage?.locksUsed} / {o.subscription?.entitledLocks ?? 0}
-                  </Td>
-
-                  <Td>
-                    {o.usage?.smartPropertiesUsed} /{" "}
-                    {o.subscription?.entitledSmartProperties ?? 0}
-                  </Td>
-
-                  <Td>{o.usage?.smsUsed}</Td>
-                  <Td>{o.usage?.automationExecutions}</Td>
-                  <Td>{o.usage?.reservations}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
+            ))}
+          </tbody>
+        </table>
+      </Section>
     </div>
   );
 }
 
-/* ---------- COMPONENTS ---------- */
+/* ---------- UI COMPONENTS ---------- */
 
-function Stat({ title, value, money, percent }: any) {
+function PageState({ text }: { text: string }) {
+  return <div style={{ padding: 24 }}>{text}</div>;
+}
+
+function PageError({ error }: { error: string }) {
+  return (
+    <div style={{ padding: 24, color: "#991b1b" }}>
+      Error: {error}
+    </div>
+  );
+}
+
+function Card({ title, value }: any) {
   return (
     <div style={card}>
-      <div style={{ fontSize: 13, color: "#6b7280" }}>{title}</div>
-      <div style={{ fontSize: 28, fontWeight: 700 }}>
-        {money ? formatMoney(value) : percent ? `${value?.toFixed(2)}%` : value}
-      </div>
+      <div style={{ color: "#64748b", fontSize: 13 }}>{title}</div>
+      <div style={{ fontSize: 28, fontWeight: 800 }}>{value}</div>
     </div>
   );
 }
 
-function StatSmall({ label, value, money }: any) {
-  return (
-    <div style={metric}>
-      <div style={{ fontSize: 12, color: "#6b7280" }}>{label}</div>
-      <div style={{ fontWeight: 700 }}>
-        {money ? formatMoney(value) : value}
-      </div>
-    </div>
-  );
-}
-
-function SectionCard({ title, children, right }: any) {
+function Section({ title, children }: any) {
   return (
     <div style={section}>
-      <div style={sectionHeader}>
-        <div style={{ fontWeight: 700 }}>{title}</div>
-        {right}
-      </div>
+      <h3 style={{ marginBottom: 12 }}>{title}</h3>
       {children}
     </div>
+  );
+}
+
+function Grid({ children }: any) {
+  return <div style={grid}>{children}</div>;
+}
+
+function Metric({ label, value }: any) {
+  return (
+    <div style={metric}>
+      <div style={{ fontSize: 12, color: "#64748b" }}>{label}</div>
+      <div style={{ fontWeight: 700 }}>{value}</div>
+    </div>
+  );
+}
+
+function Badge({ text }: { text: string }) {
+  return (
+    <span
+      style={{
+        fontSize: 12,
+        padding: "4px 10px",
+        borderRadius: 999,
+        background: "#e0f2fe",
+        color: "#0369a1",
+        fontWeight: 600,
+      }}
+    >
+      {text}
+    </span>
   );
 }
 
@@ -178,26 +234,32 @@ function Td({ children }: any) {
 
 /* ---------- STYLES ---------- */
 
+const grid4 = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: 16,
+  marginBottom: 24,
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+  gap: 12,
+};
+
 const card = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 16,
   padding: 18,
+  border: "1px solid #e2e8f0",
+  borderRadius: 14,
   background: "#fff",
 };
 
 const section = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 18,
+  marginTop: 24,
   padding: 18,
+  border: "1px solid #e2e8f0",
+  borderRadius: 14,
   background: "#fff",
-  display: "grid",
-  gap: 12,
-};
-
-const sectionHeader = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
 };
 
 const metric = {
@@ -206,33 +268,18 @@ const metric = {
   borderRadius: 10,
 };
 
+const table = {
+  width: "100%",
+  borderCollapse: "collapse" as const,
+};
+
 const th = {
-  textAlign: "left",
-  fontSize: 12,
-  fontWeight: 800,
-  padding: "14px 16px",
-  color: "#6b7280",
+  textAlign: "left" as const,
+  padding: "10px",
+  borderBottom: "1px solid #e2e8f0",
 };
 
 const td = {
-  padding: "14px 16px",
-  fontSize: 14,
+  padding: "10px",
+  borderBottom: "1px solid #f1f5f9",
 };
-
-const refreshButton = {
-  height: 40,
-  padding: "0 14px",
-  borderRadius: 12,
-  border: "1px solid #111827",
-  background: "#111827",
-  color: "#fff",
-  fontWeight: 700,
-  cursor: "pointer",
-};
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value || 0);
-}
