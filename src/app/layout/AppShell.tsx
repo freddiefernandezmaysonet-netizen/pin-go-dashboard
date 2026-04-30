@@ -2,15 +2,15 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../api/auth";
 import { useAuth } from "../../auth/AuthProvider";
 
-const nav = [
+// ✅ NAV BASE (producto normal)
+const baseNav = [
   { to: "/overview", label: "Overview" },
   { to: "/properties", label: "Properties" },
   { to: "/locks", label: "Locks" },
   { to: "/health", label: "Locks Health Center" },
   { to: "/reservations", label: "Reservations" },
   { to: "/access", label: "Access" },
-  
-   // 👇 NUEVO
+
   { to: "/messages", label: "Messages" },
   { to: "/staff", label: "Staff Members" },
 
@@ -48,9 +48,11 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/staff")) return "Staff Members";
   if (pathname.startsWith("/health")) return "Health Center";
   if (pathname.startsWith("/automation/history")) return "Automation History";
-
-  // 👇 NUEVO
   if (pathname.startsWith("/messages")) return "Messages";
+
+  // ✅ NUEVO
+  if (pathname.startsWith("/admin/sales-followups")) return "Sales Follow-ups";
+  if (pathname.startsWith("/admin/financial")) return "Admin Financial";
 
   if (pathname.startsWith("/integrations/pms")) return "PMS Integrations";
   if (pathname.startsWith("/billing")) return "Billing";
@@ -71,6 +73,16 @@ export function AppShell() {
       navigate("/login");
     }
   }
+
+  // ✅ NAV DINÁMICO (solo tú ves admin)
+  const nav =
+    user?.role === "PLATFORM_ADMIN"
+      ? [
+          ...baseNav,
+          { to: "/admin/financial", label: "Admin Financial" },
+          { to: "/admin/sales-followups", label: "Sales Follow-ups" },
+        ]
+      : baseNav;
 
   const pageTitle = getPageTitle(location.pathname);
 
@@ -191,17 +203,17 @@ export function AppShell() {
               gap: 12,
             }}
           >
-             <div style={{ textAlign: "right" }}>
-    <div
-      style={{
-        fontSize: 14,
-        fontWeight: 700,
-        color: "#111827",
-      }}
-    >
-    {user?.organizationName ?? "Organization"}   
-  </div>
-  </div>
+            <div style={{ textAlign: "right" }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#111827",
+                }}
+              >
+                {user?.organizationName ?? "Organization"}
+              </div>
+            </div>
 
             <div
               style={{

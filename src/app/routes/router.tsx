@@ -34,6 +34,7 @@ import LandingPage from "../../pages/LandingPage";
 import TermsPage from "../../pages/TermsPage";
 import PrivacyPage from "../../pages/PrivacyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
+import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
 
 export const router = createBrowserRouter([
  
@@ -111,6 +112,15 @@ export const router = createBrowserRouter([
       { path: "/integrations/pms/listings-mapping", element: <ListingsMappingPage /> },
     ],
   },
+
+{
+  path: "/admin/sales-followups",
+  element: (
+    <RequireAuth>
+      <AdminSalesFollowupsPage />
+    </RequireAuth>
+  ),
+},
 
  {
     path: "/admin/financial",
