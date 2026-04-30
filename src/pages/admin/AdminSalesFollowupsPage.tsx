@@ -27,7 +27,7 @@ export default function AdminSalesFollowupsPage() {
       setLoading(true);
 
       const res = await fetch(
-        `${API_BASE}/api/admin/sales-followups?status=READY_TO_SEND`,
+        `${API_BASE}/api/internal/admin/sales-followups?status=READY_TO_SEND`,
         { credentials: "include" }
       );
 
@@ -48,7 +48,7 @@ export default function AdminSalesFollowupsPage() {
       setMarkingId(id);
 
       const res = await fetch(
-        `${API_BASE}/api/admin/sales-followups/${id}/contacted`,
+        `${API_BASE}/api/internal/admin/sales-followups/${id}/contacted`,
         {
           method: "POST",
           credentials: "include",
