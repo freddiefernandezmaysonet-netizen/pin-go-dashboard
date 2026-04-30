@@ -88,6 +88,34 @@ export default function AdminSalesFollowupsPage() {
     }
   }
 
+async function sendEmail(id: string) {
+  try {
+    setMarkingId(id);
+
+    const res = await fetch(
+      `${API_BASE}/api/internal/admin/sales-followups/${id}/send-email`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    const json = await res.json();
+
+    if (!json.ok) {
+      alert(json.error ?? "Failed to send email");
+      return;
+    }
+
+    await load();
+  } catch (err) {
+    console.error("[FOLLOWUP_EMAIL_ERROR]", err);
+    alert("Failed to send email");
+  } finally {
+    setMarkingId(null);
+  }
+}
+
   useEffect(() => {
     load();
   }, [activeTab]);
@@ -221,20 +249,37 @@ export default function AdminSalesFollowupsPage() {
                 </div>
               )}
 
-              {activeTab === "READY_TO_SEND" && (
-                <button
-                  type="button"
-                  disabled={markingId === f.id}
-                  onClick={() => markAsContacted(f.id)}
-                  style={{
-                    ...styles.primaryButton,
-                    opacity: markingId === f.id ? 0.7 : 1,
-                    cursor: markingId === f.id ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {markingId === f.id ? "Marking..." : "Mark as contacted"}
-                </button>
-              )}
+             {activeTab === "READY_TO_SEND" && (
+  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+    
+    <button
+      type="button"
+      disabled={markingId === f.id}
+      onClick={() => sendEmail(f.id)}
+      style={{
+        ...styles.primaryButton,
+        background: "#2563eb",
+      }}
+    >
+      {markingId === f.id ? "Sending..." : "Send email"}
+    </button>
+
+    <button
+      type="button"
+      disabled={markingId === f.id}
+      onClick={() => markAsContacted(f.id)}
+      style={{
+        ...styles.primaryButton,
+        background: "#0f172a",
+      }}
+    >
+      Mark as contacted
+    </button>
+
+  </div>
+)}
+
+                             
             </div>
           ))}
         </div>
