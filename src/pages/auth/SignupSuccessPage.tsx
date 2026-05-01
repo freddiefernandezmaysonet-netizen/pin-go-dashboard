@@ -3,7 +3,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import { fetchProperties } from "../../api/properties";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (import.meta.env.DEV ? "http://localhost:3000" : "");
 
 type SignupSuccessStatusResponse = {
   ok: boolean;
