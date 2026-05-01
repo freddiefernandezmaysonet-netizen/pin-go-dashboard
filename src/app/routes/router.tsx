@@ -35,6 +35,7 @@ import TermsPage from "../../pages/TermsPage";
 import PrivacyPage from "../../pages/PrivacyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
 import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
+import AdminDemoCenterPage from "../../pages/admin/AdminDemoCenterPage";
 
 export const router = createBrowserRouter([
  
@@ -123,6 +124,15 @@ export const router = createBrowserRouter([
 },
 
  {
+  path: "/admin/demo-center",
+  element: (
+    <RequireAuth>
+      <AdminDemoCenterPage />
+    </RequireAuth>
+  ),
+},
+
+{
     path: "/admin/financial",
     element: (
       <RequireAuth>

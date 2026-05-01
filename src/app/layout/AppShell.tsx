@@ -53,7 +53,8 @@ function getPageTitle(pathname: string) {
   // ✅ NUEVO
   if (pathname.startsWith("/admin/sales-followups")) return "Sales Follow-ups";
   if (pathname.startsWith("/admin/financial")) return "Admin Financial";
-
+  if (pathname.startsWith("/admin/demo-center")) return "Demo Center";
+ 
   if (pathname.startsWith("/integrations/pms")) return "PMS Integrations";
   if (pathname.startsWith("/billing")) return "Billing";
   if (pathname.startsWith("/integrations/tuya")) return "Tuya Integration";
@@ -81,6 +82,7 @@ export function AppShell() {
           ...baseNav,
           { to: "/admin/financial", label: "Admin Financial" },
           { to: "/admin/sales-followups", label: "Sales Follow-ups" },
+          { to: "/admin/demo-center", label: "Demo Center" },
         ]
       : baseNav;
 
