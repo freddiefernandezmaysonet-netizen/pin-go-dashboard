@@ -14,7 +14,20 @@ type StaffRow = {
   updatedAt: string;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+type PropertyAssignmentRow = {
+  id: string;
+  name: string;
+  assignment: {
+    id: string;
+    role: "PRIMARY" | "BACKUP";
+    backupOrder: number | null;
+    isActive: boolean;
+  } | null;
+};
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (import.meta.env.DEV ? "http://localhost:3000" : "");
 
 function Metric({
   label,
@@ -45,6 +58,16 @@ function Metric({
 export function StaffMembersPage() {
   const [organizationId, setOrganizationId] = useState("");
   const [items, setItems] = useState<StaffRow[]>([]);
+  const [assignments, setAssignments] = useState<
+    Record<string, PropertyAssignmentRow[]>
+  >({});
+  const [loadingAssignments, setLoadingAssignments] = useState<
+    Record<string, boolean>
+  >({});
+  const [savingAssignments, setSavingAssignments] = useState<
+    Record<string, boolean>
+  >({});
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,6 +79,35 @@ export function StaffMembersPage() {
   const [companyName, setCompanyName] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [ttlockCardRef, setTtlockCardRef] = useState("");
+
+  async function loadAssignments(staffId: string) {
+    if (!staffId || assignments[staffId] || loadingAssignments[staffId]) return;
+
+    setLoadingAssignments((prev) => ({ ...prev, [staffId]: true }));
+
+    try {
+      const res = await fetch(
+        `${API_BASE}/staff/${staffId}/property-assignments`,
+        { credentials: "include" }
+      );
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`API ${res.status}: ${t || res.statusText}`);
+      }
+
+      const json = await res.json();
+
+      setAssignments((prev) => ({
+        ...prev,
+        [staffId]: json.properties || [],
+      }));
+    } catch (e) {
+      console.error("[loadAssignments]", e);
+    } finally {
+      setLoadingAssignments((prev) => ({ ...prev, [staffId]: false }));
+    }
+  }
 
   async function loadStaff(orgId?: string) {
     setLoading(true);
@@ -77,9 +129,7 @@ export function StaffMembersPage() {
 
       const res = await fetch(
         `${API_BASE}/staff?organizationId=${encodeURIComponent(resolvedOrgId)}`,
-        {
-          credentials: "include",
-        }
+        { credentials: "include" }
       );
 
       if (!res.ok) {
@@ -89,6 +139,10 @@ export function StaffMembersPage() {
 
       const data: StaffRow[] = await res.json();
       setItems(data ?? []);
+
+      for (const staff of data ?? []) {
+        loadAssignments(staff.id);
+      }
     } catch (e: any) {
       setErr(String(e?.message ?? e));
     } finally {
@@ -98,6 +152,7 @@ export function StaffMembersPage() {
 
   useEffect(() => {
     loadStaff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function resetForm() {
@@ -130,9 +185,7 @@ export function StaffMembersPage() {
         const res = await fetch(`${API_BASE}/staff/${editingId}`, {
           method: "PATCH",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fullName: fullName.trim(),
             phoneE164: phoneE164.trim() || "",
@@ -150,9 +203,7 @@ export function StaffMembersPage() {
         const res = await fetch(`${API_BASE}/staff`, {
           method: "POST",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             organizationId,
             fullName: fullName.trim(),
@@ -170,6 +221,7 @@ export function StaffMembersPage() {
       }
 
       resetForm();
+      setAssignments({});
       await loadStaff(organizationId);
     } catch (e: any) {
       setErr(String(e?.message ?? e));
@@ -190,7 +242,9 @@ export function StaffMembersPage() {
   }
 
   async function handleArchive(id: string) {
-    const ok = window.confirm("Are you sure you want to archive this staff member?");
+    const ok = window.confirm(
+      "Are you sure you want to archive this staff member?"
+    );
     if (!ok) return;
 
     setArchivingId(id);
@@ -207,15 +261,117 @@ export function StaffMembersPage() {
         throw new Error(`API ${res.status}: ${t || res.statusText}`);
       }
 
-      if (editingId === id) {
-        resetForm();
-      }
+      if (editingId === id) resetForm();
+
+      setAssignments((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
 
       await loadStaff(organizationId);
     } catch (e: any) {
       setErr(String(e?.message ?? e));
     } finally {
       setArchivingId(null);
+    }
+  }
+
+  function updatePropertyRole(
+    staffId: string,
+    propertyIndex: number,
+    role: "" | "PRIMARY" | "BACKUP"
+  ) {
+    setAssignments((prev) => {
+      const list = [...(prev[staffId] || [])];
+      const current = list[propertyIndex];
+
+      if (!current) return prev;
+
+      list[propertyIndex] = {
+        ...current,
+        assignment: role
+          ? {
+              id: current.assignment?.id ?? "",
+              role,
+              backupOrder:
+                role === "BACKUP"
+                  ? current.assignment?.backupOrder ?? 1
+                  : null,
+              isActive: true,
+            }
+          : null,
+      };
+
+      return {
+        ...prev,
+        [staffId]: list,
+      };
+    });
+  }
+
+  function updateBackupOrder(
+    staffId: string,
+    propertyIndex: number,
+    backupOrder: number
+  ) {
+    setAssignments((prev) => {
+      const list = [...(prev[staffId] || [])];
+      const current = list[propertyIndex];
+
+      if (!current?.assignment) return prev;
+
+      list[propertyIndex] = {
+        ...current,
+        assignment: {
+          ...current.assignment,
+          backupOrder: Math.max(1, Math.trunc(Number(backupOrder) || 1)),
+        },
+      };
+
+      return {
+        ...prev,
+        [staffId]: list,
+      };
+    });
+  }
+
+  async function savePropertyAssignments(staffId: string) {
+    setSavingAssignments((prev) => ({ ...prev, [staffId]: true }));
+    setErr(null);
+
+    try {
+      const payload = (assignments[staffId] || []).map((p) => ({
+        propertyId: p.id,
+        role: p.assignment?.role,
+        backupOrder: p.assignment?.backupOrder ?? 1,
+        isActive: Boolean(p.assignment?.role),
+      }));
+
+      const res = await fetch(`${API_BASE}/staff/${staffId}/property-assignments`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ assignments: payload }),
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`API ${res.status}: ${t || res.statusText}`);
+      }
+
+      setAssignments((prev) => {
+        const next = { ...prev };
+        delete next[staffId];
+        return next;
+      });
+
+      await loadAssignments(staffId);
+      alert("Cleaning assignments saved");
+    } catch (e: any) {
+      setErr(String(e?.message ?? e));
+    } finally {
+      setSavingAssignments((prev) => ({ ...prev, [staffId]: false }));
     }
   }
 
@@ -359,7 +515,11 @@ export function StaffMembersPage() {
               opacity: saving ? 0.7 : 1,
             }}
           >
-            {saving ? "Saving..." : editingId ? "Save Changes" : "Create Staff Member"}
+            {saving
+              ? "Saving..."
+              : editingId
+                ? "Save Changes"
+                : "Create Staff Member"}
           </button>
 
           {editingId ? (
@@ -403,116 +563,267 @@ export function StaffMembersPage() {
           style={{
             display: "grid",
             gap: 16,
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
           }}
         >
-          {items.map((s) => (
-            <div
-              key={s.id}
-              style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 18,
-                padding: 18,
-                background: "#fff",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                display: "grid",
-                gap: 14,
-              }}
-            >
+          {items.map((s) => {
+            const staffAssignments = assignments[s.id] || [];
+            const isLoadingAssignments = loadingAssignments[s.id];
+            const isSavingAssignments = savingAssignments[s.id];
+
+            return (
               <div
+                key={s.id}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  alignItems: "flex-start",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 18,
+                  padding: 18,
+                  background: "#fff",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                  display: "grid",
+                  gap: 14,
                 }}
               >
-                <div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
-                    {s.fullName}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 700,
+                        color: "#111827",
+                      }}
+                    >
+                      {s.fullName}
+                    </div>
+                    <div
+                      style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}
+                    >
+                      Staff Member
+                    </div>
                   </div>
-                  <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-                    Staff Member
-                  </div>
+
+                  <span
+                    style={{
+                      fontSize: 12,
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      border: "1px solid #e5e7eb",
+                      background: s.isActive ? "#ecfdf5" : "#fef2f2",
+                      color: s.isActive ? "#065f46" : "#991b1b",
+                    }}
+                  >
+                    {s.isActive ? "ACTIVE" : "ARCHIVED"}
+                  </span>
                 </div>
 
-                <span
+                <div
                   style={{
-                    fontSize: 12,
-                    padding: "4px 8px",
-                    borderRadius: 999,
+                    display: "grid",
+                    gap: 12,
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  }}
+                >
+                  <Metric label="Phone" value={s.phoneE164 ?? "-"} />
+                  <Metric label="Company" value={s.companyName ?? "-"} />
+                  <Metric label="TTLock Card Ref" value={s.ttlockCardRef ?? "-"} />
+                  <Metric label="Photo" value={s.photoUrl ? "YES" : "NO"} />
+                </div>
+
+                <div
+                  style={{
                     border: "1px solid #e5e7eb",
-                    background: s.isActive ? "#ecfdf5" : "#fef2f2",
-                    color: s.isActive ? "#065f46" : "#991b1b",
+                    borderRadius: 14,
+                    padding: 12,
+                    background: "#f9fafb",
+                    display: "grid",
+                    gap: 10,
                   }}
                 >
-                  {s.isActive ? "ACTIVE" : "ARCHIVED"}
-                </span>
-              </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 800,
+                        color: "#111827",
+                      }}
+                    >
+                      Cleaning Property Roles
+                    </div>
+                    <div
+                      style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}
+                    >
+                      Select where this staff member is primary or backup.
+                    </div>
+                  </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gap: 12,
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                }}
-              >
-                <Metric label="Phone" value={s.phoneE164 ?? "-"} />
-                <Metric label="Company" value={s.companyName ?? "-"} />
-                <Metric label="TTLock Card Ref" value={s.ttlockCardRef ?? "-"} />
-                <Metric label="Photo" value={s.photoUrl ? "YES" : "NO"} />
-              </div>
+                  {isLoadingAssignments ? (
+                    <div style={{ color: "#6b7280", fontSize: 13 }}>
+                      Loading property assignments...
+                    </div>
+                  ) : staffAssignments.length === 0 ? (
+                    <div style={{ color: "#6b7280", fontSize: 13 }}>
+                      No active properties found.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {staffAssignments.map((p, idx) => (
+                        <div
+                          key={p.id}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 130px 90px",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 13,
+                              color: "#111827",
+                              fontWeight: 700,
+                              minWidth: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={p.name}
+                          >
+                            {p.name}
+                          </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleEdit(s)}
-                  disabled={!s.isActive}
+                          <select
+                            value={p.assignment?.role || ""}
+                            disabled={!s.isActive}
+                            onChange={(e) =>
+                              updatePropertyRole(
+                                s.id,
+                                idx,
+                                e.target.value as "" | "PRIMARY" | "BACKUP"
+                              )
+                            }
+                            style={{
+                              height: 34,
+                              borderRadius: 10,
+                              border: "1px solid #d1d5db",
+                              background: "#fff",
+                              fontSize: 13,
+                              padding: "0 8px",
+                            }}
+                          >
+                            <option value="">None</option>
+                            <option value="PRIMARY">Primary</option>
+                            <option value="BACKUP">Backup</option>
+                          </select>
+
+                          <input
+                            type="number"
+                            min={1}
+                            disabled={!s.isActive || p.assignment?.role !== "BACKUP"}
+                            value={p.assignment?.backupOrder ?? 1}
+                            onChange={(e) =>
+                              updateBackupOrder(s.id, idx, Number(e.target.value))
+                            }
+                            style={{
+                              height: 34,
+                              borderRadius: 10,
+                              border: "1px solid #d1d5db",
+                              background:
+                                p.assignment?.role === "BACKUP"
+                                  ? "#fff"
+                                  : "#f3f4f6",
+                              fontSize: 13,
+                              padding: "0 8px",
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => savePropertyAssignments(s.id)}
+                    disabled={!s.isActive || isSavingAssignments}
+                    style={{
+                      height: 36,
+                      borderRadius: 10,
+                      border: "1px solid #bfdbfe",
+                      background: "#eff6ff",
+                      color: "#1d4ed8",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor:
+                        !s.isActive || isSavingAssignments
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity: !s.isActive || isSavingAssignments ? 0.7 : 1,
+                    }}
+                  >
+                    {isSavingAssignments ? "Saving roles..." : "Save Cleaning Roles"}
+                  </button>
+                </div>
+
+                <div
                   style={{
-                    height: 38,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border: "1px solid #d1d5db",
-                    background: "#fff",
-                    color: "#111827",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: s.isActive ? "pointer" : "not-allowed",
-                    opacity: s.isActive ? 1 : 0.6,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 10,
+                    flexWrap: "wrap",
                   }}
                 >
-                  Edit
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(s)}
+                    disabled={!s.isActive}
+                    style={{
+                      height: 38,
+                      padding: "0 14px",
+                      borderRadius: 10,
+                      border: "1px solid #d1d5db",
+                      background: "#fff",
+                      color: "#111827",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: s.isActive ? "pointer" : "not-allowed",
+                      opacity: s.isActive ? 1 : 0.6,
+                    }}
+                  >
+                    Edit
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleArchive(s.id)}
-                  disabled={!s.isActive || archivingId === s.id}
-                  style={{
-                    height: 38,
-                    padding: "0 14px",
-                    borderRadius: 10,
-                    border: "1px solid #fecaca",
-                    background: "#fff",
-                    color: "#b91c1c",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: !s.isActive || archivingId === s.id ? "not-allowed" : "pointer",
-                    opacity: !s.isActive || archivingId === s.id ? 0.7 : 1,
-                  }}
-                >
-                  {archivingId === s.id ? "Archiving..." : "Archive"}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleArchive(s.id)}
+                    disabled={!s.isActive || archivingId === s.id}
+                    style={{
+                      height: 38,
+                      padding: "0 14px",
+                      borderRadius: 10,
+                      border: "1px solid #fecaca",
+                      background: "#fff",
+                      color: "#b91c1c",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor:
+                        !s.isActive || archivingId === s.id
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity: !s.isActive || archivingId === s.id ? 0.7 : 1,
+                    }}
+                  >
+                    {archivingId === s.id ? "Archiving..." : "Archive"}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
