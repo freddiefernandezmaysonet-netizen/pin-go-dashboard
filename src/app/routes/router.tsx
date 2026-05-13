@@ -29,6 +29,7 @@ import ForgotPasswordPage from "../../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../../pages/auth/ResetPasswordPage";
 import AutomationHistoryPage from "../../pages/AutomationHistoryPage";
 import MessagesPage from "../../pages/messages/MessagesPage";
+import TeamPage from "../../pages/TeamPage";
 import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
 import LandingPage from "../../pages/LandingPage";
 import TermsPage from "../../pages/TermsPage";
@@ -97,7 +98,8 @@ export const router = createBrowserRouter([
 
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
-
+      { path: "/team", element: <TeamPage /> },
+     
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
