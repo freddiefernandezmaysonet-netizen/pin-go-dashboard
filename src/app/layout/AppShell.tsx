@@ -77,17 +77,30 @@ export function AppShell() {
     }
   }
 
-  // ✅ NAV DINÁMICO (solo tú ves admin)
-  const nav =
-    user?.role === "PLATFORM_ADMIN"
-      ? [
-          ...baseNav,
-          { to: "/admin/financial", label: "Admin Financial" },
-          { to: "/admin/sales-followups", label: "Sales Follow-ups" },
-          { to: "/admin/demo-center", label: "Demo Center" },
-        ]
-      : baseNav;
+  const memberHiddenPaths = new Set([
+  "/team",
+  "/billing",
+  "/integrations/pms",
+  "/integrations/ttlock",
+  "/integrations/tuya",
+  "/integrations/tuya-premium",
+  "/integrations/pms/listings-mapping",
+]);
 
+const memberNav = baseNav.filter((item) => !memberHiddenPaths.has(item.to));
+
+ // ✅ NAV DINÁMICO (solo tú ves admin)
+const nav =
+  user?.role === "PLATFORM_ADMIN"
+    ? [
+        ...baseNav,
+        { to: "/admin/financial", label: "Admin Financial" },
+        { to: "/admin/sales-followups", label: "Sales Follow-ups" },
+        { to: "/admin/demo-center", label: "Demo Center" },
+      ]
+    : user?.role === "MEMBER"
+      ? memberNav
+      : baseNav;
   const pageTitle = getPageTitle(location.pathname);
 
   return (
