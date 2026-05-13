@@ -10,7 +10,8 @@ const baseNav = [
   { to: "/health", label: "Locks Health Center" },
   { to: "/reservations", label: "Reservations" },
   { to: "/access", label: "Access" },
-
+  { to: "/team", label: "Team" },
+  
   { to: "/messages", label: "Messages" },
   { to: "/staff", label: "Staff Members" },
 
@@ -45,6 +46,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/locks")) return "Locks";
   if (pathname.startsWith("/reservations")) return "Reservations";
   if (pathname.startsWith("/access")) return "Access";
+  if (pathname.startsWith("/team")) return "Team";
   if (pathname.startsWith("/staff")) return "Staff Members";
   if (pathname.startsWith("/health")) return "Health Center";
   if (pathname.startsWith("/automation/history")) return "Automation History";
