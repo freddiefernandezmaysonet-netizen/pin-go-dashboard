@@ -60,7 +60,7 @@ export default function LandingPage() {
           pricingLocksFeature3: "Check-in / check-out automático",
           pricingLocksFeature4: "Integración con PMS",
           pricingLocksFeature5: "Reduce llamadas de huéspedes",
-          pricingLocksCta: "Comenzar",
+          pricingLocksCta: "Activar",
 
           pricingSmartTitle: "🤖 Smart Automation",
           pricingSmartPrice: "$14.99",
@@ -570,7 +570,7 @@ export default function LandingPage() {
         </ul>
 
         <Link to="/signup" style={styles.cardButton}>
-          {lang === "es" ? "Solicitar" : "Request"}
+          {lang === "es" ? "Activar" : "Request"}
         </Link>
       </div>
 
@@ -650,7 +650,7 @@ export default function LandingPage() {
         </ul>
 
         <Link to="/signup" style={styles.cardButton}>
-          {lang === "es" ? "Solicitar" : "Request"}
+          {lang === "es" ? "Activar" : "Request"}
         </Link>
       </div>
 
@@ -713,7 +713,7 @@ export default function LandingPage() {
         </ul>
 
         <Link to="/signup" style={styles.cardButton}>
-          {lang === "es" ? "Solicitar" : "Request"}
+          {lang === "es" ? "Activar" : "Request"}
         </Link>
       </div>
     </div>
