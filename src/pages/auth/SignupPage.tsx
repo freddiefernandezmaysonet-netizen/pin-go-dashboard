@@ -7,9 +7,9 @@ type BillingInterval = "monthly" | "yearly";
 
 type ContractOption =
   | "standard"
-  | "contract_24_locks"
-  | "contract_24_smart"
-  | "contract_24_complete";
+  | "contract_24_lock"
+  | "contract_24_lock_1_smart"
+  | "contract_24_lock_2_smart";
 
 type SignupCheckoutResponse = {
   ok: boolean;
@@ -377,32 +377,31 @@ export default function SignupPage() {
               }
             />
 
-            <Field
-              label="Subscription option"
-              input={
-                <select
-                  value={contractOption}
-                  onChange={(e) =>
-                    setContractOption(e.target.value as ContractOption)
-                  }
-                  style={inputStyle}
-                >
-                  <option value="standard">
-                    Current subscription - no contract
-                  </option>
-                  <option value="contract_24_locks">
-                    2-year contract - Locks subscription
-                  </option>
-                  <option value="contract_24_smart">
-                    2-year contract - Smart automation subscription
-                  </option>
-                  <option value="contract_24_complete">
-                    2-year contract - Complete package
-                  </option>
-                </select>
-              }
-            />
-
+           <Field
+  label="Subscription option"
+  input={
+    <select
+      value={contractOption}
+      onChange={(e) =>
+        setContractOption(e.target.value as ContractOption)
+      }
+      style={inputStyle}
+    >
+      <option value="standard">
+        Current subscription - no contract
+      </option>
+      <option value="contract_24_lock">
+        2-year contract - Includes 1 lock
+      </option>
+      <option value="contract_24_lock_1_smart">
+        2-year contract - Includes 1 lock + 1 smart device
+      </option>
+      <option value="contract_24_lock_2_smart">
+        2-year contract - Includes 1 lock + 2 smart devices
+      </option>
+    </select>
+  }
+/>
             {contractOption === "standard" ? (
               <Field
                 label="Billing interval"
@@ -442,11 +441,9 @@ export default function SignupPage() {
                     marginBottom: 4,
                   }}
                 >
-                  2-year contract selected
+                  Selected 2-year contract
                 </div>
-                This option is prepared in the signup UI. The backend checkout
-                connection should be added in the next file before enabling
-                payment for this contract.
+               Your selected 2-year contract will continue to secure checkout.
               </div>
             )}
 
