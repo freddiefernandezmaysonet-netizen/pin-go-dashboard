@@ -231,7 +231,7 @@ export default function SignupPage() {
               <FeatureItem text="Automatic access codes by reservation" />
               <FeatureItem text="NFC-enabled guest access workflows" />
               <FeatureItem text="PMS + lock + automation in one platform" />
-              <FeatureItem text="Simple pricing at $12.49 per lock / month" />
+              <FeatureItem text="Simple pricing at $14.99 per lock / month" />
             </div>
           </div>
 
@@ -414,10 +414,10 @@ export default function SignupPage() {
                     style={inputStyle}
                   >
                     <option value="monthly">
-                      Monthly - $12.49 / lock / month
+                      Monthly - $14.99 / lock / month
                     </option>
                     <option value="yearly">
-                      Yearly - $119.90 / lock / annual
+                      Yearly - $143.88 / lock / annual
                     </option>
                   </select>
                 }
