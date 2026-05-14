@@ -827,7 +827,9 @@ export default function LandingPage() {
     bookingType={bookingType}
   />
 </footer>
-     
+     </div>
+  );
+}    
 function FeatureCard({ title, text }: { title: string; text: string }) {
   return (
     <div style={styles.featureCard}>
