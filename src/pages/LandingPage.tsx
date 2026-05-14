@@ -765,70 +765,69 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
+   <footer style={styles.footer}>
+  <div style={styles.container}>
+    <div>{t.footerText}</div>
 
-      <footer style={styles.footer}>
-        <div style={styles.container}>
-          <div>{t.footerText}</div>
+    <div
+      style={{
+        marginTop: 8,
+        display: "flex",
+        gap: 12,
+        flexWrap: "wrap",
+        justifyContent: "center",
+      }}
+    >
+      <Link
+        to="/legal/terms"
+        style={{
+          color: "#64748b",
+          textDecoration: "none",
+        }}
+      >
+        Terms
+      </Link>
 
-        <div
-  style={{
-    marginTop: 8,
-    display: "flex",
-    gap: 12,
-    flexWrap: "wrap",
-    justifyContent: "center",
-  }}
->
-  <Link
-    to="/legal/terms"
-    style={{
-      color: "#64748b",
-      textDecoration: "none",
-    }}
-  >
-    Terms
-  </Link>
+      <Link
+        to="/legal/privacy"
+        style={{
+          color: "#64748b",
+          textDecoration: "none",
+        }}
+      >
+        Privacy
+      </Link>
 
-  <Link
-    to="/legal/privacy"
-    style={{
-      color: "#64748b",
-      textDecoration: "none",
-    }}
-  >
-    Privacy
-  </Link>
+      <Link
+        to="/legal/support-policy"
+        style={{
+          color: "#64748b",
+          textDecoration: "none",
+        }}
+      >
+        Support Policy
+      </Link>
 
-  <Link
-    to="/legal/support-policy"
-    style={{
-      color: "#64748b",
-      textDecoration: "none",
-    }}
-  >
-    Support Policy
-  </Link>
+      <Link
+        to="/legal/billing-policy"
+        style={{
+          color: "#64748b",
+          textDecoration: "none",
+        }}
+      >
+        Billing Policy
+      </Link>
+    </div>
+  </div>
 
-  <Link
-    to="/legal/billing-policy"
-    style={{
-      color: "#64748b",
-      textDecoration: "none",
-    }}
-  >
-    Billing Policy
-  </Link>
-</div>
-       <OnboardingBookingModal
-  isOpen={openBooking}
-  onClose={() => setOpenBooking(false)}
-  lang={lang}
-  bookingType={bookingType}
-/>
-          </div>
-  );
-}
-
+  <OnboardingBookingModal
+    isOpen={openBooking}
+    onClose={() => setOpenBooking(false)}
+    lang={lang}
+    bookingType={bookingType}
+  />
+</footer>
+     
 function FeatureCard({ title, text }: { title: string; text: string }) {
   return (
     <div style={styles.featureCard}>
