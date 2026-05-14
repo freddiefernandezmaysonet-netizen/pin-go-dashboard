@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
+type BillingInterval = "monthly" | "yearly";
+
+type ContractOption =
+  | "standard"
+  | "contract_24_locks"
+  | "contract_24_smart"
+  | "contract_24_complete";
+
 type SignupCheckoutResponse = {
   ok: boolean;
   url?: string;
@@ -18,7 +26,10 @@ export default function SignupPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [locks, setLocks] = useState(1);
-  const [billingInterval, setBillingInterval] = useState<"monthly" | "yearly">("monthly");
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>("monthly");
+  const [contractOption, setContractOption] =
+    useState<ContractOption>("standard");
   const [error, setError] = useState("");
   const [details, setDetails] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +81,7 @@ export default function SignupPage() {
         return;
       }
 
+      
       const safeLocks = Math.max(1, Number(locks || 1));
 
       const res = await fetch(`${API_BASE}/api/public/signup-checkout`, {
@@ -85,6 +97,7 @@ export default function SignupPage() {
           password,
           locks: safeLocks,
           billingInterval,
+          contractOption,
         }),
       });
 
@@ -334,7 +347,9 @@ export default function SignupPage() {
                 lineHeight: 1.7,
               }}
             >
-              <div style={{ fontWeight: 800, color: "#111827", marginBottom: 6 }}>
+              <div
+                style={{ fontWeight: 800, color: "#111827", marginBottom: 6 }}
+              >
                 Password requirements
               </div>
               <div>• At least 12 characters</div>
@@ -363,20 +378,77 @@ export default function SignupPage() {
             />
 
             <Field
-              label="Billing interval"
+              label="Subscription option"
               input={
                 <select
-                  value={billingInterval}
+                  value={contractOption}
                   onChange={(e) =>
-                    setBillingInterval(e.target.value as "monthly" | "yearly")
+                    setContractOption(e.target.value as ContractOption)
                   }
                   style={inputStyle}
                 >
-                  <option value="monthly">Monthly - $12.49 / lock / month</option>
-                  <option value="yearly">Yearly - $119.90 / lock /annual </option>
+                  <option value="standard">
+                    Current subscription - no contract
+                  </option>
+                  <option value="contract_24_locks">
+                    2-year contract - Locks subscription
+                  </option>
+                  <option value="contract_24_smart">
+                    2-year contract - Smart automation subscription
+                  </option>
+                  <option value="contract_24_complete">
+                    2-year contract - Complete package
+                  </option>
                 </select>
               }
             />
+
+            {contractOption === "standard" ? (
+              <Field
+                label="Billing interval"
+                input={
+                  <select
+                    value={billingInterval}
+                    onChange={(e) =>
+                      setBillingInterval(e.target.value as BillingInterval)
+                    }
+                    style={inputStyle}
+                  >
+                    <option value="monthly">
+                      Monthly - $12.49 / lock / month
+                    </option>
+                    <option value="yearly">
+                      Yearly - $119.90 / lock / annual
+                    </option>
+                  </select>
+                }
+              />
+            ) : (
+              <div
+                style={{
+                  borderRadius: 14,
+                  background: "#f8fafc",
+                  border: "1px solid #e5e7eb",
+                  color: "#475569",
+                  fontSize: 13,
+                  padding: "12px 14px",
+                  lineHeight: 1.6,
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 800,
+                    color: "#111827",
+                    marginBottom: 4,
+                  }}
+                >
+                  2-year contract selected
+                </div>
+                This option is prepared in the signup UI. The backend checkout
+                connection should be added in the next file before enabling
+                payment for this contract.
+              </div>
+            )}
 
             <div
               style={{
@@ -433,7 +505,9 @@ export default function SignupPage() {
                   : "0 10px 24px rgba(37, 99, 235, 0.22)",
               }}
             >
-              {submitting ? "Redirecting to checkout..." : "Continue to secure checkout"}
+              {submitting
+                ? "Redirecting to checkout..."
+                : "Continue to secure checkout"}
             </button>
           </form>
 
@@ -449,17 +523,26 @@ export default function SignupPage() {
             By continuing, you agree to our{" "}
             <Link
               to="/legal/terms"
-              style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
+              style={{
+                color: "#2563eb",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
             >
               Terms of Service
             </Link>{" "}
             and{" "}
             <Link
               to="/legal/privacy"
-              style={{ color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
+              style={{
+                color: "#2563eb",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
             >
               Privacy Policy
-            </Link>.
+            </Link>
+            .
           </div>
 
           <div
