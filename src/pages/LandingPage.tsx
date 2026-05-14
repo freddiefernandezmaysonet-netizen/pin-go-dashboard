@@ -19,7 +19,7 @@ export default function LandingPage() {
           heroSubtitle:
             "Convierte cada cerradura en una operación automática: menos llamadas, menos errores y una mejor experiencia para tus huéspedes.",
           heroPricePrefix: "Desde",
-          heroPriceLocks: "$12.49 / cerradura / mes",
+          heroPriceLocks: "$14.99 / cerradura / mes",
           heroPriceSmart: "$14.99 / propiedad inteligente / mes",
           heroCtaPrimary: "Empezar ahora",
           heroCtaSecondary: "Iniciar sesión",
@@ -53,7 +53,7 @@ export default function LandingPage() {
 
           sectionPricingTitle: "Pricing simple y claro",
           pricingLocksTitle: "🔐 Access Control",
-          pricingLocksPrice: "$12.49",
+          pricingLocksPrice: "$14.99",
           pricingLocksPeriod: "/ cerradura / mes",
           pricingLocksFeature1: "Códigos automáticos por reserva",
           pricingLocksFeature2: " Acceso tarjeta NFC",
@@ -73,9 +73,9 @@ export default function LandingPage() {
           pricingSmartCta: "Activar",
 
           exampleTitle: "Ejemplo de facturación",
-          exampleText1: "2 cerraduras = $24.98 / mes",
-          exampleText2: "1 propiedades inteligentes = $14.99 / mes",
-          exampleText3: "Total = $39.97 / mes",
+          exampleText1: "2 cerraduras = $29.98 / mes",
+          exampleText2: "1 propiedad inteligentes = $14.99 / mes",
+          exampleText3: "Total = $44.97 / mes",
 
           faqTitle: "Preguntas frecuentes",
           faq1Q: "¿Necesito hardware especial?",
@@ -102,7 +102,7 @@ export default function LandingPage() {
           heroSubtitle:
             "Turn every lock into an automated operation: fewer calls, fewer errors, and a better guest experience.",
           heroPricePrefix: "Starting at",
-          heroPriceLocks: "$12.49 / lock / month",
+          heroPriceLocks: "$14.99 / lock / month",
           heroPriceSmart: "$14.99 / smart property / month",
           heroCtaPrimary: "Get started",
           heroCtaSecondary: "Log in",
@@ -136,7 +136,7 @@ export default function LandingPage() {
 
           sectionPricingTitle: "Simple, transparent pricing",
           pricingLocksTitle: "🔐 Access Control",
-          pricingLocksPrice: "$12.49",
+          pricingLocksPrice: "$14.99",
           pricingLocksPeriod: "/ lock / month",
           pricingLocksFeature1: "Automatic reservation-based codes",
           pricingLocksFeature2: "NFC access",
@@ -156,9 +156,9 @@ export default function LandingPage() {
           pricingSmartCta: "Activate",
 
           exampleTitle: "Billing example",
-          exampleText1: "2 locks = $24.98 / month",
-          exampleText2: "1 smart properties = $14.99 / month",
-          exampleText3: "Total = $39.97 / month",
+          exampleText1: "2 locks = $29.98 / month",
+          exampleText2: "1 smart property = $14.99 / month",
+          exampleText3: "Total = $44.97 / month",
 
           faqTitle: "Frequently asked questions",
           faq1Q: "Do I need special hardware?",
@@ -269,8 +269,8 @@ export default function LandingPage() {
                 }}
               >
                 {lang === "es"
-                  ? "$30 por cerradura al año"
-                  : "$30 per lock per year"}
+                  ? "$36 por cerradura al año"
+                  : "$36 per lock per year"}
               </div>
 
               <div style={{ marginTop: 12 }}>
@@ -412,58 +412,335 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+       <section style={styles.section}>
+  <div style={styles.container}>
+    <h2 style={styles.sectionTitle}>{t.sectionPricingTitle}</h2>
 
-        <section style={styles.section}>
-          <div style={styles.container}>
-            <h2 style={styles.sectionTitle}>{t.sectionPricingTitle}</h2>
+    <div style={styles.pricingGrid}>
+      <div style={styles.pricingCard}>
+        <h3 style={styles.pricingTitle}>{t.pricingLocksTitle}</h3>
+        <div style={styles.pricingPrice}>{t.pricingLocksPrice}</div>
+        <div style={styles.pricingPeriod}>{t.pricingLocksPeriod}</div>
 
-            <div style={styles.pricingGrid}>
-              <div style={styles.pricingCard}>
-                <h3 style={styles.pricingTitle}>{t.pricingLocksTitle}</h3>
-                <div style={styles.pricingPrice}>{t.pricingLocksPrice}</div>
-                <div style={styles.pricingPeriod}>{t.pricingLocksPeriod}</div>
+        <ul style={styles.featureList}>
+          <li>{t.pricingLocksFeature1}</li>
+          <li>{t.pricingLocksFeature2}</li>
+          <li>{t.pricingLocksFeature3}</li>
+          <li>{t.pricingLocksFeature4}</li>
+          <li style={styles.highlightListItem}>{t.pricingLocksFeature5}</li>
+        </ul>
 
-                <ul style={styles.featureList}>
-                  <li>{t.pricingLocksFeature1}</li>
-                  <li>{t.pricingLocksFeature2}</li>
-                  <li>{t.pricingLocksFeature3}</li>
-                  <li>{t.pricingLocksFeature4}</li>
-                  <li style={styles.highlightListItem}>{t.pricingLocksFeature5}</li>
-                </ul>
+        <Link to="/signup" style={styles.cardButton}>
+          {t.pricingLocksCta}
+        </Link>
+      </div>
 
-                <Link to="/signup" style={styles.cardButton}>
-                  {t.pricingLocksCta}
-                </Link>
-              </div>
+      <div style={styles.pricingCard}>
+        <h3 style={styles.pricingTitle}>{t.pricingSmartTitle}</h3>
+        <div style={styles.pricingPrice}>{t.pricingSmartPrice}</div>
+        <div style={styles.pricingPeriod}>{t.pricingSmartPeriod}</div>
 
-              <div style={styles.pricingCard}>
-                <h3 style={styles.pricingTitle}>{t.pricingSmartTitle}</h3>
-                <div style={styles.pricingPrice}>{t.pricingSmartPrice}</div>
-                <div style={styles.pricingPeriod}>{t.pricingSmartPeriod}</div>
+        <ul style={styles.featureList}>
+          <li>{t.pricingSmartFeature1}</li>
+          <li>{t.pricingSmartFeature2}</li>
+          <li>{t.pricingSmartFeature3}</li>
+          <li>{t.pricingSmartFeature4}</li>
+          <li style={styles.highlightListItem}>{t.pricingSmartFeature5}</li>
+        </ul>
 
-                <ul style={styles.featureList}>
-                  <li>{t.pricingSmartFeature1}</li>
-                  <li>{t.pricingSmartFeature2}</li>
-                  <li>{t.pricingSmartFeature3}</li>
-                  <li>{t.pricingSmartFeature4}</li>
-                  <li style={styles.highlightListItem}>{t.pricingSmartFeature5}</li>
-                </ul>
+        <Link to="/signup" style={styles.cardButton}>
+          {t.pricingSmartCta}
+        </Link>
+      </div>
+    </div>
 
-                <Link to="/signup" style={styles.cardButton}>
-                  {t.pricingSmartCta}
-                </Link>
-              </div>
-            </div>
+    <div
+      style={{
+        marginTop: 70,
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          display: "inline-block",
+          background: "#0f172a",
+          color: "#fff",
+          padding: "10px 18px",
+          borderRadius: 999,
+          fontWeight: 700,
+          fontSize: 13,
+          marginBottom: 18,
+        }}
+      >
+        {lang === "es"
+          ? "CONTRATOS SMART PROPERTY • 24 MESES"
+          : "SMART PROPERTY CONTRACTS • 24 MONTHS"}
+      </div>
 
-            <div style={styles.exampleBox}>
-              <h3 style={styles.exampleTitle}>{t.exampleTitle}</h3>
-              <p style={styles.exampleText}>{t.exampleText1}</p>
-              <p style={styles.exampleText}>{t.exampleText2}</p>
-              <p style={styles.exampleTotal}>{t.exampleText3}</p>
-            </div>
-          </div>
-        </section>
+      <h3
+        style={{
+          fontSize: 34,
+          margin: 0,
+          fontWeight: 800,
+        }}
+      >
+        {lang === "es"
+          ? "Todo incluido. Sin compra inicial de equipos."
+          : "All-inclusive. No upfront hardware purchase."}
+      </h3>
 
+      <p
+        style={{
+          marginTop: 18,
+          color: "#475569",
+          maxWidth: 900,
+          marginInline: "auto",
+          lineHeight: 1.8,
+          fontSize: 17,
+        }}
+      >
+        {lang === "es"
+          ? "Los contratos de 2 años incluyen membresía, cerraduras inteligentes, automatización, garantía, reemplazo de equipos dañados, reemplazo de baterías y soporte técnico durante toda la vigencia del contrato."
+          : "2-year contracts include membership, smart locks, automation, warranty, damaged equipment replacement, battery replacement, and technical support during the full contract term."}
+      </p>
+    </div>
+
+    <div
+      style={{
+        ...styles.pricingGrid,
+        marginTop: 40,
+      }}
+    >
+      <div
+        style={{
+          ...styles.pricingCard,
+          border: "2px solid #cbd5e1",
+        }}
+      >
+        <h3 style={styles.pricingTitle}>
+          {lang === "es"
+            ? "🔐 1 Cerradura Incluida"
+            : "🔐 1 Lock Included"}
+        </h3>
+
+        <div style={styles.pricingPrice}>$24.99</div>
+
+        <div style={styles.pricingPeriod}>
+          {lang === "es"
+            ? "/ mes • contrato 24 meses"
+            : "/ month • 24-month contract"}
+        </div>
+
+        <ul style={styles.featureList}>
+          <li>
+            {lang === "es"
+              ? "Membresía de cerradura incluida"
+              : "Lock membership included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Cerradura inteligente incluida"
+              : "Smart lock included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Sin compra inicial de equipos"
+              : "No upfront hardware purchase"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Garantía de 2 años"
+              : "2-year warranty"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Reemplazo de batería"
+              : "Battery replacement"}
+          </li>
+
+          <li style={styles.highlightListItem}>
+            {lang === "es"
+              ? "Soporte técnico incluido"
+              : "Technical support included"}
+          </li>
+        </ul>
+
+        <Link to="/signup" style={styles.cardButton}>
+          {lang === "es" ? "Solicitar" : "Request"}
+        </Link>
+      </div>
+
+      <div
+        style={{
+          ...styles.pricingCard,
+          border: "2px solid #2563eb",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -12,
+            right: 20,
+            background: "#2563eb",
+            color: "#fff",
+            padding: "6px 12px",
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+        >
+          {lang === "es" ? "Más popular" : "Most popular"}
+        </div>
+
+        <h3 style={styles.pricingTitle}>
+          {lang === "es"
+            ? "🏠 1 Cerradura + 1 Smart Device"
+            : "🏠 1 Lock + 1 Smart Device"}
+        </h3>
+
+        <div style={styles.pricingPrice}>$49.99</div>
+
+        <div style={styles.pricingPeriod}>
+          {lang === "es"
+            ? "/ mes • contrato 24 meses"
+            : "/ month • 24-month contract"}
+        </div>
+
+        <ul style={styles.featureList}>
+          <li>
+            {lang === "es"
+              ? "Membresía incluida"
+              : "Membership included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "1 cerradura inteligente incluida"
+              : "1 smart lock included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "1 smart device incluido"
+              : "1 smart device included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Smart automation incluida"
+              : "Smart automation included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Reemplazo de equipo dañado"
+              : "Damaged equipment replacement"}
+          </li>
+
+          <li style={styles.highlightListItem}>
+            {lang === "es"
+              ? "Soporte técnico + garantía"
+              : "Technical support + warranty"}
+          </li>
+        </ul>
+
+        <Link to="/signup" style={styles.cardButton}>
+          {lang === "es" ? "Solicitar" : "Request"}
+        </Link>
+      </div>
+
+      <div
+        style={{
+          ...styles.pricingCard,
+          border: "2px solid #cbd5e1",
+        }}
+      >
+        <h3 style={styles.pricingTitle}>
+          {lang === "es"
+            ? "⚡ 1 Cerradura + 2 Smart Devices"
+            : "⚡ 1 Lock + 2 Smart Devices"}
+        </h3>
+
+        <div style={styles.pricingPrice}>$59.99</div>
+
+        <div style={styles.pricingPeriod}>
+          {lang === "es"
+            ? "/ mes • contrato 24 meses"
+            : "/ month • 24-month contract"}
+        </div>
+
+        <ul style={styles.featureList}>
+          <li>
+            {lang === "es"
+              ? "Membresía incluida"
+              : "Membership included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "1 cerradura inteligente incluida"
+              : "1 smart lock included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "2 smart devices incluidos"
+              : "2 smart devices included"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Automatización completa"
+              : "Full smart automation"}
+          </li>
+
+          <li>
+            {lang === "es"
+              ? "Reemplazo de baterías y equipos"
+              : "Battery and equipment replacement"}
+          </li>
+
+          <li style={styles.highlightListItem}>
+            {lang === "es"
+              ? "Operación inteligente completa"
+              : "Complete smart operation"}
+          </li>
+        </ul>
+
+        <Link to="/signup" style={styles.cardButton}>
+          {lang === "es" ? "Solicitar" : "Request"}
+        </Link>
+      </div>
+    </div>
+
+    <div style={styles.exampleBox}>
+      <h3 style={styles.exampleTitle}>{t.exampleTitle}</h3>
+      <p style={styles.exampleText}>
+        {lang === "es"
+          ? "2 cerraduras = $29.98 / mes"
+          : "2 locks = $29.98 / month"}
+      </p>
+
+      <p style={styles.exampleText}>
+        {lang === "es"
+          ? "1 propiedad inteligente = $14.99 / mes"
+          : "1 smart property = $14.99 / month"}
+      </p>
+
+      <p style={styles.exampleTotal}>
+        {lang === "es"
+          ? "Total = $44.97 / mes"
+          : "Total = $44.97 / month"}
+      </p>
+    </div>
+  </div>
+</section>
+       
         <section style={styles.sectionAlt}>
           <div style={styles.containerNarrow}>
             <h2 style={styles.sectionTitle}>{t.faqTitle}</h2>
