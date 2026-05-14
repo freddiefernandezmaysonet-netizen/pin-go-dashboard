@@ -76,7 +76,7 @@ export default function LoginPage() {
             <div>
               <div style={{ fontWeight: 800, fontSize: 22 }}>Pin&Go</div>
               <div style={{ fontSize: 13, color: "#94a3b8" }}>
-                Control total para propiedades inteligentes
+                Secure Access Made Simple
               </div>
             </div>
           </div>
