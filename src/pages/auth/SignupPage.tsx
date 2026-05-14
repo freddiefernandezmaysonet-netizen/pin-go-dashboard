@@ -516,32 +516,61 @@ export default function SignupPage() {
               textAlign: "center",
               lineHeight: 1.6,
             }}
-          >
-            By continuing, you agree to our{" "}
-            <Link
-              to="/legal/terms"
-              style={{
-                color: "#2563eb",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link
-              to="/legal/privacy"
-              style={{
-                color: "#2563eb",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Privacy Policy
-            </Link>
-            .
-          </div>
-
+         <div
+  style={{
+    marginTop: 12,
+    fontSize: 12,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 1.7,
+  }}
+>
+  By continuing, you agree to our{" "}
+  <Link
+    to="/legal/terms"
+    style={{
+      color: "#2563eb",
+      textDecoration: "none",
+      fontWeight: 600,
+    }}
+  >
+    Terms of Service
+  </Link>
+  ,{" "}
+  <Link
+    to="/legal/privacy"
+    style={{
+      color: "#2563eb",
+      textDecoration: "none",
+      fontWeight: 600,
+    }}
+  >
+    Privacy Policy
+  </Link>
+  ,{" "}
+  <Link
+    to="/legal/support-policy"
+    style={{
+      color: "#2563eb",
+      textDecoration: "none",
+      fontWeight: 600,
+    }}
+  >
+    Support Policy
+  </Link>{" "}
+  and{" "}
+  <Link
+    to="/legal/billing-policy"
+    style={{
+      color: "#2563eb",
+      textDecoration: "none",
+      fontWeight: 600,
+    }}
+  >
+    Billing Policy
+  </Link>
+  .
+</div>
           <div
             style={{
               marginTop: 18,

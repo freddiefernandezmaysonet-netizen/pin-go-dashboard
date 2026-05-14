@@ -34,6 +34,8 @@ import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
 import LandingPage from "../../pages/LandingPage";
 import TermsPage from "../../pages/TermsPage";
 import PrivacyPage from "../../pages/PrivacyPage";
+import SupportPolicyPage from "../../pages/SupportPolicyPage";
+import BillingPolicyPage from "../../pages/BillingPolicyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
 import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
 import AdminDemoCenterPage from "../../pages/admin/AdminDemoCenterPage";
@@ -59,6 +61,14 @@ export const router = createBrowserRouter([
   { 
     path: "/legal/privacy",
     element: <PrivacyPage /> 
+  },
+  { 
+  path: "/legal/support-policy",
+  element: <SupportPolicyPage /> 
+  },
+  { 
+  path: "/legal/billing-policy",
+  element: <BillingPolicyPage /> 
   },
   {
     path: "/signup/success",
