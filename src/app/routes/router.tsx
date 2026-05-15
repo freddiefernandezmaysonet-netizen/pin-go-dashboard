@@ -40,6 +40,16 @@ import OnboardingPage from "../../pages/OnboardingPage";
 import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
 import AdminDemoCenterPage from "../../pages/admin/AdminDemoCenterPage";
 
+function RootRedirect() {
+  const host = window.location.hostname;
+
+  if (host === "app.pin-ngo.com") {
+    return <Navigate to="/overview" replace />;
+  }
+
+  return <Navigate to="/home" replace />;
+}
+
 export const router = createBrowserRouter([
  
   {
@@ -48,7 +58,7 @@ export const router = createBrowserRouter([
   },
   {
   path: "/",
-  element: <Navigate to="/home" replace />,
+  element: <RootRedirect />,
   },
   {
     path: "/login",
