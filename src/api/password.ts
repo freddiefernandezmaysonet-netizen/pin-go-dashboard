@@ -6,6 +6,12 @@ export type ForgotPasswordResponse = {
   error?: string;
 };
 
+export type VerifyForgotPasswordCodeResponse = {
+  ok: boolean;
+  message?: string;
+  error?: string;
+};
+
 export type ResetPasswordResponse = {
   ok: boolean;
   message?: string;
@@ -22,6 +28,31 @@ export async function forgotPassword(email: string): Promise<ForgotPasswordRespo
     credentials: "include",
     body: JSON.stringify({
       email: String(email ?? "").trim().toLowerCase(),
+    }),
+  });
+
+  const data = await resp.json().catch(() => ({}));
+
+  return {
+    ok: !!data?.ok,
+    message: data?.message,
+    error: data?.error,
+  };
+}
+
+export async function verifyForgotPasswordCode(
+  email: string,
+  code: string
+): Promise<VerifyForgotPasswordCodeResponse> {
+  const resp = await fetch(`${API_BASE}/auth/forgot-password/verify-code`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      email: String(email ?? "").trim().toLowerCase(),
+      code: String(code ?? "").trim(),
     }),
   });
 
