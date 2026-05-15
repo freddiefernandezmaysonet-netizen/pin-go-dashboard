@@ -223,13 +223,13 @@ export default function LandingPage() {
               </button>
             </div>
 
-            <Link to="/login" style={styles.linkGhost}>
+            <a href="https://app.pin-ngo.com/login" style={styles.linkGhost}>
               {t.navLogin}
-            </Link>
+            </a>
 
-            <Link to="/signup" style={styles.linkPrimary}>
+            <a href="https://app.pin-ngo.com/signup" style={styles.linkPrimary}>
               {t.navSignup}
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -318,13 +318,13 @@ export default function LandingPage() {
             </div>
 
             <div style={styles.ctaRow}>
-              <Link to="/signup" style={styles.ctaPrimary}>
+              <a href="https://app.pin-ngo.com/signup" style={styles.ctaPrimary}>
                 {t.heroCtaPrimary}
-              </Link>
+              </a>
 
-              <Link to="/login" style={styles.ctaSecondary}>
+              <a href="https://app.pin-ngo.com/login" style={styles.ctaSecondary}>
                 {t.heroCtaSecondary}
-              </Link>
+              </a>
             </div>
 
             <p style={styles.heroTrust}>{t.heroTrust}</p>
@@ -430,9 +430,9 @@ export default function LandingPage() {
           <li style={styles.highlightListItem}>{t.pricingLocksFeature5}</li>
         </ul>
 
-        <Link to="/signup" style={styles.cardButton}>
+        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
           {t.pricingLocksCta}
-        </Link>
+        </a>
       </div>
 
       <div style={styles.pricingCard}>
@@ -448,9 +448,9 @@ export default function LandingPage() {
           <li style={styles.highlightListItem}>{t.pricingSmartFeature5}</li>
         </ul>
 
-        <Link to="/signup" style={styles.cardButton}>
+        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
           {t.pricingSmartCta}
-        </Link>
+        </a>
       </div>
     </div>
 
@@ -569,9 +569,9 @@ export default function LandingPage() {
           </li>
         </ul>
 
-        <Link to="/signup" style={styles.cardButton}>
+        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
           {lang === "es" ? "Activar" : "Request"}
-        </Link>
+        </a>
       </div>
 
       <div
@@ -649,9 +649,9 @@ export default function LandingPage() {
           </li>
         </ul>
 
-        <Link to="/signup" style={styles.cardButton}>
+        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
           {lang === "es" ? "Activar" : "Request"}
-        </Link>
+        </a>
       </div>
 
       <div
@@ -712,9 +712,9 @@ export default function LandingPage() {
           </li>
         </ul>
 
-        <Link to="/signup" style={styles.cardButton}>
+        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
           {lang === "es" ? "Activar" : "Request"}
-        </Link>
+        </a>
       </div>
     </div>
 
@@ -759,9 +759,9 @@ export default function LandingPage() {
             <h2 style={styles.finalTitle}>{t.finalTitle}</h2>
             <p style={styles.finalSubtitle}>{t.finalSubtitle}</p>
 
-            <Link to="/signup" style={styles.finalButton}>
+            <a href="https://app.pin-ngo.com/signup" style={styles.finalButton}>
               {t.finalCta}
-            </Link>
+            </a>
           </div>
         </section>
       </main>
