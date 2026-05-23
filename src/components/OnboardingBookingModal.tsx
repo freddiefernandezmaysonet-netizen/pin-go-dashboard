@@ -120,12 +120,15 @@ const t =
       setSelectedTime("");
 
       try {
-        const res = await fetch(
-          `${API_BASE}/api/onboarding/appointments/availability?date=${encodeURIComponent(
-            selectedDate
-          )}&timezone=${encodeURIComponent(timezone)}`
-        );
+  alert(
+    `DEBUG iOS\nselectedDate: ${selectedDate}\ntimezone: ${timezone}`
+  );
 
+  const res = await fetch(
+    `${API_BASE}/api/onboarding/appointments/availability?date=${encodeURIComponent(
+      selectedDate
+    )}&timezone=${encodeURIComponent(timezone)}`
+  );
         const data = await res.json();
 
         if (data.ok) {
