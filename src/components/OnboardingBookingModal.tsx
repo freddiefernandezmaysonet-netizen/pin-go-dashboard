@@ -264,7 +264,10 @@ const t =
                         ...(!slot.available ? styles.slotButtonDisabled : {}),
                       }}
                     >
-                      {slot.time}
+                     {new Date(`2000-01-01T${slot.time}`).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
                     </button>
                   ))}
                 </div>
