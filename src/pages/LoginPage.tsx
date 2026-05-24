@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { fetchProperties } from "../api/properties";
@@ -12,6 +12,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 900);
+    };
+
+    checkMobile();
+
+    window.addEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +60,7 @@ export default function LoginPage() {
           "radial-gradient(circle at top, rgba(37, 99, 235, 0.08), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
         display: "grid",
         placeItems: "center",
-        padding: 24,
+        padding: isMobile ? 16 : 24,
       }}
     >
       <div
@@ -53,19 +68,18 @@ export default function LoginPage() {
           width: "100%",
           maxWidth: 1000,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
           background: "white",
           borderRadius: 20,
           boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
           overflow: "hidden",
         }}
       >
-        {/* LEFT PANEL */}
         <div
           style={{
             background: "#0f172a",
             color: "white",
-            padding: 40,
+            padding: isMobile ? 26 : 40,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -81,24 +95,24 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <h1 style={{ marginTop: 30, fontSize: 36 }}>
+          <h1 style={{ marginTop: 30, fontSize: isMobile ? 30 : 36 }}>
             Welcome back
           </h1>
 
-          <p style={{ color: "#94a3b8", marginTop: 10 }}>
-            Manage access, automate operations, and deliver a seamless guest experience.
+          <p style={{ color: "#94a3b8", marginTop: 10, lineHeight: 1.7 }}>
+            Manage access, automate operations, and deliver a seamless guest
+            experience.
           </p>
 
-          <ul style={{ marginTop: 20, lineHeight: 1.8 }}>
+          <ul style={{ marginTop: 20, lineHeight: 1.8, paddingLeft: 20 }}>
             <li>✔ Access control & NFC</li>
             <li>✔ PMS integrations</li>
             <li>✔ Smart automation</li>
           </ul>
         </div>
 
-        {/* RIGHT PANEL */}
-        <div style={{ padding: 40 }}>
-          <h2>Sign in</h2>
+        <div style={{ padding: isMobile ? 26 : 40 }}>
+          <h2 style={{ marginTop: 0 }}>Sign in</h2>
 
           <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
             <input
@@ -129,8 +143,7 @@ export default function LoginPage() {
           </form>
 
           <div style={{ marginTop: 20 }}>
-            Don't have an account?{" "}
-            <Link to="/signup">Create one</Link>
+            Don&apos;t have an account? <Link to="/signup">Create one</Link>
           </div>
         </div>
       </div>
@@ -144,6 +157,7 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 12,
   border: "1px solid #d1d5db",
   padding: "0 14px",
+  boxSizing: "border-box",
 };
 
 const btn: React.CSSProperties = {
@@ -153,4 +167,5 @@ const btn: React.CSSProperties = {
   background: "#2563eb",
   color: "white",
   fontWeight: 700,
+  cursor: "pointer",
 };

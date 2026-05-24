@@ -36,7 +36,9 @@ export default function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedLock, setSelectedLock] = useState("");
   const [selectedSmartDevices, setSelectedSmartDevices] = useState("");
-  useEffect(() => {
+  const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
   const params = new URLSearchParams(window.location.search);
 
   const plan = params.get("plan");
@@ -55,6 +57,18 @@ export default function SignupPage() {
       setContractOption("contract_24_lock");
     }
   }
+
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 900);
+  };
+
+  checkMobile();
+
+  window.addEventListener("resize", checkMobile);
+
+  return () => {
+    window.removeEventListener("resize", checkMobile);
+  };
 }, []);
 
   function validatePassword(passwordValue: string, emailValue: string) {
@@ -162,7 +176,9 @@ export default function SignupPage() {
           width: "100%",
           maxWidth: 1080,
           display: "grid",
-          gridTemplateColumns: "1.05fr 0.95fr",
+          gridTemplateColumns: isMobile
+            ? "1fr"
+            : "1.05fr 0.95fr",
           background: "#ffffff",
           border: "1px solid #e5e7eb",
           borderRadius: 24,
@@ -175,11 +191,11 @@ export default function SignupPage() {
             background:
               "linear-gradient(180deg, #0f172a 0%, #111827 55%, #1e293b 100%)",
             color: "#ffffff",
-            padding: 36,
+            padding: isMobile ? 24 : 36,
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            minHeight: 720,
+            minHeight: isMobile ? "auto" : 720,
           }}
         >
           <div>
@@ -236,7 +252,7 @@ export default function SignupPage() {
                 style={{
                   marginTop: 18,
                   marginBottom: 14,
-                  fontSize: 42,
+                  fontSize: isMobile ? 32 : 42,
                   lineHeight: 1.05,
                   fontWeight: 800,
                 }}
@@ -278,7 +294,12 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <div style={{ padding: 32, background: "#ffffff" }}>
+        <div
+          style={{
+            padding: isMobile ? 22 : 32,
+            background: "#ffffff",
+          }}
+        >
           <div style={{ marginBottom: 24 }}>
             {selectedLock ? (
   <div
