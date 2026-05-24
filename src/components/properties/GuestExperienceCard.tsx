@@ -31,6 +31,7 @@ type Props = {
   value: DeviceExperienceMap;
   onEnabledChange: (value: boolean) => void;
   onChange: (deviceId: string, patch: Partial<DeviceExperienceConfig>) => void;
+  onRemoveDevice: (deviceId: string) => void;
   onApplyPreset: (preset: GuestExperiencePreset) => void;
   onSave: () => void;
 };
@@ -331,14 +332,16 @@ function PresetButton({
 
 export function GuestExperienceCard({
   enabled,
-  saving,
   devices,
   value,
+  saving,
   onEnabledChange,
   onChange,
+  onRemoveDevice,
   onApplyPreset,
   onSave,
 }: Props) {
+  
   const selectedCount = devices.length;
   const [selectedPreset, setSelectedPreset] = React.useState<GuestExperiencePreset | null>(null);
 
@@ -523,19 +526,25 @@ export function GuestExperienceCard({
                               color: "#374151",
                             }}
                           >
-                            <input
-                              type="checkbox"
-                              checked={config.enabled}
-                              onChange={(e) =>
-                                onChange(
-                                  device.id,
-                                  sanitizeConfig(device.category, {
-                                    ...config,
-                                    enabled: e.target.checked,
-                                  })
-                                )
+                           <input
+                             type="checkbox"
+                             checked={config.enabled}
+                             onChange={(e) => {
+                               if (!e.target.checked) {
+                                 onRemoveDevice(device.id);
+                                 return;
                               }
-                            />
+
+                              onChange(
+                                device.id,
+                                sanitizeConfig(device.category, {
+                                  ...config,
+                                  enabled: true,
+                                })
+                              );
+                            }}
+                          />
+
                             Active
                           </label>
                         </div>

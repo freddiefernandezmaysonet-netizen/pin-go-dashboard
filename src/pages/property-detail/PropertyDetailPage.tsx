@@ -1011,6 +1011,18 @@ export function PropertyDetailPage() {
     }));
   }
 
+function removeGuestExperienceDevice(deviceId: string) {
+  setGuestExperienceDevices((prev) => {
+    const next = { ...prev };
+    delete next[deviceId];
+    return next;
+  });
+
+  setSelectedDevices((prev) =>
+    prev.filter((id) => id !== deviceId)
+  );
+}
+
   function applyGuestExperiencePreset(preset: GuestExperiencePreset) {
     setGuestExperienceDevices((prev) => {
       const presetMap = applyGuestExperiencePresetToDevices(
@@ -1543,6 +1555,7 @@ export function PropertyDetailPage() {
                     value={guestExperienceDevices}
                     onEnabledChange={setGuestExperienceEnabled}
                     onChange={updateGuestExperienceDevice}
+                    onRemoveDevice={removeGuestExperienceDevice}
                     onApplyPreset={applyGuestExperiencePreset}
                     onSave={saveAutomation}
                   />
