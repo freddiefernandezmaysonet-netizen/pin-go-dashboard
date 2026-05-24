@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
@@ -33,6 +34,28 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [details, setDetails] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedLock, setSelectedLock] = useState("");
+  const [selectedSmartDevices, setSelectedSmartDevices] = useState("");
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const plan = params.get("plan");
+  const lock = params.get("lock");
+  const smartDevices = params.get("smartDevices");
+
+  if (plan === "haas") {
+    setSelectedLock(lock ?? "");
+    setSelectedSmartDevices(smartDevices ?? "");
+
+    if (smartDevices === "one") {
+      setContractOption("contract_24_lock_1_smart");
+    } else if (smartDevices === "two") {
+      setContractOption("contract_24_lock_2_smart");
+    } else {
+      setContractOption("contract_24_lock");
+    }
+  }
+}, []);
 
   function validatePassword(passwordValue: string, emailValue: string) {
     const trimmed = String(passwordValue ?? "").trim();
@@ -98,6 +121,13 @@ export default function SignupPage() {
           locks: safeLocks,
           billingInterval,
           contractOption,
+          haasSelection: selectedLock
+            ? {
+                 plan: "haas",
+                 lock: selectedLock,
+                 smartDevices: selectedSmartDevices,
+               }
+            : null,
         }),
       });
 
@@ -250,7 +280,64 @@ export default function SignupPage() {
 
         <div style={{ padding: 32, background: "#ffffff" }}>
           <div style={{ marginBottom: 24 }}>
-            <div
+            {selectedLock ? (
+  <div
+    style={{
+      marginTop: 18,
+      borderRadius: 16,
+      background: "#eff6ff",
+      border: "1px solid #bfdbfe",
+      padding: 16,
+    }}
+  >
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 800,
+        color: "#2563eb",
+        marginBottom: 8,
+        textTransform: "uppercase",
+      }}
+    >
+      Selected HaaS Configuration
+    </div>
+
+    <div
+      style={{
+        display: "grid",
+        gap: 6,
+        color: "#1e293b",
+        fontSize: 14,
+        lineHeight: 1.6,
+      }}
+    >
+      <div>
+        <strong>Lock:</strong>{" "}
+{selectedLock === "essential"
+  ? "Essential Lock"
+  : selectedLock === "pro"
+  ? "Pro Lock"
+  : selectedLock === "elite"
+  ? "Elite Lock"
+  : selectedLock}
+      </div>
+
+      <div>
+        <strong>Smart Devices:</strong>{" "}
+{selectedSmartDevices === "one"
+  ? "1 Smart Device"
+  : selectedSmartDevices === "two"
+  ? "2 Smart Devices"
+  : "No Smart Device"}
+      </div>
+
+      <div>
+        <strong>Plan:</strong> 24-Month Hardware as a Service
+      </div>
+    </div>
+  </div>
+) : null}
+             <div
               style={{
                 fontSize: 30,
                 fontWeight: 800,

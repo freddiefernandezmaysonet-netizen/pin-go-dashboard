@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import OnboardingBookingModal from "../components/OnboardingBookingModal";
+import HaasConfigurator from "../components/HaasConfigurator";
 
 type Lang = "es" | "en";
 
@@ -454,270 +455,11 @@ export default function LandingPage() {
       </div>
     </div>
 
-    <div
-      style={{
-        marginTop: 70,
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          display: "inline-block",
-          background: "#0f172a",
-          color: "#fff",
-          padding: "10px 18px",
-          borderRadius: 999,
-          fontWeight: 700,
-          fontSize: 13,
-          marginBottom: 18,
-        }}
-      >
-        {lang === "es"
-          ? "CONTRATOS SMART PROPERTY • 24 MESES"
-          : "SMART PROPERTY CONTRACTS • 24 MONTHS"}
-      </div>
-
-      <h3
-        style={{
-          fontSize: 34,
-          margin: 0,
-          fontWeight: 800,
-        }}
-      >
-        {lang === "es"
-          ? "Todo incluido. Sin compra inicial de equipos."
-          : "All-inclusive. No upfront hardware purchase."}
-      </h3>
-
-      <p
-        style={{
-          marginTop: 18,
-          color: "#475569",
-          maxWidth: 900,
-          marginInline: "auto",
-          lineHeight: 1.8,
-          fontSize: 17,
-        }}
-      >
-        {lang === "es"
-          ? "Los contratos de 2 años incluyen membresía, cerraduras inteligentes, automatización, garantía, reemplazo de equipos dañados, reemplazo de baterías y soporte técnico durante toda la vigencia del contrato."
-          : "2-year contracts include membership, smart locks, automation, warranty, damaged equipment replacement, battery replacement, and technical support during the full contract term."}
-      </p>
-    </div>
-
-    <div
-      style={{
-        ...styles.pricingGrid,
-        marginTop: 40,
-      }}
-    >
-      <div
-        style={{
-          ...styles.pricingCard,
-          border: "2px solid #cbd5e1",
-        }}
-      >
-        <h3 style={styles.pricingTitle}>
-          {lang === "es"
-            ? "🔐 1 Cerradura Incluida"
-            : "🔐 1 Lock Included"}
-        </h3>
-
-        <div style={styles.pricingPrice}>$24.99</div>
-
-        <div style={styles.pricingPeriod}>
-          {lang === "es"
-            ? "/ mes • contrato 24 meses"
-            : "/ month • 24-month contract"}
-        </div>
-
-        <ul style={styles.featureList}>
-          <li>
-            {lang === "es"
-              ? "Membresía de cerradura incluida"
-              : "Lock membership included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Cerradura inteligente incluida"
-              : "Smart lock included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Sin compra inicial de equipos"
-              : "No upfront hardware purchase"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Garantía de 2 años"
-              : "2-year warranty"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Reemplazo de batería"
-              : "Battery replacement"}
-          </li>
-
-          <li style={styles.highlightListItem}>
-            {lang === "es"
-              ? "Soporte técnico incluido"
-              : "Technical support included"}
-          </li>
-        </ul>
-
-        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
-          {lang === "es" ? "Activar" : "Request"}
-        </a>
-      </div>
-
-      <div
-        style={{
-          ...styles.pricingCard,
-          border: "2px solid #2563eb",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: -12,
-            right: 20,
-            background: "#2563eb",
-            color: "#fff",
-            padding: "6px 12px",
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          {lang === "es" ? "Más popular" : "Most popular"}
-        </div>
-
-        <h3 style={styles.pricingTitle}>
-          {lang === "es"
-            ? "🏠 1 Cerradura + 1 Smart Device"
-            : "🏠 1 Lock + 1 Smart Device"}
-        </h3>
-
-        <div style={styles.pricingPrice}>$49.99</div>
-
-        <div style={styles.pricingPeriod}>
-          {lang === "es"
-            ? "/ mes • contrato 24 meses"
-            : "/ month • 24-month contract"}
-        </div>
-
-        <ul style={styles.featureList}>
-          <li>
-            {lang === "es"
-              ? "Membresía incluida"
-              : "Membership included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "1 cerradura inteligente incluida"
-              : "1 smart lock included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "1 smart device incluido"
-              : "1 smart device included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Smart automation incluida"
-              : "Smart automation included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Reemplazo de equipo dañado"
-              : "Damaged equipment replacement"}
-          </li>
-
-          <li style={styles.highlightListItem}>
-            {lang === "es"
-              ? "Soporte técnico + garantía"
-              : "Technical support + warranty"}
-          </li>
-        </ul>
-
-        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
-          {lang === "es" ? "Activar" : "Request"}
-        </a>
-      </div>
-
-      <div
-        style={{
-          ...styles.pricingCard,
-          border: "2px solid #cbd5e1",
-        }}
-      >
-        <h3 style={styles.pricingTitle}>
-          {lang === "es"
-            ? "⚡ 1 Cerradura + 2 Smart Devices"
-            : "⚡ 1 Lock + 2 Smart Devices"}
-        </h3>
-
-        <div style={styles.pricingPrice}>$59.99</div>
-
-        <div style={styles.pricingPeriod}>
-          {lang === "es"
-            ? "/ mes • contrato 24 meses"
-            : "/ month • 24-month contract"}
-        </div>
-
-        <ul style={styles.featureList}>
-          <li>
-            {lang === "es"
-              ? "Membresía incluida"
-              : "Membership included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "1 cerradura inteligente incluida"
-              : "1 smart lock included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "2 smart devices incluidos"
-              : "2 smart devices included"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Automatización completa"
-              : "Full smart automation"}
-          </li>
-
-          <li>
-            {lang === "es"
-              ? "Reemplazo de baterías y equipos"
-              : "Battery and equipment replacement"}
-          </li>
-
-          <li style={styles.highlightListItem}>
-            {lang === "es"
-              ? "Operación inteligente completa"
-              : "Complete smart operation"}
-          </li>
-        </ul>
-
-        <a href="https://app.pin-ngo.com/signup" style={styles.cardButton}>
-          {lang === "es" ? "Activar" : "Request"}
-        </a>
-      </div>
-    </div>
-
+   <p style={styles.compatibilityNote}>
+  {lang === "es"
+    ? "Las funciones de automatización inteligente de Pin&Go requieren cerraduras inteligentes y hardware compatibles."
+    : "Pin&Go smart automation features require compatible smart locks and supported hardware integrations."}
+</p>
     <div style={styles.exampleBox}>
       <h3 style={styles.exampleTitle}>{t.exampleTitle}</h3>
       <p style={styles.exampleText}>
@@ -741,7 +483,8 @@ export default function LandingPage() {
   </div>
 </section>
        
-        <section style={styles.sectionAlt}>
+      <HaasConfigurator lang={lang} />  
+         <section style={styles.sectionAlt}>
           <div style={styles.containerNarrow}>
             <h2 style={styles.sectionTitle}>{t.faqTitle}</h2>
 
@@ -1090,19 +833,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 20,
     lineHeight: 1,
   },
-  pricingGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: 24,
-    marginTop: 40,
-  },
+ pricingGrid: {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 520px))",
+  gap: 24,
+  marginTop: 40,
+  justifyContent: "center",
+},
   pricingCard: {
-    background: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: 20,
-    padding: 28,
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
-  },
+  background: "#fff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 20,
+  padding: 32,
+  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
+  textAlign: "center",
+},
   pricingTitle: {
     fontSize: 24,
     margin: 0,
@@ -1122,6 +867,10 @@ const styles: Record<string, React.CSSProperties> = {
     paddingLeft: 18,
     color: "#334155",
     lineHeight: 1.9,
+    listStylePosition: "inside",
+    textAlign: "left",
+    maxWidth: 320,
+    marginInline: "auto",
   },
   highlightListItem: {
     color: "#16a34a",
@@ -1162,6 +911,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     color: "#0f172a",
   },
+  compatibilityNote: {
+  marginTop: 28,
+  marginBottom: 0,
+  textAlign: "center",
+  color: "#64748b",
+  fontSize: 13,
+  lineHeight: 1.7,
+  maxWidth: 760,
+  marginInline: "auto",
+},
   faqList: {
     marginTop: 36,
     display: "grid",
