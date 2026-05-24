@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Lang = "es" | "en";
 
@@ -78,7 +78,16 @@ const automationOptions = [
 export default function HaasConfigurator({ lang }: Props) {
   const [selectedLockId, setSelectedLockId] = useState("pro");
   const [selectedAutomationId, setSelectedAutomationId] = useState("one");
+  const [isMobile, setIsMobile] = useState(false);
 
+  useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 900);
+  check();
+
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+  
   const selectedLock = useMemo(
     () => locks.find((lock) => lock.id === selectedLockId) ?? locks[1],
     [selectedLockId]
@@ -122,7 +131,12 @@ export default function HaasConfigurator({ lang }: Props) {
               : "Hardware images are for illustrative purposes. Final hardware models may vary based on availability while maintaining equivalent functionality and service level."}
 </p>
 
-        <div style={styles.layout}>
+        <div
+          style={{
+            ...styles.layout,
+            gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 400px",
+          }}
+        >
           <div>
             <h3 style={styles.stepTitle}>
               {lang === "es" ? "1. Escoge tu cerradura" : "1. Choose your lock"}
@@ -233,7 +247,13 @@ export default function HaasConfigurator({ lang }: Props) {
             </div>
           </div>
 
-          <aside style={styles.summaryCard}>
+          <aside
+            style={{
+              ...styles.summaryCard,
+              position: isMobile ? "relative" : "sticky",
+              top: isMobile ? "auto" : 96,
+            }}
+          >
             <div style={styles.summaryLabel}>
               {lang === "es" ? "Tu plan mensual" : "Your monthly plan"}
             </div>
