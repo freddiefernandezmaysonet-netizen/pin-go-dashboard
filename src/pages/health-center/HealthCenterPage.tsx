@@ -157,7 +157,7 @@ function riskBadgeStyle(risk: string): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 110,
+    minWidth: 96,
     height: 30,
     padding: "0 10px",
     borderRadius: 999,
@@ -207,6 +207,7 @@ function TowerRow({ item }: { item: ControlTowerRow }) {
           alignItems: "flex-start",
           gap: 12,
           flexWrap: "wrap",
+          width: "100%",
         }}
       >
         <div>
@@ -424,6 +425,7 @@ export function HealthCenterPage() {
         <div
           style={{
             overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
             border: "1px solid #f3f4f6",
             borderRadius: 14,
             background: "#fff",
