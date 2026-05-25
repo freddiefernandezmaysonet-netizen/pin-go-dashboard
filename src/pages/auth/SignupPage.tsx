@@ -484,91 +484,79 @@ useEffect(() => {
                 />
               }
             />
-
-           <Field
-  label="Subscription option"
-  input={
-    <select
-      value={contractOption}
-      onChange={(e) =>
-        setContractOption(e.target.value as ContractOption)
-      }
-      style={inputStyle}
+            
+            {selectedLock ? (
+  <div
+    style={{
+      borderRadius: 14,
+      background: "#f8fafc",
+      border: "1px solid #e5e7eb",
+      color: "#475569",
+      fontSize: 13,
+      padding: "12px 14px",
+      lineHeight: 1.6,
+    }}
+  >
+    <div
+      style={{
+        fontWeight: 800,
+        color: "#111827",
+        marginBottom: 4,
+      }}
     >
-      <option value="standard">
-        Current subscription - no contract
-      </option>
-      <option value="contract_24_lock">
-        2-year contract - Includes 1 lock
-      </option>
-      <option value="contract_24_lock_1_smart">
-        2-year contract - Includes 1 lock + 1 smart device
-      </option>
-      <option value="contract_24_lock_2_smart">
-        2-year contract - Includes 1 lock + 2 smart devices
-      </option>
-    </select>
-  }
-/>
-            {contractOption === "standard" ? (
-              <Field
-                label="Billing interval"
-                input={
-                  <select
-                    value={billingInterval}
-                    onChange={(e) =>
-                      setBillingInterval(e.target.value as BillingInterval)
-                    }
-                    style={inputStyle}
-                  >
-                    <option value="monthly">
-                      Monthly - $14.99 / lock / month
-                    </option>
-                    <option value="yearly">
-                      Yearly - $143.88 / lock / annual
-                    </option>
-                  </select>
-                }
-              />
-            ) : (
-              <div
-                style={{
-                  borderRadius: 14,
-                  background: "#f8fafc",
-                  border: "1px solid #e5e7eb",
-                  color: "#475569",
-                  fontSize: 13,
-                  padding: "12px 14px",
-                  lineHeight: 1.6,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 800,
-                    color: "#111827",
-                    marginBottom: 4,
-                  }}
-                >
-                  Selected 2-year contract
-                </div>
-               Your selected 2-year contract will continue to secure checkout.
-              </div>
-            )}
+      Selected 2-year HaaS contract
+    </div>
+    Your Hardware as a Service configuration will continue to secure checkout.
+  </div>
+) : (
+  <>
+    <Field
+      label="Subscription option"
+      input={
+        <select
+          value={contractOption}
+          onChange={(e) =>
+            setContractOption(e.target.value as ContractOption)
+          }
+          style={inputStyle}
+        >
+          <option value="standard">Current subscription - no contract</option>
+        </select>
+      }
+    />
 
-            <div
-              style={{
-                borderRadius: 14,
-                background: "#eff6ff",
-                border: "1px solid #bfdbfe",
-                color: "#1d4ed8",
-                fontSize: 13,
-                padding: "12px 14px",
-                lineHeight: 1.6,
-              }}
-            >
-              Your account will be activated after secure checkout is completed.
-            </div>
+    <Field
+      label="Billing interval"
+      input={
+        <select
+          value={billingInterval}
+          onChange={(e) =>
+            setBillingInterval(e.target.value as BillingInterval)
+          }
+          style={inputStyle}
+        >
+          <option value="monthly">Monthly - $14.99 / lock / month</option>
+          <option value="yearly">Yearly - $143.88 / lock / annual</option>
+        </select>
+      }
+    />
+  </>
+)}
 
+<div
+  style={{
+    borderRadius: 14,
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
+    color: "#1d4ed8",
+    fontSize: 13,
+    padding: "12px 14px",
+    lineHeight: 1.6,
+  }}
+>
+  Your account will be activated after secure checkout is completed.
+</div>
+         
             {error ? (
               <div
                 style={{
