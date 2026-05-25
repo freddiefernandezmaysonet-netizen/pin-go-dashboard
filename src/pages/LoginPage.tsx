@@ -66,9 +66,9 @@ export default function LoginPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: 1000,
+          maxWidth: 520,
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+          gridTemplateColumns: "1fr",
           background: "white",
           borderRadius: 20,
           boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
@@ -86,8 +86,7 @@ export default function LoginPage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <img src="/pin-go-logo.png" style={{ width: 48 }} />
-            <div>
+             <div>
               <div style={{ fontWeight: 800, fontSize: 22 }}>Pin&Go</div>
               <div style={{ fontSize: 13, color: "#94a3b8" }}>
                 Secure Access Made Simple
@@ -96,7 +95,7 @@ export default function LoginPage() {
           </div>
 
           <h1 style={{ marginTop: 30, fontSize: isMobile ? 30 : 36 }}>
-            Welcome back
+            Welcome back 
           </h1>
 
           <p style={{ color: "#94a3b8", marginTop: 10, lineHeight: 1.7 }}>
