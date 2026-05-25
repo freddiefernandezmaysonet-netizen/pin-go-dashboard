@@ -150,7 +150,7 @@ export function OverviewPage() {
         style={{
           display: "grid",
           gap: 16,
-          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
         }}
       >
         <MetricCard
@@ -200,7 +200,9 @@ export function OverviewPage() {
             justifyContent: "space-between",
             marginBottom: 16,
             alignItems: "center",
-          }}
+            flexWrap: "wrap",
+            gap: 12,
+         }}
         >
           <div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>PMS Status</div>
@@ -228,7 +230,7 @@ export function OverviewPage() {
           style={{
             display: "grid",
             gap: 14,
-            gridTemplateColumns: "repeat(4, minmax(0,1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           }}
         >
           <SmallMetric

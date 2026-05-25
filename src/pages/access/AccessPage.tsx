@@ -132,7 +132,14 @@ export function AccessPage() {
           background: "#fff",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+  <table
+    style={{
+      width: "100%",
+      minWidth: 760,
+      borderCollapse: "collapse",
+    }}
+  >
           <thead style={{ background: "#f9fafb" }}>
             <tr>
               {["Type", "Name", "Property", "Lock / Card", "Start", "End", "Status"].map((h) => (
@@ -179,7 +186,8 @@ export function AccessPage() {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+       </div>
       </div>
     </div>
   );

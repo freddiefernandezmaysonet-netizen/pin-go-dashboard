@@ -197,7 +197,7 @@ export function PropertiesPage() {
           style={{
             display: "grid",
             gap: 16,
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           }}
         >
           {items.map((p) => (
@@ -251,7 +251,7 @@ export function PropertiesPage() {
                 style={{
                   display: "grid",
                   gap: 12,
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
                 }}
               >
                 <Metric label="Locks" value={p.locks} />
@@ -266,6 +266,7 @@ export function PropertiesPage() {
                   justifyContent: "flex-end",
                   gap: 10,
                   flexWrap: "wrap",
+                  width: "100%",
                 }}
               >
                 <button

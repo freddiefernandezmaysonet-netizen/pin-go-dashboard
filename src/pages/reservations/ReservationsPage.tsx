@@ -178,6 +178,7 @@ export function ReservationsPage() {
           gap: 12,
           alignItems: "center",
           flexWrap: "wrap",
+          width: "100%",
           border: "1px solid #e5e7eb",
           borderRadius: 16,
           padding: 12,
@@ -259,8 +260,19 @@ export function ReservationsPage() {
           boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
         }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div
+  style={{
+    overflowX: "auto",
+    WebkitOverflowScrolling: "touch",
+  }}
+>
+          <table
+  style={{
+    width: "100%",
+    minWidth: 980,
+    borderCollapse: "collapse",
+  }}
+>
             <thead style={{ background: "#f9fafb" }}>
               <tr>
                 {["Guest", "Property", "Check-in", "Check-out", "Operational", "Payment", "Source"].map(
