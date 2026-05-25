@@ -86,8 +86,21 @@ export default function LoginPage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-             <div>
-              <div style={{ fontWeight: 800, fontSize: 22 }}>Pin&Go</div>
+  <img
+    src="/pin-go-logo.png"
+    alt="Pin&Go logo"
+    style={{
+      width: 48,
+      height: 48,
+      objectFit: "contain",
+      borderRadius: 10,
+      background: "rgba(255,255,255,0.08)",
+      padding: 6,
+    }}
+  />
+
+  <div>
+    <div style={{ fontWeight: 800, fontSize: 22 }}>Pin&Go</div>
               <div style={{ fontSize: 13, color: "#94a3b8" }}>
                 Secure Access Made Simple
               </div>
