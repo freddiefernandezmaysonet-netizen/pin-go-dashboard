@@ -374,8 +374,8 @@ export function LocksPage() {
               loadTtlockStatus();
             }}
             style={{
-              height: 40,
-              padding: "0 14px",
+              minHeight: 40,
+              padding: "10px 14px",
               borderRadius: 10,
               border: "1px solid #d1d5db",
               background: "#ffffff",
@@ -391,8 +391,8 @@ export function LocksPage() {
             type="button"
             onClick={() => navigate("/locks/nfc-sync")}
             style={{
-              height: 40,
-              padding: "0 14px",
+              minHeight: 40,
+              padding: "10px 14px",
               borderRadius: 10,
               border: "1px solid #111827",
               background: "#111827",
@@ -474,8 +474,8 @@ export function LocksPage() {
               type="button"
               onClick={() => navigate("/integrations/ttlock")}
               style={{
-                height: 40,
-                padding: "0 14px",
+                minHeight: 40,
+                padding: "10px 14px",
                 borderRadius: 10,
                 border: "1px solid #bbf7d0",
                 background: "#ffffff",
@@ -502,6 +502,7 @@ export function LocksPage() {
             alignItems: "center",
             gap: 12,
             flexWrap: "wrap",
+            width: "100%",
           }}
         >
           <div>
@@ -516,8 +517,8 @@ export function LocksPage() {
               type="button"
               onClick={() => navigate("/locks/nfc-sync")}
               style={{
-                height: 40,
-                padding: "0 14px",
+                minHeight: 40,
+                padding: "10px 14px",
                 borderRadius: 10,
                 border: "1px solid #d1d5db",
                 background: "#ffffff",
@@ -533,8 +534,8 @@ export function LocksPage() {
               type="button"
               onClick={() => navigate("/integrations/ttlock")}
               style={{
-                height: 40,
-                padding: "0 14px",
+                minHeight: 40,
+                padding: "10px 14px",
                 borderRadius: 10,
                 border: "1px solid #111827",
                 background: "#111827",
@@ -585,14 +586,17 @@ export function LocksPage() {
               gap: 12,
               flexWrap: "wrap",
               alignItems: "center",
-            }}
+              width: "100%",
+           }}
           >
             <select
               value={propertyFilter}
               onChange={(e) => setPropertyFilter(e.target.value)}
               style={{
                 height: 40,
+                width: "100%",
                 minWidth: 220,
+                maxWidth: 320,
                 padding: "0 12px",
                 borderRadius: 10,
                 border: "1px solid #d1d5db",
@@ -614,7 +618,9 @@ export function LocksPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
                 height: 40,
+                width: "100%",
                 minWidth: 180,
+                maxWidth: 320,
                 padding: "0 12px",
                 borderRadius: 10,
                 border: "1px solid #d1d5db",
@@ -629,10 +635,16 @@ export function LocksPage() {
             </select>
           </div>
 
-          <div style={{ overflowX: "auto" }}>
+          <div
+            style={{
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
             <table
               style={{
                 width: "100%",
+                minWidth: 980,
                 borderCollapse: "collapse",
                 background: "#fff",
                 border: "1px solid #e5e7eb",

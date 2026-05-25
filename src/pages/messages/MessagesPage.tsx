@@ -220,7 +220,7 @@ export default function MessagesPage() {
         style={{
           display: "grid",
           gap: 16,
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
         }}
       >
         <Stat title="Sent" value={stats.sent} />
@@ -240,7 +240,8 @@ export default function MessagesPage() {
             style={{
               display: "grid",
               gap: 14,
-              maxWidth: 320,
+              width: "100%",
+              maxWidth: 420,
             }}
           >
             <div style={{ display: "grid", gap: 8 }}>
@@ -296,7 +297,13 @@ export default function MessagesPage() {
       <SectionCard
         title={`Message Log (${data.length})`}
         right={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
             {hasActiveFilters ? (
               <button
                 onClick={() => {
@@ -335,6 +342,7 @@ export default function MessagesPage() {
           <div
             style={{
               overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
               border: "1px solid #e5e7eb",
               borderRadius: 14,
             }}
@@ -425,8 +433,8 @@ const selectStyle: React.CSSProperties = {
 };
 
 const refreshButton: React.CSSProperties = {
-  height: 40,
-  padding: "0 14px",
+  minHeight: 40,
+  padding: "10px 14px",
   borderRadius: 12,
   border: "1px solid #111827",
   background: "#111827",
@@ -436,8 +444,8 @@ const refreshButton: React.CSSProperties = {
 };
 
 const clearButton: React.CSSProperties = {
-  height: 40,
-  padding: "0 14px",
+  minHeight: 40,
+  padding: "10px 14px",
   borderRadius: 12,
   border: "1px solid #d1d5db",
   background: "#fff",

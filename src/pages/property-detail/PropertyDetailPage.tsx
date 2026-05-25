@@ -1203,7 +1203,7 @@ function removeGuestExperienceDevice(deviceId: string) {
           style={{
             display: "grid",
             gap: 16,
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           }}
         >
           <Stat title="Locks" value={item.locks} />
@@ -1212,7 +1212,14 @@ function removeGuestExperienceDevice(deviceId: string) {
           <Stat title="Active Access" value={accessCount} />
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div
+  style={{
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+    width: "100%",
+  }}
+>
           <TabButton active={tab === "overview"} onClick={() => setTab("overview")} label="Overview" />
           <TabButton active={tab === "locks"} onClick={() => setTab("locks")} label={`Locks (${locks.length})`} />
           <TabButton
@@ -1229,7 +1236,7 @@ function removeGuestExperienceDevice(deviceId: string) {
               style={{
                 display: "grid",
                 gap: 16,
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
                 alignItems: "start",
               }}
             >
@@ -1303,9 +1310,9 @@ function removeGuestExperienceDevice(deviceId: string) {
 
                   <div
                     style={{
-                      display: "grid",
-                      gap: 14,
-                      gridTemplateColumns: "1fr 1fr",
+                     display: "grid",
+                     gap: 14,
+                     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
                     }}
                   >
                     <div style={{ display: "grid", gap: 8 }}>
@@ -1565,8 +1572,8 @@ function removeGuestExperienceDevice(deviceId: string) {
                       onClick={saveAutomation}
                       disabled={savingAutomation}
                       style={{
-                        height: 42,
-                        padding: "0 16px",
+                        minHeight: 42,
+                        padding: "10px 16px",
                         borderRadius: 12,
                         border: "1px solid #111827",
                         background: savingAutomation ? "#9ca3af" : "#111827",
@@ -1594,8 +1601,8 @@ function removeGuestExperienceDevice(deviceId: string) {
                 }}
                 disabled={hasActiveLock}
                 style={{
-                  height: 40,
-                  padding: "0 14px",
+                  minHeight: 40,
+                  padding: "10px 14px",
                   borderRadius: 12,
                   border: "1px solid #111827",
                   background: hasActiveLock ? "#e5e7eb" : "#111827",
@@ -1637,7 +1644,9 @@ function removeGuestExperienceDevice(deviceId: string) {
                       display: "flex",
                       justifyContent: "space-between",
                       gap: 12,
-                    }}
+                      flexWrap: "wrap",
+                      alignItems: "flex-start",
+                   }}
                   >
                     <div>
                       <div style={{ fontWeight: 600 }}>{l.name ?? "TTLock Lock"}</div>

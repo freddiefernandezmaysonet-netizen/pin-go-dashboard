@@ -503,8 +503,8 @@ export function StaffMembersPage() {
             type="submit"
             disabled={saving}
             style={{
-              height: 44,
-              padding: "0 16px",
+              minHeight: 44,
+              padding: "10px 16px",
               borderRadius: 12,
               border: "none",
               background: "#2563eb",
@@ -527,8 +527,8 @@ export function StaffMembersPage() {
               type="button"
               onClick={resetForm}
               style={{
-                height: 44,
-                padding: "0 16px",
+                minHeight: 44,
+                padding: "10px 16px",
                 borderRadius: 12,
                 border: "1px solid #d1d5db",
                 background: "#fff",
@@ -563,7 +563,7 @@ export function StaffMembersPage() {
           style={{
             display: "grid",
             gap: 16,
-            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           }}
         >
           {items.map((s) => {
@@ -590,7 +590,8 @@ export function StaffMembersPage() {
                     justifyContent: "space-between",
                     gap: 12,
                     alignItems: "flex-start",
-                  }}
+                    flexWrap: "wrap",
+                 }}
                 >
                   <div>
                     <div
@@ -627,7 +628,7 @@ export function StaffMembersPage() {
                   style={{
                     display: "grid",
                     gap: 12,
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                   }}
                 >
                   <Metric label="Phone" value={s.phoneE164 ?? "-"} />
@@ -678,7 +679,7 @@ export function StaffMembersPage() {
                           key={p.id}
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "1fr 130px 90px",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
                             gap: 8,
                             alignItems: "center",
                           }}
@@ -783,8 +784,8 @@ export function StaffMembersPage() {
                     onClick={() => handleEdit(s)}
                     disabled={!s.isActive}
                     style={{
-                      height: 38,
-                      padding: "0 14px",
+                      minHeight: 38,
+                      padding: "10px 14px",
                       borderRadius: 10,
                       border: "1px solid #d1d5db",
                       background: "#fff",
@@ -803,8 +804,8 @@ export function StaffMembersPage() {
                     onClick={() => handleArchive(s.id)}
                     disabled={!s.isActive || archivingId === s.id}
                     style={{
-                      height: 38,
-                      padding: "0 14px",
+                      minHeight: 38,
+                      padding: "10px 14px",
                       borderRadius: 10,
                       border: "1px solid #fecaca",
                       background: "#fff",

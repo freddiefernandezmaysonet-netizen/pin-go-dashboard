@@ -276,7 +276,7 @@ if (!resp.ok || !data?.ok) {
             style={{
               display: "grid",
               gap: 16,
-              gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             }}
           >
             <Stat title="Executions" value={items.length} />
@@ -290,7 +290,7 @@ if (!resp.ok || !data?.ok) {
             style={{
               display: "grid",
               gap: 16,
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
               alignItems: "start",
             }}
           >
@@ -345,8 +345,8 @@ if (!resp.ok || !data?.ok) {
                 <button
                   onClick={() => setPropertyId("")}
                   style={{
-                    height: 40,
-                    padding: "0 14px",
+                   minHeight: 40,
+                   padding: "10px 14px",
                     borderRadius: 12,
                     border: "1px solid #d1d5db",
                     background: "#fff",
@@ -389,7 +389,12 @@ if (!resp.ok || !data?.ok) {
                 No automation executions found for the selected filter.
               </div>
             ) : (
-              <div style={{ overflowX: "auto" }}>
+              <div
+                style={{
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
                 <table
                   style={{
                     width: "100%",
