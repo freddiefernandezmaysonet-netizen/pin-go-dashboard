@@ -52,7 +52,7 @@ export default function LandingPage() {
           pain3: "Check-ins manuales y operaciones desorganizadas",
           pain4: "Múltiples herramientas que no se comunican entre sí",
 
-          sectionPricingTitle: "Pricing simple y claro",
+          sectionPricingTitle: "Tarifas simples diseñadas para ti",
           pricingLocksTitle: "🔐 Access Control",
           pricingLocksPrice: "$14.99",
           pricingLocksPeriod: "/ cerradura / mes",
@@ -135,7 +135,7 @@ export default function LandingPage() {
           pain3: "Manual check-ins and disorganized operations",
           pain4: "Multiple disconnected tools",
 
-          sectionPricingTitle: "Simple, transparent pricing",
+          sectionPricingTitle: "Simple rates designed for you",
           pricingLocksTitle: "🔐 Access Control",
           pricingLocksPrice: "$14.99",
           pricingLocksPeriod: "/ lock / month",

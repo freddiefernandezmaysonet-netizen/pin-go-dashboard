@@ -26,8 +26,8 @@ const locks = [
     badgeEn: "Most popular",
     price: 39.99,
     image: "/locks/pro-lock.png.jpg",
-    descEs: "Diseñada para mayor uso, rotación frecuente y operación profesional.",
-    descEn: "Built for higher usage, frequent turnover, and professional operations.",
+    descEs: "Diseñada para mayor uso, mejor elegancia   y operación profesional.",
+    descEn: "Built for higher usage, best elegance, and professional operations.",
   },
   {
     id: "elite",
@@ -37,7 +37,7 @@ const locks = [
     badgeEn: "Premium",
     price: 49.99,
     image: "/locks/elite-lock.png.jpg",
-    descEs: "Opción premium para propiedades de alto valor y experiencia avanzada.",
+    descEs: "Opción de primera calidad para propiedades de alto valor y experiencia avanzada.",
     descEn: "Premium option for high-value properties and advanced guest experience.",
   },
 ];
@@ -45,7 +45,7 @@ const locks = [
 const automationOptions = [
   {
     id: "none",
-    labelEs: "Sin Smart Device",
+    labelEs: "Sin Automatización",
     labelEn: "No Smart Device",
     price: 0,
     descEs: "Mantén solo el control de acceso inteligente con cerradura y plataforma.",
@@ -55,21 +55,21 @@ const automationOptions = [
   },
   {
     id: "one",
-    labelEs: "1 Smart Device",
+    labelEs: "1 Dispositivo ",
     labelEn: "1 Smart Device",
     price: 24.99,
-    descEs: "Automatiza aire acondicionado, luces o un dispositivo inteligente clave.",
-    descEn: "Automate AC, lights, or one key smart device.",
+    descEs: "Automatiza aire acondicionado y disfruta de mayor control energético.",
+    descEn: "Automate your air conditioning and enjoy greater energy control.",
     featuresEs: ["Automatización inteligente", "Ahorro operativo", "Mejor experiencia"],
     featuresEn: ["Smart automation", "Operational savings", "Better experience"],
   },
   {
     id: "two",
-    labelEs: "2 Smart Devices",
+    labelEs: "2 Dispositivos",
     labelEn: "2 Smart Devices",
     price: 39.99,
-    descEs: "Crea una experiencia más completa automatizando múltiples dispositivos.",
-    descEn: "Create a more complete experience by automating multiple devices.",
+    descEs: "Crea una experiencia más completa automatizando aire acondicionado y alarma.",
+    descEn: "Create a more complete experience by automating air conditioning and alarm.",
     featuresEs: ["Control ampliado", "Mayor eficiencia", "Operación más completa"],
     featuresEn: ["Expanded control", "Higher efficiency", "More complete operation"],
   },
@@ -109,7 +109,7 @@ export default function HaasConfigurator({ lang }: Props) {
         <div style={styles.header}>
           <div style={styles.badge}>
             {lang === "es"
-              ? "HARDWARE AS A SERVICE • CONTRATO 24 MESES"
+              ? "HARDWARE COMO SERVICIO • CONTRATO 24 MESES"
               : "HARDWARE AS A SERVICE • 24-MONTH AGREEMENT"}
           </div>
 
@@ -193,7 +193,7 @@ export default function HaasConfigurator({ lang }: Props) {
 
             <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>
               {lang === "es"
-                ? "2. Añade Smart Automation"
+                ? "2. Añade Automatización Inteligente"
                 : "2. Add Smart Automation"}
             </h3>
 
