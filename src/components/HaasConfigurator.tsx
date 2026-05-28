@@ -348,7 +348,20 @@ export default function HaasConfigurator({ lang }: Props) {
     </span>
   </div>
 </div>
-            <a href={signupUrl} style={styles.cta}>
+            <div style={styles.deploymentNotice}>
+  {lang === "es"
+    ? "Los planes HaaS requieren coordinación previa con el equipo de Pin&Go para confirmar disponibilidad de hardware, instalación y despliegue antes de la activación final."
+    : "HaaS plans require coordination with the Pin&Go team to confirm hardware availability, installation scheduling, and deployment logistics before final activation."}
+
+  <div style={{ marginTop: 10 }}>
+    <a href="/book-demo" style={styles.deploymentLink}>
+      {lang === "es"
+        ? "Agendar llamada de coordinación"
+        : "Schedule a coordination call"}
+    </a>
+  </div>
+</div>
+              <a href={signupUrl} style={styles.cta}>
               {lang === "es" ? "Solicitar este plan" : "Request this plan"}
             </a>
           </aside>
@@ -586,8 +599,27 @@ layout: {
   borderRadius: 14,
   fontSize: 13,
   lineHeight: 1.6,
+  },
+ deploymentNotice: {
+  marginTop: 18,
+  marginBottom: 18,
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.12)",
+  color: "#dbeafe",
+  padding: "14px 16px",
+  borderRadius: 16,
+  fontSize: 13,
+  lineHeight: 1.7,
 },
- includedGrid: {
+
+deploymentLink: {
+  color: "#ffffff",
+  fontWeight: 900,
+  textDecoration: "underline",
+  textUnderlineOffset: 3,
+},
+
+includedGrid: {
   marginTop: 24,
   display: "grid",
   gap: 12,
