@@ -82,8 +82,18 @@ export default function PublicPropertyDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [availabilityStatus, setAvailabilityStatus] = useState<
+    "idle" | "available" | "unavailable"
+  >("idle");
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(
+    null
+  );
 
+const [adults, setAdults] = useState(1);
+const [children, setChildren] = useState(0);
+
+  const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
   const nightlyRate = Number(property?.baseNightlyRate ?? 0);
@@ -91,7 +101,12 @@ export default function PublicPropertyDetailPage() {
   const subtotal = nights * nightlyRate;
   const total = subtotal + cleaningFee;
 
-  const location = [property?.address1, property?.city, property?.region, property?.country]
+  const location = [
+    property?.address1,
+    property?.city,
+    property?.region,
+    property?.country,
+  ]
     .filter(Boolean)
     .join(", ");
 
@@ -136,6 +151,86 @@ export default function PublicPropertyDetailPage() {
     };
   }, [organizationSlug, propertySlug]);
 
+  useEffect(() => {
+    setAvailabilityStatus("idle");
+    setAvailabilityMessage(null);
+  }, [checkIn, checkOut]);
+
+  async function handleCheckAvailability() {
+    try {
+      setCheckingAvailability(true);
+      setAvailabilityStatus("idle");
+      setAvailabilityMessage(null);
+      setBookingError(null);
+
+      if (!property) {
+        throw new Error("Property not loaded");
+      }
+
+      if (!checkIn || !checkOut) {
+        throw new Error("Please select check-in and check-out dates.");
+      }
+
+      if (nights <= 0) {
+        throw new Error("Check-out must be after check-in.");
+      }
+
+      if (nights < (property.minimumNights ?? 1)) {
+        throw new Error(
+          `Minimum stay is ${property.minimumNights ?? 1} night(s).`
+        );
+      }
+
+      if (property.maximumNights && nights > property.maximumNights) {
+        throw new Error(`Maximum stay is ${property.maximumNights} night(s).`);
+      }
+
+const totalGuests = adults + children;
+
+if (totalGuests < 1) {
+  throw new Error("Please select at least one guest.");
+}
+
+if (property.maxGuests && totalGuests > property.maxGuests) {
+  throw new Error(`Maximum guests allowed is ${property.maxGuests}.`);
+}
+
+      const res = await fetch(`${API_BASE}/api/public-booking/check-availability`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          propertyId: property.id,
+          checkIn,
+          checkOut,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Unable to check availability.");
+      }
+
+      if (data.available) {
+        setAvailabilityStatus("available");
+        setAvailabilityMessage("Available for the selected dates.");
+        return;
+      }
+
+      setAvailabilityStatus("unavailable");
+      setAvailabilityMessage(
+        "This property is not available for the selected dates."
+      );
+    } catch (err: any) {
+      setAvailabilityStatus("unavailable");
+      setAvailabilityMessage(err?.message || "Unable to check availability.");
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }
+
   async function handleReserve(e: React.FormEvent) {
     e.preventDefault();
 
@@ -147,6 +242,10 @@ export default function PublicPropertyDetailPage() {
         throw new Error("Property not loaded");
       }
 
+      if (availabilityStatus !== "available") {
+        throw new Error("Please check availability before reserving.");
+      }
+
       if (!checkIn || !checkOut || !guestName.trim() || !guestEmail.trim()) {
         throw new Error("Please complete check-in, check-out, name and email.");
       }
@@ -155,13 +254,16 @@ export default function PublicPropertyDetailPage() {
         throw new Error("Check-out must be after check-in.");
       }
 
-if (nights < (property.minimumNights ?? 1)) {
-  throw new Error(`Minimum stay is ${property.minimumNights ?? 1} night(s).`);
-}
+      if (nights < (property.minimumNights ?? 1)) {
+        throw new Error(
+          `Minimum stay is ${property.minimumNights ?? 1} night(s).`
+        );
+      }
 
-if (property.maximumNights && nights > property.maximumNights) {
-  throw new Error(`Maximum stay is ${property.maximumNights} night(s).`);
-}
+      if (property.maximumNights && nights > property.maximumNights) {
+        throw new Error(`Maximum stay is ${property.maximumNights} night(s).`);
+      }
+
       const res = await fetch(`${API_BASE}/api/public-booking/create-checkout`, {
         method: "POST",
         headers: {
@@ -172,6 +274,8 @@ if (property.maximumNights && nights > property.maximumNights) {
           checkIn,
           checkOut,
           guestName: guestName.trim(),
+          adults,
+          children,
           guestEmail: guestEmail.trim(),
           guestPhone: guestPhone.trim(),
         }),
@@ -222,9 +326,7 @@ if (property.maximumNights && nights > property.maximumNights) {
         ) : pageError || !property ? (
           <section style={styles.sectionAlt}>
             <div style={styles.container}>
-              <div style={styles.errorBox}>
-                {pageError || "Property not found"}
-              </div>
+              <div style={styles.errorBox}>{pageError || "Property not found"}</div>
             </div>
           </section>
         ) : (
@@ -289,16 +391,16 @@ if (property.maximumNights && nights > property.maximumNights) {
                       ) : null}
 
                       <div style={styles.infoItem}>
-  <strong>Minimum stay</strong>
-  <span>{property.minimumNights ?? 1} night(s)</span>
-</div>
+                        <strong>Minimum stay</strong>
+                        <span>{property.minimumNights ?? 1} night(s)</span>
+                      </div>
 
-{property.maximumNights ? (
-  <div style={styles.infoItem}>
-    <strong>Maximum stay</strong>
-    <span>{property.maximumNights} night(s)</span>
-  </div>
-) : null}
+                      {property.maximumNights ? (
+                        <div style={styles.infoItem}>
+                          <strong>Maximum stay</strong>
+                          <span>{property.maximumNights} night(s)</span>
+                        </div>
+                      ) : null}
 
                       <div style={styles.infoItem}>
                         <strong>Nightly rate</strong>
@@ -335,6 +437,56 @@ if (property.maximumNights && nights > property.maximumNights) {
                       />
                     </label>
 
+<label style={styles.field}>
+  <span>Adults</span>
+  <input
+    type="number"
+    min={1}
+    value={adults}
+    onChange={(e) => setAdults(Number(e.target.value))}
+    style={styles.input}
+  />
+</label>
+
+<label style={styles.field}>
+  <span>Children</span>
+  <input
+    type="number"
+    min={0}
+    value={children}
+    onChange={(e) => setChildren(Number(e.target.value))}
+    style={styles.input}
+  />
+</label>
+
+                    <button
+                      type="button"
+                      onClick={handleCheckAvailability}
+                      disabled={checkingAvailability || !checkIn || !checkOut}
+                      style={{
+                        ...styles.secondaryButton,
+                        ...(checkingAvailability || !checkIn || !checkOut
+                          ? styles.secondaryButtonDisabled
+                          : {}),
+                      }}
+                    >
+                      {checkingAvailability ? "Checking..." : "Check availability"}
+                    </button>
+
+                    {availabilityMessage ? (
+                      <div
+                        style={{
+                          ...styles.availabilityBox,
+                          ...(availabilityStatus === "available"
+                            ? styles.availabilityBoxSuccess
+                            : styles.availabilityBoxError),
+                        }}
+                      >
+                        {availabilityStatus === "available" ? "✅ " : "⚠️ "}
+                        {availabilityMessage}
+                      </div>
+                    ) : null}
+
                     <label style={styles.field}>
                       <span>Full name</span>
                       <input
@@ -367,9 +519,14 @@ if (property.maximumNights && nights > property.maximumNights) {
                     </label>
 
                     <div style={styles.priceBox}>
-                      <div style={styles.priceRow}>
+                     <div style={styles.priceRow}>
+  <span>Guests</span>
+  <strong>{adults + children}</strong>
+</div> 
+                     <div style={styles.priceRow}>
                         <span>
-                          {formatMoney(property.baseNightlyRate)} × {nights || 0} nights
+                          {formatMoney(property.baseNightlyRate)} × {nights || 0}{" "}
+                          nights
                         </span>
                         <strong>{formatMoney(subtotal)}</strong>
                       </div>
@@ -391,17 +548,20 @@ if (property.maximumNights && nights > property.maximumNights) {
 
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || availabilityStatus !== "available"}
                       style={{
                         ...styles.reserveButton,
-                        ...(submitting ? styles.reserveButtonDisabled : {}),
+                        ...(submitting || availabilityStatus !== "available"
+                          ? styles.reserveButtonDisabled
+                          : {}),
                       }}
                     >
                       {submitting ? "Preparing checkout..." : "Reserve now"}
                     </button>
 
                     <p style={styles.disclaimer}>
-                      You will be redirected to Stripe Checkout to complete your payment.
+                      You will be redirected to Stripe Checkout to complete your
+                      payment.
                     </p>
                   </form>
                 </div>
@@ -590,6 +750,40 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid #cbd5e1",
     fontSize: 15,
     outline: "none",
+  },
+  secondaryButton: {
+    marginTop: 14,
+    width: "100%",
+    border: "1px solid #cbd5e1",
+    borderRadius: 14,
+    background: "#fff",
+    color: "#0f172a",
+    padding: "12px 16px",
+    fontWeight: 800,
+    fontSize: 15,
+    cursor: "pointer",
+  },
+  secondaryButtonDisabled: {
+    opacity: 0.65,
+    cursor: "not-allowed",
+  },
+  availabilityBox: {
+    marginTop: 12,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    fontWeight: 700,
+    lineHeight: 1.5,
+  },
+  availabilityBoxSuccess: {
+    background: "#ecfdf5",
+    border: "1px solid #bbf7d0",
+    color: "#047857",
+  },
+  availabilityBoxError: {
+    background: "#fff1f2",
+    border: "1px solid #fecdd3",
+    color: "#9f1239",
   },
   priceBox: {
     marginTop: 18,
