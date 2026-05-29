@@ -39,6 +39,10 @@ import BillingPolicyPage from "../../pages/BillingPolicyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
 import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
 import AdminDemoCenterPage from "../../pages/admin/AdminDemoCenterPage";
+import PublicBookingSitePage from "../../pages/public-booking/PublicBookingSitePage";
+import PublicPropertyDetailPage from "../../pages/public-booking/PublicPropertyDetailPage";
+import PublicBookingSuccessPage from "../../pages/public-booking/PublicBookingSuccessPage";
+import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCancelPage";
 
 function RootRedirect() {
   const host = window.location.hostname;
@@ -55,6 +59,22 @@ export const router = createBrowserRouter([
   {
   path: "/home",
   element: <LandingPage />,
+  },
+  {
+  path: "/book/:organizationSlug",
+  element: <PublicBookingSitePage />,
+  },
+  {
+  path: "/book/:organizationSlug/:propertySlug",
+  element: <PublicPropertyDetailPage />,
+  },
+  {
+  path: "/booking/success",
+  element: <PublicBookingSuccessPage />,
+  },
+  {
+  path: "/booking/cancel",
+  element: <PublicBookingCancelPage />,
   },
   {
   path: "/",
