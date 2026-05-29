@@ -483,7 +483,13 @@ export default function LandingPage() {
   </div>
 </section>
        
-      <HaasConfigurator lang={lang} />  
+      <HaasConfigurator
+  lang={lang}
+  onScheduleCall={() => {
+    setBookingType("demo");
+    setOpenBooking(true);
+  }}
+/>  
          <section style={styles.sectionAlt}>
           <div style={styles.containerNarrow}>
             <h2 style={styles.sectionTitle}>{t.faqTitle}</h2>

@@ -4,6 +4,7 @@ type Lang = "es" | "en";
 
 type Props = {
   lang: Lang;
+  onScheduleCall?: () => void;
 };
 
 const locks = [
@@ -75,7 +76,7 @@ const automationOptions = [
   },
 ];
 
-export default function HaasConfigurator({ lang }: Props) {
+export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
   const [selectedLockId, setSelectedLockId] = useState("pro");
   const [selectedAutomationId, setSelectedAutomationId] = useState("one");
   const [isMobile, setIsMobile] = useState(false);
@@ -350,19 +351,24 @@ export default function HaasConfigurator({ lang }: Props) {
 </div>
             <div style={styles.deploymentNotice}>
   {lang === "es"
-    ? "Los planes HaaS requieren coordinación previa con el equipo de Pin&Go para confirmar disponibilidad de hardware, instalación y despliegue antes de la activación final."
-    : "HaaS plans require coordination with the Pin&Go team to confirm hardware availability, installation scheduling, and deployment logistics before final activation."}
+    ? "Los planes Hardware como Servicio requieren coordinación previa con el equipo de Pin&Go para confirmar disponibilidad de hardware, instalación y despliegue antes de la activación final."
+    : "Hardware as a Service plans require coordination with the Pin&Go team to confirm hardware availability, installation scheduling, and deployment logistics before final activation."}
 
-  <div style={{ marginTop: 10 }}>
-    <a href="/book-demo" style={styles.deploymentLink}>
-      {lang === "es"
-        ? "Agendar llamada de coordinación"
-        : "Schedule a coordination call"}
-    </a>
+ <button
+  type="button"
+  onClick={onScheduleCall}
+  style={styles.deploymentLinkButton}
+>
+  {lang === "es"
+    ? "Agendar llamada de coordinación"
+    : "Schedule a coordination call"}
+</button> 
+
   </div>
-</div>
+
               <a href={signupUrl} style={styles.cta}>
-              {lang === "es" ? "Solicitar este plan" : "Request this plan"}
+              {lang === "es" ? "Solicitar este plan" 
+                             : "Request this plan"}
             </a>
           </aside>
         </div>
@@ -617,6 +623,19 @@ deploymentLink: {
   fontWeight: 900,
   textDecoration: "underline",
   textUnderlineOffset: 3,
+},
+
+deploymentLinkButton: {
+  appearance: "none",
+  border: "none",
+  background: "transparent",
+  padding: 0,
+  color: "#ffffff",
+  fontWeight: 900,
+  textDecoration: "underline",
+  textUnderlineOffset: 3,
+  cursor: "pointer",
+  fontSize: 13,
 },
 
 includedGrid: {
