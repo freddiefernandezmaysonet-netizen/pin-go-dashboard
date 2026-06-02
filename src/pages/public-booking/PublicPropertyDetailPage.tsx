@@ -110,6 +110,30 @@ const [children, setChildren] = useState(0);
     .filter(Boolean)
     .join(", ");
 
+const totalGuests = adults + children;
+
+function updateAdults(nextValue: number) {
+  const maxGuests = property?.maxGuests ?? 99;
+
+  const safeValue = Math.max(
+    1,
+    Math.min(nextValue, maxGuests - children)
+  );
+
+  setAdults(safeValue);
+}
+
+function updateChildren(nextValue: number) {
+  const maxGuests = property?.maxGuests ?? 99;
+
+  const safeValue = Math.max(
+    0,
+    Math.min(nextValue, maxGuests - adults)
+  );
+
+  setChildren(safeValue);
+}
+
   useEffect(() => {
     let active = true;
 
@@ -437,28 +461,81 @@ if (property.maxGuests && totalGuests > property.maxGuests) {
                       />
                     </label>
 
-<label style={styles.field}>
-  <span>Adults</span>
-  <input
-    type="number"
-    min={1}
-    value={adults}
-    onChange={(e) => setAdults(Number(e.target.value))}
-    style={styles.input}
-  />
-</label>
+<div style={styles.guestSelector}>
+  <div style={styles.guestRow}>
+    <div>
+      <div style={styles.guestLabel}>Adults</div>
+      <div style={styles.guestHint}>Ages 13 or above</div>
+    </div>
 
-<label style={styles.field}>
-  <span>Children</span>
-  <input
-    type="number"
-    min={0}
-    value={children}
-    onChange={(e) => setChildren(Number(e.target.value))}
-    style={styles.input}
-  />
-</label>
+    <div style={styles.stepper}>
+      <button
+        type="button"
+        onClick={() => updateAdults(adults - 1)}
+        disabled={adults <= 1}
+        style={{
+          ...styles.stepperButton,
+          ...(adults <= 1 ? styles.stepperButtonDisabled : {}),
+        }}
+      >
+        −
+      </button>
 
+      <strong style={styles.stepperValue}>{adults}</strong>
+
+      <button
+        type="button"
+        onClick={() => updateAdults(adults + 1)}
+        disabled={property.maxGuests ? totalGuests >= property.maxGuests : false}
+        style={{
+          ...styles.stepperButton,
+          ...(property.maxGuests && totalGuests >= property.maxGuests
+            ? styles.stepperButtonDisabled
+            : {}),
+        }}
+      >
+        +
+      </button>
+    </div>
+  </div>
+
+  <div style={styles.guestRow}>
+    <div>
+      <div style={styles.guestLabel}>Children</div>
+      <div style={styles.guestHint}>Ages 2–12</div>
+    </div>
+
+    <div style={styles.stepper}>
+      <button
+        type="button"
+        onClick={() => updateChildren(children - 1)}
+        disabled={children <= 0}
+        style={{
+          ...styles.stepperButton,
+          ...(children <= 0 ? styles.stepperButtonDisabled : {}),
+        }}
+      >
+        −
+      </button>
+
+      <strong style={styles.stepperValue}>{children}</strong>
+
+      <button
+        type="button"
+        onClick={() => updateChildren(children + 1)}
+        disabled={property.maxGuests ? totalGuests >= property.maxGuests : false}
+        style={{
+          ...styles.stepperButton,
+          ...(property.maxGuests && totalGuests >= property.maxGuests
+            ? styles.stepperButtonDisabled
+            : {}),
+        }}
+      >
+        +
+      </button>
+    </div>
+  </div>
+</div>
                     <button
                       type="button"
                       onClick={handleCheckAvailability}
@@ -521,7 +598,7 @@ if (property.maxGuests && totalGuests > property.maxGuests) {
                     <div style={styles.priceBox}>
                      <div style={styles.priceRow}>
   <span>Guests</span>
-  <strong>{adults + children}</strong>
+  <strong>{totalGuests}</strong>
 </div> 
                      <div style={styles.priceRow}>
                         <span>
@@ -841,15 +918,78 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
   },
   inlineError: {
-    marginTop: 14,
-    background: "#fff1f2",
-    color: "#9f1239",
-    border: "1px solid #fecdd3",
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 14,
-    fontWeight: 700,
-  },
+  marginTop: 14,
+  background: "#fff1f2",
+  color: "#9f1239",
+  border: "1px solid #fecdd3",
+  borderRadius: 12,
+  padding: 12,
+  fontSize: 14,
+  fontWeight: 700,
+},
+
+guestSelector: {
+  marginTop: 16,
+  border: "1px solid #cbd5e1",
+  borderRadius: 14,
+  overflow: "hidden",
+  background: "#fff",
+},
+
+guestRow: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 16,
+  padding: "14px 14px",
+  borderBottom: "1px solid #e2e8f0",
+},
+
+guestLabel: {
+  fontSize: 14,
+  fontWeight: 800,
+  color: "#0f172a",
+},
+
+guestHint: {
+  marginTop: 3,
+  fontSize: 12,
+  color: "#64748b",
+},
+
+stepper: {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+},
+
+stepperButton: {
+  width: 36,
+  height: 36,
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+  background: "#f8fafc",
+  color: "#0f172a",
+  fontSize: 18,
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "grid",
+  placeItems: "center",
+  lineHeight: 1,
+},
+
+stepperButtonDisabled: {
+  opacity: 0.35,
+  cursor: "not-allowed",
+},
+
+stepperValue: {
+  minWidth: 18,
+  textAlign: "center",
+  fontSize: 16,
+  color: "#0f172a",
+},
+
   footer: {
     borderTop: "1px solid #e2e8f0",
     padding: "24px 20px",
