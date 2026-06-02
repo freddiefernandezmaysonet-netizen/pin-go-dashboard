@@ -22,7 +22,10 @@ export default function PublicBookingCancelPage() {
           The property may still be available if you wish to complete your booking.
         </p>
 
-        <Link to="/" style={styles.button}>
+        <Link
+  to={`/book/${new URLSearchParams(window.location.search).get("organization") || ""}`}
+  style={styles.button}
+>
           Return Home
         </Link>
       </div>

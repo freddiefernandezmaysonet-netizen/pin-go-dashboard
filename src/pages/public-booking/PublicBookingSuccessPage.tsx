@@ -22,7 +22,10 @@ export default function PublicBookingSuccessPage() {
           You will receive access and check-in instructions before your arrival.
         </p>
 
-        <Link to="/" style={styles.button}>
+        <Link
+  to={`/book/${new URLSearchParams(window.location.search).get("organization") || ""}`}
+  style={styles.button}
+>
           Return Home
         </Link>
       </div>
