@@ -940,7 +940,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
  photoPlaceholder: {
-  minHeight: 430,
+  minHeight: "clamp(260px, 38vw, 430px)",
   borderRadius: 32,
   display: "grid",
   placeItems: "center",
