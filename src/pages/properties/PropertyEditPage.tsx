@@ -21,6 +21,14 @@ type PropertyItem = {
   publicTitle?: string | null;
   publicDescription?: string | null;
 
+  amenities?: Array<{
+  id: string;
+  name: string;
+  feeType: "PER_STAY" | "PER_NIGHT";
+  amount: string | number;
+  isActive: boolean;
+}>;
+  
   baseNightlyRate?: number | null;
   cleaningFee?: number | null;
 
@@ -40,7 +48,15 @@ export function PropertyEditPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const [amenities, setAmenities] = useState<any[]>([]);  
+  
+  const [newAmenity, setNewAmenity] = useState({
+  name: "",
+  feeType: "PER_STAY",
+  amount: "",
+});
+  
+ const [form, setForm] = useState({ 
     name: "",
     address1: "",
     city: "",
@@ -79,6 +95,10 @@ export function PropertyEditPage() {
       })
       .then((data) => {
         const p: PropertyItem = data.item;
+
+setAmenities(
+  (p.amenities ?? []).filter((a) => a.isActive !== false)
+);
 
         setForm({
           name: p.name ?? "",
@@ -212,6 +232,40 @@ isPublicBookable: form.isPublicBookable,
       setSaving(false);
     }
   }
+
+async function handleCreateAmenity() {
+  if (!id) return;
+
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${id}/amenities`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: newAmenity.name,
+        feeType: newAmenity.feeType,
+        amount: Number(newAmenity.amount),
+      }),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to create amenity");
+  }
+
+  setAmenities((prev) => [...prev, data.item]);
+
+  setNewAmenity({
+    name: "",
+    feeType: "PER_STAY",
+    amount: "",
+  });
+}
 
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
@@ -580,6 +634,134 @@ isPublicBookable: form.isPublicBookable,
   </div>
 </div>
           <div
+  style={{
+    borderTop: "1px solid #bfdbfe",
+    paddingTop: 16,
+    display: "grid",
+    gap: 12,
+  }}
+>
+  <div>
+    <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+      Amenities & Fees
+    </div>
+    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+      Add optional property fees such as pet fees, parking, or resort fees.
+    </div>
+  </div>
+
+  {amenities.length === 0 ? (
+    <div style={{ fontSize: 13, color: "#6b7280" }}>
+      No amenities or fees configured yet.
+    </div>
+  ) : (
+    <div style={{ display: "grid", gap: 8 }}>
+      {amenities.map((amenity) => (
+        <div
+          key={amenity.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            padding: 12,
+            borderRadius: 12,
+            background: "#ffffff",
+            border: "1px solid #dbeafe",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+              {amenity.name}
+            </div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+              {amenity.feeType === "PER_NIGHT" ? "Per night" : "Per stay"}
+            </div>
+          </div>
+
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+            ${Number(amenity.amount ?? 0).toFixed(2)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <div
+    style={{
+      display: "grid",
+      gap: 12,
+      gridTemplateColumns: "minmax(180px, 1fr) 160px 140px auto",
+      alignItems: "end",
+    }}
+  >
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Amenity / Fee Name</div>
+      <input
+        value={newAmenity.name}
+        onChange={(e) =>
+          setNewAmenity((s) => ({ ...s, name: e.target.value }))
+        }
+        placeholder="Pet Fee"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Type</div>
+      <select
+        value={newAmenity.feeType}
+        onChange={(e) =>
+          setNewAmenity((s) => ({ ...s, feeType: e.target.value }))
+        }
+        style={inputStyle}
+      >
+        <option value="PER_STAY">Per stay</option>
+        <option value="PER_NIGHT">Per night</option>
+      </select>
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Amount</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={newAmenity.amount}
+        onChange={(e) =>
+          setNewAmenity((s) => ({ ...s, amount: e.target.value }))
+        }
+        placeholder="75.00"
+        style={inputStyle}
+      />
+    </div>
+
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await handleCreateAmenity();
+        } catch (e: any) {
+          setErr(String(e?.message ?? e));
+        }
+      }}
+      style={{
+        height: 44,
+        padding: "0 16px",
+        borderRadius: 12,
+        border: "none",
+        background: "#2563eb",
+        color: "#ffffff",
+        fontSize: 14,
+        fontWeight: 800,
+        cursor: "pointer",
+      }}
+    >
+      Add
+    </button>
+  </div>
+</div>
+           <div
             style={{
               display: "flex",
               justifyContent: "flex-end",
