@@ -982,12 +982,12 @@ placeholderText: {
   fontWeight: 700,
 },
 
-  detailGrid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 420px",
-    gap: 32,
-    alignItems: "start",
-    },
+detailGrid: {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 520px), 1fr))",
+  gap: 24,
+  alignItems: "start",
+},  
   leftColumn: {
     display: "grid",
     gap: 20,
