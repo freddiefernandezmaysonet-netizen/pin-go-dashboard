@@ -26,8 +26,8 @@ export default function PublicBookingSuccessPage() {
   to={`/book/${new URLSearchParams(window.location.search).get("organization") || ""}`}
   style={styles.button}
 >
-          Return Home
-        </Link>
+    Return to booking page
+   </Link>     
       </div>
     </div>
   );
