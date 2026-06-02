@@ -16,6 +16,20 @@ type PropertyItem = {
   cleaningStartOffsetMinutes: number;
   latitude?: number | null;
   longitude?: number | null;
+  slug?: string | null;
+  isPublicBookable?: boolean;
+  publicTitle?: string | null;
+  publicDescription?: string | null;
+
+  baseNightlyRate?: number | null;
+  cleaningFee?: number | null;
+
+  maxGuests?: number | null;
+  minimumNights?: number | null;
+  maximumNights?: number | null;
+
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
 };
 
 export function PropertyEditPage() {
@@ -37,7 +51,15 @@ export function PropertyEditPage() {
     cleaningStartOffsetMinutes: 30,
     latitude: "",
     longitude: "",
-  });
+    baseNightlyRate: "",
+    cleaningFee: "",
+
+    maxGuests: "",
+    minimumNights: "1",
+    maximumNights: "",
+
+    isPublicBookable: false,
+});
 
   useEffect(() => {
     if (!id) return;
@@ -75,6 +97,33 @@ export function PropertyEditPage() {
             p.longitude !== null && p.longitude !== undefined
               ? String(p.longitude)
               : "",
+        baseNightlyRate:
+  p.baseNightlyRate !== null &&
+  p.baseNightlyRate !== undefined
+    ? String(p.baseNightlyRate)
+    : "",
+
+cleaningFee:
+  p.cleaningFee !== null &&
+  p.cleaningFee !== undefined
+    ? String(p.cleaningFee)
+    : "",
+
+maxGuests:
+  p.maxGuests !== null &&
+  p.maxGuests !== undefined
+    ? String(p.maxGuests)
+    : "",
+
+minimumNights: String(p.minimumNights ?? 1),
+
+maximumNights:
+  p.maximumNights !== null &&
+  p.maximumNights !== undefined
+    ? String(p.maximumNights)
+    : "",
+
+isPublicBookable: Boolean(p.isPublicBookable),
         });
       })
       .catch((e: any) => {
@@ -125,6 +174,29 @@ export function PropertyEditPage() {
           cleaningStartOffsetMinutes: Number(form.cleaningStartOffsetMinutes),
           latitude,
           longitude,
+        baseNightlyRate:
+  form.baseNightlyRate.trim() === ""
+    ? null
+    : Number(form.baseNightlyRate),
+
+cleaningFee:
+  form.cleaningFee.trim() === ""
+    ? null
+    : Number(form.cleaningFee),
+
+maxGuests:
+  form.maxGuests.trim() === ""
+    ? null
+    : Number(form.maxGuests),
+
+minimumNights: Number(form.minimumNights || 1),
+
+maximumNights:
+  form.maximumNights.trim() === ""
+    ? null
+    : Number(form.maximumNights),
+
+isPublicBookable: form.isPublicBookable,
         }),
       });
 
@@ -380,7 +452,133 @@ export function PropertyEditPage() {
               />
             </div>
           </div>
+<div
+  style={{
+    border: "1px solid #dbeafe",
+    borderRadius: 18,
+    padding: 18,
+    background: "#eff6ff",
+    display: "grid",
+    gap: 16,
+  }}
+>
+  <div>
+    <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+      Direct Booking Settings
+    </div>
+    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+      Configure how this property appears and prices reservations on your public booking page.
+    </div>
+  </div>
 
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      fontSize: 14,
+      fontWeight: 700,
+      color: "#111827",
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.isPublicBookable}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, isPublicBookable: e.target.checked }))
+      }
+    />
+    Public Booking Enabled
+  </label>
+
+  <div
+    style={{
+      display: "grid",
+      gap: 16,
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    }}
+  >
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Nightly Rate</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={form.baseNightlyRate}
+        onChange={(e) =>
+          setForm((s) => ({ ...s, baseNightlyRate: e.target.value }))
+        }
+        placeholder="150.00"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Cleaning Fee</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={form.cleaningFee}
+        onChange={(e) =>
+          setForm((s) => ({ ...s, cleaningFee: e.target.value }))
+        }
+        placeholder="75.00"
+        style={inputStyle}
+      />
+    </div>
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gap: 16,
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    }}
+  >
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Max Guests</div>
+      <input
+        type="number"
+        min="1"
+        value={form.maxGuests}
+        onChange={(e) =>
+          setForm((s) => ({ ...s, maxGuests: e.target.value }))
+        }
+        placeholder="4"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Minimum Nights</div>
+      <input
+        type="number"
+        min="1"
+        value={form.minimumNights}
+        onChange={(e) =>
+          setForm((s) => ({ ...s, minimumNights: e.target.value }))
+        }
+        placeholder="1"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Maximum Nights</div>
+      <input
+        type="number"
+        min="1"
+        value={form.maximumNights}
+        onChange={(e) =>
+          setForm((s) => ({ ...s, maximumNights: e.target.value }))
+        }
+        placeholder="Optional"
+        style={inputStyle}
+      />
+    </div>
+  </div>
+</div>
           <div
             style={{
               display: "flex",
