@@ -1150,8 +1150,8 @@ pinGoPanel: {
     borderRadius: 28,
     padding: 28,
     boxShadow: "0 22px 60px rgba(15, 23, 42, 0.14)",
-    position: "sticky",
-    top: 92,
+    position: "static",
+    top: "auto",
   },
   bookingHeader: {
     display: "flex",
