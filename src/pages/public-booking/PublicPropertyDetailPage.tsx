@@ -209,7 +209,7 @@ function formatDisplayTime(time?: string | null) {
         }
 
         if (active) {
-          setProperty(data.property);
+          setProperty(data.property ?? data.item);
         }
       } catch (err: any) {
         if (active) {
