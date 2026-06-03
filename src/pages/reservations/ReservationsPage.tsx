@@ -15,6 +15,7 @@ type ReservationRow = {
   status: ReservationStatus;
   operationalStatus: OperationalStatus;
   paymentState: PaymentState;
+  totalAmount?: number | null;
   source?: string | null;
   externalProvider?: string | null;
   property?: { id: string; name: string; timezone?: string } | null;
@@ -55,6 +56,19 @@ function fmt(d: string, timezone?: string) {
     minute: "2-digit",
     hour12: true,
   }).format(dt);
+}
+
+function fmtMoney(value?: number | null) {
+  const n = Number(value ?? 0);
+
+  if (!Number.isFinite(n) || n <= 0) return "—";
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
 }
 
 function statusStyles(status: OperationalStatus) {
@@ -275,7 +289,7 @@ export function ReservationsPage() {
 >
             <thead style={{ background: "#f9fafb" }}>
               <tr>
-                {["Guest", "Property", "Check-in", "Check-out", "Operational", "Payment", "Source"].map(
+                {["Guest", "Property", "Check-in", "Check-out", "Operational", "Payment", "Total Paid", "Source"].map(
                   (h) => (
                     <th
                       key={h}
@@ -300,13 +314,13 @@ export function ReservationsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: 16, color: "#666" }}>
+                  <td colSpan={8} style={{ padding: 16, color: "#666" }}>
                     Loading…
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: 16, color: "#666" }}>
+                  <td colSpan={8} style={{ padding: 16, color: "#666" }}>
                     No reservations found for this filter.
                   </td>
                 </tr>
@@ -385,6 +399,12 @@ export function ReservationsPage() {
                         >
                           {r.paymentState}
                         </span>
+                      </td>
+
+                                             <td style={{ padding: 12, color: "#111827", whiteSpace: "nowrap" }}>
+                        <div style={{ fontWeight: 800 }}>
+                          {fmtMoney(r.totalAmount)}
+                        </div>
                       </td>
 
                       <td style={{ padding: 12, color: "#666" }}>{sourceLabel(r)}</td>
