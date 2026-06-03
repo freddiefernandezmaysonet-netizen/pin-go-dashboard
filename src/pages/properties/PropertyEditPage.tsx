@@ -249,7 +249,7 @@ async function handleCreateAmenity() {
       headers: {
         "Content-Type": "application/json",
       },
-          body: JSON.stringify({
+      body: JSON.stringify({
         name: newAmenity.name,
         description: newAmenity.description,
         chargeMode: newAmenity.chargeMode,
@@ -258,6 +258,23 @@ async function handleCreateAmenity() {
       }),
     }
   );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to create amenity");
+  }
+
+  setAmenities((prev) => [...prev, data.item]);
+
+  setNewAmenity({
+    name: "",
+    description: "",
+    chargeMode: "INCLUDED",
+    feeType: "PER_STAY",
+    amount: "",
+  });
+}
 
 async function handleDeleteAmenity(amenityId: string) {
   if (!id) return;
@@ -280,9 +297,7 @@ async function handleDeleteAmenity(amenityId: string) {
     throw new Error(data?.error || "Failed to delete amenity");
   }
 
-  setAmenities((prev) =>
-    prev.filter((a) => a.id !== amenityId)
-  );
+  setAmenities((prev) => prev.filter((a) => a.id !== amenityId));
 }
 
 async function handleSaveAmenity() {
@@ -296,7 +311,13 @@ async function handleSaveAmenity() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(editingAmenity),
+      body: JSON.stringify({
+        name: editingAmenity.name,
+        description: editingAmenity.description,
+        chargeMode: editingAmenity.chargeMode,
+        feeType: editingAmenity.feeType,
+        amount: Number(editingAmenity.amount || 0),
+      }),
     }
   );
 
@@ -307,9 +328,7 @@ async function handleSaveAmenity() {
   }
 
   setAmenities((prev) =>
-    prev.map((a) =>
-      a.id === editingAmenityId ? data.item : a
-    )
+    prev.map((a) => (a.id === editingAmenityId ? data.item : a))
   );
 
   setEditingAmenityId(null);
