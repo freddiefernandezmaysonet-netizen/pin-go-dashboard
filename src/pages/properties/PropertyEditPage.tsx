@@ -259,23 +259,6 @@ async function handleCreateAmenity() {
     }
   );
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data?.error || "Failed to create amenity");
-  }
-
-  setAmenities((prev) => [...prev, data.item]);
-
-  setNewAmenity({
-    name: "",
-    description: "",
-    chargeMode: "INCLUDED",
-    feeType: "PER_STAY",
-    amount: "",
-  });
-}
-
 async function handleDeleteAmenity(amenityId: string) {
   if (!id) return;
 
