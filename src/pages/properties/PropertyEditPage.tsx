@@ -52,6 +52,9 @@ export function PropertyEditPage() {
 
   const [amenities, setAmenities] = useState<any[]>([]);  
   
+  const [editingAmenityId, setEditingAmenityId] = useState<string | null>(null);
+  const [editingAmenity, setEditingAmenity] = useState<any>(null);
+
   const [newAmenity, setNewAmenity] = useState({
   name: "",
   feeType: "PER_STAY",
@@ -255,6 +258,63 @@ async function handleCreateAmenity() {
       }),
     }
   );
+
+async function handleDeleteAmenity(amenityId: string) {
+  if (!id) return;
+
+  if (!window.confirm("Delete this amenity?")) {
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${id}/amenities/${amenityId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to delete amenity");
+  }
+
+  setAmenities((prev) =>
+    prev.filter((a) => a.id !== amenityId)
+  );
+}
+
+async function handleSaveAmenity() {
+  if (!id || !editingAmenityId || !editingAmenity) return;
+
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${id}/amenities/${editingAmenityId}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(editingAmenity),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to update amenity");
+  }
+
+  setAmenities((prev) =>
+    prev.map((a) =>
+      a.id === editingAmenityId ? data.item : a
+    )
+  );
+
+  setEditingAmenityId(null);
+  setEditingAmenity(null);
+}
 
   const data = await res.json();
 
@@ -688,10 +748,57 @@ async function handleCreateAmenity() {
 • {amenity.feeType === "PER_NIGHT" ? "Per night" : "Per stay"}
             </div>
           </div>
+          <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  }}
+>
+  <div
+    style={{
+      fontSize: 14,
+      fontWeight: 800,
+      color: "#111827",
+    }}
+  >
+    ${Number(amenity.amount ?? 0).toFixed(2)}
+  </div>
 
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
-            ${Number(amenity.amount ?? 0).toFixed(2)}
-          </div>
+  <button
+    type="button"
+    onClick={() => {
+      setEditingAmenityId(amenity.id);
+      setEditingAmenity({ ...amenity });
+    }}
+    style={{
+      border: "none",
+      background: "transparent",
+      cursor: "pointer",
+    }}
+  >
+    ✏️
+  </button>
+
+  <button
+    type="button"
+    onClick={async () => {
+      try {
+        await handleDeleteAmenity(amenity.id);
+      } catch (e: any) {
+        setErr(String(e?.message ?? e));
+      }
+    }}
+    style={{
+      border: "none",
+      background: "transparent",
+      cursor: "pointer",
+    }}
+  >
+    🗑️
+  </button>
+</div>
+         
         </div>
       ))}
     </div>
