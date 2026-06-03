@@ -21,13 +21,15 @@ type PropertyItem = {
   publicTitle?: string | null;
   publicDescription?: string | null;
 
-  amenities?: Array<{
-  id: string;
-  name: string;
-  feeType: "PER_STAY" | "PER_NIGHT";
-  amount: string | number;
-  isActive: boolean;
-}>;
+   amenities?: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    chargeMode: "INCLUDED" | "REQUIRED" | "OPTIONAL";
+    feeType: "PER_STAY" | "PER_NIGHT";
+    amount: string | number;
+    isActive: boolean;
+  }>;  
   
   baseNightlyRate?: number | null;
   cleaningFee?: number | null;
@@ -244,10 +246,12 @@ async function handleCreateAmenity() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
+          body: JSON.stringify({
         name: newAmenity.name,
+        description: newAmenity.description,
+        chargeMode: newAmenity.chargeMode,
         feeType: newAmenity.feeType,
-        amount: Number(newAmenity.amount),
+        amount: Number(newAmenity.amount || 0),
       }),
     }
   );
@@ -259,13 +263,14 @@ async function handleCreateAmenity() {
   }
 
   setAmenities((prev) => [...prev, data.item]);
-
   setNewAmenity({
     name: "",
+    description: "",
+    chargeMode: "INCLUDED",
     feeType: "PER_STAY",
     amount: "",
   });
-}
+ }
 
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
@@ -675,7 +680,12 @@ async function handleCreateAmenity() {
               {amenity.name}
             </div>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-              {amenity.feeType === "PER_NIGHT" ? "Per night" : "Per stay"}
+              {amenity.chargeMode === "INCLUDED"
+  ? "Included"
+  : amenity.chargeMode === "REQUIRED"
+  ? "Required"
+  : "Optional"}{" "}
+• {amenity.feeType === "PER_NIGHT" ? "Per night" : "Per stay"}
             </div>
           </div>
 
@@ -691,7 +701,7 @@ async function handleCreateAmenity() {
     style={{
       display: "grid",
       gap: 12,
-      gridTemplateColumns: "minmax(180px, 1fr) 160px 140px auto",
+      gridTemplateColumns: "minmax(180px, 1fr) minmax(180px, 1fr) 160px 160px 140px auto",
       alignItems: "end",
     }}
   >
@@ -705,6 +715,33 @@ async function handleCreateAmenity() {
         placeholder="Pet Fee"
         style={inputStyle}
       />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Description</div>
+      <input
+        value={newAmenity.description}
+        onChange={(e) =>
+          setNewAmenity((s) => ({ ...s, description: e.target.value }))
+        }
+        placeholder="Shown to guests"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Charge Mode</div>
+      <select
+        value={newAmenity.chargeMode}
+        onChange={(e) =>
+          setNewAmenity((s) => ({ ...s, chargeMode: e.target.value }))
+        }
+        style={inputStyle}
+      >
+        <option value="INCLUDED">Included</option>
+        <option value="REQUIRED">Required</option>
+        <option value="OPTIONAL">Optional</option>
+      </select>
     </div>
 
     <div style={{ display: "grid", gap: 6 }}>
