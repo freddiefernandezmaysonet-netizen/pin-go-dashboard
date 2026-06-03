@@ -142,10 +142,27 @@ export default function PublicPropertyDetailPage() {
       return sum;
     }
 
+const taxableSubtotal =
+  subtotal +
+  cleaningFee +
+  requiredAmenitiesTotal +
+  optionalAmenitiesTotal;
+
+const taxesTotal =
+  (property?.taxes ?? []).reduce((sum, tax) => {
+    const percentage = Number(tax.percentage ?? 0);
+
+    if (!Number.isFinite(percentage) || percentage <= 0) {
+      return sum;
+    }
+
+    return sum + taxableSubtotal * (percentage / 100);
+  }, 0);
+
     return sum + calculateAmenityAmount(amenity, nights);
   }, 0);
 
-  const total = subtotal + cleaningFee + requiredAmenitiesTotal + optionalAmenitiesTotal;
+  const total = taxableSubtotal + taxesTotal;
 
   const location = [
     property?.address1,
@@ -880,6 +897,21 @@ function formatDisplayTime(time?: string | null) {
                           Included: {includedAmenities.map((a) => a.name).join(", ")}
                         </div>
                       ) : null}
+
+                       {(property?.taxes ?? []).map((tax) => {
+  const percentage = Number(tax.percentage ?? 0);
+
+  const amount = taxableSubtotal * (percentage / 100);
+
+  return (
+    <div key={tax.id} style={styles.priceRow}>
+      <span>
+        {tax.name} ({percentage}%)
+      </span>
+      <strong>{formatMoney(amount)}</strong>
+    </div>
+  );
+})}
 
                       <div style={styles.totalRow}>
                         <span>Total</span>
