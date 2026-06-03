@@ -3,6 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
+type AmenityChargeMode = "INCLUDED" | "REQUIRED" | "OPTIONAL";
+type AmenityFeeType = "PER_STAY" | "PER_NIGHT";
+
+type PropertyAmenityItem = {
+  id: string;
+  name: string;
+  description?: string | null;
+  chargeMode: AmenityChargeMode;
+  feeType: AmenityFeeType;
+  amount: string | number;
+  isActive: boolean;
+};
+
 type PropertyItem = {
   id: string;
   name: string;
@@ -20,24 +33,12 @@ type PropertyItem = {
   isPublicBookable?: boolean;
   publicTitle?: string | null;
   publicDescription?: string | null;
-
-   amenities?: Array<{
-    id: string;
-    name: string;
-    description?: string | null;
-    chargeMode: "INCLUDED" | "REQUIRED" | "OPTIONAL";
-    feeType: "PER_STAY" | "PER_NIGHT";
-    amount: string | number;
-    isActive: boolean;
-  }>;  
-  
+  amenities?: PropertyAmenityItem[];
   baseNightlyRate?: number | null;
   cleaningFee?: number | null;
-
   maxGuests?: number | null;
   minimumNights?: number | null;
   maximumNights?: number | null;
-
   checkInTime?: string | null;
   checkOutTime?: string | null;
 };
@@ -50,18 +51,19 @@ export function PropertyEditPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [amenities, setAmenities] = useState<any[]>([]);  
-  
+  const [amenities, setAmenities] = useState<PropertyAmenityItem[]>([]);
   const [editingAmenityId, setEditingAmenityId] = useState<string | null>(null);
-  const [editingAmenity, setEditingAmenity] = useState<any>(null);
+  const [editingAmenity, setEditingAmenity] = useState<PropertyAmenityItem | null>(null);
 
   const [newAmenity, setNewAmenity] = useState({
-  name: "",
-  feeType: "PER_STAY",
-  amount: "",
-});
-  
- const [form, setForm] = useState({ 
+    name: "",
+    description: "",
+    chargeMode: "INCLUDED" as AmenityChargeMode,
+    feeType: "PER_STAY" as AmenityFeeType,
+    amount: "",
+  });
+
+  const [form, setForm] = useState({
     name: "",
     address1: "",
     city: "",
@@ -74,13 +76,11 @@ export function PropertyEditPage() {
     longitude: "",
     baseNightlyRate: "",
     cleaningFee: "",
-
     maxGuests: "",
     minimumNights: "1",
     maximumNights: "",
-
     isPublicBookable: false,
-});
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -101,9 +101,7 @@ export function PropertyEditPage() {
       .then((data) => {
         const p: PropertyItem = data.item;
 
-setAmenities(
-  (p.amenities ?? []).filter((a) => a.isActive !== false)
-);
+        setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
 
         setForm({
           name: p.name ?? "",
@@ -115,40 +113,27 @@ setAmenities(
           cleaningDurationMinutes: p.cleaningDurationMinutes ?? 180,
           cleaningStartOffsetMinutes: p.cleaningStartOffsetMinutes ?? 30,
           latitude:
-            p.latitude !== null && p.latitude !== undefined
-              ? String(p.latitude)
-              : "",
+            p.latitude !== null && p.latitude !== undefined ? String(p.latitude) : "",
           longitude:
-            p.longitude !== null && p.longitude !== undefined
-              ? String(p.longitude)
+            p.longitude !== null && p.longitude !== undefined ? String(p.longitude) : "",
+          baseNightlyRate:
+            p.baseNightlyRate !== null && p.baseNightlyRate !== undefined
+              ? String(p.baseNightlyRate)
               : "",
-        baseNightlyRate:
-  p.baseNightlyRate !== null &&
-  p.baseNightlyRate !== undefined
-    ? String(p.baseNightlyRate)
-    : "",
-
-cleaningFee:
-  p.cleaningFee !== null &&
-  p.cleaningFee !== undefined
-    ? String(p.cleaningFee)
-    : "",
-
-maxGuests:
-  p.maxGuests !== null &&
-  p.maxGuests !== undefined
-    ? String(p.maxGuests)
-    : "",
-
-minimumNights: String(p.minimumNights ?? 1),
-
-maximumNights:
-  p.maximumNights !== null &&
-  p.maximumNights !== undefined
-    ? String(p.maximumNights)
-    : "",
-
-isPublicBookable: Boolean(p.isPublicBookable),
+          cleaningFee:
+            p.cleaningFee !== null && p.cleaningFee !== undefined
+              ? String(p.cleaningFee)
+              : "",
+          maxGuests:
+            p.maxGuests !== null && p.maxGuests !== undefined
+              ? String(p.maxGuests)
+              : "",
+          minimumNights: String(p.minimumNights ?? 1),
+          maximumNights:
+            p.maximumNights !== null && p.maximumNights !== undefined
+              ? String(p.maximumNights)
+              : "",
+          isPublicBookable: Boolean(p.isPublicBookable),
         });
       })
       .catch((e: any) => {
@@ -165,10 +150,8 @@ isPublicBookable: Boolean(p.isPublicBookable),
     setErr(null);
 
     try {
-      const latitude =
-        form.latitude.trim() === "" ? null : Number(form.latitude);
-      const longitude =
-        form.longitude.trim() === "" ? null : Number(form.longitude);
+      const latitude = form.latitude.trim() === "" ? null : Number(form.latitude);
+      const longitude = form.longitude.trim() === "" ? null : Number(form.longitude);
 
       if ((latitude === null) !== (longitude === null)) {
         throw new Error("Latitude and longitude must be provided together");
@@ -199,29 +182,15 @@ isPublicBookable: Boolean(p.isPublicBookable),
           cleaningStartOffsetMinutes: Number(form.cleaningStartOffsetMinutes),
           latitude,
           longitude,
-        baseNightlyRate:
-  form.baseNightlyRate.trim() === ""
-    ? null
-    : Number(form.baseNightlyRate),
-
-cleaningFee:
-  form.cleaningFee.trim() === ""
-    ? null
-    : Number(form.cleaningFee),
-
-maxGuests:
-  form.maxGuests.trim() === ""
-    ? null
-    : Number(form.maxGuests),
-
-minimumNights: Number(form.minimumNights || 1),
-
-maximumNights:
-  form.maximumNights.trim() === ""
-    ? null
-    : Number(form.maximumNights),
-
-isPublicBookable: form.isPublicBookable,
+          baseNightlyRate:
+            form.baseNightlyRate.trim() === "" ? null : Number(form.baseNightlyRate),
+          cleaningFee:
+            form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
+          maxGuests: form.maxGuests.trim() === "" ? null : Number(form.maxGuests),
+          minimumNights: Number(form.minimumNights || 1),
+          maximumNights:
+            form.maximumNights.trim() === "" ? null : Number(form.maximumNights),
+          isPublicBookable: form.isPublicBookable,
         }),
       });
 
@@ -238,12 +207,10 @@ isPublicBookable: form.isPublicBookable,
     }
   }
 
-async function handleCreateAmenity() {
-  if (!id) return;
+  async function handleCreateAmenity() {
+    if (!id) return;
 
-  const res = await fetch(
-    `${API_BASE}/api/dashboard/properties/${id}/amenities`,
-    {
+    const res = await fetch(`${API_BASE}/api/dashboard/properties/${id}/amenities`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -256,83 +223,83 @@ async function handleCreateAmenity() {
         feeType: newAmenity.feeType,
         amount: Number(newAmenity.amount || 0),
       }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to create amenity");
     }
-  );
 
-async function handleDeleteAmenity(amenityId: string) {
-  if (!id) return;
+    setAmenities((prev) => [...prev, data.item]);
 
-  if (!window.confirm("Delete this amenity?")) {
-    return;
+    setNewAmenity({
+      name: "",
+      description: "",
+      chargeMode: "INCLUDED",
+      feeType: "PER_STAY",
+      amount: "",
+    });
   }
 
-  const res = await fetch(
-    `${API_BASE}/api/dashboard/properties/${id}/amenities/${amenityId}`,
-    {
-      method: "DELETE",
-      credentials: "include",
+  async function handleDeleteAmenity(amenityId: string) {
+    if (!id) return;
+
+    if (!window.confirm("Delete this amenity?")) {
+      return;
     }
-  );
 
-  const data = await res.json();
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/amenities/${amenityId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
 
-  if (!res.ok) {
-    throw new Error(data?.error || "Failed to delete amenity");
-  }
+    const data = await res.json();
 
-  setAmenities((prev) => prev.filter((a) => a.id !== amenityId));
-}
-
-async function handleSaveAmenity() {
-  if (!id || !editingAmenityId || !editingAmenity) return;
-
-  const res = await fetch(
-    `${API_BASE}/api/dashboard/properties/${id}/amenities/${editingAmenityId}`,
-    {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: editingAmenity.name,
-        description: editingAmenity.description,
-        chargeMode: editingAmenity.chargeMode,
-        feeType: editingAmenity.feeType,
-        amount: Number(editingAmenity.amount || 0),
-      }),
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to delete amenity");
     }
-  );
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data?.error || "Failed to update amenity");
+    setAmenities((prev) => prev.filter((a) => a.id !== amenityId));
   }
 
-  setAmenities((prev) =>
-    prev.map((a) => (a.id === editingAmenityId ? data.item : a))
-  );
+  async function handleSaveAmenity() {
+    if (!id || !editingAmenityId || !editingAmenity) return;
 
-  setEditingAmenityId(null);
-  setEditingAmenity(null);
-}
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/amenities/${editingAmenityId}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: editingAmenity.name,
+          description: editingAmenity.description,
+          chargeMode: editingAmenity.chargeMode,
+          feeType: editingAmenity.feeType,
+          amount: Number(editingAmenity.amount || 0),
+        }),
+      }
+    );
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data?.error || "Failed to create amenity");
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to update amenity");
+    }
+
+    setAmenities((prev) =>
+      prev.map((a) => (a.id === editingAmenityId ? data.item : a))
+    );
+
+    setEditingAmenityId(null);
+    setEditingAmenity(null);
   }
-
-  setAmenities((prev) => [...prev, data.item]);
-  setNewAmenity({
-    name: "",
-    description: "",
-    chargeMode: "INCLUDED",
-    feeType: "PER_STAY",
-    amount: "",
-  });
- }
 
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
@@ -357,21 +324,7 @@ async function handleSaveAmenity() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate("/properties")}
-          style={{
-            height: 44,
-            padding: "0 16px",
-            borderRadius: 12,
-            border: "1px solid #d1d5db",
-            background: "#ffffff",
-            color: "#111827",
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
+        <button type="button" onClick={() => navigate("/properties")} style={secondaryButtonStyle}>
           Back
         </button>
       </div>
@@ -409,9 +362,7 @@ async function handleSaveAmenity() {
             <div style={labelStyle}>Property Name</div>
             <input
               value={form.name}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, name: e.target.value }))
-              }
+              onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
               placeholder="Property name"
               style={inputStyle}
               required
@@ -422,28 +373,18 @@ async function handleSaveAmenity() {
             <div style={labelStyle}>Address</div>
             <input
               value={form.address1}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, address1: e.target.value }))
-              }
+              onChange={(e) => setForm((s) => ({ ...s, address1: e.target.value }))}
               placeholder="Address"
               style={inputStyle}
             />
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 16,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}
-          >
+          <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>City</div>
               <input
                 value={form.city}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, city: e.target.value }))
-                }
+                onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
                 placeholder="City"
                 style={inputStyle}
               />
@@ -453,29 +394,19 @@ async function handleSaveAmenity() {
               <div style={labelStyle}>Region</div>
               <input
                 value={form.region}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, region: e.target.value }))
-                }
+                onChange={(e) => setForm((s) => ({ ...s, region: e.target.value }))}
                 placeholder="Region"
                 style={inputStyle}
               />
             </div>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 16,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}
-          >
+          <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Country</div>
               <input
                 value={form.country}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, country: e.target.value }))
-                }
+                onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))}
                 placeholder="Country"
                 style={inputStyle}
               />
@@ -485,31 +416,21 @@ async function handleSaveAmenity() {
               <div style={labelStyle}>Timezone</div>
               <input
                 value={form.timezone}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, timezone: e.target.value }))
-                }
+                onChange={(e) => setForm((s) => ({ ...s, timezone: e.target.value }))}
                 placeholder="Timezone"
                 style={inputStyle}
               />
             </div>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 16,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}
-          >
+          <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Latitude</div>
               <input
                 type="number"
                 step="any"
                 value={form.latitude}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, latitude: e.target.value }))
-                }
+                onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))}
                 placeholder="18.4655"
                 style={inputStyle}
               />
@@ -521,22 +442,14 @@ async function handleSaveAmenity() {
                 type="number"
                 step="any"
                 value={form.longitude}
-                onChange={(e) =>
-                  setForm((s) => ({ ...s, longitude: e.target.value }))
-                }
+                onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))}
                 placeholder="-66.1057"
                 style={inputStyle}
               />
             </div>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 16,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}
-          >
+          <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Cleaning Duration (minutes)</div>
               <input
@@ -573,494 +486,426 @@ async function handleSaveAmenity() {
               />
             </div>
           </div>
-<div
-  style={{
-    border: "1px solid #dbeafe",
-    borderRadius: 18,
-    padding: 18,
-    background: "#eff6ff",
-    display: "grid",
-    gap: 16,
-  }}
->
-  <div>
-    <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
-      Direct Booking Settings
-    </div>
-    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-      Configure how this property appears and prices reservations on your public booking page.
-    </div>
-  </div>
 
-  <label
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      fontSize: 14,
-      fontWeight: 700,
-      color: "#111827",
-    }}
-  >
-    <input
-      type="checkbox"
-      checked={form.isPublicBookable}
-      onChange={(e) =>
-        setForm((s) => ({ ...s, isPublicBookable: e.target.checked }))
-      }
-    />
-    Public Booking Enabled
-  </label>
-
-  <div
-    style={{
-      display: "grid",
-      gap: 16,
-      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    }}
-  >
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Nightly Rate</div>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={form.baseNightlyRate}
-        onChange={(e) =>
-          setForm((s) => ({ ...s, baseNightlyRate: e.target.value }))
-        }
-        placeholder="150.00"
-        style={inputStyle}
-      />
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Cleaning Fee</div>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={form.cleaningFee}
-        onChange={(e) =>
-          setForm((s) => ({ ...s, cleaningFee: e.target.value }))
-        }
-        placeholder="75.00"
-        style={inputStyle}
-      />
-    </div>
-  </div>
-
-  <div
-    style={{
-      display: "grid",
-      gap: 16,
-      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    }}
-  >
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Max Guests</div>
-      <input
-        type="number"
-        min="1"
-        value={form.maxGuests}
-        onChange={(e) =>
-          setForm((s) => ({ ...s, maxGuests: e.target.value }))
-        }
-        placeholder="4"
-        style={inputStyle}
-      />
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Minimum Nights</div>
-      <input
-        type="number"
-        min="1"
-        value={form.minimumNights}
-        onChange={(e) =>
-          setForm((s) => ({ ...s, minimumNights: e.target.value }))
-        }
-        placeholder="1"
-        style={inputStyle}
-      />
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Maximum Nights</div>
-      <input
-        type="number"
-        min="1"
-        value={form.maximumNights}
-        onChange={(e) =>
-          setForm((s) => ({ ...s, maximumNights: e.target.value }))
-        }
-        placeholder="Optional"
-        style={inputStyle}
-      />
-    </div>
-  </div>
-</div>
-          <div
-  style={{
-    borderTop: "1px solid #bfdbfe",
-    paddingTop: 16,
-    display: "grid",
-    gap: 12,
-  }}
->
-  <div>
-    <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
-      Amenities & Fees
-    </div>
-    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-      Add optional property fees such as pet fees, parking, or resort fees.
-    </div>
-  </div>
-
-  {amenities.length === 0 ? (
-    <div style={{ fontSize: 13, color: "#6b7280" }}>
-      No amenities or fees configured yet.
-    </div>
-  ) : (
-    <div style={{ display: "grid", gap: 8 }}>
-     {amenities.map((amenity) => (
-  <div
-    key={amenity.id}
-    style={{
-      padding: 12,
-      borderRadius: 12,
-      background: "#ffffff",
-      border: "1px solid #dbeafe",
-    }}
-  >
-    {editingAmenityId === amenity.id ? (
-      <div
-        style={{
-          display: "grid",
-          gap: 12,
-        }}
-      >
-        <input
-          value={editingAmenity?.name ?? ""}
-          onChange={(e) =>
-            setEditingAmenity((s: any) => ({
-              ...s,
-              name: e.target.value,
-            }))
-          }
-          placeholder="Amenity name"
-          style={inputStyle}
-        />
-
-        <input
-          value={editingAmenity?.description ?? ""}
-          onChange={(e) =>
-            setEditingAmenity((s: any) => ({
-              ...s,
-              description: e.target.value,
-            }))
-          }
-          placeholder="Description"
-          style={inputStyle}
-        />
-
-        <div
-          style={{
-            display: "grid",
-            gap: 12,
-            gridTemplateColumns:
-              "repeat(auto-fit,minmax(180px,1fr))",
-          }}
-        >
-          <select
-            value={editingAmenity?.chargeMode ?? "INCLUDED"}
-            onChange={(e) =>
-              setEditingAmenity((s: any) => ({
-                ...s,
-                chargeMode: e.target.value,
-              }))
-            }
-            style={inputStyle}
-          >
-            <option value="INCLUDED">Included</option>
-            <option value="REQUIRED">Required</option>
-            <option value="OPTIONAL">Optional</option>
-          </select>
-
-          <select
-            value={editingAmenity?.feeType ?? "PER_STAY"}
-            onChange={(e) =>
-              setEditingAmenity((s: any) => ({
-                ...s,
-                feeType: e.target.value,
-              }))
-            }
-            style={inputStyle}
-          >
-            <option value="PER_STAY">Per stay</option>
-            <option value="PER_NIGHT">Per night</option>
-          </select>
-
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={editingAmenity?.amount ?? ""}
-            onChange={(e) =>
-              setEditingAmenity((s: any) => ({
-                ...s,
-                amount: e.target.value,
-              }))
-            }
-            style={inputStyle}
-          />
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-          }}
-        >
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await handleSaveAmenity();
-              } catch (e: any) {
-                setErr(String(e?.message ?? e));
-              }
-            }}
-            style={{
-              height: 40,
-              padding: "0 14px",
-              borderRadius: 10,
-              border: "none",
-              background: "#2563eb",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Save
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEditingAmenityId(null);
-              setEditingAmenity(null);
-            }}
-            style={{
-              height: 40,
-              padding: "0 14px",
-              borderRadius: 10,
-              border: "1px solid #d1d5db",
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    ) : (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "center",
-        }}
-      >
-        <div>
           <div
             style={{
-              fontSize: 14,
-              fontWeight: 800,
-              color: "#111827",
+              border: "1px solid #dbeafe",
+              borderRadius: 18,
+              padding: 18,
+              background: "#eff6ff",
+              display: "grid",
+              gap: 16,
             }}
           >
-            {amenity.name}
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+                Direct Booking Settings
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                Configure how this property appears and prices reservations on your public booking page.
+              </div>
+            </div>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#111827",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.isPublicBookable}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, isPublicBookable: e.target.checked }))
+                }
+              />
+              Public Booking Enabled
+            </label>
+
+            <div style={responsiveGridStyle}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Nightly Rate</div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.baseNightlyRate}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, baseNightlyRate: e.target.value }))
+                  }
+                  placeholder="150.00"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Cleaning Fee</div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.cleaningFee}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, cleaningFee: e.target.value }))
+                  }
+                  placeholder="75.00"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
+            <div style={responsiveGridStyle}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Max Guests</div>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.maxGuests}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, maxGuests: e.target.value }))
+                  }
+                  placeholder="4"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Minimum Nights</div>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.minimumNights}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, minimumNights: e.target.value }))
+                  }
+                  placeholder="1"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Maximum Nights</div>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.maximumNights}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, maximumNights: e.target.value }))
+                  }
+                  placeholder="Optional"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
           </div>
 
           <div
             style={{
-              fontSize: 12,
-              color: "#6b7280",
-              marginTop: 2,
+              borderTop: "1px solid #bfdbfe",
+              paddingTop: 16,
+              display: "grid",
+              gap: 12,
             }}
           >
-            {amenity.chargeMode === "INCLUDED"
-              ? "Included"
-              : amenity.chargeMode === "REQUIRED"
-              ? "Required"
-              : "Optional"}{" "}
-            •{" "}
-            {amenity.feeType === "PER_NIGHT"
-              ? "Per night"
-              : "Per stay"}
-          </div>
-        </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+                Amenities & Fees
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                Add included amenities or configurable fees such as pet fees, parking, or resort fees.
+              </div>
+            </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
+            {amenities.length === 0 ? (
+              <div style={{ fontSize: 13, color: "#6b7280" }}>
+                No amenities or fees configured yet.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                {amenities.map((amenity) => (
+                  <div
+                    key={amenity.id}
+                    style={{
+                      padding: 12,
+                      borderRadius: 12,
+                      background: "#ffffff",
+                      border: "1px solid #dbeafe",
+                    }}
+                  >
+                    {editingAmenityId === amenity.id ? (
+                      <div style={{ display: "grid", gap: 12 }}>
+                        <input
+                          value={editingAmenity?.name ?? ""}
+                          onChange={(e) =>
+                            setEditingAmenity((s) =>
+                              s ? { ...s, name: e.target.value } : s
+                            )
+                          }
+                          placeholder="Amenity name"
+                          style={inputStyle}
+                        />
+
+                        <input
+                          value={editingAmenity?.description ?? ""}
+                          onChange={(e) =>
+                            setEditingAmenity((s) =>
+                              s ? { ...s, description: e.target.value } : s
+                            )
+                          }
+                          placeholder="Description"
+                          style={inputStyle}
+                        />
+
+                        <div style={responsiveGridStyle}>
+                          <select
+                            value={editingAmenity?.chargeMode ?? "INCLUDED"}
+                            onChange={(e) =>
+                              setEditingAmenity((s) =>
+                                s
+                                  ? {
+                                      ...s,
+                                      chargeMode: e.target.value as AmenityChargeMode,
+                                    }
+                                  : s
+                              )
+                            }
+                            style={inputStyle}
+                          >
+                            <option value="INCLUDED">Included</option>
+                            <option value="REQUIRED">Required</option>
+                            <option value="OPTIONAL">Optional</option>
+                          </select>
+
+                          <select
+                            value={editingAmenity?.feeType ?? "PER_STAY"}
+                            onChange={(e) =>
+                              setEditingAmenity((s) =>
+                                s
+                                  ? {
+                                      ...s,
+                                      feeType: e.target.value as AmenityFeeType,
+                                    }
+                                  : s
+                              )
+                            }
+                            style={inputStyle}
+                          >
+                            <option value="PER_STAY">Per stay</option>
+                            <option value="PER_NIGHT">Per night</option>
+                          </select>
+
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editingAmenity?.amount ?? ""}
+                            onChange={(e) =>
+                              setEditingAmenity((s) =>
+                                s ? { ...s, amount: e.target.value } : s
+                              )
+                            }
+                            style={inputStyle}
+                          />
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await handleSaveAmenity();
+                              } catch (e: any) {
+                                setErr(String(e?.message ?? e));
+                              }
+                            }}
+                            style={primarySmallButtonStyle}
+                          >
+                            Save
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAmenityId(null);
+                              setEditingAmenity(null);
+                            }}
+                            style={secondarySmallButtonStyle}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                            {amenity.name}
+                          </div>
+
+                          {amenity.description ? (
+                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                              {amenity.description}
+                            </div>
+                          ) : null}
+
+                          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                            {amenity.chargeMode === "INCLUDED"
+                              ? "Included"
+                              : amenity.chargeMode === "REQUIRED"
+                              ? "Required"
+                              : "Optional"}{" "}
+                            • {amenity.feeType === "PER_NIGHT" ? "Per night" : "Per stay"}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                            ${Number(amenity.amount ?? 0).toFixed(2)}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAmenityId(amenity.id);
+                              setEditingAmenity({ ...amenity });
+                            }}
+                            style={iconButtonStyle}
+                          >
+                            ✏️
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await handleDeleteAmenity(amenity.id);
+                              } catch (e: any) {
+                                setErr(String(e?.message ?? e));
+                              }
+                            }}
+                            style={iconButtonStyle}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                gridTemplateColumns:
+                  "minmax(180px, 1fr) minmax(180px, 1fr) 160px 160px 140px auto",
+                alignItems: "end",
+              }}
+            >
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Amenity / Fee Name</div>
+                <input
+                  value={newAmenity.name}
+                  onChange={(e) =>
+                    setNewAmenity((s) => ({ ...s, name: e.target.value }))
+                  }
+                  placeholder="Pet Fee"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Description</div>
+                <input
+                  value={newAmenity.description}
+                  onChange={(e) =>
+                    setNewAmenity((s) => ({ ...s, description: e.target.value }))
+                  }
+                  placeholder="Shown to guests"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Charge Mode</div>
+                <select
+                  value={newAmenity.chargeMode}
+                  onChange={(e) =>
+                    setNewAmenity((s) => ({
+                      ...s,
+                      chargeMode: e.target.value as AmenityChargeMode,
+                    }))
+                  }
+                  style={inputStyle}
+                >
+                  <option value="INCLUDED">Included</option>
+                  <option value="REQUIRED">Required</option>
+                  <option value="OPTIONAL">Optional</option>
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Type</div>
+                <select
+                  value={newAmenity.feeType}
+                  onChange={(e) =>
+                    setNewAmenity((s) => ({
+                      ...s,
+                      feeType: e.target.value as AmenityFeeType,
+                    }))
+                  }
+                  style={inputStyle}
+                >
+                  <option value="PER_STAY">Per stay</option>
+                  <option value="PER_NIGHT">Per night</option>
+                </select>
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Amount</div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newAmenity.amount}
+                  onChange={(e) =>
+                    setNewAmenity((s) => ({ ...s, amount: e.target.value }))
+                  }
+                  placeholder="75.00"
+                  style={inputStyle}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await handleCreateAmenity();
+                  } catch (e: any) {
+                    setErr(String(e?.message ?? e));
+                  }
+                }}
+                style={primaryButtonStyle}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
           <div
-            style={{
-              fontSize: 14,
-              fontWeight: 800,
-              color: "#111827",
-            }}
-          >
-            ${Number(amenity.amount ?? 0).toFixed(2)}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setEditingAmenityId(amenity.id);
-              setEditingAmenity({ ...amenity });
-            }}
-            style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-            }}
-          >
-            ✏️
-          </button>
-
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await handleDeleteAmenity(amenity.id);
-              } catch (e: any) {
-                setErr(String(e?.message ?? e));
-              }
-            }}
-            style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-            }}
-          >
-            🗑️
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-))}
-    </div>
-  )}
-
-  <div
-    style={{
-      display: "grid",
-      gap: 12,
-      gridTemplateColumns: "minmax(180px, 1fr) minmax(180px, 1fr) 160px 160px 140px auto",
-      alignItems: "end",
-    }}
-  >
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Amenity / Fee Name</div>
-      <input
-        value={newAmenity.name}
-        onChange={(e) =>
-          setNewAmenity((s) => ({ ...s, name: e.target.value }))
-        }
-        placeholder="Pet Fee"
-        style={inputStyle}
-      />
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Description</div>
-      <input
-        value={newAmenity.description}
-        onChange={(e) =>
-          setNewAmenity((s) => ({ ...s, description: e.target.value }))
-        }
-        placeholder="Shown to guests"
-        style={inputStyle}
-      />
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Charge Mode</div>
-      <select
-        value={newAmenity.chargeMode}
-        onChange={(e) =>
-          setNewAmenity((s) => ({ ...s, chargeMode: e.target.value }))
-        }
-        style={inputStyle}
-      >
-        <option value="INCLUDED">Included</option>
-        <option value="REQUIRED">Required</option>
-        <option value="OPTIONAL">Optional</option>
-      </select>
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Type</div>
-      <select
-        value={newAmenity.feeType}
-        onChange={(e) =>
-          setNewAmenity((s) => ({ ...s, feeType: e.target.value }))
-        }
-        style={inputStyle}
-      >
-        <option value="PER_STAY">Per stay</option>
-        <option value="PER_NIGHT">Per night</option>
-      </select>
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Amount</div>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={newAmenity.amount}
-        onChange={(e) =>
-          setNewAmenity((s) => ({ ...s, amount: e.target.value }))
-        }
-        placeholder="75.00"
-        style={inputStyle}
-      />
-    </div>
-
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await handleCreateAmenity();
-        } catch (e: any) {
-          setErr(String(e?.message ?? e));
-        }
-      }}
-      style={{
-        height: 44,
-        padding: "0 16px",
-        borderRadius: 12,
-        border: "none",
-        background: "#2563eb",
-        color: "#ffffff",
-        fontSize: 14,
-        fontWeight: 800,
-        cursor: "pointer",
-      }}
-    >
-      Add
-    </button>
-  </div>
-</div>
-           <div
             style={{
               display: "flex",
               justifyContent: "flex-end",
@@ -1069,21 +914,7 @@ async function handleSaveAmenity() {
               paddingTop: 4,
             }}
           >
-            <button
-              type="button"
-              onClick={() => navigate("/properties")}
-              style={{
-                height: 44,
-                padding: "0 16px",
-                borderRadius: 12,
-                border: "1px solid #d1d5db",
-                background: "#ffffff",
-                color: "#111827",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
+            <button type="button" onClick={() => navigate("/properties")} style={secondaryButtonStyle}>
               Cancel
             </button>
 
@@ -1091,16 +922,9 @@ async function handleSaveAmenity() {
               type="submit"
               disabled={saving}
               style={{
-                height: 44,
-                padding: "0 16px",
-                borderRadius: 12,
-                border: "none",
-                background: "#2563eb",
-                color: "#ffffff",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: saving ? "not-allowed" : "pointer",
+                ...primaryButtonStyle,
                 opacity: saving ? 0.7 : 1,
+                cursor: saving ? "not-allowed" : "pointer",
               }}
             >
               {saving ? "Saving..." : "Save Changes"}
@@ -1127,4 +951,65 @@ const inputStyle: React.CSSProperties = {
   color: "#111827",
   fontSize: 14,
   outline: "none",
+};
+
+const responsiveGridStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 16,
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  height: 44,
+  padding: "0 16px",
+  borderRadius: 12,
+  border: "none",
+  background: "#2563eb",
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  height: 44,
+  padding: "0 16px",
+  borderRadius: 12,
+  border: "1px solid #d1d5db",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const primarySmallButtonStyle: React.CSSProperties = {
+  height: 40,
+  padding: "0 14px",
+  borderRadius: 10,
+  border: "none",
+  background: "#2563eb",
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const secondarySmallButtonStyle: React.CSSProperties = {
+  height: 40,
+  padding: "0 14px",
+  borderRadius: 10,
+  border: "1px solid #d1d5db",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const iconButtonStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  cursor: "pointer",
+  fontSize: 16,
 };
