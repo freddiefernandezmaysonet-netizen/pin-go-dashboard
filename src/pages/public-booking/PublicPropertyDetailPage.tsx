@@ -21,6 +21,14 @@ type PublicProperty = {
   checkInTime?: string | null;
   checkOutTime?: string | null;
   timezone?: string | null;
+  amenities?: Array<{
+  id: string;
+  name: string;
+  description?: string | null;
+  chargeMode: "INCLUDED" | "REQUIRED" | "OPTIONAL";
+  feeType: "PER_STAY" | "PER_NIGHT";
+  amount: string | number;
+  }>;
   organization: {
     id: string;
     name: string;
