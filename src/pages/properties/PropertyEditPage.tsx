@@ -721,86 +721,239 @@ async function handleSaveAmenity() {
     </div>
   ) : (
     <div style={{ display: "grid", gap: 8 }}>
-      {amenities.map((amenity) => (
+     {amenities.map((amenity) => (
+  <div
+    key={amenity.id}
+    style={{
+      padding: 12,
+      borderRadius: 12,
+      background: "#ffffff",
+      border: "1px solid #dbeafe",
+    }}
+  >
+    {editingAmenityId === amenity.id ? (
+      <div
+        style={{
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        <input
+          value={editingAmenity?.name ?? ""}
+          onChange={(e) =>
+            setEditingAmenity((s: any) => ({
+              ...s,
+              name: e.target.value,
+            }))
+          }
+          placeholder="Amenity name"
+          style={inputStyle}
+        />
+
+        <input
+          value={editingAmenity?.description ?? ""}
+          onChange={(e) =>
+            setEditingAmenity((s: any) => ({
+              ...s,
+              description: e.target.value,
+            }))
+          }
+          placeholder="Description"
+          style={inputStyle}
+        />
+
         <div
-          key={amenity.id}
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            display: "grid",
             gap: 12,
-            alignItems: "center",
-            padding: 12,
-            borderRadius: 12,
-            background: "#ffffff",
-            border: "1px solid #dbeafe",
+            gridTemplateColumns:
+              "repeat(auto-fit,minmax(180px,1fr))",
           }}
         >
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
-              {amenity.name}
-            </div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-              {amenity.chargeMode === "INCLUDED"
-  ? "Included"
-  : amenity.chargeMode === "REQUIRED"
-  ? "Required"
-  : "Optional"}{" "}
-• {amenity.feeType === "PER_NIGHT" ? "Per night" : "Per stay"}
-            </div>
-          </div>
-          <div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  }}
->
-  <div
-    style={{
-      fontSize: 14,
-      fontWeight: 800,
-      color: "#111827",
-    }}
-  >
-    ${Number(amenity.amount ?? 0).toFixed(2)}
-  </div>
+          <select
+            value={editingAmenity?.chargeMode ?? "INCLUDED"}
+            onChange={(e) =>
+              setEditingAmenity((s: any) => ({
+                ...s,
+                chargeMode: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          >
+            <option value="INCLUDED">Included</option>
+            <option value="REQUIRED">Required</option>
+            <option value="OPTIONAL">Optional</option>
+          </select>
 
-  <button
-    type="button"
-    onClick={() => {
-      setEditingAmenityId(amenity.id);
-      setEditingAmenity({ ...amenity });
-    }}
-    style={{
-      border: "none",
-      background: "transparent",
-      cursor: "pointer",
-    }}
-  >
-    ✏️
-  </button>
+          <select
+            value={editingAmenity?.feeType ?? "PER_STAY"}
+            onChange={(e) =>
+              setEditingAmenity((s: any) => ({
+                ...s,
+                feeType: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          >
+            <option value="PER_STAY">Per stay</option>
+            <option value="PER_NIGHT">Per night</option>
+          </select>
 
-  <button
-    type="button"
-    onClick={async () => {
-      try {
-        await handleDeleteAmenity(amenity.id);
-      } catch (e: any) {
-        setErr(String(e?.message ?? e));
-      }
-    }}
-    style={{
-      border: "none",
-      background: "transparent",
-      cursor: "pointer",
-    }}
-  >
-    🗑️
-  </button>
-</div>
-         
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={editingAmenity?.amount ?? ""}
+            onChange={(e) =>
+              setEditingAmenity((s: any) => ({
+                ...s,
+                amount: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          />
         </div>
-      ))}
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await handleSaveAmenity();
+              } catch (e: any) {
+                setErr(String(e?.message ?? e));
+              }
+            }}
+            style={{
+              height: 40,
+              padding: "0 14px",
+              borderRadius: 10,
+              border: "none",
+              background: "#2563eb",
+              color: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Save
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditingAmenityId(null);
+              setEditingAmenity(null);
+            }}
+            style={{
+              height: 40,
+              padding: "0 14px",
+              borderRadius: 10,
+              border: "1px solid #d1d5db",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ) : (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 800,
+              color: "#111827",
+            }}
+          >
+            {amenity.name}
+          </div>
+
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              marginTop: 2,
+            }}
+          >
+            {amenity.chargeMode === "INCLUDED"
+              ? "Included"
+              : amenity.chargeMode === "REQUIRED"
+              ? "Required"
+              : "Optional"}{" "}
+            •{" "}
+            {amenity.feeType === "PER_NIGHT"
+              ? "Per night"
+              : "Per stay"}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 800,
+              color: "#111827",
+            }}
+          >
+            ${Number(amenity.amount ?? 0).toFixed(2)}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditingAmenityId(amenity.id);
+              setEditingAmenity({ ...amenity });
+            }}
+            style={{
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          >
+            ✏️
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await handleDeleteAmenity(amenity.id);
+              } catch (e: any) {
+                setErr(String(e?.message ?? e));
+              }
+            }}
+            style={{
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+))}
     </div>
   )}
 
