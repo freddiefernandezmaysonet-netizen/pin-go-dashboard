@@ -29,6 +29,11 @@ type PublicProperty = {
   feeType: "PER_STAY" | "PER_NIGHT";
   amount: string | number;
   }>;
+  taxes?: Array<{
+    id: string;
+    name: string;
+    percentage: string | number;
+  }>;
   organization: {
     id: string;
     name: string;
@@ -137,10 +142,13 @@ export default function PublicPropertyDetailPage() {
     0
   );
 
-  const optionalAmenitiesTotal = optionalAmenities.reduce((sum, amenity) => {
-    if (!selectedAmenityIds.includes(amenity.id)) {
-      return sum;
-    }
+ const optionalAmenitiesTotal = optionalAmenities.reduce((sum, amenity) => {
+  if (!selectedAmenityIds.includes(amenity.id)) {
+    return sum;
+  }
+
+  return sum + calculateAmenityAmount(amenity, nights);
+}, 0);
 
 const taxableSubtotal =
   subtotal +
@@ -148,22 +156,17 @@ const taxableSubtotal =
   requiredAmenitiesTotal +
   optionalAmenitiesTotal;
 
-const taxesTotal =
-  (property?.taxes ?? []).reduce((sum, tax) => {
-    const percentage = Number(tax.percentage ?? 0);
+const taxesTotal = (property?.taxes ?? []).reduce((sum, tax) => {
+  const percentage = Number(tax.percentage ?? 0);
 
-    if (!Number.isFinite(percentage) || percentage <= 0) {
-      return sum;
-    }
+  if (!Number.isFinite(percentage) || percentage <= 0) {
+    return sum;
+  }
 
-    return sum + taxableSubtotal * (percentage / 100);
-  }, 0);
+  return sum + taxableSubtotal * (percentage / 100);
+}, 0);
 
-    return sum + calculateAmenityAmount(amenity, nights);
-  }, 0);
-
-  const total = taxableSubtotal + taxesTotal;
-
+const total = taxableSubtotal + taxesTotal;
   const location = [
     property?.address1,
     property?.city,
