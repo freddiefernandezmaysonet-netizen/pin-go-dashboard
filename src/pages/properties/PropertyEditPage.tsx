@@ -16,6 +16,13 @@ type PropertyAmenityItem = {
   isActive: boolean;
 };
 
+type PropertyTaxItem = {
+  id: string;
+  name: string;
+  percentage: string | number;
+  isActive: boolean;
+};
+
 type PropertyItem = {
   id: string;
   name: string;
@@ -37,6 +44,7 @@ type PropertyItem = {
   baseNightlyRate?: number | null;
   cleaningFee?: number | null;
   maxGuests?: number | null;
+  taxes?: PropertyTaxItem[];
   minimumNights?: number | null;
   maximumNights?: number | null;
   checkInTime?: string | null;
@@ -62,6 +70,15 @@ export function PropertyEditPage() {
     feeType: "PER_STAY" as AmenityFeeType,
     amount: "",
   });
+
+const [taxes, setTaxes] = useState<PropertyTaxItem[]>([]);
+const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
+const [editingTax, setEditingTax] = useState<PropertyTaxItem | null>(null);
+
+const [newTax, setNewTax] = useState({
+  name: "",
+  percentage: "",
+});
 
   const [form, setForm] = useState({
     name: "",
@@ -103,6 +120,7 @@ export function PropertyEditPage() {
 
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
 
+        setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
         setForm({
           name: p.name ?? "",
           address1: p.address1 ?? "",
@@ -287,7 +305,95 @@ export function PropertyEditPage() {
       }
     );
 
-    const data = await res.json();
+async function handleCreateTax() {
+  if (!id) return;
+
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${id}/taxes`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: newTax.name,
+        percentage: Number(newTax.percentage || 0),
+      }),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to create tax");
+  }
+
+  setTaxes((prev) => [...prev, data.item]);
+
+  setNewTax({
+    name: "",
+    percentage: "",
+  });
+}
+
+  async function handleDeleteTax(taxId: string) {
+  if (!id) return;
+
+  if (!window.confirm("Delete this tax?")) {
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${id}/taxes/${taxId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to delete tax");
+  }
+
+  setTaxes((prev) => prev.filter((t) => t.id !== taxId));
+}
+
+ async function handleSaveTax() {
+  if (!id || !editingTaxId || !editingTax) return;
+
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${id}/taxes/${editingTaxId}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: editingTax.name,
+        percentage: Number(editingTax.percentage || 0),
+      }),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Failed to update tax");
+  }
+
+  setTaxes((prev) =>
+    prev.map((t) => (t.id === editingTaxId ? data.item : t))
+  );
+
+  setEditingTaxId(null);
+  setEditingTax(null);
+}
+
+ const data = await res.json();
 
     if (!res.ok) {
       throw new Error(data?.error || "Failed to update amenity");
@@ -711,6 +817,202 @@ export function PropertyEditPage() {
                             style={inputStyle}
                           />
                         </div>
+
+                         <div
+  style={{
+    borderTop: "1px solid #bfdbfe",
+    paddingTop: 16,
+    display: "grid",
+    gap: 12,
+  }}
+>
+  <div>
+    <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+      Property Taxes
+    </div>
+    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+      Add tax percentages that should be applied to direct booking reservations.
+    </div>
+  </div>
+
+  {taxes.length === 0 ? (
+    <div style={{ fontSize: 13, color: "#6b7280" }}>
+      No taxes configured yet.
+    </div>
+  ) : (
+    <div style={{ display: "grid", gap: 8 }}>
+      {taxes.map((tax) => (
+        <div
+          key={tax.id}
+          style={{
+            padding: 12,
+            borderRadius: 12,
+            background: "#ffffff",
+            border: "1px solid #dbeafe",
+          }}
+        >
+          {editingTaxId === tax.id ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={responsiveGridStyle}>
+                <input
+                  value={editingTax?.name ?? ""}
+                  onChange={(e) =>
+                    setEditingTax((s) =>
+                      s ? { ...s, name: e.target.value } : s
+                    )
+                  }
+                  placeholder="Tax name"
+                  style={inputStyle}
+                />
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editingTax?.percentage ?? ""}
+                  onChange={(e) =>
+                    setEditingTax((s) =>
+                      s ? { ...s, percentage: e.target.value } : s
+                    )
+                  }
+                  placeholder="11.5"
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await handleSaveTax();
+                    } catch (e: any) {
+                      setErr(String(e?.message ?? e));
+                    }
+                  }}
+                  style={primarySmallButtonStyle}
+                >
+                  Save
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTaxId(null);
+                    setEditingTax(null);
+                  }}
+                  style={secondarySmallButtonStyle}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                  {tax.name}
+                </div>
+
+                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                  Applied to direct booking pricing
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                  {Number(tax.percentage ?? 0).toFixed(2)}%
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTaxId(tax.id);
+                    setEditingTax({ ...tax });
+                  }}
+                  style={iconButtonStyle}
+                >
+                  ✏️
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await handleDeleteTax(tax.id);
+                    } catch (e: any) {
+                      setErr(String(e?.message ?? e));
+                    }
+                  }}
+                  style={iconButtonStyle}
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+
+  <div
+    style={{
+      display: "grid",
+      gap: 12,
+      gridTemplateColumns: "minmax(180px, 1fr) 180px auto",
+      alignItems: "end",
+    }}
+  >
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Tax Name</div>
+      <input
+        value={newTax.name}
+        onChange={(e) =>
+          setNewTax((s) => ({ ...s, name: e.target.value }))
+        }
+        placeholder="Room Tax"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Percentage</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={newTax.percentage}
+        onChange={(e) =>
+          setNewTax((s) => ({ ...s, percentage: e.target.value }))
+        }
+        placeholder="11.5"
+        style={inputStyle}
+      />
+    </div>
+
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await handleCreateTax();
+        } catch (e: any) {
+          setErr(String(e?.message ?? e));
+        }
+      }}
+      style={primaryButtonStyle}
+    >
+      Add Tax
+    </button>
+  </div>
+</div>
 
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
