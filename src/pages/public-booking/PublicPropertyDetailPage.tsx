@@ -74,6 +74,19 @@ function diffNights(checkIn: string, checkOut: string) {
   return Number.isFinite(nights) && nights > 0 ? nights : 0;
 }
 
+function calculateAmenityAmount(
+  amenity: NonNullable<PublicProperty["amenities"]>[number],
+  nights: number
+) {
+  const amount = Number(amenity.amount ?? 0);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return 0;
+  }
+
+  return amenity.feeType === "PER_NIGHT" ? amount * nights : amount;
+}
+
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
 
@@ -86,7 +99,8 @@ export default function PublicPropertyDetailPage() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
-
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
+ 
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -107,8 +121,31 @@ export default function PublicPropertyDetailPage() {
   const nightlyRate = Number(property?.baseNightlyRate ?? 0);
   const cleaningFee = Number(property?.cleaningFee ?? 0);
   const subtotal = nights * nightlyRate;
-  const total = subtotal + cleaningFee;
   const totalGuests = adults + children;
+
+  const optionalAmenities =
+    property?.amenities?.filter((a) => a.chargeMode === "OPTIONAL") ?? [];
+
+  const requiredAmenities =
+    property?.amenities?.filter((a) => a.chargeMode === "REQUIRED") ?? [];
+
+  const includedAmenities =
+    property?.amenities?.filter((a) => a.chargeMode === "INCLUDED") ?? [];
+
+  const requiredAmenitiesTotal = requiredAmenities.reduce(
+    (sum, amenity) => sum + calculateAmenityAmount(amenity, nights),
+    0
+  );
+
+  const optionalAmenitiesTotal = optionalAmenities.reduce((sum, amenity) => {
+    if (!selectedAmenityIds.includes(amenity.id)) {
+      return sum;
+    }
+
+    return sum + calculateAmenityAmount(amenity, nights);
+  }, 0);
+
+  const total = subtotal + cleaningFee + requiredAmenitiesTotal + optionalAmenitiesTotal;
 
   const location = [
     property?.address1,
@@ -319,6 +356,7 @@ function formatDisplayTime(time?: string | null) {
           children,
           guestEmail: guestEmail.trim(),
           guestPhone: guestPhone.trim(),
+          selectedAmenityIds,
         }),
       });
 
@@ -743,6 +781,59 @@ function formatDisplayTime(time?: string | null) {
                       />
                     </label>
 
+                    {optionalAmenities.length > 0 ? (
+                      <div style={styles.addOnsBox}>
+                        <div style={styles.addOnsTitle}>Optional add-ons</div>
+
+                        {optionalAmenities.map((amenity) => {
+                          const amenityAmount = calculateAmenityAmount(amenity, nights);
+                          const checked = selectedAmenityIds.includes(amenity.id);
+
+                          return (
+                            <label key={amenity.id} style={styles.addOnItem}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedAmenityIds((prev) =>
+                                      prev.includes(amenity.id)
+                                        ? prev
+                                        : [...prev, amenity.id]
+                                    );
+                                  } else {
+                                    setSelectedAmenityIds((prev) =>
+                                      prev.filter((id) => id !== amenity.id)
+                                    );
+                                  }
+                                }}
+                                style={styles.addOnCheckbox}
+                              />
+
+                              <div style={{ flex: 1 }}>
+                                <div style={styles.addOnHeader}>
+                                  <strong>{amenity.name}</strong>
+                                  <span>{formatMoney(amenityAmount)}</span>
+                                </div>
+
+                                {amenity.description ? (
+                                  <div style={styles.addOnDescription}>
+                                    {amenity.description}
+                                  </div>
+                                ) : null}
+
+                                <div style={styles.addOnMeta}>
+                                  {amenity.feeType === "PER_NIGHT"
+                                    ? "Per night"
+                                    : "Per stay"}
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+
                     <div style={styles.priceBox}>
                       <div style={styles.priceBoxTitle}>Price details</div>
 
@@ -763,6 +854,32 @@ function formatDisplayTime(time?: string | null) {
                         <span>Cleaning fee</span>
                         <strong>{formatMoney(cleaningFee)}</strong>
                       </div>
+
+                      {requiredAmenities.map((amenity) => (
+                        <div key={amenity.id} style={styles.priceRow}>
+                          <span>{amenity.name}</span>
+                          <strong>
+                            {formatMoney(calculateAmenityAmount(amenity, nights))}
+                          </strong>
+                        </div>
+                      ))}
+
+                      {optionalAmenities
+                        .filter((amenity) => selectedAmenityIds.includes(amenity.id))
+                        .map((amenity) => (
+                          <div key={amenity.id} style={styles.priceRow}>
+                            <span>{amenity.name}</span>
+                            <strong>
+                              {formatMoney(calculateAmenityAmount(amenity, nights))}
+                            </strong>
+                          </div>
+                        ))}
+
+                      {includedAmenities.length > 0 ? (
+                        <div style={styles.includedAmenitiesRow}>
+                          Included: {includedAmenities.map((a) => a.name).join(", ")}
+                        </div>
+                      ) : null}
 
                       <div style={styles.totalRow}>
                         <span>Total</span>
@@ -1314,6 +1431,53 @@ pinGoPanel: {
     border: "1px solid #fecdd3",
     color: "#9f1239",
   },
+  addOnsBox: {
+    marginTop: 18,
+    border: "1px solid #dbeafe",
+    borderRadius: 18,
+    padding: 16,
+    display: "grid",
+    gap: 10,
+    background: "#eff6ff",
+  },
+  addOnsTitle: {
+    fontSize: 13,
+    fontWeight: 950,
+    color: "#0f172a",
+    marginBottom: 2,
+  },
+  addOnItem: {
+    display: "flex",
+    gap: 10,
+    alignItems: "flex-start",
+    background: "#ffffff",
+    border: "1px solid #bfdbfe",
+    borderRadius: 14,
+    padding: 12,
+    cursor: "pointer",
+  },
+  addOnCheckbox: {
+    marginTop: 3,
+  },
+  addOnHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 10,
+    color: "#0f172a",
+    fontSize: 14,
+  },
+  addOnDescription: {
+    marginTop: 4,
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 1.5,
+  },
+  addOnMeta: {
+    marginTop: 4,
+    color: "#2563eb",
+    fontSize: 12,
+    fontWeight: 900,
+  },
   priceBox: {
     marginTop: 18,
     border: "1px solid #e2e8f0",
@@ -1335,6 +1499,11 @@ pinGoPanel: {
     gap: 12,
     color: "#475569",
     fontSize: 14,
+  },
+  includedAmenitiesRow: {
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 1.5,
   },
   totalRow: {
     marginTop: 8,
