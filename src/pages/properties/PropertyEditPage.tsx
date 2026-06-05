@@ -40,6 +40,7 @@ type PropertyItem = {
   isPublicBookable?: boolean;
   publicTitle?: string | null;
   publicDescription?: string | null;
+  publicPhotos?: string[] | null;
   amenities?: PropertyAmenityItem[];
   taxes?: PropertyTaxItem[];
   baseNightlyRate?: number | null;
@@ -98,7 +99,9 @@ export function PropertyEditPage() {
     minimumNights: "1",
     maximumNights: "",
     isPublicBookable: false,
-  });
+    publicTitle: "",
+    publicDescription: "",
+ });
 
   useEffect(() => {
     if (!id) return;
@@ -156,7 +159,10 @@ export function PropertyEditPage() {
             p.maximumNights !== null && p.maximumNights !== undefined
               ? String(p.maximumNights)
               : "",
-          isPublicBookable: Boolean(p.isPublicBookable),
+          publicTitle: p.publicTitle ?? "",
+          publicDescription: p.publicDescription ?? "",
+
+        isPublicBookable: Boolean(p.isPublicBookable),
         });
       })
       .catch((e: any) => {
@@ -202,6 +208,8 @@ export function PropertyEditPage() {
           region: form.region,
           country: form.country,
           timezone: form.timezone,
+          publicTitle: form.publicTitle,
+          publicDescription: form.publicDescription,
           cleaningDurationMinutes: Number(form.cleaningDurationMinutes),
           cleaningStartOffsetMinutes: Number(form.cleaningStartOffsetMinutes),
           latitude,
@@ -658,6 +666,42 @@ export function PropertyEditPage() {
               Public Booking Enabled
             </label>
 
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Public Title</div>
+
+  <input
+    value={form.publicTitle}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        publicTitle: e.target.value,
+      }))
+    }
+    placeholder="Luxury Beachfront Villa"
+    style={inputStyle}
+  />
+</div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Public Description</div>
+
+  <textarea
+    value={form.publicDescription}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        publicDescription: e.target.value,
+      }))
+    }
+    placeholder="Describe the guest experience, location, amenities and unique features of the property."
+    style={{
+      ...inputStyle,
+      height: 120,
+      padding: 14,
+      resize: "vertical",
+    }}
+  />
+</div>
             <div style={responsiveGridStyle}>
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Nightly Rate</div>
