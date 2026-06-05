@@ -93,6 +93,51 @@ function calculateAmenityAmount(
   return amenity.feeType === "PER_NIGHT" ? amount * nights : amount;
 }
 
+const AMENITY_ICONS: Array<[string[], string]> = [
+  [["wifi", "wi-fi", "internet"], "📶"],
+  [["parking", "garage"], "🚗"],
+  [["pool", "swimming"], "🏊"],
+  [["beach", "beachfront", "ocean"], "🏖️"],
+  [["hot tub", "jacuzzi", "spa"], "🛁"],
+  [["bbq", "grill", "barbecue"], "🔥"],
+  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden"], "🌿"],
+  [["kitchen", "cook"], "🍳"],
+  [["coffee", "espresso"], "☕"],
+  [["gym", "fitness"], "🏋️"],
+  [["smart tv", "tv", "television"], "📺"],
+  [["air conditioning", "a/c", "air conditioner"], "❄️"],
+  [["washer", "laundry", "washing machine"], "🧺"],
+  [["dryer"], "♨️"],
+  [["pet", "dog", "cat"], "🐶"],
+  [["workspace", "desk", "office"], "💻"],
+  [["fireplace"], "🔥"],
+  [["bike", "bicycle"], "🚲"],
+  [["dock", "marina", "boat"], "⛵"],
+  [["game room", "games", "arcade"], "🎮"],
+  [["pool table", "billiard"], "🎱"],
+  [["home theater", "cinema", "movie"], "🎬"],
+  [["elevator", "lift"], "🛗"],
+  [["smart lock", "self check-in", "keyless"], "🔐"],
+  [["crib", "baby", "infant"], "👶"],
+  [["king bed", "queen bed", "bed"], "🛏️"],
+  [["breakfast"], "🥐"],
+  [["safe"], "🔒"],
+  [["security camera", "camera"], "📹"],
+  [["ev charger", "electric vehicle"], "🔌"],
+];
+
+function getAmenityIcon(name: string) {
+  const value = name.toLowerCase();
+
+  for (const [keywords, icon] of AMENITY_ICONS) {
+    if (keywords.some((keyword) => value.includes(keyword))) {
+      return icon;
+    }
+  }
+
+  return "✨";
+}
+
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
 
@@ -567,7 +612,24 @@ function formatDisplayTime(time?: string | null) {
       <span>Payment handled through Stripe.</span>
     </div>
   </div>
+  
+
+  {includedAmenities.length > 0 ? (
+    <div style={styles.includedAmenitiesBox}>
+      <div style={styles.includedAmenitiesTitle}>Included with your stay</div>
+
+      <div style={styles.includedAmenitiesGrid}>
+        {includedAmenities.map((amenity) => (
+          <div key={amenity.id} style={styles.includedAmenityPill}>
+            <span>{getAmenityIcon(amenity.name)}</span>
+            <span>{amenity.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null}
 </div>
+
                       <div style={styles.trustSection}>
                       <div style={styles.sectionEyebrow}>Book Direct</div>
                       <h3 style={styles.trustTitle}>Why guests book direct</h3>
@@ -896,12 +958,7 @@ function formatDisplayTime(time?: string | null) {
                           </div>
                         ))}
 
-                      {includedAmenities.length > 0 ? (
-                        <div style={styles.includedAmenitiesRow}>
-                          Included: {includedAmenities.map((a) => a.name).join(", ")}
-                        </div>
-                      ) : null}
-
+                      
                        {(property?.taxes ?? []).map((tax) => {
   const percentage = Number(tax.percentage ?? 0);
 
@@ -1552,7 +1609,38 @@ pinGoPanel: {
     fontWeight: 950,
     color: "#0f172a",
   },
-  reserveButton: {
+ includedAmenitiesBox: {
+  marginTop: 22,
+  borderTop: "1px solid #e2e8f0",
+  paddingTop: 18,
+},
+
+includedAmenitiesTitle: {
+  fontSize: 15,
+  fontWeight: 900,
+  color: "#0f172a",
+  marginBottom: 14,
+},
+
+includedAmenitiesGrid: {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+},
+
+includedAmenityPill: {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  borderRadius: 999,
+  padding: "10px 14px",
+  background: "#eff6ff",
+  border: "1px solid #bfdbfe",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 900,
+},
+ reserveButton: {
     marginTop: 18,
     width: "100%",
     border: "none",
