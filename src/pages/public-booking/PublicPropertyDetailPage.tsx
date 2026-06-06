@@ -359,11 +359,13 @@ useEffect(() => {
       }
 
       setBlockedDates(Array.isArray(data.blockedDates) ? data.blockedDates : []);
-    } catch {
-      if (active) {
-        setBlockedDates([]);
-      }
-    }
+    } catch (err) {
+  console.error("[blocked dates frontend error]", err);
+  if (active) {
+    setBlockedDates([]);
+  }
+}
+
   }
 
   loadBlockedDates();
@@ -799,7 +801,11 @@ disabled={(date) =>
 />
   </div>
 </div>
-                    <div style={styles.guestSelector}>
+    <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
+  Blocked dates loaded: {blockedDates.length}
+</div>               
+
+                     <div style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
                           <div style={styles.guestLabel}>Adults</div>
