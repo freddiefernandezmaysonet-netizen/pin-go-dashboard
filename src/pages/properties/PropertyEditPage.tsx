@@ -824,24 +824,68 @@ https://example.com/photo-3.jpg`}
     marginTop: 12,
   }}
 >
-  {form.publicPhotosText
-    .split("\n")
-    .map((url) => url.trim())
-    .filter(Boolean)
-    .map((url, index) => (
+ {form.publicPhotosText
+  .split("\n")
+  .map((url) => url.trim())
+  .filter(Boolean)
+  .map((url, index) => (
+    <div
+      key={`${url}-${index}`}
+      style={{
+        position: "relative",
+        width: 120,
+        height: 90,
+      }}
+    >
       <img
-        key={`${url}-${index}`}
         src={url}
         alt=""
         style={{
-          width: 120,
-          height: 90,
+          width: "100%",
+          height: "100%",
           objectFit: "cover",
           borderRadius: 12,
           border: "1px solid #d1d5db",
         }}
       />
-    ))}
+
+      <button
+        type="button"
+        onClick={() => {
+          const remaining = form.publicPhotosText
+            .split("\n")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .filter((x, i) => !(x === url && i === index));
+
+          setForm((s) => ({
+            ...s,
+            publicPhotosText: remaining.join("\n"),
+          }));
+        }}
+        style={{
+          position: "absolute",
+          top: 6,
+          right: 6,
+          width: 26,
+          height: 26,
+          borderRadius: 999,
+          border: "none",
+          background: "rgba(17, 24, 39, 0.82)",
+          color: "#ffffff",
+          fontSize: 14,
+          fontWeight: 900,
+          cursor: "pointer",
+          lineHeight: "26px",
+        }}
+        aria-label="Remove photo"
+        title="Remove photo"
+      >
+        ×
+      </button>
+    </div>
+  ))}
+
 </div>   
 
             <div style={responsiveGridStyle}>
