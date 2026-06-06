@@ -186,6 +186,14 @@ export default function PublicPropertyDetailPage() {
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
+  const blockedDateObjects = useMemo(
+    () =>
+      blockedDates
+      .map((dateKey) => fromDateInputValue(dateKey))
+      .filter((date): date is Date => Boolean(date)),
+  [blockedDates]
+);
+
   const nightlyRate = Number(property?.baseNightlyRate ?? 0);
   const cleaningFee = Number(property?.cleaningFee ?? 0);
   const subtotal = nights * nightlyRate;
@@ -776,24 +784,13 @@ useEffect(() => {
     to: fromDateInputValue(checkOut),
   }}
   onSelect={(range: DateRange | undefined) => {
-    if (rangeTouchesBlockedDate(range, blockedDates)) {
-      setCheckIn("");
-      setCheckOut("");
-      setAvailabilityStatus("idle");
-      setAvailabilityMessage("Selected dates include an unavailable night.");
-      return;
-    }
-
-    setCheckIn(toDateInputValue(range?.from));
-    setCheckOut(toDateInputValue(range?.to));
-  }}
-  disabled={[
+  setCheckIn(toDateInputValue(range?.from));
+  setCheckOut(toDateInputValue(range?.to));
+}}  
+disabled={[
   { before: new Date() },
-  ...blockedDates
-    .map((dateKey) => fromDateInputValue(dateKey))
-    .filter((date): date is Date => Boolean(date)),
+  ...blockedDateObjects,
 ]}
-
 />
   </div>
 </div>
