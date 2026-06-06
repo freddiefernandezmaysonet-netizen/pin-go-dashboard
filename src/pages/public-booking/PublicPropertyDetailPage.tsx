@@ -94,6 +94,10 @@ function fromDateInputValue(value: string) {
   return new Date(`${value}T00:00:00`);
 }
 
+function toLocalDateKey(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
 function calculateAmenityAmount(
   amenity: NonNullable<PublicProperty["amenities"]>[number],
   nights: number
@@ -787,10 +791,11 @@ useEffect(() => {
   setCheckIn(toDateInputValue(range?.from));
   setCheckOut(toDateInputValue(range?.to));
 }}  
-disabled={[
-  { before: new Date() },
-  ...blockedDateObjects,
-]}
+disabled={(date) =>
+  date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+  blockedDates.includes(toLocalDateKey(date))
+}
+
 />
   </div>
 </div>
