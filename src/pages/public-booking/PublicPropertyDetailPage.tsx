@@ -165,7 +165,8 @@ export default function PublicPropertyDetailPage() {
 
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
@@ -504,24 +505,39 @@ function formatDisplayTime(time?: string | null) {
             <section style={styles.sectionAlt}>
               <div style={styles.container}>
                 <div style={styles.enterpriseGallery}>
+                 {photos.length > 1 ? (
+  <button
+    type="button"
+    style={styles.showAllPhotosButton}
+    onClick={() => setSelectedPhotoIndex(0)}
+  >
+    📷 Show all {photos.length} photos
+  </button>
+) : null}
                   {photos.length > 0 ? (
                     <>
-                      <img
-                        src={photos[0]}
-                        alt={property.publicTitle || property.name}
-                        style={styles.galleryMainImage}
-                      />
-
+                    <img
+  src={photos[0]}
+  alt={property.publicTitle || property.name}
+  style={{
+    ...styles.galleryMainImage,
+    cursor: "pointer",
+  }}
+  onClick={() => setSelectedPhotoIndex(0)}
+/>
                       <div style={styles.gallerySideGrid}>
-                        {photos.slice(1, 5).map((photo) => (
-                          <img
-                            key={photo}
-                            src={photo}
-                            alt={property.publicTitle || property.name}
-                            style={styles.gallerySideImage}
-                          />
-                        ))}
-
+                        {photos.slice(1, 5).map((photo, index) => (
+  <img
+    key={photo}
+    src={photo}
+    alt={property.publicTitle || property.name}
+    style={{
+      ...styles.gallerySideImage,
+      cursor: "pointer",
+    }}
+    onClick={() => setSelectedPhotoIndex(index + 1)}
+  />
+))}
                         {photos.length === 1 ? (
                           <div style={styles.galleryEmpty}>Pin&Go Stay</div>
                         ) : null}
@@ -1008,6 +1024,63 @@ function formatDisplayTime(time?: string | null) {
           </>
         )}
       </main>
+{selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
+  <div
+    style={styles.lightboxOverlay}
+    onClick={() => setSelectedPhotoIndex(null)}
+  >
+    <div
+      style={styles.lightboxContent}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        style={styles.lightboxClose}
+        onClick={() => setSelectedPhotoIndex(null)}
+      >
+        ✕
+      </button>
+
+      <img
+        src={photos[selectedPhotoIndex]}
+        alt="Property"
+        style={styles.lightboxImage}
+      />
+
+      {photos.length > 1 && (
+        <>
+          <button
+            type="button"
+            style={styles.lightboxPrev}
+            onClick={() =>
+              setSelectedPhotoIndex(
+                selectedPhotoIndex === 0
+                  ? photos.length - 1
+                  : selectedPhotoIndex - 1
+              )
+            }
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            style={styles.lightboxNext}
+            onClick={() =>
+              setSelectedPhotoIndex(
+                selectedPhotoIndex === photos.length - 1
+                  ? 0
+                  : selectedPhotoIndex + 1
+              )
+            }
+          >
+            ›
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+)}
 
       <footer style={styles.footer}>
         <div style={styles.container}>
@@ -1119,6 +1192,7 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "0 auto",
   },
   enterpriseGallery: {
+    position: "relative",
     display: "grid",
     gridTemplateColumns: "minmax(0, 1.45fr) minmax(280px, 0.85fr)",
     gap: 14,
@@ -1692,4 +1766,85 @@ includedAmenityPill: {
     background: "#fff",
     textAlign: "center",
   },
+lightboxOverlay: {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.92)",
+  zIndex: 9999,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 24,
+},
+
+lightboxContent: {
+  position: "relative",
+  width: "100%",
+  maxWidth: 1400,
+},
+
+lightboxImage: {
+  width: "100%",
+  maxHeight: "90vh",
+  objectFit: "contain",
+  borderRadius: 20,
+},
+
+lightboxClose: {
+  position: "absolute",
+  top: -50,
+  right: 0,
+  width: 42,
+  height: 42,
+  borderRadius: "50%",
+  border: "none",
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: 18,
+  fontWeight: 900,
+},
+
+lightboxPrev: {
+  position: "absolute",
+  left: 20,
+  top: "50%",
+  transform: "translateY(-50%)",
+  width: 54,
+  height: 54,
+  borderRadius: "50%",
+  border: "none",
+  cursor: "pointer",
+  fontSize: 34,
+  fontWeight: 900,
+},
+
+lightboxNext: {
+  position: "absolute",
+  right: 20,
+  top: "50%",
+  transform: "translateY(-50%)",
+  width: 54,
+  height: 54,
+  borderRadius: "50%",
+  border: "none",
+  cursor: "pointer",
+  fontSize: 34,
+  fontWeight: 900,
+},
+
+showAllPhotosButton: {
+  position: "absolute",
+  right: 24,
+  bottom: 24,
+  zIndex: 5,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+  color: "#0f172a",
+  borderRadius: 14,
+  padding: "12px 16px",
+  fontWeight: 900,
+  fontSize: 14,
+  cursor: "pointer",
+  boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
+},
 };
