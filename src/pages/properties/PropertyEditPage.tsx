@@ -58,6 +58,7 @@ export function PropertyEditPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const [amenities, setAmenities] = useState<PropertyAmenityItem[]>([]);
@@ -249,6 +250,64 @@ export function PropertyEditPage() {
       setSaving(false);
     }
   }
+
+async function handleUploadPhotos(
+  e: React.ChangeEvent<HTMLInputElement>
+) {
+  const files = e.target.files;
+
+  if (!files || files.length === 0) {
+    return;
+  }
+
+  setUploadingPhoto(true);
+  setErr(null);
+
+  try {
+    const uploadedUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const formData = new FormData();
+
+      formData.append("photo", file);
+
+      const res = await fetch(
+        `${API_BASE}/api/uploads/property-photo`,
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          data?.error || "Failed to upload property photo"
+        );
+      }
+
+      uploadedUrls.push(data.url);
+    }
+
+    setForm((s) => {
+      const existing = s.publicPhotosText
+        .split("\n")
+        .map((x) => x.trim())
+        .filter(Boolean);
+
+      return {
+        ...s,
+        publicPhotosText: [...existing, ...uploadedUrls].join("\n"),
+      };
+    });
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setUploadingPhoto(false);
+  }
+}
 
   async function handleCreateAmenity() {
     if (!id) return;
@@ -709,7 +768,27 @@ export function PropertyEditPage() {
     }}
   />
 </div>
-           <div style={{ display: "grid", gap: 6 }}>
+          
+<input
+  type="file"
+  accept="image/*"
+  multiple
+  onChange={handleUploadPhotos}
+/>
+
+{uploadingPhoto ? (
+  <div
+    style={{
+      fontSize: 13,
+      color: "#2563eb",
+      fontWeight: 700,
+    }}
+  >
+    Uploading photos...
+  </div>
+) : null}
+
+         <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Photos</div>
 
   <textarea
@@ -737,7 +816,35 @@ https://example.com/photo-3.jpg`}
   </div>
 </div> 
 
-             <div style={responsiveGridStyle}>
+          <div
+  style={{
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 12,
+  }}
+>
+  {form.publicPhotosText
+    .split("\n")
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map((url, index) => (
+      <img
+        key={`${url}-${index}`}
+        src={url}
+        alt=""
+        style={{
+          width: 120,
+          height: 90,
+          objectFit: "cover",
+          borderRadius: 12,
+          border: "1px solid #d1d5db",
+        }}
+      />
+    ))}
+</div>   
+
+            <div style={responsiveGridStyle}>
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Nightly Rate</div>
                 <input
