@@ -31,15 +31,60 @@ type Nfc = {
   };
 };
 
+type PricingAmenity = {
+  id: string;
+  name: string;
+  amount: number;
+  feeType: string;
+  baseAmount: number;
+  chargeMode: string;
+  isSelected: boolean;
+  description?: string | null;
+};
+
+type PricingTax = {
+  id: string;
+  name: string;
+  amount: number;
+  percentage: number;
+};
+
+type PricingBreakdown = {
+  nights: number;
+  currency: string;
+  nightlyRate: number;
+  nightlySubtotal: number;
+  cleaningFee: number;
+  amenitiesTotal: number;
+  taxesTotal: number;
+  taxableSubtotal: number;
+  totalAmount: number;
+  totalAmountCents?: number;
+  amenities?: PricingAmenity[];
+  chargedAmenities?: PricingAmenity[];
+  taxes?: PricingTax[];
+};
+
 type Reservation = {
   id: string;
   guestName: string;
   guestEmail?: string | null;
+  guestPhone?: string | null;
   roomName?: string | null;
   checkIn: string;
   checkOut: string;
   operationalStatus: string;
+  status?: string;
   paymentState?: "NONE" | "PAID" | "FAILED" | "PENDING";
+  totalAmount?: number | null;
+  currency?: string | null;
+  source?: string | null;
+  externalProvider?: string | null;
+  externalId?: string | null;
+  selectedAmenityIds?: string[];
+  pricingBreakdown?: PricingBreakdown | null;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
   property?: { id: string; name: string } | null;
   passcodes?: Passcode[];
   nfc?: Nfc[];
@@ -49,6 +94,30 @@ function fmt(d?: string | null) {
   if (!d) return "—";
   const dt = new Date(d);
   return isNaN(dt.getTime()) ? d : dt.toLocaleString();
+}
+
+function money(value?: number | null, currency = "usd") {
+  const n = Number(value ?? 0);
+
+  if (!Number.isFinite(n)) return "—";
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+function sourceLabel(value?: string | null) {
+  const v = String(value ?? "").trim();
+
+  if (!v) return "—";
+
+  if (v === "DIRECT_BOOKING") return "Direct Booking";
+  if (v === "PIN_GO_DIRECT") return "Pin&Go Direct";
+
+  return v.replaceAll("_", " ");
 }
 
 function labelizeStatus(value?: string | null) {
@@ -367,6 +436,43 @@ export function ReservationDetailPage() {
             flexWrap: "wrap",
           }}
         >
+          <div style={cardStyle()}>
+  <h3 style={sectionTitleStyle()}>Direct Booking Details</h3>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+      gap: 16,
+      marginTop: 16,
+    }}
+  >
+    <Stat
+      title="Total Paid"
+      value={
+        data.totalAmount != null
+          ? `$${Number(data.totalAmount).toFixed(2)}`
+          : "—"
+      }
+    />
+
+    <Stat
+      title="Source"
+      value={data.source ?? "—"}
+    />
+
+    <Stat
+      title="Provider"
+      value={data.externalProvider ?? "—"}
+    />
+
+    <Stat
+      title="Currency"
+      value={(data.currency ?? "usd").toUpperCase()}
+    />
+  </div>
+</div>
+
           <h3 style={sectionTitleStyle()}>Passcodes</h3>
           <div style={mutedStyle()}>{passcodes.length} total</div>
         </div>
