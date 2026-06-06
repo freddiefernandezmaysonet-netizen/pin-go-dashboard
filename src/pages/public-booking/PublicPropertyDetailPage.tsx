@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
 
@@ -173,14 +173,7 @@ export default function PublicPropertyDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const [availabilityStatus, setAvailabilityStatus] = useState<
-    "idle" | "available" | "unavailable"
-  >("idle");
-  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(
-    null
-  );
-  
+    
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   const [adults, setAdults] = useState(1);
@@ -375,84 +368,7 @@ useEffect(() => {
   };
 }, [property?.id]);
 
-  useEffect(() => {
-    setAvailabilityStatus("idle");
-    setAvailabilityMessage(null);
-  }, [checkIn, checkOut]);
-
-  async function handleCheckAvailability() {
-    try {
-      setCheckingAvailability(true);
-      setAvailabilityStatus("idle");
-      setAvailabilityMessage(null);
-      setBookingError(null);
-
-      if (!property) {
-        throw new Error("Property not loaded");
-      }
-
-      if (!checkIn || !checkOut) {
-        throw new Error("Please select check-in and check-out dates.");
-      }
-
-      if (nights <= 0) {
-        throw new Error("Check-out must be after check-in.");
-      }
-
-      if (nights < (property.minimumNights ?? 1)) {
-        throw new Error(
-          `Minimum stay is ${property.minimumNights ?? 1} night(s).`
-        );
-      }
-
-      if (property.maximumNights && nights > property.maximumNights) {
-        throw new Error(`Maximum stay is ${property.maximumNights} night(s).`);
-      }
-
-      if (totalGuests < 1) {
-        throw new Error("Please select at least one guest.");
-      }
-
-      if (property.maxGuests && totalGuests > property.maxGuests) {
-        throw new Error(`Maximum guests allowed is ${property.maxGuests}.`);
-      }
-
-      const res = await fetch(`${API_BASE}/api/public-booking/check-availability`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          propertyId: property.id,
-          checkIn,
-          checkOut,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Unable to check availability.");
-      }
-
-      if (data.available) {
-        setAvailabilityStatus("available");
-        setAvailabilityMessage("Available for the selected dates.");
-        return;
-      }
-
-      setAvailabilityStatus("unavailable");
-      setAvailabilityMessage(
-        "This property is not available for the selected dates."
-      );
-    } catch (err: any) {
-      setAvailabilityStatus("unavailable");
-      setAvailabilityMessage(err?.message || "Unable to check availability.");
-    } finally {
-      setCheckingAvailability(false);
-    }
-  }
-
+  
   async function handleReserve(e: React.FormEvent) {
     e.preventDefault();
 
@@ -462,10 +378,6 @@ useEffect(() => {
 
       if (!property) {
         throw new Error("Property not loaded");
-      }
-
-      if (availabilityStatus !== "available") {
-        throw new Error("Please check availability before reserving.");
       }
 
       if (!checkIn || !checkOut || !guestName.trim() || !guestEmail.trim()) {
@@ -801,11 +713,7 @@ disabled={(date) =>
 />
   </div>
 </div>
-    <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>
-  Blocked dates loaded: {blockedDates.length}
-</div>               
-
-                     <div style={styles.guestSelector}>
+                        <div style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
                           <div style={styles.guestLabel}>Adults</div>
@@ -891,34 +799,7 @@ disabled={(date) =>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={handleCheckAvailability}
-                      disabled={checkingAvailability || !checkIn || !checkOut}
-                      style={{
-                        ...styles.secondaryButton,
-                        ...(checkingAvailability || !checkIn || !checkOut
-                          ? styles.secondaryButtonDisabled
-                          : {}),
-                      }}
-                    >
-                      {checkingAvailability ? "Checking..." : "Check availability"}
-                    </button>
-
-                    {availabilityMessage ? (
-                      <div
-                        style={{
-                          ...styles.availabilityBox,
-                          ...(availabilityStatus === "available"
-                            ? styles.availabilityBoxSuccess
-                            : styles.availabilityBoxError),
-                        }}
-                      >
-                        {availabilityStatus === "available" ? "✅ " : "⚠️ "}
-                        {availabilityMessage}
-                      </div>
-                    ) : null}
-
+                  
                     <label style={styles.field}>
                       <span>Full name</span>
                       <input
@@ -1072,12 +953,13 @@ disabled={(date) =>
 
                     <button
                       type="submit"
-                      disabled={submitting || availabilityStatus !== "available"}
+                      disabled={submitting || !checkIn || !checkOut}
                       style={{
                         ...styles.reserveButton,
-                        ...(submitting || availabilityStatus !== "available"
-                          ? styles.reserveButtonDisabled
-                          : {}),
+                        ...(submitting || !checkIn || !checkOut
+  ? styles.reserveButtonDisabled
+  : {}),
+
                       }}
                     >
                       {submitting ? "Preparing checkout..." : "Reserve now"}
