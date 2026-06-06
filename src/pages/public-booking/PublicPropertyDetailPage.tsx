@@ -693,24 +693,24 @@ useEffect(() => {
     </div>
   </div>
 
-  <div style={styles.calendarShell}>
-   <DayPicker
-  mode="range"
-  numberOfMonths={2}
-  selected={{
-    from: fromDateInputValue(checkIn),
-    to: fromDateInputValue(checkOut),
-  }}
-  onSelect={(range: DateRange | undefined) => {
-  setCheckIn(toDateInputValue(range?.from));
-  setCheckOut(toDateInputValue(range?.to));
-}}  
-disabled={(date) =>
-  date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-  blockedDates.includes(toLocalDateKey(date))
-}
+ <div style={styles.calendarShell}>
+    <DayPicker     
+      mode="range"
+      numberOfMonths={2}
+      selected={{
+        from: fromDateInputValue(checkIn),
+        to: fromDateInputValue(checkOut),
+      }}
+      onSelect={(range: DateRange | undefined) => {
+        setCheckIn(toDateInputValue(range?.from));
+        setCheckOut(toDateInputValue(range?.to));
+      }}  
+      disabled={(date) =>
+        date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+        blockedDates.includes(toLocalDateKey(date))
+      }
 
-/>
+     />
   </div>
 </div>
                         <div style={styles.guestSelector}>
@@ -1910,9 +1910,17 @@ calendarValue: {
 calendarShell: {
   border: "1px solid #e2e8f0",
   borderRadius: 22,
-  padding: 14,
+  padding: "12px 8px",
   background:
     "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+  overflowX: "auto",
+  maxWidth: "100%",
+},
+calendarInner: {
+  minWidth: 0,
+  width: "max-content",
+  maxWidth: "100%",
+  margin: "0 auto",
 },
 
 };
