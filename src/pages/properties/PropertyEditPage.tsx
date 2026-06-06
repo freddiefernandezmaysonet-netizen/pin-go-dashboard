@@ -101,6 +101,7 @@ export function PropertyEditPage() {
     isPublicBookable: false,
     publicTitle: "",
     publicDescription: "",
+    publicPhotosText: "",
  });
 
   useEffect(() => {
@@ -161,8 +162,10 @@ export function PropertyEditPage() {
               : "",
           publicTitle: p.publicTitle ?? "",
           publicDescription: p.publicDescription ?? "",
-
-        isPublicBookable: Boolean(p.isPublicBookable),
+          publicPhotosText: Array.isArray(p.publicPhotos)
+          ? p.publicPhotos.join("\n")
+          : "",
+          isPublicBookable: Boolean(p.isPublicBookable),
         });
       })
       .catch((e: any) => {
@@ -210,6 +213,10 @@ export function PropertyEditPage() {
           timezone: form.timezone,
           publicTitle: form.publicTitle,
           publicDescription: form.publicDescription,
+          publicPhotos: form.publicPhotosText
+             .split("\n")
+             .map((url) => url.trim())
+             .filter(Boolean),
           cleaningDurationMinutes: Number(form.cleaningDurationMinutes),
           cleaningStartOffsetMinutes: Number(form.cleaningStartOffsetMinutes),
           latitude,
@@ -702,7 +709,35 @@ export function PropertyEditPage() {
     }}
   />
 </div>
-            <div style={responsiveGridStyle}>
+           <div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Public Photos</div>
+
+  <textarea
+    value={form.publicPhotosText}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        publicPhotosText: e.target.value,
+      }))
+    }
+    placeholder={`https://example.com/photo-1.jpg
+https://example.com/photo-2.jpg
+https://example.com/photo-3.jpg`}
+    style={{
+      ...inputStyle,
+      height: 140,
+      padding: 14,
+      resize: "vertical",
+      lineHeight: 1.5,
+    }}
+  />
+
+  <div style={{ fontSize: 12, color: "#6b7280" }}>
+    Add one image URL per line. The first image will be used as the main gallery photo.
+  </div>
+</div> 
+
+             <div style={responsiveGridStyle}>
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Nightly Rate</div>
                 <input
