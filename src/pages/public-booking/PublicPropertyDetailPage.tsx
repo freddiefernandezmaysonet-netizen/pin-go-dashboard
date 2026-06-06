@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { DayPicker, type DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
 
 type PublicProperty = {
@@ -78,6 +81,17 @@ function diffNights(checkIn: string, checkOut: string) {
   );
 
   return Number.isFinite(nights) && nights > 0 ? nights : 0;
+}
+
+
+function toDateInputValue(date: Date | undefined) {
+  if (!date) return "";
+  return format(date, "yyyy-MM-dd");
+}
+
+function fromDateInputValue(value: string) {
+  if (!value) return undefined;
+  return new Date(`${value}T00:00:00`);
 }
 
 function calculateAmenityAmount(
@@ -162,6 +176,8 @@ export default function PublicPropertyDetailPage() {
   const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(
     null
   );
+  
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
@@ -297,6 +313,53 @@ function formatDisplayTime(time?: string | null) {
       active = false;
     };
   }, [organizationSlug, propertySlug]);
+
+useEffect(() => {
+  if (!property?.id) return;
+
+  let active = true;
+
+  async function loadBlockedDates() {
+    try {
+      const today = new Date();
+      const from = toDateInputValue(today);
+      const to = toDateInputValue(addDays(today, 365));
+
+      const res = await fetch(`${API_BASE}/api/public-booking/blocked-dates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          propertyId: property?.id,
+          from,
+          to,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!active) return;
+
+      if (!res.ok || !data.ok) {
+        setBlockedDates([]);
+        return;
+      }
+
+      setBlockedDates(Array.isArray(data.blockedDates) ? data.blockedDates : []);
+    } catch {
+      if (active) {
+        setBlockedDates([]);
+      }
+    }
+  }
+
+  loadBlockedDates();
+
+  return () => {
+    active = false;
+  };
+}, [property?.id]);
 
   useEffect(() => {
     setAvailabilityStatus("idle");
@@ -495,28 +558,27 @@ function formatDisplayTime(time?: string | null) {
                   <span>🌙 Minimum {property.minimumNights ?? 1} night(s)</span>
                 </div>
 
-                <p style={styles.heroSubtitle}>
-                  {property.publicDescription ||
-                    "Book this property directly through Pin&Go."}
-                </p>
-              </div>
+                             </div>
             </section>
+<section style={styles.sectionAlt}>
+  <div style={styles.container}>
+    <div style={styles.topBookingGrid}>
+      <div style={styles.topBookingLeft}>
+        <div style={styles.enterpriseGallery}>
+          {photos.length > 1 ? (
+            <button
+              type="button"
+              style={styles.showAllPhotosButton}
+              onClick={() => setSelectedPhotoIndex(0)}
+            >
+              📷 Show all {photos.length} photos
+            </button>
+          ) : null}
 
-            <section style={styles.sectionAlt}>
-              <div style={styles.container}>
-                <div style={styles.enterpriseGallery}>
-                 {photos.length > 1 ? (
-  <button
-    type="button"
-    style={styles.showAllPhotosButton}
-    onClick={() => setSelectedPhotoIndex(0)}
-  >
-    📷 Show all {photos.length} photos
-  </button>
-) : null}
-                  {photos.length > 0 ? (
-                    <>
-                    <img
+          {photos.length > 0 ? (
+            <>
+              <img
+         
   src={photos[0]}
   alt={property.publicTitle || property.name}
   style={{
@@ -555,6 +617,10 @@ function formatDisplayTime(time?: string | null) {
 </div>
                   )}
                 </div>
+      </div>
+
+      {/* aquí va el form bookingCard movido */}
+    </div>
 
                 <div style={styles.detailGrid}>
                      <div style={styles.leftColumn}>
@@ -603,34 +669,33 @@ function formatDisplayTime(time?: string | null) {
 
   <h3 style={styles.trustTitle}>Designed for a smoother stay</h3>
 
-  <div style={styles.trustGrid}>
-    <div style={styles.trustCard}>
-      <div style={styles.trustIcon}>🔐</div>
-      <strong>Self check-in</strong>
-      <span>Smart access prepared for your stay.</span>
-    </div>
-
-    <div style={styles.trustCard}>
-      <div style={styles.trustIcon}>⚡</div>
-      <strong>Fast confirmation</strong>
-      <span>Reservation processed securely.</span>
-    </div>
-
-    <div style={styles.trustCard}>
-      <div style={styles.trustIcon}>🏡</div>
-      <strong>Guest-ready property</strong>
-      <span>Designed for smooth arrivals.</span>
-    </div>
-
-    <div style={styles.trustCard}>
-      <div style={styles.trustIcon}>💳</div>
-      <strong>Secure checkout</strong>
-      <span>Payment handled through Stripe.</span>
-    </div>
+<div style={styles.trustGrid}>
+  <div style={styles.trustCard}>
+    <div style={styles.trustIcon}>🔐</div>
+    <strong>Smart access</strong>
+    <span>Digital access prepared for your stay.</span>
   </div>
-  
 
-  {includedAmenities.length > 0 ? (
+  <div style={styles.trustCard}>
+    <div style={styles.trustIcon}>⚡</div>
+    <strong>Instant confirmation</strong>
+    <span>Booking details delivered after payment.</span>
+  </div>
+
+  <div style={styles.trustCard}>
+    <div style={styles.trustIcon}>💳</div>
+    <strong>Secure checkout</strong>
+    <span>Protected payment through Stripe.</span>
+  </div>
+
+  <div style={styles.trustCard}>
+    <div style={styles.trustIcon}>📞</div>
+    <strong>Direct communication</strong>
+    <span>Stay connected with the host.</span>
+  </div>
+</div>
+ 
+ {includedAmenities.length > 0 ? (
     <div style={styles.includedAmenitiesBox}>
       <div style={styles.includedAmenitiesTitle}>Included with your stay</div>
 
@@ -646,37 +711,7 @@ function formatDisplayTime(time?: string | null) {
   ) : null}
 </div>
 
-                      <div style={styles.trustSection}>
-                      <div style={styles.sectionEyebrow}>Book Direct</div>
-                      <h3 style={styles.trustTitle}>Why guests book direct</h3>
-
-                      <div style={styles.trustGrid}>
-                        <div style={styles.trustCard}>
-                          <div style={styles.trustIcon}>🔒</div>
-                          <strong>Secure payments</strong>
-                          <span>Protected Stripe checkout.</span>
-                        </div>
-
-                        <div style={styles.trustCard}>
-                          <div style={styles.trustIcon}>⚡</div>
-                          <strong>Instant confirmation</strong>
-                          <span>Fast reservation processing.</span>
-                        </div>
-
-                        <div style={styles.trustCard}>
-                          <div style={styles.trustIcon}>📞</div>
-                          <strong>Direct communication</strong>
-                          <span>Stay connected with the host.</span>
-                        </div>
-
-                        <div style={styles.trustCard}>
-                          <div style={styles.trustIcon}>🏠</div>
-                          <strong>Smart check-in</strong>
-                          <span>Modern guest experience.</span>
-                        </div>
-                      </div>
-                    </div>
-
+                    
                     <div style={styles.pinGoPanel}>
                       <div>
                         <div style={styles.sectionEyebrow}>Powered by Pin&Go</div>
@@ -715,26 +750,53 @@ function formatDisplayTime(time?: string | null) {
                       <div style={styles.bookingBadge}>Direct</div>
                     </div>
 
-                    <label style={styles.field}>
-                      <span>Check-in</span>
-                      <input
-                        type="date"
-                        value={checkIn}
-                        onChange={(e) => setCheckIn(e.target.value)}
-                        style={styles.input}
-                      />
-                    </label>
+                  <div style={styles.calendarBox}>
+  <div style={styles.calendarHeader}>
+    <div style={styles.calendarDatePanel}>
+      <div style={styles.calendarLabel}>Check-in</div>
+      <div style={styles.calendarValue}>
+        {checkIn ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy") : "Add date"}
+      </div>
+    </div>
 
-                    <label style={styles.field}>
-                      <span>Check-out</span>
-                      <input
-                        type="date"
-                        value={checkOut}
-                        onChange={(e) => setCheckOut(e.target.value)}
-                        style={styles.input}
-                      />
-                    </label>
+    <div style={styles.calendarDatePanel}>
+      <div style={styles.calendarLabel}>Check-out</div>
+      <div style={styles.calendarValue}>
+        {checkOut ? format(fromDateInputValue(checkOut)!, "MMM d, yyyy") : "Add date"}
+      </div>
+    </div>
+  </div>
 
+  <div style={styles.calendarShell}>
+   <DayPicker
+  mode="range"
+  numberOfMonths={2}
+  selected={{
+    from: fromDateInputValue(checkIn),
+    to: fromDateInputValue(checkOut),
+  }}
+  onSelect={(range: DateRange | undefined) => {
+    if (rangeTouchesBlockedDate(range, blockedDates)) {
+      setCheckIn("");
+      setCheckOut("");
+      setAvailabilityStatus("idle");
+      setAvailabilityMessage("Selected dates include an unavailable night.");
+      return;
+    }
+
+    setCheckIn(toDateInputValue(range?.from));
+    setCheckOut(toDateInputValue(range?.to));
+  }}
+  disabled={[
+  { before: new Date() },
+  ...blockedDates
+    .map((dateKey) => fromDateInputValue(dateKey))
+    .filter((date): date is Date => Boolean(date)),
+]}
+
+/>
+  </div>
+</div>
                     <div style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
@@ -1012,6 +1074,26 @@ function formatDisplayTime(time?: string | null) {
                     >
                       {submitting ? "Preparing checkout..." : "Reserve now"}
                     </button>
+
+                 <div style={styles.paymentMethods}>
+  <div style={styles.paymentTrustRow}>
+    <span style={styles.paymentTrustIcon}>🔒</span>
+    <span>
+      Secure payments powered by{" "}
+      <strong style={styles.stripeText}>Stripe</strong>
+    </span>
+  </div>
+<div style={styles.paymentLogosRow}>
+  <img src="/payments/visa.svg" alt="Visa" style={styles.paymentLogo} />
+  <img src="/payments/mastercard.svg" alt="Mastercard" style={styles.paymentLogo} />
+  <img src="/payments/amex.svg" alt="American Express" style={styles.paymentLogo} />
+  <img src="/payments/apple-pay.svg" alt="Apple Pay" style={styles.paymentLogo} />
+  <img src="/payments/google-pay.svg" alt="Google Pay" style={styles.paymentLogo} />
+  <img src="/payments/klarna.svg" alt="Klarna" style={styles.paymentLogo} />
+  <img src="/payments/amazon-pay.svg" alt="Amazon Pay" style={styles.paymentLogo} />
+</div>
+</div>
+
 
                     <p style={styles.disclaimer}>
                       You will be redirected to Stripe Checkout to complete your
@@ -1334,21 +1416,25 @@ detailGrid: {
     letterSpacing: "-0.035em",
     color: "#0f172a",
   },
-  trustGrid: {
-    marginTop: 22,
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: 14,
-  },
-  trustCard: {
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    borderRadius: 20,
-    padding: 18,
-    display: "grid",
-    gap: 8,
-    color: "#0f172a",
-  },
+ 
+ trustGrid: {
+  marginTop: 22,
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 18,
+},
+
+trustCard: {
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  borderRadius: 20,
+  padding: 24,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 12,
+  color: "#0f172a",
+},
   trustIcon: {
     width: 42,
     height: 42,
@@ -1847,4 +1933,96 @@ showAllPhotosButton: {
   cursor: "pointer",
   boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
 },
+paymentMethods: {
+  marginTop: 18,
+  paddingTop: 18,
+  borderTop: "1px solid #e2e8f0",
+},
+
+paymentTrustRow: {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  color: "#334155",
+  fontSize: 14,
+  fontWeight: 800,
+},
+paymentTrustIcon: {
+  width: 34,
+  height: 34,
+  borderRadius: 12,
+  display: "grid",
+  placeItems: "center",
+  background: "#eff6ff",
+  border: "1px solid #bfdbfe",
+  color: "#1d4ed8",
+  fontSize: 16,
+},
+
+stripeText: {
+  color: "#1d4ed8",
+  fontWeight: 950,
+},
+
+paymentLogosRow: {
+  marginTop: 18,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 18,
+  flexWrap: "wrap",
+},
+
+paymentLogo: {
+  maxHeight: 45,
+  maxWidth: 150,
+  objectFit: "contain",
+},
+calendarBox: {
+  marginTop: 16,
+  border: "1px solid #e2e8f0",
+  borderRadius: 24,
+  padding: 16,
+  background: "#ffffff",
+  boxShadow: "0 16px 42px rgba(15,23,42,0.08)",
+  overflow: "hidden",
+},
+
+calendarHeader: {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: 10,
+  marginBottom: 14,
+},
+
+calendarDatePanel: {
+  border: "1px solid #e2e8f0",
+  borderRadius: 18,
+  padding: "13px 14px",
+  background: "#f8fafc",
+},
+
+calendarLabel: {
+  fontSize: 11,
+  fontWeight: 950,
+  color: "#64748b",
+  textTransform: "uppercase",
+  letterSpacing: "0.09em",
+},
+
+calendarValue: {
+  marginTop: 5,
+  fontSize: 15,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+calendarShell: {
+  border: "1px solid #e2e8f0",
+  borderRadius: 22,
+  padding: 14,
+  background:
+    "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+},
+
 };
