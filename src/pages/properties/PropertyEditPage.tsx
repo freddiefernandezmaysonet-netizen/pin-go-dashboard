@@ -23,6 +23,14 @@ type PropertyTaxItem = {
   isActive: boolean;
 };
 
+type PropertyBlockedDateItem = {
+  id: string;
+  propertyId?: string;
+  startDate: string;
+  endDate: string;
+  reason?: string | null;
+};
+
 type PropertyItem = {
   id: string;
   name: string;
@@ -88,7 +96,15 @@ export function PropertyEditPage() {
     percentage: "",
   });
 
-  const [form, setForm] = useState({
+  const [blockedDates, setBlockedDates] = useState<PropertyBlockedDateItem[]>([]);
+
+  const [newBlockedDate, setNewBlockedDate] = useState({
+    startDate: "",
+    endDate: "",
+    reason: "",
+  });
+
+ const [form, setForm] = useState({
     name: "",
     address1: "",
     city: "",
@@ -133,6 +149,22 @@ export function PropertyEditPage() {
         setOrganizationSlug(p.organization?.slug ?? "");
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
         setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
+
+        fetch(`${API_BASE}/api/dashboard/properties/${id}/blocked-dates`, {
+  credentials: "include",
+})
+  .then(async (res) => {
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to load blocked dates");
+    }
+
+    setBlockedDates(data.items ?? []);
+  })
+  .catch((e: any) => {
+    setErr(String(e?.message ?? e));
+  });
 
         setForm({
           name: p.name ?? "",
@@ -495,6 +527,66 @@ async function handleUploadPhotos(
 
     setEditingTaxId(null);
     setEditingTax(null);
+  }
+
+  async function handleCreateBlockedDate() {
+    if (!id) return;
+
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/blocked-dates`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate: newBlockedDate.startDate,
+          endDate: newBlockedDate.endDate,
+          reason: newBlockedDate.reason,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to create blocked date");
+    }
+
+    setBlockedDates((prev) => [...prev, data.item]);
+
+    setNewBlockedDate({
+      startDate: "",
+      endDate: "",
+      reason: "",
+    });
+  }
+
+  async function handleDeleteBlockedDate(blockedDateId: string) {
+    if (!id) return;
+
+    if (!window.confirm("Delete this blocked date?")) {
+      return;
+    }
+
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/blocked-dates/${blockedDateId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to delete blocked date");
+    }
+
+    setBlockedDates((prev) =>
+      prev.filter((blockedDate) => blockedDate.id !== blockedDateId)
+    );
   }
 
   const derivedCheckInTime =
@@ -1438,6 +1530,156 @@ async function handleUploadPhotos(
                             style={inputStyle}
                           />
                         </div>
+                          
+                                  <div
+            style={{
+              borderTop: "1px solid #bfdbfe",
+              paddingTop: 16,
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+                Blocked Dates
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                Manually block property availability for owner stays,
+                maintenance, or dates you do not want guests to book.
+              </div>
+            </div>
+
+            {blockedDates.length === 0 ? (
+              <div style={{ fontSize: 13, color: "#6b7280" }}>
+                No blocked dates configured yet.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                {blockedDates.map((blockedDate) => (
+                  <div
+                    key={blockedDate.id}
+                    style={{
+                      padding: 12,
+                      borderRadius: 12,
+                      background: "#ffffff",
+                      border: "1px solid #dbeafe",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 800,
+                          color: "#111827",
+                        }}
+                      >
+                        {String(blockedDate.startDate).slice(0, 10)} →{" "}
+                        {String(blockedDate.endDate).slice(0, 10)}
+                      </div>
+
+                      {blockedDate.reason ? (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "#6b7280",
+                            marginTop: 2,
+                          }}
+                        >
+                          {blockedDate.reason}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await handleDeleteBlockedDate(blockedDate.id);
+                        } catch (e: any) {
+                          setErr(String(e?.message ?? e));
+                        }
+                      }}
+                      style={iconButtonStyle}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                gridTemplateColumns: "180px 180px minmax(220px, 1fr) auto",
+                alignItems: "end",
+              }}
+            >
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Start Date</div>
+                <input
+                  type="date"
+                  value={newBlockedDate.startDate}
+                  onChange={(e) =>
+                    setNewBlockedDate((s) => ({
+                      ...s,
+                      startDate: e.target.value,
+                    }))
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>End Date</div>
+                <input
+                  type="date"
+                  value={newBlockedDate.endDate}
+                  onChange={(e) =>
+                    setNewBlockedDate((s) => ({
+                      ...s,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Reason</div>
+                <input
+                  value={newBlockedDate.reason}
+                  onChange={(e) =>
+                    setNewBlockedDate((s) => ({
+                      ...s,
+                      reason: e.target.value,
+                    }))
+                  }
+                  placeholder="Owner stay, maintenance, deep cleaning..."
+                  style={inputStyle}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await handleCreateBlockedDate();
+                  } catch (e: any) {
+                    setErr(String(e?.message ?? e));
+                  }
+                }}
+                style={primaryButtonStyle}
+              >
+                Add Block
+              </button>
+            </div>
+          </div>
 
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
