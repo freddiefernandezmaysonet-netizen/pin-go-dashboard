@@ -475,7 +475,53 @@ export function ReservationDetailPage() {
       alignItems: "center",
     }}
   >
-          <h3 style={sectionTitleStyle()}>Passcodes</h3>
+          
+       {data.pricingBreakdown && (
+  <div style={cardStyle()}>
+    <h3 style={sectionTitleStyle()}>Pricing Breakdown</h3>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 16,
+        marginTop: 16,
+      }}
+    >
+      <Stat
+        title="Nightly Rate"
+        value={`$${Number(data.pricingBreakdown.nightlyRate ?? 0).toFixed(2)}`}
+      />
+
+      <Stat
+        title="Nights"
+        value={String(data.pricingBreakdown.nights ?? 0)}
+      />
+
+      <Stat
+        title="Cleaning Fee"
+        value={`$${Number(data.pricingBreakdown.cleaningFee ?? 0).toFixed(2)}`}
+      />
+
+      <Stat
+        title="Taxes"
+        value={`$${Number(data.pricingBreakdown.taxesTotal ?? 0).toFixed(2)}`}
+      />
+
+      <Stat
+        title="Amenities"
+        value={`$${Number(data.pricingBreakdown.amenitiesTotal ?? 0).toFixed(2)}`}
+      />
+
+      <Stat
+        title="Total Paid"
+        value={`$${Number(data.pricingBreakdown.totalAmount ?? 0).toFixed(2)}`}
+      />
+    </div>
+  </div>
+)}
+
+        <h3 style={sectionTitleStyle()}>Passcodes</h3>
           <div style={mutedStyle()}>{passcodes.length} total</div>
         </div>
 
