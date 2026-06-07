@@ -748,7 +748,6 @@ async function handleUploadPhotos(
               />
               Public Booking Enabled
             </label>
-
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Property URL Slug</div>
 
@@ -768,94 +767,72 @@ async function handleUploadPhotos(
     Used for your public booking URL.
   </div>
 
-{publicPropertyUrl ? (
-  <div
-    style={{
-      marginTop: 10,
-      padding: 12,
-      borderRadius: 12,
-      border: "1px solid #dbeafe",
-      background: "#ffffff",
-      display: "grid",
-      gap: 10,
-    }}
-  >
+  {publicPropertyUrl ? (
     <div
       style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 12,
-        flexWrap: "wrap",
+        marginTop: 10,
+        padding: 12,
+        borderRadius: 12,
+        border: "1px solid #dbeafe",
+        background: "#ffffff",
+        display: "grid",
+        gap: 10,
       }}
     >
       <div
         style={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: "#6b7280",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
         }}
       >
-        Public Property URL
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: "#6b7280",
+          }}
+        >
+          Public Property URL
+        </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(publicPropertyUrl);
+              setCopiedPublicUrl(true);
+
+              window.setTimeout(() => {
+                setCopiedPublicUrl(false);
+              }, 1800);
+            } catch {
+              setErr("Unable to copy public property URL.");
+            }
+          }}
+          style={secondarySmallButtonStyle}
+        >
+          {copiedPublicUrl ? "Copied!" : "Copy URL"}
+        </button>
       </div>
 
-      <button
-        type="button"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(publicPropertyUrl);
-            setCopiedPublicUrl(true);
-
-            window.setTimeout(() => {
-              setCopiedPublicUrl(false);
-            }, 1800);
-          } catch {
-            setErr("Unable to copy public property URL.");
-          }
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 800,
+          color: "#111827",
+          wordBreak: "break-all",
         }}
-        style={secondarySmallButtonStyle}
       >
-        {copiedPublicUrl ? "Copied!" : "Copy URL"}
-      </button>
+        {publicPropertyUrl}
+      </div>
     </div>
-
-    <div
-      style={{
-        fontSize: 14,
-        fontWeight: 800,
-        color: "#111827",
-        wordBreak: "break-all",
-      }}
-    >
-      {publicPropertyUrl}
-    </div>
-  </div>
-) : null}
-    <div
-      style={{
-        fontSize: 12,
-        fontWeight: 700,
-        color: "#6b7280",
-        marginBottom: 4,
-      }}
-    >
-      Public Property URL
-    </div>
-
-    <div
-      style={{
-        fontSize: 14,
-        fontWeight: 800,
-        color: "#111827",
-        wordBreak: "break-all",
-      }}
-    >
-      {publicPropertyUrl}
-    </div>
-  </div>
-) : null}
-
+  ) : null}
 </div>
+
+
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Title</div>
 
