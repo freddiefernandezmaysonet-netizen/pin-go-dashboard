@@ -118,7 +118,8 @@ export function PropertyEditPage() {
   });
 
   const [blockedDates, setBlockedDates] = useState<PropertyBlockedDateItem[]>([]);
-
+  const [calendarBlockedDateKeys, setCalendarBlockedDateKeys] = useState<string[]>([]);
+ 
   const [newBlockedDate, setNewBlockedDate] = useState({
     startDate: "",
     endDate: "",
@@ -186,6 +187,10 @@ export function PropertyEditPage() {
   .catch((e: any) => {
     setErr(String(e?.message ?? e));
   });
+
+        loadCalendarBlockedDates().catch((e: any) => {
+          setErr(String(e?.message ?? e));
+        });
 
         setForm({
           name: p.name ?? "",
@@ -550,6 +555,37 @@ async function handleUploadPhotos(
     setEditingTax(null);
   }
 
+  async function loadCalendarBlockedDates() {
+    if (!id) return;
+
+    const today = new Date();
+    const from = toLocalDateKey(today);
+
+    const future = new Date(today);
+    future.setMonth(future.getMonth() + 12);
+    const to = toLocalDateKey(future);
+
+    const res = await fetch(`${API_BASE}/api/public-booking/blocked-dates`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        propertyId: id,
+        from,
+        to,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to load calendar blocked dates");
+    }
+
+    setCalendarBlockedDateKeys(data.blockedDates ?? []);
+  }
+
   async function handleCreateBlockedDate() {
     if (!id) return;
 
@@ -575,13 +611,16 @@ async function handleUploadPhotos(
       throw new Error(data?.error || "Failed to create blocked date");
     }
 
-    setBlockedDates((prev) => [...prev, data.item]);
+setBlockedDates((prev) => [...prev, data.item]);
 
-    setNewBlockedDate({
-      startDate: "",
-      endDate: "",
-      reason: "",
-    });
+await loadCalendarBlockedDates();
+
+setNewBlockedDate({
+  startDate: "",
+  endDate: "",
+  reason: "",
+});
+   
   }
 
   async function handleDeleteBlockedDate(blockedDateId: string) {
@@ -604,10 +643,12 @@ async function handleUploadPhotos(
     if (!res.ok) {
       throw new Error(data?.error || "Failed to delete blocked date");
     }
+setBlockedDates((prev) =>
+  prev.filter((blockedDate) => blockedDate.id !== blockedDateId)
+);
 
-    setBlockedDates((prev) =>
-      prev.filter((blockedDate) => blockedDate.id !== blockedDateId)
-    );
+await loadCalendarBlockedDates();
+  
   }
 
   const derivedCheckInTime =
@@ -1755,7 +1796,9 @@ async function handleUploadPhotos(
                     endDate: range?.to ? toLocalDateKey(range.to) : "",
                   }));
                 }}
-                disabled={(date) => blockedDateKeys.includes(toLocalDateKey(date))}
+                disabled={(date) =>
+  calendarBlockedDateKeys.includes(toLocalDateKey(date))
+}
               />
             </div>
 
