@@ -507,7 +507,106 @@ export function ReservationDetailPage() {
   </div>
 ) : null}
          
-         <div style={cardStyle()}>
+         {data.pricingBreakdown?.chargedAmenities?.length ? (
+  <div style={cardStyle()}>
+    <h3 style={sectionTitleStyle()}>Charged Amenities</h3>
+
+    <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+      {data.pricingBreakdown.chargedAmenities.map((amenity) => (
+        <div
+          key={amenity.id}
+          style={{
+            border: "1px solid #eef2f7",
+            borderRadius: 14,
+            padding: 14,
+            background: "#fafafa",
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, color: "#111827" }}>
+              {amenity.name}
+            </div>
+
+            <div style={{ ...mutedStyle(), fontSize: 13, marginTop: 4 }}>
+              {amenity.chargeMode} · {amenity.feeType}
+            </div>
+          </div>
+
+          <div style={{ fontWeight: 800, color: "#111827" }}>
+            ${Number(amenity.amount ?? 0).toFixed(2)}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+) : null}
+
+      
+       {data.pricingBreakdown?.taxes?.length ? (
+  <div style={cardStyle()}>
+    <h3 style={sectionTitleStyle()}>Taxes</h3>
+
+    <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+      {data.pricingBreakdown.taxes.map((tax) => (
+        <div
+          key={tax.id}
+          style={{
+            border: "1px solid #eef2f7",
+            borderRadius: 14,
+            padding: 14,
+            background: "#fafafa",
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, color: "#111827" }}>
+              {tax.name}
+            </div>
+
+            <div style={{ ...mutedStyle(), fontSize: 13, marginTop: 4 }}>
+              {Number(tax.percentage ?? 0).toFixed(2)}%
+            </div>
+          </div>
+
+          <div style={{ fontWeight: 800, color: "#111827" }}>
+            ${Number(tax.amount ?? 0).toFixed(2)}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+) : null} 
+
+        {data.stripeCheckoutSessionId || data.stripePaymentIntentId ? (
+  <div style={cardStyle()}>
+    <h3 style={sectionTitleStyle()}>Payment References</h3>
+
+    <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+      <div>
+        <b>Stripe Session:</b>{" "}
+        <span style={{ ...mutedStyle(), wordBreak: "break-all" }}>
+          {data.stripeCheckoutSessionId ?? "—"}
+        </span>
+      </div>
+
+      <div>
+        <b>Payment Intent:</b>{" "}
+        <span style={{ ...mutedStyle(), wordBreak: "break-all" }}>
+          {data.stripePaymentIntentId ?? "—"}
+        </span>
+      </div>
+    </div>
+  </div>
+) : null}
+
+        <div style={cardStyle()}>
   <div
     style={{
       display: "flex",
