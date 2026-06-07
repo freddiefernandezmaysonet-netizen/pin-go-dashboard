@@ -1531,15 +1531,6 @@ async function handleUploadPhotos(
                           />
                         </div>
                           
-                                  <div
-            style={{
-              borderTop: "1px solid #bfdbfe",
-              paddingTop: 16,
-              display: "grid",
-              gap: 12,
-            }}
-          >
-           
 
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
@@ -1693,7 +1684,16 @@ async function handleUploadPhotos(
             </div>
           </div>
 
- <div>
+
+          <div
+            style={{
+              borderTop: "1px solid #bfdbfe",
+              paddingTop: 16,
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
                 Blocked Dates
               </div>
