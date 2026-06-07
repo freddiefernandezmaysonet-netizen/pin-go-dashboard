@@ -412,6 +412,10 @@ export function ReservationDetailPage() {
         <Stat title="Room" value={data.roomName ?? "—"} />
       </div>
 
+
+
+
+
       <div style={cardStyle()}>
         <h3 style={sectionTitleStyle()}>Guest Information</h3>
 
@@ -426,17 +430,7 @@ export function ReservationDetailPage() {
         </div>
       </div>
 
-      <div style={cardStyle()}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={cardStyle()}>
+               <div style={cardStyle()}>
   <h3 style={sectionTitleStyle()}>Direct Booking Details</h3>
 
   <div
@@ -473,6 +467,14 @@ export function ReservationDetailPage() {
   </div>
 </div>
 
+         <div style={cardStyle()}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    }}
+  >
           <h3 style={sectionTitleStyle()}>Passcodes</h3>
           <div style={mutedStyle()}>{passcodes.length} total</div>
         </div>
