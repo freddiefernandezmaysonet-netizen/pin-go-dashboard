@@ -584,28 +584,7 @@ export function ReservationDetailPage() {
   </div>
 ) : null} 
 
-        {data.stripeCheckoutSessionId || data.stripePaymentIntentId ? (
-  <div style={cardStyle()}>
-    <h3 style={sectionTitleStyle()}>Payment References</h3>
-
-    <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-      <div>
-        <b>Stripe Session:</b>{" "}
-        <span style={{ ...mutedStyle(), wordBreak: "break-all" }}>
-          {data.stripeCheckoutSessionId ?? "—"}
-        </span>
-      </div>
-
-      <div>
-        <b>Payment Intent:</b>{" "}
-        <span style={{ ...mutedStyle(), wordBreak: "break-all" }}>
-          {data.stripePaymentIntentId ?? "—"}
-        </span>
-      </div>
-    </div>
-  </div>
-) : null}
-
+      
         <div style={cardStyle()}>
   <div
     style={{
