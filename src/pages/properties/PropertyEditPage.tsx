@@ -1796,9 +1796,11 @@ await loadCalendarBlockedDates();
                     endDate: range?.to ? toLocalDateKey(range.to) : "",
                   }));
                 }}
-                disabled={(date) =>
+              disabled={(date) =>
+  date < new Date(new Date().setHours(0, 0, 0, 0)) ||
   calendarBlockedDateKeys.includes(toLocalDateKey(date))
-}
+} 
+
               />
             </div>
 
