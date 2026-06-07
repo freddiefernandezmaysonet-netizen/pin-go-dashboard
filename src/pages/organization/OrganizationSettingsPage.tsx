@@ -39,8 +39,8 @@ export default function OrganizationSettingsPage() {
   const directBookingUrl = normalizedSlug
     ? `${publicBaseUrl}/book/${normalizedSlug}`
     : "";
-  
-   useEffect(() => {
+
+  useEffect(() => {
     let mounted = true;
 
     async function loadOrganization() {
@@ -58,14 +58,10 @@ export default function OrganizationSettingsPage() {
         setPublicBookingEnabled(Boolean(item.publicBookingEnabled));
       } catch (e) {
         console.error("[OrganizationSettingsPage] load failed", e);
-
         if (!mounted) return;
-
         setError("Unable to load organization settings.");
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     }
 
@@ -76,7 +72,9 @@ export default function OrganizationSettingsPage() {
     };
   }, []);
 
-  async function handleSave() {
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+
     try {
       setSaving(true);
       setError(null);
@@ -135,273 +133,273 @@ export default function OrganizationSettingsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <p style={styles.muted}>Loading organization settings...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div>
-          <p style={styles.kicker}>Direct Booking</p>
-          <h1 style={styles.title}>Organization Settings</h1>
-          <p style={styles.subtitle}>
-            Manage the public organization slug used by your Direct Booking
-            URLs.
-          </p>
+    <div style={{ display: "grid", gap: 20 }}>
+      <div>
+        <div style={{ fontSize: 28, fontWeight: 800, color: "#111827" }}>
+          Organization Settings
+        </div>
+        <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
+          Manage your organization identity and Direct Booking catalog URL.
         </div>
       </div>
 
-      <div style={styles.grid}>
-        <section style={styles.card}>
-          <h2 style={styles.sectionTitle}>Public Organization</h2>
-          <p style={styles.sectionText}>
-            This controls the main booking URL for your organization catalog.
-          </p>
+      {error ? (
+        <div style={errorStyle}>
+          <b>Error:</b> {error}
+        </div>
+      ) : null}
 
-          <label style={styles.label}>
-            Organization Name
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              style={styles.input}
-              placeholder="Pin&Go Demo Host"
-            />
-          </label>
+      {success ? <div style={successStyle}>{success}</div> : null}
 
-          <label style={styles.label}>
-            Organization Slug
-            <input
-              value={slug}
-              onChange={(event) => setSlug(event.target.value)}
-              onBlur={() => setSlug(normalizedSlug)}
-              style={styles.input}
-              placeholder="my-company"
-            />
-          </label>
-
-          <div style={styles.helpBox}>
-            <div style={styles.helpLabel}>Direct Booking URL</div>
-            <div style={styles.urlText}>
-              {directBookingUrl || "Set a slug to generate your public URL"}
-            </div>
-          </div>
-
-          <label style={styles.toggleRow}>
-            <input
-              type="checkbox"
-              checked={publicBookingEnabled}
-              onChange={(event) =>
-                setPublicBookingEnabled(event.target.checked)
-              }
-            />
-            <span>
-              Enable public Direct Booking catalog for this organization
-            </span>
-          </label>
-
-          {error && <div style={styles.error}>{error}</div>}
-          {success && <div style={styles.success}>{success}</div>}
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
+      {loading ? (
+        <div style={{ color: "#666" }}>Loading organization settings...</div>
+      ) : (
+        <form onSubmit={handleSave} style={cardStyle}>
+          <div
             style={{
-              ...styles.button,
-              opacity: saving ? 0.7 : 1,
-              cursor: saving ? "not-allowed" : "pointer",
+              border: "1px solid #dbeafe",
+              borderRadius: 18,
+              padding: 18,
+              background: "#eff6ff",
+              display: "grid",
+              gap: 16,
             }}
           >
-            {saving ? "Saving..." : "Save Organization Settings"}
-          </button>
-        </section>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+                Public Organization
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                This controls the main public Direct Booking catalog URL for
+                your organization.
+              </div>
+            </div>
 
-        <aside style={styles.card}>
-          <h2 style={styles.sectionTitle}>URL Compatibility</h2>
+            <div style={responsiveGridStyle}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Organization Name</div>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Pin&Go Demo Host"
+                  style={inputStyle}
+                  required
+                />
+              </div>
 
-          <div style={styles.note}>
-            <strong>Catalog URL</strong>
-            <span>/book/{normalizedSlug || "organization-slug"}</span>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Organization Slug</div>
+                <input
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  onBlur={() => setSlug(normalizedSlug)}
+                  placeholder="my-company"
+                  style={inputStyle}
+                  required
+                />
+                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  Used for your organization catalog URL.
+                </div>
+              </div>
+            </div>
+
+            <div style={previewBoxStyle}>
+              <div style={labelStyle}>Direct Booking URL</div>
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "#111827",
+                  wordBreak: "break-all",
+                }}
+              >
+                {directBookingUrl || "Set a slug to generate your public URL"}
+              </div>
+            </div>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#111827",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={publicBookingEnabled}
+                onChange={(e) => setPublicBookingEnabled(e.target.checked)}
+              />
+              Enable public Direct Booking catalog for this organization
+            </label>
           </div>
 
-          <div style={styles.note}>
-            <strong>Property URLs</strong>
-            <span>
-              /book/{normalizedSlug || "organization-slug"}/property-slug
-            </span>
+          <div
+            style={{
+              borderTop: "1px solid #bfdbfe",
+              paddingTop: 16,
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+                URL Compatibility
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                These URLs remain compatible with property slugs and future
+                custom domains.
+              </div>
+            </div>
+
+            <div style={compatibilityGridStyle}>
+              <div style={compatibilityCardStyle}>
+                <div style={labelStyle}>Catalog URL</div>
+                <div style={compatibilityTextStyle}>
+                  /book/{normalizedSlug || "organization-slug"}
+                </div>
+              </div>
+
+              <div style={compatibilityCardStyle}>
+                <div style={labelStyle}>Property URLs</div>
+                <div style={compatibilityTextStyle}>
+                  /book/{normalizedSlug || "organization-slug"}/property-slug
+                </div>
+              </div>
+
+              <div style={compatibilityCardStyle}>
+                <div style={labelStyle}>Custom Domains</div>
+                <div style={compatibilityTextStyle}>
+                  Future custom domains can point to the same organization
+                  without changing this slug system.
+                </div>
+              </div>
+            </div>
+
+            {organization?.updatedAt ? (
+              <div style={{ fontSize: 12, color: "#6b7280" }}>
+                Last updated: {new Date(organization.updatedAt).toLocaleString()}
+              </div>
+            ) : null}
           </div>
 
-          <div style={styles.note}>
-            <strong>Custom Domains</strong>
-            <span>
-              Future custom domains can point to the same organization without
-              changing this slug system.
-            </span>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 12,
+              flexWrap: "wrap",
+              paddingTop: 4,
+            }}
+          >
+            <button
+              type="submit"
+              disabled={saving}
+              style={{
+                ...primaryButtonStyle,
+                opacity: saving ? 0.7 : 1,
+                cursor: saving ? "not-allowed" : "pointer",
+              }}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
           </div>
-
-          {organization?.updatedAt && (
-            <p style={styles.updated}>
-              Last updated:{" "}
-              {new Date(organization.updatedAt).toLocaleString()}
-            </p>
-          )}
-        </aside>
-      </div>
+        </form>
+      )}
     </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    padding: 24,
-    maxWidth: 1180,
-    margin: "0 auto",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 16,
-    marginBottom: 24,
-  },
-  kicker: {
-    margin: 0,
-    fontSize: 13,
-    fontWeight: 800,
-    color: "#2563eb",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-  },
-  title: {
-    margin: "6px 0 0",
-    fontSize: 32,
-    lineHeight: 1.1,
-    letterSpacing: "-0.04em",
-    color: "#0f172a",
-  },
-  subtitle: {
-    margin: "10px 0 0",
-    color: "#64748b",
-    maxWidth: 680,
-    lineHeight: 1.6,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1.5fr) minmax(280px, 0.8fr)",
-    gap: 20,
-    alignItems: "start",
-  },
-  card: {
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: 24,
-    padding: 22,
-    boxShadow: "0 20px 50px rgba(15, 23, 42, 0.06)",
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: 18,
-    color: "#0f172a",
-    letterSpacing: "-0.02em",
-  },
-  sectionText: {
-    margin: "8px 0 20px",
-    color: "#64748b",
-    lineHeight: 1.6,
-  },
-  label: {
-    display: "grid",
-    gap: 8,
-    marginTop: 16,
-    color: "#334155",
-    fontSize: 14,
-    fontWeight: 800,
-  },
-  input: {
-    height: 44,
-    borderRadius: 14,
-    border: "1px solid #cbd5e1",
-    padding: "0 14px",
-    fontSize: 15,
-    outline: "none",
-  },
-  helpBox: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 16,
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-  },
-  helpLabel: {
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    fontWeight: 900,
-    color: "#64748b",
-    marginBottom: 6,
-  },
-  urlText: {
-    color: "#0f172a",
-    fontWeight: 800,
-    wordBreak: "break-all",
-  },
-  toggleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 18,
-    color: "#334155",
-    fontWeight: 700,
-  },
-  button: {
-    marginTop: 20,
-    height: 46,
-    border: 0,
-    borderRadius: 999,
-    padding: "0 20px",
-    background: "#2563eb",
-    color: "#ffffff",
-    fontWeight: 900,
-    fontSize: 14,
-  },
-  error: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 14,
-    background: "#fef2f2",
-    color: "#991b1b",
-    fontWeight: 700,
-  },
-  success: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 14,
-    background: "#ecfdf5",
-    color: "#047857",
-    fontWeight: 700,
-  },
-  muted: {
-    color: "#64748b",
-    margin: 0,
-  },
-  note: {
-    display: "grid",
-    gap: 6,
-    padding: "14px 0",
-    borderBottom: "1px solid #e2e8f0",
-    color: "#475569",
-    lineHeight: 1.5,
-    wordBreak: "break-word",
-  },
-  updated: {
-    margin: "18px 0 0",
-    color: "#94a3b8",
-    fontSize: 13,
-  },
+const cardStyle: React.CSSProperties = {
+  border: "1px solid #e5e7eb",
+  borderRadius: 18,
+  padding: 20,
+  background: "#ffffff",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+  display: "grid",
+  gap: 18,
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#374151",
+};
+
+const inputStyle: React.CSSProperties = {
+  height: 44,
+  padding: "0 14px",
+  borderRadius: 12,
+  border: "1px solid #d1d5db",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: 14,
+  outline: "none",
+};
+
+const responsiveGridStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 16,
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const previewBoxStyle: React.CSSProperties = {
+  padding: 12,
+  borderRadius: 12,
+  border: "1px solid #dbeafe",
+  background: "#ffffff",
+};
+
+const compatibilityGridStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 12,
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const compatibilityCardStyle: React.CSSProperties = {
+  padding: 12,
+  borderRadius: 12,
+  background: "#ffffff",
+  border: "1px solid #dbeafe",
+};
+
+const compatibilityTextStyle: React.CSSProperties = {
+  marginTop: 6,
+  fontSize: 13,
+  color: "#6b7280",
+  lineHeight: 1.5,
+  wordBreak: "break-word",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  height: 44,
+  padding: "0 16px",
+  borderRadius: 12,
+  border: "none",
+  background: "#2563eb",
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const errorStyle: React.CSSProperties = {
+  border: "1px solid #fecaca",
+  background: "#fef2f2",
+  padding: 12,
+  borderRadius: 12,
+  color: "#991b1b",
+};
+
+const successStyle: React.CSSProperties = {
+  border: "1px solid #bbf7d0",
+  background: "#f0fdf4",
+  padding: 12,
+  borderRadius: 12,
+  color: "#166534",
+  fontWeight: 700,
 };
