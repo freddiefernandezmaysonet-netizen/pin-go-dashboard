@@ -160,7 +160,7 @@ export default function OrganizationSettingsPage() {
             style={{
               border: "1px solid #dbeafe",
               borderRadius: 18,
-              padding: 18,
+              padding: 22,
               background: "#eff6ff",
               display: "grid",
               gap: 16,
@@ -170,7 +170,7 @@ export default function OrganizationSettingsPage() {
               <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
                 Public Organization
               </div>
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
                 This controls the main public Direct Booking catalog URL for
                 your organization.
               </div>
@@ -250,7 +250,7 @@ export default function OrganizationSettingsPage() {
               <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
                 URL Compatibility
               </div>
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
                 These URLs remain compatible with property slugs and future
                 custom domains.
               </div>
@@ -317,7 +317,7 @@ export default function OrganizationSettingsPage() {
 const cardStyle: React.CSSProperties = {
   border: "1px solid #e5e7eb",
   borderRadius: 18,
-  padding: 20,
+  padding: 24,
   background: "#ffffff",
   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
   display: "grid",
@@ -325,7 +325,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 700,
   color: "#374151",
 };
@@ -369,14 +369,14 @@ const compatibilityCardStyle: React.CSSProperties = {
 
 const compatibilityTextStyle: React.CSSProperties = {
   marginTop: 6,
-  fontSize: 13,
+  fontSize: 14,
   color: "#6b7280",
   lineHeight: 1.5,
   wordBreak: "break-word",
 };
 
 const primaryButtonStyle: React.CSSProperties = {
-  height: 44,
+  height: 46,
   padding: "0 16px",
   borderRadius: 12,
   border: "none",
