@@ -62,6 +62,7 @@ export function PropertyEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
@@ -775,8 +776,61 @@ async function handleUploadPhotos(
       borderRadius: 12,
       border: "1px solid #dbeafe",
       background: "#ffffff",
+      display: "grid",
+      gap: 10,
     }}
   >
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+        flexWrap: "wrap",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#6b7280",
+        }}
+      >
+        Public Property URL
+      </div>
+
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(publicPropertyUrl);
+            setCopiedPublicUrl(true);
+
+            window.setTimeout(() => {
+              setCopiedPublicUrl(false);
+            }, 1800);
+          } catch {
+            setErr("Unable to copy public property URL.");
+          }
+        }}
+        style={secondarySmallButtonStyle}
+      >
+        {copiedPublicUrl ? "Copied!" : "Copy URL"}
+      </button>
+    </div>
+
+    <div
+      style={{
+        fontSize: 14,
+        fontWeight: 800,
+        color: "#111827",
+        wordBreak: "break-all",
+      }}
+    >
+      {publicPropertyUrl}
+    </div>
+  </div>
+) : null}
     <div
       style={{
         fontSize: 12,
@@ -839,13 +893,20 @@ async function handleUploadPhotos(
   />
 </div>
           
-<input
-  type="file"
-  accept="image/*"
-  multiple
-  onChange={handleUploadPhotos}
-/>
+<div style={{ display: "grid", gap: 8 }}>
+  <div style={labelStyle}>Property Photos</div>
 
+  <input
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={handleUploadPhotos}
+  />
+
+  <div style={{ fontSize: 12, color: "#6b7280" }}>
+    Upload guest-facing property photos. The first photo will be used as the main gallery image.
+  </div>
+</div>
 {uploadingPhoto ? (
   <div
     style={{
@@ -857,34 +918,6 @@ async function handleUploadPhotos(
     Uploading photos...
   </div>
 ) : null}
-
-         <div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Public Photos</div>
-
-  <textarea
-    value={form.publicPhotosText}
-    onChange={(e) =>
-      setForm((s) => ({
-        ...s,
-        publicPhotosText: e.target.value,
-      }))
-    }
-    placeholder={`https://example.com/photo-1.jpg
-https://example.com/photo-2.jpg
-https://example.com/photo-3.jpg`}
-    style={{
-      ...inputStyle,
-      height: 140,
-      padding: 14,
-      resize: "vertical",
-      lineHeight: 1.5,
-    }}
-  />
-
-  <div style={{ fontSize: 12, color: "#6b7280" }}>
-    Add one image URL per line. The first image will be used as the main gallery photo.
-  </div>
-</div> 
 
           <div
   style={{
