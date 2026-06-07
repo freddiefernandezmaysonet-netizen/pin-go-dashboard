@@ -735,26 +735,25 @@ async function handleUploadPhotos(
               Public Booking Enabled
             </label>
 
-<label style={styles.label}>
-  Property URL Slug
-</label>
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Property URL Slug</div>
 
-<input
-  value={form.slug}
-  onChange={(e) =>
-    setForm((prev) => ({
-      ...prev,
-      slug: e.target.value,
-    }))
-  }
-  placeholder="casa-collores"
-  style={styles.input}
-/>
+  <input
+    value={form.slug}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        slug: e.target.value,
+      }))
+    }
+    placeholder="casa-collores"
+    style={inputStyle}
+  />
 
-<div style={styles.helperText}>
-  Used for your public booking URL.
+  <div style={{ fontSize: 12, color: "#6b7280" }}>
+    Used for your public booking URL.
+  </div>
 </div>
-
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Title</div>
 
