@@ -466,17 +466,8 @@ export function ReservationDetailPage() {
     />
   </div>
 </div>
-
-         <div style={cardStyle()}>
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    }}
-  >
-          
-       {data.pricingBreakdown && (
+ 
+        {data.pricingBreakdown ? (
   <div style={cardStyle()}>
     <h3 style={sectionTitleStyle()}>Pricing Breakdown</h3>
 
@@ -499,8 +490,8 @@ export function ReservationDetailPage() {
       />
 
       <Stat
-        title="Cleaning Fee"
-        value={`$${Number(data.pricingBreakdown.cleaningFee ?? 0).toFixed(2)}`}
+        title="Amenities"
+        value={`$${Number(data.pricingBreakdown.amenitiesTotal ?? 0).toFixed(2)}`}
       />
 
       <Stat
@@ -509,18 +500,22 @@ export function ReservationDetailPage() {
       />
 
       <Stat
-        title="Amenities"
-        value={`$${Number(data.pricingBreakdown.amenitiesTotal ?? 0).toFixed(2)}`}
-      />
-
-      <Stat
         title="Total Paid"
         value={`$${Number(data.pricingBreakdown.totalAmount ?? 0).toFixed(2)}`}
       />
     </div>
   </div>
-)}
-
+) : null}
+         
+         <div style={cardStyle()}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    }}
+  >
+          
         <h3 style={sectionTitleStyle()}>Passcodes</h3>
           <div style={mutedStyle()}>{passcodes.length} total</div>
         </div>
