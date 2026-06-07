@@ -43,6 +43,7 @@ import PublicBookingSitePage from "../../pages/public-booking/PublicBookingSiteP
 import PublicPropertyDetailPage from "../../pages/public-booking/PublicPropertyDetailPage";
 import PublicBookingSuccessPage from "../../pages/public-booking/PublicBookingSuccessPage";
 import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCancelPage";
+import OrganizationSettingsPage from "../../pages/organization/OrganizationSettingsPage";
 
 function RootRedirect() {
   const host = window.location.hostname;
@@ -143,7 +144,8 @@ export const router = createBrowserRouter([
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
-     
+      { path: "/organization", element: <OrganizationSettingsPage /> },
+      
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
