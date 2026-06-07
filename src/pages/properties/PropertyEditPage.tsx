@@ -94,6 +94,7 @@ export function PropertyEditPage() {
     cleaningStartOffsetMinutes: 30,
     latitude: "",
     longitude: "",
+    slug: "",
     baseNightlyRate: "",
     cleaningFee: "",
     maxGuests: "",
@@ -161,6 +162,7 @@ export function PropertyEditPage() {
             p.maximumNights !== null && p.maximumNights !== undefined
               ? String(p.maximumNights)
               : "",
+          slug: p.slug ?? "",
           publicTitle: p.publicTitle ?? "",
           publicDescription: p.publicDescription ?? "",
           publicPhotosText: Array.isArray(p.publicPhotos)
@@ -222,6 +224,7 @@ export function PropertyEditPage() {
           cleaningStartOffsetMinutes: Number(form.cleaningStartOffsetMinutes),
           latitude,
           longitude,
+          slug: form.slug,
           baseNightlyRate:
             form.baseNightlyRate.trim() === ""
               ? null
@@ -731,6 +734,26 @@ async function handleUploadPhotos(
               />
               Public Booking Enabled
             </label>
+
+<label style={styles.label}>
+  Property URL Slug
+</label>
+
+<input
+  value={form.slug}
+  onChange={(e) =>
+    setForm((prev) => ({
+      ...prev,
+      slug: e.target.value,
+    }))
+  }
+  placeholder="casa-collores"
+  style={styles.input}
+/>
+
+<div style={styles.helperText}>
+  Used for your public booking URL.
+</div>
 
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Title</div>

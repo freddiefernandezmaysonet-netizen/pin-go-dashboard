@@ -186,9 +186,12 @@ export default function PublicBookingSitePage() {
                               style={styles.photo}
                             />
                           ) : (
-                            <div style={styles.photoPlaceholder}>
-                              Pin&Go Stay
-                            </div>
+                           <div style={styles.photoPlaceholder}>
+  <div style={styles.placeholderIcon}>⌂</div>
+  <div style={styles.placeholderTitle}>Property Preview</div>
+  <div style={styles.placeholderText}>Direct Booking</div>
+</div>
+
                           )}
                         </div>
 
@@ -222,8 +225,8 @@ export default function PublicBookingSitePage() {
                                 <span style={styles.muted}>Rate available soon</span>
                               )}
                             </div>
-
-                            {property.maxGuests ? (
+                           
+                              {property.maxGuests ? (
                               <div style={styles.muted}>
                                 Up to {property.maxGuests} guests
                               </div>
@@ -350,17 +353,20 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: 22,
   },
-  propertyCard: {
-    overflow: "hidden",
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    borderRadius: 20,
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
-    textDecoration: "none",
-    color: "#0f172a",
-    display: "flex",
-    flexDirection: "column",
+ propertyCard: {
+  overflow: "hidden",
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 24,
+  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+  textDecoration: "none",
+  color: "#0f172a",
+  display: "flex",
+  flexDirection: "column",
+  cursor: "pointer",
+  transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
   },
+ 
   disabledCard: {
     pointerEvents: "none",
     opacity: 0.65,
@@ -401,13 +407,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 22,
     lineHeight: 1.2,
   },
-  cardText: {
-    margin: 0,
-    color: "#475569",
-    lineHeight: 1.6,
-    fontSize: 15,
-    flex: 1,
-  },
+ cardText: {
+  margin: 0,
+  color: "#475569",
+  lineHeight: 1.6,
+  fontSize: 15,
+  flex: 1,
+  overflow: "hidden",
+  display: "-webkit-box",
+  WebkitLineClamp: 3,
+  WebkitBoxOrient: "vertical",
+},
   cardFooter: {
     marginTop: 12,
     paddingTop: 14,
@@ -439,7 +449,34 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "center",
     fontWeight: 700,
   },
-  footer: {
+ 
+placeholderIcon: {
+  width: 54,
+  height: 54,
+  borderRadius: 18,
+  display: "grid",
+  placeItems: "center",
+  margin: "0 auto 12px",
+  background: "rgba(255,255,255,0.75)",
+  color: "#1d4ed8",
+  fontSize: 28,
+  boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
+},
+
+placeholderTitle: {
+  fontSize: 18,
+  fontWeight: 900,
+  color: "#0f172a",
+},
+
+placeholderText: {
+  marginTop: 4,
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#64748b",
+},
+
+ footer: {
     borderTop: "1px solid #e2e8f0",
     padding: "24px 20px",
     color: "#64748b",
