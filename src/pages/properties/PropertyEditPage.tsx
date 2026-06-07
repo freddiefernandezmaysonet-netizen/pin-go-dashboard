@@ -41,6 +41,9 @@ type PropertyItem = {
   publicTitle?: string | null;
   publicDescription?: string | null;
   publicPhotos?: string[] | null;
+  organization?: {
+  slug?: string | null;
+  } | null;
   amenities?: PropertyAmenityItem[];
   taxes?: PropertyTaxItem[];
   baseNightlyRate?: number | null;
@@ -59,6 +62,7 @@ export function PropertyEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [organizationSlug, setOrganizationSlug] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   const [amenities, setAmenities] = useState<PropertyAmenityItem[]>([]);
@@ -125,6 +129,7 @@ export function PropertyEditPage() {
       .then((data) => {
         const p: PropertyItem = data.item;
 
+        setOrganizationSlug(p.organization?.slug ?? "");
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
         setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
 
@@ -494,6 +499,14 @@ async function handleUploadPhotos(
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
 
+  const publicBaseUrl =
+    import.meta.env.VITE_PUBLIC_SITE_URL ?? window.location.origin;
+
+  const publicPropertyUrl =
+    organizationSlug && form.slug
+      ? `${publicBaseUrl}/book/${organizationSlug}/${form.slug}`
+      : "";
+
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <div
@@ -753,6 +766,41 @@ async function handleUploadPhotos(
   <div style={{ fontSize: 12, color: "#6b7280" }}>
     Used for your public booking URL.
   </div>
+
+{publicPropertyUrl ? (
+  <div
+    style={{
+      marginTop: 10,
+      padding: 12,
+      borderRadius: 12,
+      border: "1px solid #dbeafe",
+      background: "#ffffff",
+    }}
+  >
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: "#6b7280",
+        marginBottom: 4,
+      }}
+    >
+      Public Property URL
+    </div>
+
+    <div
+      style={{
+        fontSize: 14,
+        fontWeight: 800,
+        color: "#111827",
+        wordBreak: "break-all",
+      }}
+    >
+      {publicPropertyUrl}
+    </div>
+  </div>
+) : null}
+
 </div>
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Title</div>
