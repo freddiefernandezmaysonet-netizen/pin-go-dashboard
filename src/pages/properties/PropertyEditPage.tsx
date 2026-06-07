@@ -1539,7 +1539,8 @@ async function handleUploadPhotos(
               gap: 12,
             }}
           >
-            <div>
+           
+
                         <div style={{ display: "flex", gap: 8 }}>
                           <button
                             type="button"
@@ -1692,7 +1693,8 @@ async function handleUploadPhotos(
             </div>
           </div>
 
- <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+ <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
                 Blocked Dates
               </div>
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
