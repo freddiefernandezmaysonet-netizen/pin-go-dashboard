@@ -1,7 +1,28 @@
 import { useEffect, useState } from "react";
+import { DayPicker, type DateRange } from "react-day-picker";
 import { useNavigate, useParams } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function fromDateInputValue(value?: string | null) {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return undefined;
+  }
+
+  return new Date(year, month - 1, day);
+}
 
 type AmenityChargeMode = "INCLUDED" | "REQUIRED" | "OPTIONAL";
 type AmenityFeeType = "PER_STAY" | "PER_NIGHT";
@@ -599,6 +620,22 @@ async function handleUploadPhotos(
     organizationSlug && form.slug
       ? `${publicBaseUrl}/book/${organizationSlug}/${form.slug}`
       : "";
+
+  const blockedDateKeys = blockedDates.flatMap((item) => {
+    const dates: string[] = [];
+
+    const start = new Date(item.startDate);
+    const end = new Date(item.endDate);
+
+    const cursor = new Date(start);
+
+    while (cursor < end) {
+      dates.push(toLocalDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dates;
+  });
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -1701,6 +1738,25 @@ async function handleUploadPhotos(
                 Manually block property availability for owner stays,
                 maintenance, or dates you do not want guests to book.
               </div>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: 14, padding: 12 }}>
+              <DayPicker
+                mode="range"
+                numberOfMonths={2}
+                selected={{
+                  from: fromDateInputValue(newBlockedDate.startDate),
+                  to: fromDateInputValue(newBlockedDate.endDate),
+                }}
+                onSelect={(range: DateRange | undefined) => {
+                  setNewBlockedDate((s) => ({
+                    ...s,
+                    startDate: range?.from ? toLocalDateKey(range.from) : "",
+                    endDate: range?.to ? toLocalDateKey(range.to) : "",
+                  }));
+                }}
+                disabled={(date) => blockedDateKeys.includes(toLocalDateKey(date))}
+              />
             </div>
 
             {blockedDates.length === 0 ? (
