@@ -155,24 +155,32 @@ export default function OrganizationSettingsPage() {
       {loading ? (
         <div style={{ color: "#666" }}>Loading organization settings...</div>
       ) : (
-        <form onSubmit={handleSave} style={cardStyle}>
-          <div
-            style={{
-              border: "1px solid #dbeafe",
-              borderRadius: 18,
-              padding: 22,
-              background: "#eff6ff",
-              display: "grid",
-              gap: 16,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
-                Public Organization
+        <form onSubmit={handleSave} style={{ display: "grid", gap: 18 }}>
+          <div style={statsGridStyle}>
+            <div style={statCardStyle}>
+              <div style={statLabelStyle}>Organization</div>
+              <div style={statValueStyle}>{name || "—"}</div>
+            </div>
+
+            <div style={statCardStyle}>
+              <div style={statLabelStyle}>Catalog</div>
+              <div style={statValueStyle}>
+                {publicBookingEnabled ? "Active" : "Disabled"}
               </div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
-                This controls the main public Direct Booking catalog URL for
-                your organization.
+            </div>
+
+            <div style={statCardStyle}>
+              <div style={statLabelStyle}>Slug</div>
+              <div style={statValueStyle}>{normalizedSlug || "—"}</div>
+            </div>
+          </div>
+
+          <section style={cardStyle}>
+            <div>
+              <div style={sectionTitleStyle}>Organization Identity</div>
+              <div style={sectionDescriptionStyle}>
+                This information controls your public Direct Booking catalog
+                identity.
               </div>
             </div>
 
@@ -198,7 +206,7 @@ export default function OrganizationSettingsPage() {
                   style={inputStyle}
                   required
                 />
-                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                <div style={helperTextStyle}>
                   Used for your organization catalog URL.
                 </div>
               </div>
@@ -206,52 +214,66 @@ export default function OrganizationSettingsPage() {
 
             <div style={previewBoxStyle}>
               <div style={labelStyle}>Direct Booking URL</div>
-              <div
-                style={{
-                  marginTop: 6,
-                  fontSize: 14,
-                  fontWeight: 800,
-                  color: "#111827",
-                  wordBreak: "break-all",
-                }}
-              >
+              <div style={urlPreviewStyle}>
                 {directBookingUrl || "Set a slug to generate your public URL"}
               </div>
             </div>
+          </section>
 
-            <label
+          <section style={cardStyle}>
+            <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontSize: 14,
-                fontWeight: 700,
-                color: "#111827",
+                justifyContent: "space-between",
+                gap: 16,
+                alignItems: "flex-start",
+                flexWrap: "wrap",
               }}
             >
+              <div>
+                <div style={sectionTitleStyle}>Direct Booking Catalog</div>
+                <div style={sectionDescriptionStyle}>
+                  Control whether guests can browse your organization catalog
+                  and book public properties.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...statusBadgeStyle,
+                  background: publicBookingEnabled ? "#f0fdf4" : "#f9fafb",
+                  borderColor: publicBookingEnabled ? "#bbf7d0" : "#e5e7eb",
+                  color: publicBookingEnabled ? "#166534" : "#6b7280",
+                }}
+              >
+                {publicBookingEnabled ? "Active" : "Disabled"}
+              </div>
+            </div>
+
+            <label style={toggleRowStyle}>
               <input
                 type="checkbox"
                 checked={publicBookingEnabled}
                 onChange={(e) => setPublicBookingEnabled(e.target.checked)}
               />
-              Enable public Direct Booking catalog for this organization
-            </label>
-          </div>
 
-          <div
-            style={{
-              borderTop: "1px solid #bfdbfe",
-              paddingTop: 16,
-              display: "grid",
-              gap: 12,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
-                URL Compatibility
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                  Enable public Direct Booking catalog
+                </div>
+                <div style={helperTextStyle}>
+                  When enabled, guests can access your organization booking page
+                  using the public catalog URL.
+                </div>
               </div>
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
-                These URLs remain compatible with property slugs and future
+            </label>
+          </section>
+
+          <section style={cardStyle}>
+            <div>
+              <div style={sectionTitleStyle}>URL Structure</div>
+              <div style={sectionDescriptionStyle}>
+                These routes remain compatible with property slugs and future
                 custom domains.
               </div>
             </div>
@@ -285,17 +307,9 @@ export default function OrganizationSettingsPage() {
                 Last updated: {new Date(organization.updatedAt).toLocaleString()}
               </div>
             ) : null}
-          </div>
+          </section>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 12,
-              flexWrap: "wrap",
-              paddingTop: 4,
-            }}
-          >
+          <div style={actionBarStyle}>
             <button
               type="submit"
               disabled={saving}
@@ -317,17 +331,36 @@ export default function OrganizationSettingsPage() {
 const cardStyle: React.CSSProperties = {
   border: "1px solid #e5e7eb",
   borderRadius: 18,
-  padding: 24,
+  padding: 20,
   background: "#ffffff",
   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
   display: "grid",
   gap: 18,
 };
 
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: 18,
+  fontWeight: 800,
+  color: "#111827",
+};
+
+const sectionDescriptionStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#6b7280",
+  marginTop: 4,
+  lineHeight: 1.5,
+};
+
 const labelStyle: React.CSSProperties = {
-  fontSize: 14,
+  fontSize: 13,
   fontWeight: 700,
   color: "#374151",
+};
+
+const helperTextStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "#6b7280",
+  lineHeight: 1.5,
 };
 
 const inputStyle: React.CSSProperties = {
@@ -347,11 +380,68 @@ const responsiveGridStyle: React.CSSProperties = {
   gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
 };
 
-const previewBoxStyle: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 12,
-  border: "1px solid #dbeafe",
+const statsGridStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 12,
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+};
+
+const statCardStyle: React.CSSProperties = {
+  border: "1px solid #e5e7eb",
+  borderRadius: 16,
+  padding: 16,
   background: "#ffffff",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+};
+
+const statLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#6b7280",
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+};
+
+const statValueStyle: React.CSSProperties = {
+  marginTop: 6,
+  fontSize: 18,
+  fontWeight: 900,
+  color: "#111827",
+  wordBreak: "break-word",
+};
+
+const previewBoxStyle: React.CSSProperties = {
+  padding: 14,
+  borderRadius: 14,
+  border: "1px solid #dbeafe",
+  background: "#eff6ff",
+};
+
+const urlPreviewStyle: React.CSSProperties = {
+  marginTop: 6,
+  fontSize: 14,
+  fontWeight: 800,
+  color: "#111827",
+  wordBreak: "break-all",
+};
+
+const toggleRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  padding: 14,
+  borderRadius: 14,
+  border: "1px solid #e5e7eb",
+  background: "#f9fafb",
+  cursor: "pointer",
+};
+
+const statusBadgeStyle: React.CSSProperties = {
+  border: "1px solid",
+  borderRadius: 999,
+  padding: "6px 10px",
+  fontSize: 12,
+  fontWeight: 900,
 };
 
 const compatibilityGridStyle: React.CSSProperties = {
@@ -361,10 +451,10 @@ const compatibilityGridStyle: React.CSSProperties = {
 };
 
 const compatibilityCardStyle: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 12,
-  background: "#ffffff",
-  border: "1px solid #dbeafe",
+  padding: 14,
+  borderRadius: 14,
+  background: "#f9fafb",
+  border: "1px solid #e5e7eb",
 };
 
 const compatibilityTextStyle: React.CSSProperties = {
@@ -375,8 +465,17 @@ const compatibilityTextStyle: React.CSSProperties = {
   wordBreak: "break-word",
 };
 
+const actionBarStyle: React.CSSProperties = {
+  borderTop: "1px solid #e5e7eb",
+  paddingTop: 16,
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: 12,
+  flexWrap: "wrap",
+};
+
 const primaryButtonStyle: React.CSSProperties = {
-  height: 46,
+  height: 44,
   padding: "0 16px",
   borderRadius: 12,
   border: "none",
