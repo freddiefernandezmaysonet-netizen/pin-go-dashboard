@@ -2026,8 +2026,7 @@ await loadCalendarBlockedDates();
             >
               Cancel
             </button>
-
-            <button
+        
  <button
   type="button"
   onClick={handleSyncChannexAvailability}
