@@ -2009,63 +2009,63 @@ await loadCalendarBlockedDates();
               </button>
             </div>
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 12,
-              flexWrap: "wrap",
-              paddingTop: 4,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => navigate("/properties")}
-              style={secondaryButtonStyle}
-            >
-              Cancel
-            </button>
-        
- <button
-  type="button"
-  onClick={handleSyncChannexAvailability}
-  disabled={syncingChannexAvailability}
+<div
   style={{
-    ...secondaryButtonStyle,
-    opacity: syncingChannexAvailability ? 0.7 : 1,
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 12,
+    flexWrap: "wrap",
+    paddingTop: 4,
   }}
 >
-  {syncingChannexAvailability
-    ? "Syncing..."
-    : "Sync Channex Availability"}
-</button>
+  <button
+    type="button"
+    onClick={() => navigate("/properties")}
+    style={secondaryButtonStyle}
+  >
+    Cancel
+  </button>
 
- type="button"
-  onClick={handleProvisionChannex}
-  disabled={provisioningChannex}
-  style={{
-    ...secondaryButtonStyle,
-    opacity: provisioningChannex ? 0.7 : 1,
-  }}
->
-  {provisioningChannex
-    ? "Provisioning..."
-    : "Provision Channex"}
-</button>
+  <button
+    type="button"
+    onClick={handleProvisionChannex}
+    disabled={provisioningChannex}
+    style={{
+      ...secondaryButtonStyle,
+      opacity: provisioningChannex ? 0.7 : 1,
+    }}
+  >
+    {provisioningChannex ? "Provisioning..." : "Provision Channex"}
+  </button>
 
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                ...primaryButtonStyle,
-                opacity: saving ? 0.7 : 1,
-                cursor: saving ? "not-allowed" : "pointer",
-              }}
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
+  <button
+    type="button"
+    onClick={handleSyncChannexAvailability}
+    disabled={syncingChannexAvailability}
+    style={{
+      ...secondaryButtonStyle,
+      opacity: syncingChannexAvailability ? 0.7 : 1,
+    }}
+  >
+    {syncingChannexAvailability
+      ? "Syncing..."
+      : "Sync Channex Availability"}
+  </button>
+
+  <button
+    type="submit"
+    disabled={saving}
+    style={{
+      ...primaryButtonStyle,
+      opacity: saving ? 0.7 : 1,
+      cursor: saving ? "not-allowed" : "pointer",
+    }}
+  >
+    {saving ? "Saving..." : "Save Changes"}
+  </button>
+</div>
+      
+
         </form>
       )}
     </div>
