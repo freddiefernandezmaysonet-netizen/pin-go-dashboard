@@ -90,6 +90,7 @@ export function PropertyEditPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [provisioningChannex, setProvisioningChannex] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
@@ -317,6 +318,43 @@ export function PropertyEditPage() {
       setSaving(false);
     }
   }
+
+async function handleProvisionChannex() {
+  if (!id) return;
+
+  setProvisioningChannex(true);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/channex/provision`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(
+        data?.error || "Failed to provision Channex property"
+      );
+    }
+
+    alert(
+      `Channex provisioned successfully.\n\n${JSON.stringify(
+        data.result,
+        null,
+        2
+      )}`
+    );
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setProvisioningChannex(false);
+  }
+}
 
 async function handleUploadPhotos(
   e: React.ChangeEvent<HTMLInputElement>
@@ -1952,6 +1990,20 @@ await loadCalendarBlockedDates();
             >
               Cancel
             </button>
+
+            <button
+  type="button"
+  onClick={handleProvisionChannex}
+  disabled={provisioningChannex}
+  style={{
+    ...secondaryButtonStyle,
+    opacity: provisioningChannex ? 0.7 : 1,
+  }}
+>
+  {provisioningChannex
+    ? "Provisioning..."
+    : "Provision Channex"}
+</button>
 
             <button
               type="submit"
