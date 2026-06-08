@@ -378,13 +378,12 @@ async function handleSyncChannexAvailability() {
       throw new Error(data?.error || "Failed to sync Channex availability");
     }
 
-    alert(
-      `Channex availability synced.\n\n${JSON.stringify(
-        data.result,
-        null,
-        2
-      )}`
-    );
+    console.log("CHANNEX_SYNC_RESULT", data.result);
+
+alert(
+  `Channex availability synced.\n\nCheck browser console.`
+);
+ 
   } catch (e: any) {
     setErr(String(e?.message ?? e));
   } finally {
