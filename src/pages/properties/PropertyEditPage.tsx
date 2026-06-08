@@ -91,6 +91,7 @@ export function PropertyEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [provisioningChannex, setProvisioningChannex] = useState(false);
+  const [syncingChannexAvailability, setSyncingChannexAvailability] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
@@ -353,6 +354,41 @@ async function handleProvisionChannex() {
     setErr(String(e?.message ?? e));
   } finally {
     setProvisioningChannex(false);
+  }
+}
+
+async function handleSyncChannexAvailability() {
+  if (!id) return;
+
+  setSyncingChannexAvailability(true);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/channex/sync-availability`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to sync Channex availability");
+    }
+
+    alert(
+      `Channex availability synced.\n\n${JSON.stringify(
+        data.result,
+        null,
+        2
+      )}`
+    );
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setSyncingChannexAvailability(false);
   }
 }
 
@@ -1992,7 +2028,21 @@ await loadCalendarBlockedDates();
             </button>
 
             <button
+ <button
   type="button"
+  onClick={handleSyncChannexAvailability}
+  disabled={syncingChannexAvailability}
+  style={{
+    ...secondaryButtonStyle,
+    opacity: syncingChannexAvailability ? 0.7 : 1,
+  }}
+>
+  {syncingChannexAvailability
+    ? "Syncing..."
+    : "Sync Channex Availability"}
+</button>
+
+ type="button"
   onClick={handleProvisionChannex}
   disabled={provisioningChannex}
   style={{
