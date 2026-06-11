@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getDashboardOrganization,
   updateDashboardOrganization,
+  getChannelDistributionStatus,
   type DashboardOrganization,
+  type ChannelDistributionStatus,
 } from "../../api/organization";
 import { useAuth } from "../../auth/AuthProvider";
 
@@ -20,7 +22,9 @@ export default function OrganizationSettingsPage() {
 
   const [organization, setOrganization] =
     useState<DashboardOrganization | null>(null);
-
+  const [channelDistribution, setChannelDistribution] =
+    useState<ChannelDistributionStatus | null>(null);
+  
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [publicBookingEnabled, setPublicBookingEnabled] = useState(false);
@@ -49,13 +53,15 @@ export default function OrganizationSettingsPage() {
         setError(null);
 
         const item = await getDashboardOrganization();
-
+        const distribution = await getChannelDistributionStatus();
+       
         if (!mounted) return;
 
         setOrganization(item);
         setName(item.name ?? "");
         setSlug(item.slug ?? "");
         setPublicBookingEnabled(Boolean(item.publicBookingEnabled));
+        setChannelDistribution(distribution);
       } catch (e) {
         console.error("[OrganizationSettingsPage] load failed", e);
         if (!mounted) return;
@@ -267,6 +273,93 @@ export default function OrganizationSettingsPage() {
                 </div>
               </div>
             </label>
+          </section>
+
+          <section style={cardStyle}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div style={sectionTitleStyle}>Channel Distribution</div>
+                <div style={sectionDescriptionStyle}>
+                  Manage the global channel manager connection used to distribute
+                  properties to external booking channels.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...statusBadgeStyle,
+                  background: channelDistribution?.connected
+                    ? "#f0fdf4"
+                    : "#f9fafb",
+                  borderColor: channelDistribution?.connected
+                    ? "#bbf7d0"
+                    : "#e5e7eb",
+                  color: channelDistribution?.connected
+                    ? "#166534"
+                    : "#6b7280",
+                }}
+              >
+                {channelDistribution?.connected ? "Connected" : "Not Connected"}
+              </div>
+            </div>
+
+            <div style={compatibilityGridStyle}>
+              <div style={compatibilityCardStyle}>
+                <div style={labelStyle}>Channel Manager</div>
+                <div style={compatibilityTextStyle}>
+                  {channelDistribution?.provider ?? "—"} ·{" "}
+                  {channelDistribution?.status ?? "Not connected"}
+                </div>
+              </div>
+
+              <div style={compatibilityCardStyle}>
+                <div style={labelStyle}>Webhook</div>
+                <div style={compatibilityTextStyle}>
+                  {channelDistribution?.webhookConfigured
+                    ? "Configured"
+                    : "Not configured"}
+                </div>
+              </div>
+
+              <div style={compatibilityCardStyle}>
+                <div style={labelStyle}>Mapped Properties</div>
+                <div style={compatibilityTextStyle}>
+                  {channelDistribution?.mappedProperties ?? 0}
+                </div>
+              </div>
+            </div>
+
+            <div style={previewBoxStyle}>
+              <div style={labelStyle}>Webhook URL</div>
+              <div style={urlPreviewStyle}>
+                {channelDistribution?.webhookUrl ??
+                  "Connect channel distribution to generate a webhook URL"}
+              </div>
+            </div>
+
+            <div style={compatibilityGridStyle}>
+              {(channelDistribution?.connectedChannels ?? []).map((channel) => (
+                <div key={channel.name} style={compatibilityCardStyle}>
+                  <div style={labelStyle}>{channel.name}</div>
+                  <div style={compatibilityTextStyle}>{channel.status}</div>
+                </div>
+              ))}
+            </div>
+
+            {channelDistribution?.updatedAt ? (
+              <div style={{ fontSize: 12, color: "#6b7280" }}>
+                Last validated:{" "}
+                {new Date(channelDistribution.updatedAt).toLocaleString()}
+              </div>
+            ) : null}
           </section>
 
           <section style={cardStyle}>

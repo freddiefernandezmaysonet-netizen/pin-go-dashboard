@@ -47,3 +47,34 @@ export async function updateDashboardOrganization(
   const data = await res.json();
   return data.organization as DashboardOrganization;
 }
+
+export type ChannelDistributionStatus = {
+  provider: string;
+  connected: boolean;
+  connectionId: string | null;
+  status: string;
+  webhookConfigured: boolean;
+  webhookUrl: string | null;
+  mappedProperties: number;
+  connectedChannels: {
+    name: string;
+    status: string;
+  }[];
+  updatedAt: string | null;
+};
+
+export async function getChannelDistributionStatus() {
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/organization/channel-distribution`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to load channel distribution status");
+  }
+
+  const data = await res.json();
+  return data.channelDistribution as ChannelDistributionStatus;
+}
