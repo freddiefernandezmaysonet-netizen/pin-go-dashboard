@@ -63,3 +63,55 @@ export async function createProperty(input: CreatePropertyInput) {
 
   return res.json();
 }
+
+export async function provisionPropertyToChannex(propertyId: string) {
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${propertyId}/channex/provision`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    let error = "Failed to provision property to Channex";
+
+    try {
+      const data = await res.json();
+      error = data?.error || data?.message || error;
+    } catch {
+      const text = await res.text().catch(() => "");
+      if (text) error = text;
+    }
+
+    throw new Error(error);
+  }
+
+  return res.json();
+}
+
+export async function syncPropertyChannexAvailability(propertyId: string) {
+  const res = await fetch(
+    `${API_BASE}/api/dashboard/properties/${propertyId}/channex/sync-availability`,
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    let error = "Failed to sync Channex availability";
+
+    try {
+      const data = await res.json();
+      error = data?.error || data?.message || error;
+    } catch {
+      const text = await res.text().catch(() => "");
+      if (text) error = text;
+    }
+
+    throw new Error(error);
+  }
+
+  return res.json();
+}

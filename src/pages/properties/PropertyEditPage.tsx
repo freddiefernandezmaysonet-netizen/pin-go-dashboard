@@ -67,6 +67,7 @@ type PropertyItem = {
   longitude?: number | null;
   slug?: string | null;
   isPublicBookable?: boolean;
+  distributionEnabled?: boolean;
   publicTitle?: string | null;
   publicDescription?: string | null;
   publicPhotos?: string[] | null;
@@ -146,6 +147,7 @@ export function PropertyEditPage() {
     minimumNights: "1",
     maximumNights: "",
     isPublicBookable: false,
+    distributionEnabled: false,
     publicTitle: "",
     publicDescription: "",
     publicPhotosText: "",
@@ -235,7 +237,8 @@ export function PropertyEditPage() {
           ? p.publicPhotos.join("\n")
           : "",
           isPublicBookable: Boolean(p.isPublicBookable),
-        });
+          distributionEnabled: Boolean(p.distributionEnabled),
+       });
       })
       .catch((e: any) => {
         setErr(String(e?.message ?? e));
@@ -304,6 +307,7 @@ export function PropertyEditPage() {
               ? null
               : Number(form.maximumNights),
           isPublicBookable: form.isPublicBookable,
+          distributionEnabled: form.distributionEnabled,
         }),
       });
 
@@ -2004,6 +2008,63 @@ await loadCalendarBlockedDates();
               </button>
             </div>
           </div>
+
+          <div style={cardStyle}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 16,
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div style={sectionTitleStyle}>Distribution Settings</div>
+                <div style={sectionDescriptionStyle}>
+                  Let Pin&Go prepare this property for external booking channels.
+                  Pin&Go will handle the channel manager setup, rates, availability,
+                  and reservation ingestion automatically.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...statusBadgeStyle,
+                  background: form.distributionEnabled ? "#f0fdf4" : "#f9fafb",
+                  borderColor: form.distributionEnabled ? "#bbf7d0" : "#e5e7eb",
+                  color: form.distributionEnabled ? "#166534" : "#6b7280",
+                }}
+              >
+                {form.distributionEnabled ? "Active" : "Disabled"}
+              </div>
+            </div>
+
+            <label style={toggleRowStyle}>
+              <input
+                type="checkbox"
+                checked={form.distributionEnabled}
+                onChange={(e) =>
+                  setForm((s) => ({
+                    ...s,
+                    distributionEnabled: e.target.checked,
+                  }))
+                }
+              />
+
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
+                  Enable external channel distribution
+                </div>
+                <div style={helperTextStyle}>
+                  When enabled, Pin&Go will prepare this property for channels
+                  like Airbnb, Booking.com, and Vrbo through the connected channel
+                  distribution layer.
+                </div>
+              </div>
+            </label>
+          </div>
+
 <div
   style={{
     display: "flex",
@@ -2021,32 +2082,7 @@ await loadCalendarBlockedDates();
     Cancel
   </button>
 
-  <button
-    type="button"
-    onClick={handleProvisionChannex}
-    disabled={provisioningChannex}
-    style={{
-      ...secondaryButtonStyle,
-      opacity: provisioningChannex ? 0.7 : 1,
-    }}
-  >
-    {provisioningChannex ? "Provisioning..." : "Provision Channex"}
-  </button>
-
-  <button
-    type="button"
-    onClick={handleSyncChannexAvailability}
-    disabled={syncingChannexAvailability}
-    style={{
-      ...secondaryButtonStyle,
-      opacity: syncingChannexAvailability ? 0.7 : 1,
-    }}
-  >
-    {syncingChannexAvailability
-      ? "Syncing..."
-      : "Sync Channex Availability"}
-  </button>
-
+  
   <button
     type="submit"
     disabled={saving}
@@ -2060,12 +2096,59 @@ await loadCalendarBlockedDates();
   </button>
 </div>
       
-
         </form>
       )}
     </div>
   );
 }
+
+const cardStyle: React.CSSProperties = {
+  border: "1px solid #e5e7eb",
+  borderRadius: 18,
+  padding: 20,
+  background: "#ffffff",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+  display: "grid",
+  gap: 18,
+};
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: 18,
+  fontWeight: 800,
+  color: "#111827",
+};
+
+const sectionDescriptionStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#6b7280",
+  marginTop: 4,
+  lineHeight: 1.5,
+};
+
+const statusBadgeStyle: React.CSSProperties = {
+  border: "1px solid",
+  borderRadius: 999,
+  padding: "6px 10px",
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const toggleRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  padding: 14,
+  borderRadius: 14,
+  border: "1px solid #e5e7eb",
+  background: "#f9fafb",
+  cursor: "pointer",
+};
+
+const helperTextStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "#6b7280",
+  lineHeight: 1.5,
+};
 
 const labelStyle: React.CSSProperties = {
   fontSize: 13,
