@@ -24,7 +24,8 @@ export default function OrganizationSettingsPage() {
     useState<DashboardOrganization | null>(null);
   const [channelDistribution, setChannelDistribution] =
     useState<ChannelDistributionStatus | null>(null);
-  
+  const [validatingDistribution, setValidatingDistribution] = useState(false);
+
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [publicBookingEnabled, setPublicBookingEnabled] = useState(false);
@@ -138,6 +139,24 @@ export default function OrganizationSettingsPage() {
       setSaving(false);
     }
   }
+
+async function handleValidateDistribution() {
+  try {
+    setValidatingDistribution(true);
+    setError(null);
+    setSuccess(null);
+
+    const distribution = await getChannelDistributionStatus();
+    setChannelDistribution(distribution);
+
+    setSuccess("Channel distribution status refreshed.");
+  } catch (e) {
+    console.error("[OrganizationSettingsPage] distribution validation failed", e);
+    setError("Unable to validate channel distribution.");
+  } finally {
+    setValidatingDistribution(false);
+  }
+}
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -361,6 +380,19 @@ export default function OrganizationSettingsPage() {
               </div>
             ) : null}
           </section>
+<button
+  type="button"
+  onClick={handleValidateDistribution}
+  disabled={validatingDistribution}
+  style={{
+    ...primaryButtonStyle,
+    opacity: validatingDistribution ? 0.7 : 1,
+    cursor: validatingDistribution ? "not-allowed" : "pointer",
+    width: "fit-content",
+  }}
+>
+  {validatingDistribution ? "Validating..." : "Validate Connection"}
+</button>
 
           <section style={cardStyle}>
             <div>
