@@ -324,6 +324,38 @@ export function PropertyEditPage() {
     }
   }
 
+async function handleEnableDistribution() {
+  if (!id) return;
+
+  setSaving(true);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/distribution/enable`,
+      {
+        method: "POST",
+        credentials: "include",
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to enable distribution");
+    }
+
+    setForm((s) => ({
+      ...s,
+      distributionEnabled: true,
+    }));
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setSaving(false);
+  }
+}
+
 async function handleProvisionChannex() {
   if (!id) return;
 
@@ -2044,12 +2076,18 @@ await loadCalendarBlockedDates();
               <input
                 type="checkbox"
                 checked={form.distributionEnabled}
-                onChange={(e) =>
-                  setForm((s) => ({
-                    ...s,
-                    distributionEnabled: e.target.checked,
-                  }))
-                }
+                onChange={async (e) => {
+  if (e.target.checked) {
+    await handleEnableDistribution();
+    return;
+  }
+
+  setForm((s) => ({
+    ...s,
+    distributionEnabled: false,
+  }));
+}}
+
               />
 
               <div>
