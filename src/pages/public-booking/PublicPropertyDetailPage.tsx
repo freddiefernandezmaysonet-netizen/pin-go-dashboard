@@ -726,9 +726,16 @@ useEffect(() => {
                     <div style={styles.bookingHeader}>
                       <div>
                         <div style={styles.bookingPrice}>
-                          {formatMoney(property.baseNightlyRate)}
-                          <span style={styles.bookingPriceUnit}> / night</span>
-                        </div>
+  <div style={styles.bookingPricePrefix}>
+    Starting at
+  </div>
+
+  {formatMoney(property.baseNightlyRate)}
+
+  <span style={styles.bookingPriceUnit}>
+    / night
+  </span>
+</div>
                         <div style={styles.bookingSubtitle}>
                           Book your stay securely
                         </div>
@@ -959,8 +966,18 @@ useEffect(() => {
     ? "Nightly rates"
     : `${formatMoney(property.baseNightlyRate)} × ${nights || 0} nights`}
 </span>
-                        <strong>{formatMoney(displayNightlySubtotal)}</strong>
+  <strong>{formatMoney(displayNightlySubtotal)}</strong>
                       </div>
+{pricing?.nightlyRates?.length ? (
+  <div style={styles.nightlyRatesBreakdown}>
+    {pricing.nightlyRates.map((item: any) => (
+      <div key={item.date} style={styles.nightlyRateItem}>
+        <span>{format(fromDateInputValue(item.date)!, "MMM d, yyyy")}</span>
+        <strong>{formatMoney(item.rate)}</strong>
+      </div>
+    ))}
+  </div>
+) : null}
 
                       <div style={styles.priceRow}>
                         <span>Cleaning fee</span>
@@ -1505,7 +1522,15 @@ pinGoPanel: {
     color: "#64748b",
     letterSpacing: 0,
   },
- bookingSubtitle: {
+ bookingPricePrefix: {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 900,
+  color: "#64748b",
+  letterSpacing: "0.02em",
+  marginBottom: 4,
+},
+bookingSubtitle: {
   marginTop: 6,
   fontSize: 14,
   color: "#64748b",
@@ -1705,7 +1730,22 @@ pinGoPanel: {
     color: "#475569",
     fontSize: 14,
   },
-  includedAmenitiesRow: {
+  nightlyRatesBreakdown: {
+  display: "grid",
+  gap: 8,
+  padding: "10px 0 4px",
+  borderBottom: "1px solid #e2e8f0",
+},
+
+nightlyRateItem: {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 12,
+  color: "#64748b",
+  fontSize: 13,
+},
+
+includedAmenitiesRow: {
     color: "#64748b",
     fontSize: 12,
     lineHeight: 1.5,
