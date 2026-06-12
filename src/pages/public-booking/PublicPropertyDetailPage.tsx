@@ -169,7 +169,7 @@ export default function PublicPropertyDetailPage() {
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
- 
+  const [pricing, setPricing] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -234,8 +234,15 @@ const taxesTotal = (property?.taxes ?? []).reduce((sum, tax) => {
   return sum + taxableSubtotal * (percentage / 100);
 }, 0);
 
-const total = taxableSubtotal + taxesTotal;
-  const location = [
+const total =
+  pricing?.totalAmount ??
+  taxableSubtotal + taxesTotal;
+  
+const displayNightlySubtotal = pricing?.nightlySubtotal ?? subtotal;
+const displayCleaningFee = pricing?.cleaningFee ?? cleaningFee;
+const displayTotal = pricing?.totalAmount ?? total;
+
+const location = [
     property?.address1,
     property?.city,
     property?.region,
@@ -368,7 +375,61 @@ useEffect(() => {
   };
 }, [property?.id]);
 
-  
+useEffect(() => {
+  let active = true;
+
+  async function loadPricing() {
+    try {
+      if (!property?.id || !checkIn || !checkOut || nights <= 0) {
+        setPricing(null);
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/public-booking/quote`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          propertyId: property.id,
+          checkIn,
+          checkOut,
+          selectedAmenityIds,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!active) return;
+
+      if (!res.ok || !data.ok) {
+        setPricing(null);
+        return;
+      }
+
+      setPricing(data.pricing);
+    } catch (err) {
+      console.error("[pricing quote error]", err);
+
+      if (active) {
+        setPricing(null);
+      }
+    }
+  }
+
+  loadPricing();
+
+  return () => {
+    active = false;
+  };
+}, [
+  property?.id,
+  checkIn,
+  checkOut,
+  selectedAmenityIds,
+  nights,
+]); 
+ 
   async function handleReserve(e: React.FormEvent) {
     e.preventDefault();
 
@@ -897,12 +958,12 @@ useEffect(() => {
                           {formatMoney(property.baseNightlyRate)} × {nights || 0}{" "}
                           nights
                         </span>
-                        <strong>{formatMoney(subtotal)}</strong>
+                        <strong>{formatMoney(displayNightlySubtotal)}</strong>
                       </div>
 
                       <div style={styles.priceRow}>
                         <span>Cleaning fee</span>
-                        <strong>{formatMoney(cleaningFee)}</strong>
+                        <strong>{formatMoney(displayCleaningFee)}</strong>
                       </div>
 
                       {requiredAmenities.map((amenity) => (
@@ -943,7 +1004,7 @@ useEffect(() => {
 
                       <div style={styles.totalRow}>
                         <span>Total</span>
-                        <strong>{formatMoney(total)}</strong>
+                        <strong>{formatMoney(displayTotal)}</strong>
                       </div>
                     </div>
 
