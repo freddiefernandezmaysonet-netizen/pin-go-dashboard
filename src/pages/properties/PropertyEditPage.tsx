@@ -68,6 +68,10 @@ type PropertyItem = {
   slug?: string | null;
   isPublicBookable?: boolean;
   distributionEnabled?: boolean;
+  distributionStatus?: string | null;
+  distributionEnabledAt?: string | null;
+  distributionLastSyncedAt?: string | null;
+  distributionLastError?: string | null;
   publicTitle?: string | null;
   publicDescription?: string | null;
   publicPhotos?: string[] | null;
@@ -148,6 +152,10 @@ export function PropertyEditPage() {
     maximumNights: "",
     isPublicBookable: false,
     distributionEnabled: false,
+    distributionStatus: "DISABLED",
+    distributionEnabledAt: "",
+    distributionLastSyncedAt: "",
+    distributionLastError: "",
     publicTitle: "",
     publicDescription: "",
     publicPhotosText: "",
@@ -238,6 +246,10 @@ export function PropertyEditPage() {
           : "",
           isPublicBookable: Boolean(p.isPublicBookable),
           distributionEnabled: Boolean(p.distributionEnabled),
+          distributionStatus: p.distributionStatus ?? "DISABLED",
+          distributionEnabledAt: p.distributionEnabledAt ?? "",
+          distributionLastSyncedAt: p.distributionLastSyncedAt ?? "",
+          distributionLastError: p.distributionLastError ?? "",
        });
       })
       .catch((e: any) => {
@@ -782,6 +794,55 @@ await loadCalendarBlockedDates();
 
     return dates;
   });
+
+  const distributionStatus =
+    form.distributionStatus || (form.distributionEnabled ? "ACTIVE" : "DISABLED");
+
+  const distributionStatusLabel =
+    distributionStatus === "ACTIVE"
+      ? "Active"
+      : distributionStatus === "ENABLING"
+      ? "Enabling"
+      : distributionStatus === "FAILED"
+      ? "Failed"
+      : "Disabled";
+
+  const distributionStatusColors =
+    distributionStatus === "ACTIVE"
+      ? {
+          background: "#f0fdf4",
+          borderColor: "#bbf7d0",
+          color: "#166534",
+        }
+      : distributionStatus === "FAILED"
+      ? {
+          background: "#fef2f2",
+          borderColor: "#fecaca",
+          color: "#991b1b",
+        }
+      : distributionStatus === "ENABLING"
+      ? {
+          background: "#fffbeb",
+          borderColor: "#fde68a",
+          color: "#92400e",
+        }
+      : {
+          background: "#f9fafb",
+          borderColor: "#e5e7eb",
+          color: "#6b7280",
+        };
+
+  const formatDistributionDate = (value?: string | null) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return date.toLocaleString();
+  };
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -2059,19 +2120,68 @@ await loadCalendarBlockedDates();
                   and reservation ingestion automatically.
                 </div>
               </div>
+             <div
+  style={{
+    ...statusBadgeStyle,
+    background: distributionStatusColors.background,
+    borderColor: distributionStatusColors.borderColor,
+    color: distributionStatusColors.color,
+  }}
+>
+  {distributionStatusLabel}
+</div>
+              
+            </div>
+                       <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={distributionInfoCardStyle}>
+                <div style={distributionInfoLabelStyle}>Status</div>
+                <div
+                  style={{
+                    ...distributionInfoValueStyle,
+                    color: distributionStatusColors.color,
+                  }}
+                >
+                  {distributionStatusLabel}
+                </div>
+              </div>
 
-              <div
-                style={{
-                  ...statusBadgeStyle,
-                  background: form.distributionEnabled ? "#f0fdf4" : "#f9fafb",
-                  borderColor: form.distributionEnabled ? "#bbf7d0" : "#e5e7eb",
-                  color: form.distributionEnabled ? "#166534" : "#6b7280",
-                }}
-              >
-                {form.distributionEnabled ? "Active" : "Disabled"}
+              <div style={distributionInfoCardStyle}>
+                <div style={distributionInfoLabelStyle}>Last Sync</div>
+                <div style={distributionInfoValueStyle}>
+                  {formatDistributionDate(form.distributionLastSyncedAt)}
+                </div>
+              </div>
+
+              <div style={distributionInfoCardStyle}>
+                <div style={distributionInfoLabelStyle}>Enabled At</div>
+                <div style={distributionInfoValueStyle}>
+                  {formatDistributionDate(form.distributionEnabledAt)}
+                </div>
               </div>
             </div>
 
+            {form.distributionLastError ? (
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 14,
+                  border: "1px solid #fecaca",
+                  background: "#fef2f2",
+                  color: "#991b1b",
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                Distribution error: {form.distributionLastError}
+              </div>
+            ) : null}
+            
             <label style={toggleRowStyle}>
               <input
                 type="checkbox"
@@ -2180,6 +2290,26 @@ const toggleRowStyle: React.CSSProperties = {
   border: "1px solid #e5e7eb",
   background: "#f9fafb",
   cursor: "pointer",
+};
+
+const distributionInfoCardStyle: React.CSSProperties = {
+  padding: 12,
+  borderRadius: 14,
+  border: "1px solid #e5e7eb",
+  background: "#f9fafb",
+};
+
+const distributionInfoLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#6b7280",
+};
+
+const distributionInfoValueStyle: React.CSSProperties = {
+  marginTop: 4,
+  fontSize: 14,
+  fontWeight: 900,
+  color: "#111827",
 };
 
 const helperTextStyle: React.CSSProperties = {
