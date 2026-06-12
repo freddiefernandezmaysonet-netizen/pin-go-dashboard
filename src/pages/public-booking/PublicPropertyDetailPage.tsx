@@ -955,9 +955,10 @@ useEffect(() => {
 
                       <div style={styles.priceRow}>
                         <span>
-                          {formatMoney(property.baseNightlyRate)} × {nights || 0}{" "}
-                          nights
-                        </span>
+  {pricing?.nightlyRates?.length
+    ? "Nightly rates"
+    : `${formatMoney(property.baseNightlyRate)} × ${nights || 0} nights`}
+</span>
                         <strong>{formatMoney(displayNightlySubtotal)}</strong>
                       </div>
 
