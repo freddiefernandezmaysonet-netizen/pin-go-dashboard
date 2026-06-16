@@ -10,7 +10,6 @@ import {
   isSameMonth,
 } from "date-fns";
 import { Link, useParams } from "react-router-dom";
-import { getDashboardReservations } from "../../api/endpoints";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -59,14 +58,14 @@ export function PropertyCalendarPage() {
 
         const ratesData = await ratesRes.json();
 
-        const reservationsData = await getDashboardReservations({
-          propertyId: id,
-          from,
-          to,
-          pageSize: 100,
-          sort: "checkIn_asc",
-        });
+       const reservationsRes = await fetch(
+  `${API_BASE}/api/dashboard/reservations?propertyId=${id}&from=${from}&to=${to}&pageSize=100&sort=checkIn_asc`,
+  {
+    credentials: "include",
+  }
+);
 
+const reservationsData = await reservationsRes.json();
         if (!active) return;
 
         setNightlyRates(
