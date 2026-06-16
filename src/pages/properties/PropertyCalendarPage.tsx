@@ -24,7 +24,8 @@ export function PropertyCalendarPage() {
   const [reservations, setReservations] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
 
   const to = useMemo(
@@ -111,10 +112,6 @@ export function PropertyCalendarPage() {
     return format(date, "yyyy-MM-dd");
   }
 
-  function getDateKey(date: Date) {
-  return format(date, "yyyy-MM-dd");
-}
-
 function getIsoDateKey(value: string) {
   return String(value).slice(0, 10);
 }
@@ -183,6 +180,7 @@ function getIsoDateKey(value: string) {
           return (
             <div
               key={day.toISOString()}
+              onClick={() => setSelectedDay(day)}
               style={{
                 ...styles.dayCard,
                 opacity: isSameMonth(day, month) ? 1 : 0.35,
@@ -225,7 +223,59 @@ function getIsoDateKey(value: string) {
       </div>
 
       <Link to={`/properties/${id}/edit`} style={styles.backLink}>
-        Back to property
+       {selectedDay && (
+  <div
+    style={{
+      marginTop: 24,
+      padding: 20,
+      border: "1px solid #e5e7eb",
+      borderRadius: 16,
+      background: "#ffffff",
+    }}
+  >
+    <h3 style={{ marginTop: 0 }}>
+      {format(selectedDay, "MMMM d, yyyy")}
+    </h3>
+
+    <div>
+      Rate:{" "}
+      {rateByDate.get(getDateKey(selectedDay))
+        ? `$${rateByDate.get(getDateKey(selectedDay))?.rate}`
+        : "Base"}
+    </div>
+
+    <div style={{ marginTop: 8 }}>
+      Status:{" "}
+      {getReservationForDay(selectedDay)
+        ? "Booked"
+        : getBlockedDateForDay(selectedDay)
+        ? "Blocked"
+        : "Available"}
+    </div>
+
+    {getReservationForDay(selectedDay) && (
+      <>
+        <div style={{ marginTop: 8 }}>
+          Guest: {getReservationForDay(selectedDay)?.guestName}
+        </div>
+
+        <div>
+          Source:{" "}
+          {getReservationForDay(selectedDay)?.source ||
+            getReservationForDay(selectedDay)?.externalProvider ||
+            "Direct"}
+        </div>
+      </>
+    )}
+
+    {getBlockedDateForDay(selectedDay)?.reason && (
+      <div style={{ marginTop: 8 }}>
+        Reason: {getBlockedDateForDay(selectedDay)?.reason}
+      </div>
+    )}
+  </div>
+)}
+       Back to property
       </Link>
     </div>
   );
