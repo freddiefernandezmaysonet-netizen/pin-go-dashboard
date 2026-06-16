@@ -111,32 +111,33 @@ export function PropertyCalendarPage() {
     return format(date, "yyyy-MM-dd");
   }
 
-  function getDayTime(day: Date) {
-    return new Date(`${format(day, "yyyy-MM-dd")}T00:00:00`).getTime();
-  }
+  function getDateKey(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
 
+function getIsoDateKey(value: string) {
+  return String(value).slice(0, 10);
+}
   function getReservationForDay(day: Date) {
-    const dayTime = getDayTime(day);
+  const dayKey = getDateKey(day);
 
-    return reservations.find((reservation) => {
-      const checkInTime = new Date(reservation.checkIn).getTime();
-      const checkOutTime = new Date(reservation.checkOut).getTime();
+  return reservations.find((reservation) => {
+    const checkInKey = getIsoDateKey(reservation.checkIn);
+    const checkOutKey = getIsoDateKey(reservation.checkOut);
 
-      return dayTime >= checkInTime && dayTime < checkOutTime;
-    });
-  }
+    return dayKey >= checkInKey && dayKey < checkOutKey;
+  });
+}
+ function getBlockedDateForDay(day: Date) {
+  const dayKey = getDateKey(day);
 
-  function getBlockedDateForDay(day: Date) {
-    const dayTime = getDayTime(day);
+  return blockedDates.find((blockedDate) => {
+    const startKey = getIsoDateKey(blockedDate.startDate);
+    const endKey = getIsoDateKey(blockedDate.endDate);
 
-    return blockedDates.find((blockedDate) => {
-      const startTime = new Date(blockedDate.startDate).getTime();
-      const endTime = new Date(blockedDate.endDate).getTime();
-
-      return dayTime >= startTime && dayTime < endTime;
-    });
-  }
-
+    return dayKey >= startKey && dayKey < endKey;
+  });
+}
   return (
     <div style={{ padding: 24 }}>
       <h1>Property Calendar</h1>
