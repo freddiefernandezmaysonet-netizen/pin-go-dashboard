@@ -25,6 +25,7 @@ export function PropertyCalendarPage() {
   const [nightlyRates, setNightlyRates] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
+  const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
@@ -67,7 +68,13 @@ export function PropertyCalendarPage() {
     async function loadCalendarData() {
       try {
         setLoading(true);
-
+         
+        const propertyRes = await fetch(
+  `${API_BASE}/api/dashboard/properties/${id}`,
+  { credentials: "include" }
+);
+const propertyData = await propertyRes.json();
+        
         const ratesRes = await fetch(
           `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
           { credentials: "include" }
@@ -87,7 +94,9 @@ export function PropertyCalendarPage() {
         const blockedData = await blockedRes.json();
 
         if (!active) return;
-
+        
+        setProperty(propertyRes.ok ? propertyData.item : null);
+        
         setNightlyRates(
           ratesRes.ok && Array.isArray(ratesData.rates) ? ratesData.rates : []
         );
@@ -206,6 +215,8 @@ export function PropertyCalendarPage() {
       : `${format(selectedRange.start, "MMM d, yyyy")}`
     : "";
 
+  const baseNightlyRate = Number(property?.baseNightlyRate ?? 0);
+ 
   async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
@@ -474,7 +485,11 @@ if (startOfDay(selectedRange.start) < today) {
               <div style={styles.dayNumber}>{format(day, "d")}</div>
 
               <div style={styles.dayRate}>
-                {rate ? `$${Number(rate.rate ?? 0).toFixed(0)}` : "Base"}
+                {rate
+  ? `$${Number(rate.rate ?? 0).toFixed(0)}`
+  : baseNightlyRate > 0
+  ? `$${baseNightlyRate.toFixed(0)}`
+  : "—"}
               </div>
 
               {reservation ? (
@@ -611,7 +626,9 @@ if (startOfDay(selectedRange.start) < today) {
             Rate:{" "}
             {rateByDate.get(getDateKey(selectedDay))
               ? `$${rateByDate.get(getDateKey(selectedDay))?.rate}`
-              : "Base"}
+              : baseNightlyRate > 0
+? `$${baseNightlyRate.toFixed(0)}`
+: "—"}
           </div>
 
           <div style={{ marginTop: 8 }}>
