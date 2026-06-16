@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
