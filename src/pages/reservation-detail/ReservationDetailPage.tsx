@@ -455,11 +455,10 @@ export function ReservationDetailPage() {
       value={data.source ?? "—"}
     />
 
-    <Stat
-      title="Provider"
-      value={data.externalProvider ?? "—"}
-    />
-
+   <Stat
+  title="Provider"
+  value="Pin&Go"
+/>
     <Stat
       title="Currency"
       value={(data.currency ?? "usd").toUpperCase()}
