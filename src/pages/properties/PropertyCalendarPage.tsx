@@ -22,6 +22,7 @@ export function PropertyCalendarPage() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [nightlyRates, setNightlyRates] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
+  const [blockedDates, setBlockedDates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
@@ -51,21 +52,22 @@ export function PropertyCalendarPage() {
 
         const ratesRes = await fetch(
           `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
-          {
-            credentials: "include",
-          }
+          { credentials: "include" }
         );
-
         const ratesData = await ratesRes.json();
 
-       const reservationsRes = await fetch(
-  `${API_BASE}/api/dashboard/reservations?propertyId=${id}&from=${from}&to=${to}&pageSize=100&sort=checkIn_asc`,
-  {
-    credentials: "include",
-  }
-);
+        const reservationsRes = await fetch(
+          `${API_BASE}/api/dashboard/reservations?propertyId=${id}&from=${from}&to=${to}&pageSize=100&sort=checkIn_asc`,
+          { credentials: "include" }
+        );
+        const reservationsData = await reservationsRes.json();
 
-const reservationsData = await reservationsRes.json();
+        const blockedRes = await fetch(
+          `${API_BASE}/api/dashboard/properties/${id}/blocked-dates`,
+          { credentials: "include" }
+        );
+        const blockedData = await blockedRes.json();
+
         if (!active) return;
 
         setNightlyRates(
@@ -75,17 +77,22 @@ const reservationsData = await reservationsRes.json();
         setReservations(
           Array.isArray(reservationsData.items) ? reservationsData.items : []
         );
+
+        setBlockedDates(
+          blockedRes.ok && Array.isArray(blockedData.items)
+            ? blockedData.items
+            : []
+        );
       } catch (error) {
         console.error("Failed to load calendar data", error);
 
         if (active) {
           setNightlyRates([]);
           setReservations([]);
+          setBlockedDates([]);
         }
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
 
@@ -104,14 +111,29 @@ const reservationsData = await reservationsRes.json();
     return format(date, "yyyy-MM-dd");
   }
 
+  function getDayTime(day: Date) {
+    return new Date(`${format(day, "yyyy-MM-dd")}T00:00:00`).getTime();
+  }
+
   function getReservationForDay(day: Date) {
-    const dayTime = new Date(`${format(day, "yyyy-MM-dd")}T00:00:00`).getTime();
+    const dayTime = getDayTime(day);
 
     return reservations.find((reservation) => {
       const checkInTime = new Date(reservation.checkIn).getTime();
       const checkOutTime = new Date(reservation.checkOut).getTime();
 
       return dayTime >= checkInTime && dayTime < checkOutTime;
+    });
+  }
+
+  function getBlockedDateForDay(day: Date) {
+    const dayTime = getDayTime(day);
+
+    return blockedDates.find((blockedDate) => {
+      const startTime = new Date(blockedDate.startDate).getTime();
+      const endTime = new Date(blockedDate.endDate).getTime();
+
+      return dayTime >= startTime && dayTime < endTime;
     });
   }
 
@@ -122,7 +144,7 @@ const reservationsData = await reservationsRes.json();
       <p>
         {loading
           ? "Loading calendar..."
-          : `${nightlyRates.length} custom nightly rate(s) and ${reservations.length} reservation(s) loaded.`}
+          : `${nightlyRates.length} custom rate(s), ${reservations.length} reservation(s), and ${blockedDates.length} blocked date(s) loaded.`}
       </p>
 
       <div
@@ -155,6 +177,7 @@ const reservationsData = await reservationsRes.json();
           const dateKey = getDateKey(day);
           const rate = rateByDate.get(dateKey);
           const reservation = getReservationForDay(day);
+          const blockedDate = getBlockedDateForDay(day);
 
           return (
             <div
@@ -183,6 +206,14 @@ const reservationsData = await reservationsRes.json();
                       reservation.externalProvider ||
                       "Direct"}
                   </div>
+                </>
+              ) : blockedDate ? (
+                <>
+                  <div style={styles.blockedPill}>Blocked</div>
+
+                  {blockedDate.reason ? (
+                    <div style={styles.sourceText}>{blockedDate.reason}</div>
+                  ) : null}
                 </>
               ) : (
                 <div style={styles.availablePill}>Available</div>
@@ -250,6 +281,15 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "4px 9px",
     background: "#dbeafe",
     color: "#1d4ed8",
+    fontSize: 11,
+    fontWeight: 900,
+  },
+  blockedPill: {
+    width: "fit-content",
+    borderRadius: 999,
+    padding: "4px 9px",
+    background: "#fee2e2",
+    color: "#b91c1c",
     fontSize: 11,
     fontWeight: 900,
   },
