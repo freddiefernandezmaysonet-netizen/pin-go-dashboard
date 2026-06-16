@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { format, addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth } from "date-fns";
+import {
+  format,
+  addMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+} from "date-fns";
 import { Link, useParams } from "react-router-dom";
-//import { getPropertyNightlyRates } from "../../api/endpoints";
+import { getDashboardReservations } from "../../api/endpoints";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -9,16 +18,13 @@ const API_BASE =
   "https://api.pin-ngo.com";
 
 export function PropertyCalendarPage() {
-  
- 
   const { id } = useParams();
+
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
-  const calendarDays = eachDayOfInterval({
-  start: startOfWeek(startOfMonth(month)),
-  end: endOfWeek(endOfMonth(month)),
-});
   const [nightlyRates, setNightlyRates] = useState<any[]>([]);
-  const [loadingRates, setLoadingRates] = useState(false);
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
 
   const to = useMemo(
@@ -26,66 +32,108 @@ export function PropertyCalendarPage() {
     [month]
   );
 
+  const calendarDays = useMemo(
+    () =>
+      eachDayOfInterval({
+        start: startOfWeek(startOfMonth(month)),
+        end: endOfWeek(endOfMonth(month)),
+      }),
+    [month]
+  );
+
   useEffect(() => {
-  if (!id) return;
+    if (!id) return;
 
-  let active = true;
+    let active = true;
 
-  async function loadRates() {
-    try {
-      setLoadingRates(true);
+    async function loadCalendarData() {
+      try {
+        setLoading(true);
 
-     const res = await fetch(
-  `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
-  {
-    credentials: "include",
-  }
-);
+        const ratesRes = await fetch(
+          `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
+          {
+            credentials: "include",
+          }
+        );
 
-const data = await res.json();
+        const ratesData = await ratesRes.json();
 
-if (!res.ok || !data.ok) {
-  throw new Error(data.error || "Failed to load nightly rates");
-}
-      if (!active) return;
+        const reservationsData = await getDashboardReservations({
+          propertyId: id,
+          from,
+          to,
+          pageSize: 100,
+          sort: "checkIn_asc",
+        });
 
-      setNightlyRates(Array.isArray(data.rates) ? data.rates : []);
-    } catch (e) {
-      if (active) {
-        setNightlyRates([]);
-      }
-    } finally {
-      if (active) {
-        setLoadingRates(false);
+        if (!active) return;
+
+        setNightlyRates(
+          ratesRes.ok && Array.isArray(ratesData.rates) ? ratesData.rates : []
+        );
+
+        setReservations(
+          Array.isArray(reservationsData.items) ? reservationsData.items : []
+        );
+      } catch (error) {
+        console.error("Failed to load calendar data", error);
+
+        if (active) {
+          setNightlyRates([]);
+          setReservations([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
     }
+
+    loadCalendarData();
+
+    return () => {
+      active = false;
+    };
+  }, [id, from, to]);
+
+  const rateByDate = useMemo(() => {
+    return new Map(nightlyRates.map((item) => [item.date, item]));
+  }, [nightlyRates]);
+
+  function getDateKey(date: Date) {
+    return format(date, "yyyy-MM-dd");
   }
 
-  loadRates();
+  function getReservationForDay(day: Date) {
+    const dayTime = new Date(`${format(day, "yyyy-MM-dd")}T00:00:00`).getTime();
 
-  return () => {
-    active = false;
-  };
-}, [id, from, to]);
+    return reservations.find((reservation) => {
+      const checkInTime = new Date(reservation.checkIn).getTime();
+      const checkOutTime = new Date(reservation.checkOut).getTime();
 
-const rateCount = nightlyRates.length;
-const rateByDate = new Map(
-  nightlyRates.map((item) => [item.date, item])
-);
+      return dayTime >= checkInTime && dayTime < checkOutTime;
+    });
+  }
 
-function getDateKey(date: Date) {
-  return format(date, "yyyy-MM-dd");
-}
-   return (
+  return (
     <div style={{ padding: 24 }}>
       <h1>Property Calendar</h1>
-<p>
-  {loadingRates
-    ? "Loading nightly rates..."
-    : `${rateCount} custom nightly rate(s) loaded for this month.`}
-</p>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 24 }}>
+      <p>
+        {loading
+          ? "Loading calendar..."
+          : `${nightlyRates.length} custom nightly rate(s) and ${reservations.length} reservation(s) loaded.`}
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          marginTop: 24,
+        }}
+      >
         <button onClick={() => setMonth(startOfMonth(addMonths(month, -1)))}>
           ← Previous
         </button>
@@ -97,32 +145,57 @@ function getDateKey(date: Date) {
         </button>
       </div>
 
-     <div style={styles.calendarGrid}>
-  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-    <div key={day} style={styles.weekday}>
-      {day}
-    </div>
-  ))}
+      <div style={styles.calendarGrid}>
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
+          <div key={weekday} style={styles.weekday}>
+            {weekday}
+          </div>
+        ))}
 
-  {calendarDays.map((day) => (
-    <div
-      key={day.toISOString()}
-      style={{
-        ...styles.dayCard,
-        opacity: isSameMonth(day, month) ? 1 : 0.35,
-      }}
-    >
-      <div style={styles.dayNumber}>{format(day, "d")}</div>
-      <div style={styles.dayRate}>
-  {rateByDate.get(getDateKey(day))
-    ? `$${Number(rateByDate.get(getDateKey(day))?.rate ?? 0).toFixed(0)}`
-    : "Base"}
-</div>
-      <div style={styles.availablePill}>Available</div>
-    </div>
-  ))}
-</div>
-      <Link to={`/properties/${id}/edit`}>Back to property</Link>
+        {calendarDays.map((day) => {
+          const dateKey = getDateKey(day);
+          const rate = rateByDate.get(dateKey);
+          const reservation = getReservationForDay(day);
+
+          return (
+            <div
+              key={day.toISOString()}
+              style={{
+                ...styles.dayCard,
+                opacity: isSameMonth(day, month) ? 1 : 0.35,
+              }}
+            >
+              <div style={styles.dayNumber}>{format(day, "d")}</div>
+
+              <div style={styles.dayRate}>
+                {rate ? `$${Number(rate.rate ?? 0).toFixed(0)}` : "Base"}
+              </div>
+
+              {reservation ? (
+                <>
+                  <div style={styles.bookedPill}>Booked</div>
+
+                  <div style={styles.guestText}>
+                    {reservation.guestName || "Guest"}
+                  </div>
+
+                  <div style={styles.sourceText}>
+                    {reservation.source ||
+                      reservation.externalProvider ||
+                      "Direct"}
+                  </div>
+                </>
+              ) : (
+                <div style={styles.availablePill}>Available</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <Link to={`/properties/${id}/edit`} style={styles.backLink}>
+        Back to property
+      </Link>
     </div>
   );
 }
@@ -171,5 +244,31 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#166534",
     fontSize: 11,
     fontWeight: 900,
+  },
+  bookedPill: {
+    width: "fit-content",
+    borderRadius: 999,
+    padding: "4px 9px",
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    fontSize: 11,
+    fontWeight: 900,
+  },
+  guestText: {
+    fontSize: 12,
+    fontWeight: 900,
+    color: "#0f172a",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  sourceText: {
+    fontSize: 11,
+    fontWeight: 800,
+    color: "#64748b",
+  },
+  backLink: {
+    display: "inline-block",
+    marginTop: 18,
   },
 };
