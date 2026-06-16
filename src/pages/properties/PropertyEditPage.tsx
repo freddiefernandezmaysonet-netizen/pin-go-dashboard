@@ -124,15 +124,6 @@ export function PropertyEditPage() {
     percentage: "",
   });
 
-  const [blockedDates, setBlockedDates] = useState<PropertyBlockedDateItem[]>([]);
-  const [calendarBlockedDateKeys, setCalendarBlockedDateKeys] = useState<string[]>([]);
- 
-  const [newBlockedDate, setNewBlockedDate] = useState({
-    startDate: "",
-    endDate: "",
-    reason: "",
-  });
-
  const [form, setForm] = useState({
     name: "",
     address1: "",
@@ -183,22 +174,6 @@ export function PropertyEditPage() {
         setOrganizationSlug(p.organization?.slug ?? "");
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
         setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
-
-        fetch(`${API_BASE}/api/dashboard/properties/${id}/blocked-dates`, {
-  credentials: "include",
-})
-  .then(async (res) => {
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to load blocked dates");
-    }
-
-    setBlockedDates(data.items ?? []);
-  })
-  .catch((e: any) => {
-    setErr(String(e?.message ?? e));
-  });
 
         loadCalendarBlockedDates().catch((e: any) => {
           setErr(String(e?.message ?? e));
@@ -672,102 +647,6 @@ async function handleUploadPhotos(
     setEditingTax(null);
   }
 
-  async function loadCalendarBlockedDates() {
-    if (!id) return;
-
-    const today = new Date();
-    const from = toLocalDateKey(today);
-
-    const future = new Date(today);
-    future.setMonth(future.getMonth() + 12);
-    const to = toLocalDateKey(future);
-
-    const res = await fetch(`${API_BASE}/api/public-booking/blocked-dates`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        propertyId: id,
-        from,
-        to,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to load calendar blocked dates");
-    }
-
-    setCalendarBlockedDateKeys(data.blockedDates ?? []);
-  }
-
-  async function handleCreateBlockedDate() {
-    if (!id) return;
-
-    const res = await fetch(
-      `${API_BASE}/api/dashboard/properties/${id}/blocked-dates`,
-      {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          startDate: newBlockedDate.startDate,
-          endDate: newBlockedDate.endDate,
-          reason: newBlockedDate.reason,
-        }),
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to create blocked date");
-    }
-
-setBlockedDates((prev) => [...prev, data.item]);
-
-await loadCalendarBlockedDates();
-
-setNewBlockedDate({
-  startDate: "",
-  endDate: "",
-  reason: "",
-});
-   
-  }
-
-  async function handleDeleteBlockedDate(blockedDateId: string) {
-    if (!id) return;
-
-    if (!window.confirm("Delete this blocked date?")) {
-      return;
-    }
-
-    const res = await fetch(
-      `${API_BASE}/api/dashboard/properties/${id}/blocked-dates/${blockedDateId}`,
-      {
-        method: "DELETE",
-        credentials: "include",
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to delete blocked date");
-    }
-setBlockedDates((prev) =>
-  prev.filter((blockedDate) => blockedDate.id !== blockedDateId)
-);
-
-await loadCalendarBlockedDates();
-  
-  }
-
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
 
@@ -778,22 +657,6 @@ await loadCalendarBlockedDates();
     organizationSlug && form.slug
       ? `${publicBaseUrl}/book/${organizationSlug}/${form.slug}`
       : "";
-
-  const blockedDateKeys = blockedDates.flatMap((item) => {
-    const dates: string[] = [];
-
-    const start = new Date(item.startDate);
-    const end = new Date(item.endDate);
-
-    const cursor = new Date(start);
-
-    while (cursor < end) {
-      dates.push(toLocalDateKey(cursor));
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    return dates;
-  });
 
   const distributionStatus =
     form.distributionStatus || (form.distributionEnabled ? "ACTIVE" : "DISABLED");
