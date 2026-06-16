@@ -229,7 +229,7 @@ export function PropertyCalendarPage() {
       const res = await fetch(
         `${API_BASE}/api/dashboard/properties/${id}/nightly-rates`,
         {
-          method: "POST",
+          method: "PUT",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
@@ -243,12 +243,23 @@ export function PropertyCalendarPage() {
         }
       );
 
-      const data = await res.json();
+      const text = await res.text();
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to apply nightly rate");
-      }
+let data: any = {};
+try {
+  data = text ? JSON.parse(text) : {};
+} catch {
+  throw new Error(
+    `Apply Rate returned non-JSON. Status ${res.status}. Response: ${text.slice(
+      0,
+      160
+    )}`
+  );
+}
 
+if (!res.ok) {
+  throw new Error(data?.error || "Failed to apply nightly rate");
+}
       const ratesRes = await fetch(
         `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
         { credentials: "include" }
