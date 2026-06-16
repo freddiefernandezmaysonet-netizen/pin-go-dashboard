@@ -3,6 +3,7 @@ import {
   format,
   addMonths,
   addDays,
+  startOfDay,
   startOfMonth,
   endOfMonth,
   startOfWeek,
@@ -40,6 +41,7 @@ export function PropertyCalendarPage() {
   const [savingRate, setSavingRate] = useState(false);
   const [savingBlock, setSavingBlock] = useState(false);
   const [savingUnblock, setSavingUnblock] = useState(false);
+  const today = startOfDay(new Date());
   
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
 
@@ -154,8 +156,11 @@ export function PropertyCalendarPage() {
   }
 
   function handleDayClick(day: Date) {
-    setSelectedDay(day);
+  if (startOfDay(day) < today) {
+    return;
+  }
 
+  setSelectedDay(day);
     setSelectedRange((current) => {
       if (!current.start || current.end) {
         return {
@@ -204,6 +209,10 @@ export function PropertyCalendarPage() {
   async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
+    if (startOfDay(selectedRange.start) < today) {
+  alert("Past dates cannot be modified.");
+  return;
+}
     const rate = Number(rateInput);
 
     if (!Number.isFinite(rate) || rate < 0) {
@@ -262,6 +271,10 @@ export function PropertyCalendarPage() {
 
   async function handleBlockDates() {
   if (!id || !selectedRange.start) return;
+if (startOfDay(selectedRange.start) < today) {
+  alert("Past dates cannot be modified.");
+  return;
+}
 
   const startDate = getDateKey(selectedRange.start);
   const selectedEndDate = selectedRange.end ?? selectedRange.start;
@@ -321,7 +334,11 @@ export function PropertyCalendarPage() {
 
 async function handleUnblockDates() {
   if (!id || !selectedRange.start) return;
-
+if (startOfDay(selectedRange.start) < today) {
+  alert("Past dates cannot be modified.");
+  return;
+}
+ 
   const startKey = getDateKey(selectedRange.start);
   const endKey = getDateKey(selectedRange.end ?? selectedRange.start);
 
@@ -424,19 +441,19 @@ async function handleUnblockDates() {
           const rate = rateByDate.get(dateKey);
           const reservation = getReservationForDay(day);
           const blockedDate = getBlockedDateForDay(day);
-
+          const isPastDay = startOfDay(day) < today;
+         
           return (
             <div
               key={day.toISOString()}
               onClick={() => handleDayClick(day)}
-              style={{
-                ...styles.dayCard,
-                opacity: isSameMonth(day, month) ? 1 : 0.35,
-                borderColor: isDayInSelectedRange(day)
-                  ? "#2563eb"
-                  : "#e2e8f0",
-                background: isDayInSelectedRange(day) ? "#eff6ff" : "#ffffff",
-              }}
+             style={{
+  ...styles.dayCard,
+  opacity: !isSameMonth(day, month) || isPastDay ? 0.35 : 1,
+  borderColor: isDayInSelectedRange(day) ? "#2563eb" : "#e2e8f0",
+  background: isDayInSelectedRange(day) ? "#eff6ff" : "#ffffff",
+  cursor: isPastDay ? "not-allowed" : "pointer",
+}}
             >
               <div style={styles.dayNumber}>{format(day, "d")}</div>
 
