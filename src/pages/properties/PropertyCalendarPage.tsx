@@ -234,12 +234,17 @@ export function PropertyCalendarPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            startDate,
-            endDate,
-            rate,
-            reason: "Calendar override",
-          }),
+         body: JSON.stringify({
+  rates: eachDayOfInterval({
+    start: selectedRange.start,
+    end: selectedRange.end ?? selectedRange.start,
+  }).map((date) => ({
+    date: getDateKey(date),
+    rate,
+    reason: "Calendar override",
+  })),
+}),
+
         }
       );
 
