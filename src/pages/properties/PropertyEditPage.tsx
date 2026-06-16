@@ -1822,18 +1822,17 @@ async function handleUploadPhotos(
     </div>
 
     <Link
-      to={`/properties/${id}/calendar`}
-      style={{
-        padding: "10px 14px",
-        borderRadius: 10,
-        background: "#2563eb",
-        color: "#fff",
-        textDecoration: "none",
-        fontWeight: 700,
-      }}
-    >
-      Open Calendar
-    </Link>
+  to={`/properties/${id}/calendar`}
+  style={{
+    ...primaryButtonStyle,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textDecoration: "none",
+  }}
+>
+  Open Calendar
+</Link>
   </div>
 </div>
 
