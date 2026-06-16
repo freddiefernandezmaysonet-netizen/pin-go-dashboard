@@ -175,10 +175,6 @@ export function PropertyEditPage() {
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
         setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
 
-        loadCalendarBlockedDates().catch((e: any) => {
-          setErr(String(e?.message ?? e));
-        });
-
         setForm({
           name: p.name ?? "",
           address1: p.address1 ?? "",
