@@ -849,30 +849,6 @@ async function handleUploadPhotos(
             />
           </div>
 
-<div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Lead Time Pricing</div>
-
-  <label
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      minHeight: 42,
-    }}
-  >
-    <input
-      type="checkbox"
-      checked={form.leadTimePricingEnabled}
-      onChange={(e) =>
-        setForm((s) => ({
-          ...s,
-          leadTimePricingEnabled: e.target.checked,
-        }))
-      }
-    />
-    Enable Lead Time Rule
-  </label>
-</div>
 
           <div style={{ display: "grid", gap: 6 }}>
             <div style={labelStyle}>Address</div>
@@ -1364,6 +1340,32 @@ async function handleUploadPhotos(
 
         <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Last Minute Window (Days)</div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Lead Time Pricing</div>
+
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      minHeight: 42,
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.leadTimePricingEnabled}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          leadTimePricingEnabled: e.target.checked,
+        }))
+      }
+    />
+    Enable Lead Time Rule
+  </label>
+</div>
+
 
   <input
     type="number"
