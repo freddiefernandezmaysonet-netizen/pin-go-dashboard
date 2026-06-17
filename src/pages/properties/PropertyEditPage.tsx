@@ -81,6 +81,8 @@ type PropertyItem = {
   amenities?: PropertyAmenityItem[];
   taxes?: PropertyTaxItem[];
   baseNightlyRate?: number | null;
+  minimumNightlyRate?: number | null;
+  maximumNightlyRate?: number | null;
   cleaningFee?: number | null;
   maxGuests?: number | null;
   minimumNights?: number | null;
@@ -137,6 +139,8 @@ export function PropertyEditPage() {
     longitude: "",
     slug: "",
     baseNightlyRate: "",
+    minimumNightlyRate: "",
+    maximumNightlyRate: "",
     cleaningFee: "",
     maxGuests: "",
     minimumNights: "1",
@@ -195,6 +199,14 @@ export function PropertyEditPage() {
           baseNightlyRate:
             p.baseNightlyRate !== null && p.baseNightlyRate !== undefined
               ? String(p.baseNightlyRate)
+              : "",
+          minimumNightlyRate:
+            p.minimumNightlyRate !== null && p.minimumNightlyRate !== undefined
+              ? String(p.minimumNightlyRate)
+              : "",
+          maximumNightlyRate:
+            p.maximumNightlyRate !== null && p.maximumNightlyRate !== undefined
+              ? String(p.maximumNightlyRate)
               : "",
           cleaningFee:
             p.cleaningFee !== null && p.cleaningFee !== undefined
@@ -281,7 +293,15 @@ export function PropertyEditPage() {
             form.baseNightlyRate.trim() === ""
               ? null
               : Number(form.baseNightlyRate),
-          cleaningFee:
+          minimumNightlyRate:
+            form.minimumNightlyRate.trim() === ""
+              ? null
+              : Number(form.minimumNightlyRate),
+         maximumNightlyRate:
+           form.maximumNightlyRate.trim() === ""
+             ? null
+             : Number(form.maximumNightlyRate),
+         cleaningFee:
             form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
           maxGuests: form.maxGuests.trim() === "" ? null : Number(form.maxGuests),
           minimumNights: Number(form.minimumNights || 1),
@@ -1163,22 +1183,57 @@ async function handleUploadPhotos(
 
 </div>   
 
-            <div style={responsiveGridStyle}>
-              <div style={{ display: "grid", gap: 6 }}>
-                <div style={labelStyle}>Nightly Rate</div>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.baseNightlyRate}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, baseNightlyRate: e.target.value }))
-                  }
-                  placeholder="150.00"
-                  style={inputStyle}
-                />
-              </div>
+          <div style={responsiveGridStyle}>
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Nightly Rate</div>
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      value={form.baseNightlyRate}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, baseNightlyRate: e.target.value }))
+      }
+      placeholder="150.00"
+      style={inputStyle}
+    />
+  </div>
 
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Minimum Nightly Rate</div>
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      value={form.minimumNightlyRate}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          minimumNightlyRate: e.target.value,
+        }))
+      }
+      placeholder="100.00"
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Maximum Nightly Rate</div>
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      value={form.maximumNightlyRate}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          maximumNightlyRate: e.target.value,
+        }))
+      }
+      placeholder="300.00"
+      style={inputStyle}
+    />
+  </div> 
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Cleaning Fee</div>
                 <input
