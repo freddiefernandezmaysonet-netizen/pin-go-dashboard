@@ -29,7 +29,13 @@ export function PropertyCalendarPage() {
   const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-
+  const [showCreateReservationForm, setShowCreateReservationForm] = useState(false);
+  const [manualGuestName, setManualGuestName] = useState("");
+  const [manualGuestEmail, setManualGuestEmail] = useState("");
+  const [manualGuestPhone, setManualGuestPhone] = useState("");
+  const [manualPaymentState, setManualPaymentState] = useState("NONE");
+  const [savingManualReservation, setSavingManualReservation] = useState(false);
+  
   const [selectedRange, setSelectedRange] = useState<{
     start: Date | null;
     end: Date | null;
@@ -428,6 +434,60 @@ if (startOfDay(selectedRange.start) < today) {
   }
 }
 
+async function handleCreateManualReservation() {
+  if (!id || !selectedRange.start) return;
+
+  if (!manualGuestName.trim()) {
+    alert("Guest name is required");
+    return;
+  }
+
+  try {
+    setSavingManualReservation(true);
+
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/manual-reservations`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          guestName: manualGuestName.trim(),
+          guestEmail: manualGuestEmail.trim() || null,
+          guestPhone: manualGuestPhone.trim() || null,
+          checkIn: getDateKey(selectedRange.start),
+          checkOut: getDateKey(selectedRange.end ?? selectedRange.start),
+          paymentState: manualPaymentState,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to create reservation");
+    }
+
+    alert("Reservation created successfully");
+
+    setManualGuestName("");
+    setManualGuestEmail("");
+    setManualGuestPhone("");
+    setManualPaymentState("NONE");
+    setShowCreateReservationForm(false);
+
+    setSelectedRange({
+      start: null,
+      end: null,
+    });
+  } catch (error: any) {
+    alert(String(error?.message || error));
+  } finally {
+    setSavingManualReservation(false);
+  }
+}
   return (
     <div style={{ padding: 24 }}>
       <h1>Property Calendar</h1>
@@ -572,6 +632,17 @@ if (startOfDay(selectedRange.start) < today) {
   {savingUnblock ? "Unblocking..." : "Unblock Dates"}
 </button>
             <button
+    type="button"
+    style={styles.actionButton}
+    onClick={() => {
+      setShowCreateReservationForm((value) => !value);
+      setShowSetRateForm(false);
+    }}
+  >
+    Create Reservation
+  </button>
+
+            <button
               type="button"
               style={styles.secondaryActionButton}
               onClick={() => {
@@ -587,36 +658,89 @@ if (startOfDay(selectedRange.start) < today) {
             </button>
           </div>
 
-          {showSetRateForm && (
-            <div style={styles.inlineActionForm}>
-              <div style={styles.inlineActionLabel}>Nightly rate</div>
+         {showSetRateForm && (
+  <div style={styles.inlineActionForm}>
+    <div style={styles.inlineActionLabel}>Nightly rate</div>
 
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={rateInput}
-                onChange={(e) => setRateInput(e.target.value)}
-                placeholder="199.00"
-                style={styles.inlineActionInput}
-              />
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      value={rateInput}
+      onChange={(e) => setRateInput(e.target.value)}
+      placeholder="199.00"
+      style={styles.inlineActionInput}
+    />
 
-              <button
-                type="button"
-                onClick={handleApplyRate}
-                disabled={savingRate}
-                style={{
-                  ...styles.actionButton,
-                  opacity: savingRate ? 0.7 : 1,
-                  cursor: savingRate ? "not-allowed" : "pointer",
-                }}
-              >
-                {savingRate ? "Applying..." : "Apply Rate"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+    <button
+      type="button"
+      onClick={handleApplyRate}
+      disabled={savingRate}
+      style={{
+        ...styles.actionButton,
+        opacity: savingRate ? 0.7 : 1,
+        cursor: savingRate ? "not-allowed" : "pointer",
+      }}
+    >
+      {savingRate ? "Applying..." : "Apply Rate"}
+    </button>
+  </div>
+)}
+
+{showCreateReservationForm && (
+  <div style={styles.inlineActionForm}>
+    <div style={styles.inlineActionLabel}>Create manual reservation</div>
+
+    <input
+      type="text"
+      value={manualGuestName}
+      onChange={(e) => setManualGuestName(e.target.value)}
+      placeholder="Guest name"
+      style={styles.inlineActionInput}
+    />
+
+    <input
+      type="email"
+      value={manualGuestEmail}
+      onChange={(e) => setManualGuestEmail(e.target.value)}
+      placeholder="Guest email"
+      style={styles.inlineActionInput}
+    />
+
+    <input
+      type="tel"
+      value={manualGuestPhone}
+      onChange={(e) => setManualGuestPhone(e.target.value)}
+      placeholder="Guest phone"
+      style={styles.inlineActionInput}
+    />
+
+    <select
+      value={manualPaymentState}
+      onChange={(e) => setManualPaymentState(e.target.value)}
+      style={styles.inlineActionInput}
+    >
+      <option value="NONE">Payment pending</option>
+      <option value="PAID">Paid manually</option>
+      <option value="PENDING">Pending</option>
+    </select>
+
+    <button
+  type="button"
+  onClick={handleCreateManualReservation}
+  disabled={savingManualReservation}
+  style={{
+    ...styles.actionButton,
+    opacity: savingManualReservation ? 0.7 : 1,
+    cursor: savingManualReservation ? "not-allowed" : "pointer",
+  }}
+>
+  {savingManualReservation ? "Creating..." : "Create Reservation"}
+</button>
+  </div>
+)}
+             </div>
+      )} 
 
       {selectedDay && (
         <div
