@@ -226,7 +226,58 @@ const propertyData = await propertyRes.json();
   const minimumNightlyRate = Number(property?.minimumNightlyRate ?? 0);
   const maximumNightlyRate = Number(property?.maximumNightlyRate ?? 0);
   
-  async function handleApplyRate() {
+  const dynamicPricingEnabled = Boolean(property?.dynamicPricingEnabled);
+const weekendMarkupPercent = Number(property?.weekendMarkupPercent ?? 0);
+
+function isWeekendNight(date: Date) {
+  const day = date.getUTCDay();
+  return day === 5 || day === 6;
+}
+
+function applyPricingBounds(rate: number) {
+  let finalRate = rate;
+
+  if (minimumNightlyRate > 0 && finalRate < minimumNightlyRate) {
+    finalRate = minimumNightlyRate;
+  }
+
+  if (maximumNightlyRate > 0 && finalRate > maximumNightlyRate) {
+    finalRate = maximumNightlyRate;
+  }
+
+  return finalRate;
+}
+
+function getDisplayRateForDay(day: Date, rate: any) {
+  const rawRate = rate ? Number(rate.rate ?? 0) : baseNightlyRate;
+
+  if (!rawRate || rawRate <= 0) {
+    return null;
+  }
+
+  const weekendAdjustedRate =
+    dynamicPricingEnabled && weekendMarkupPercent > 0 && isWeekendNight(day)
+      ? rawRate * (1 + weekendMarkupPercent / 100)
+      : rawRate;
+
+  return Math.round(applyPricingBounds(weekendAdjustedRate));
+}
+
+function getRateReasonForDay(day: Date, rate: any) {
+  if (rate?.reason) return rate.reason;
+
+  if (
+    dynamicPricingEnabled &&
+    weekendMarkupPercent > 0 &&
+    isWeekendNight(day)
+  ) {
+    return "Weekend Rule";
+  }
+
+  return "Base Rate";
+}
+
+ async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
     if (startOfDay(selectedRange.start) < today) {
@@ -623,14 +674,15 @@ async function handleCreateManualReservation() {
             >
               <div style={styles.dayNumber}>{format(day, "d")}</div>
 
-              <div style={styles.dayRate}>
-                {rate
-  ? `$${Number(rate.rate ?? 0).toFixed(0)}`
-  : baseNightlyRate > 0
-  ? `$${baseNightlyRate.toFixed(0)}`
-  : "—"}
-              </div>
+             <div style={styles.dayRate}>
+  {getDisplayRateForDay(day, rate) !== null
+    ? `$${getDisplayRateForDay(day, rate)?.toFixed(0)}`
+    : "—"}
+</div>
 
+<div style={styles.sourceText}>
+  {getRateReasonForDay(day, rate)}
+</div>
               {reservation ? (
                 <>
                   <div style={styles.bookedPill}>Booked</div>
