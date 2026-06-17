@@ -500,20 +500,83 @@ async function handleCreateManualReservation() {
           : `${nightlyRates.length} custom rate(s), ${reservations.length} reservation(s), and ${blockedDates.length} blocked date(s) loaded.`}
       </p>
 
-<div style={styles.pricingBoundsCard}>
-  Base ${baseNightlyRate.toFixed(0)}
-  {minimumNightlyRate > 0 ? ` · Min $${minimumNightlyRate.toFixed(0)}` : ""}
-  {maximumNightlyRate > 0 ? ` · Max $${maximumNightlyRate.toFixed(0)}` : ""}
+<div
+  style={{
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    border: "1px solid #dbeafe",
+    background: "#eff6ff",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    maxWidth: 520,
+  }}
+>
+  <div
+    style={{
+      fontSize: 14,
+      fontWeight: 800,
+      color: "#1d4ed8",
+    }}
+  >
+    Pricing Guardrails
+  </div>
+
+  <div
+    style={{
+      display: "flex",
+      gap: 24,
+      flexWrap: "wrap",
+    }}
+  >
+    <div>
+      <div style={{ fontSize: 12, color: "#64748b" }}>
+        Base Rate
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 800 }}>
+        ${baseNightlyRate.toFixed(0)}
+      </div>
+    </div>
+
+    <div>
+      <div style={{ fontSize: 12, color: "#64748b" }}>
+        Minimum
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 800 }}>
+        ${minimumNightlyRate.toFixed(0)}
+      </div>
+    </div>
+
+    <div>
+      <div style={{ fontSize: 12, color: "#64748b" }}>
+        Maximum
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 800 }}>
+        ${maximumNightlyRate.toFixed(0)}
+      </div>
+    </div>
+  </div>
+
+  <div
+    style={{
+      fontSize: 12,
+      color: "#475569",
+    }}
+  >
+    Dynamic pricing will stay within these limits.
+  </div>
 </div>
-      
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          alignItems: "center",
-          marginTop: 24,
-        }}
-      >
+
+        <div
+  style={{
+    display: "flex",
+    gap: 12,
+    alignItems: "center",
+    marginTop: 24,
+  }}
+>
+       
         <button onClick={() => setMonth(startOfMonth(addMonths(month, -1)))}>
           ← Previous
         </button>
