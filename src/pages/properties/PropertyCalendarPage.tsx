@@ -474,7 +474,14 @@ if (startOfDay(selectedRange.start) < today) {
           return (
             <div
               key={day.toISOString()}
-              onClick={() => handleDayClick(day)}
+              onClick={() => {
+  if (reservation?.id) {
+    navigate(`/reservations/${reservation.id}`);
+    return;
+  }
+
+  handleDayClick(day);
+}}
              style={{
   ...styles.dayCard,
   opacity: !isSameMonth(day, month) || isPastDay ? 0.35 : 1,
@@ -642,20 +649,43 @@ if (startOfDay(selectedRange.start) < today) {
           </div>
 
           {getReservationForDay(selectedDay) && (
-            <>
-              <div style={{ marginTop: 8 }}>
-                Guest: {getReservationForDay(selectedDay)?.guestName}
-              </div>
+  <>
+    <div style={{ marginTop: 8 }}>
+      Guest: {getReservationForDay(selectedDay)?.guestName}
+    </div>
 
-              <div>
-                Source:{" "}
-                {getReservationForDay(selectedDay)?.source ||
-                  getReservationForDay(selectedDay)?.externalProvider ||
-                  "Direct"}
-              </div>
-            </>
-          )}
+    <div>
+      Source:{" "}
+      {getReservationForDay(selectedDay)?.source ||
+        getReservationForDay(selectedDay)?.externalProvider ||
+        "Direct"}
+    </div>
 
+    <button
+      type="button"
+      style={{
+        marginTop: 14,
+        height: 40,
+        padding: "0 14px",
+        borderRadius: 12,
+        border: "none",
+        background: "#2563eb",
+        color: "#ffffff",
+        fontSize: 13,
+        fontWeight: 900,
+        cursor: "pointer",
+      }}
+      onClick={() => {
+        const reservation = getReservationForDay(selectedDay);
+        if (!reservation?.id) return;
+
+        navigate(`/reservations/${reservation.id}`);
+      }}
+    >
+      Open Reservation
+    </button>
+  </>
+)}
           {getBlockedDateForDay(selectedDay)?.reason && (
             <div style={{ marginTop: 8 }}>
               Reason: {getBlockedDateForDay(selectedDay)?.reason}
