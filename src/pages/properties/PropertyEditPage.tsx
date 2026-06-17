@@ -85,6 +85,11 @@ type PropertyItem = {
   maximumNightlyRate?: number | null;
   dynamicPricingEnabled?: boolean | null;
   weekendMarkupPercent?: number | null;
+
+  leadTimePricingEnabled?: boolean | null;
+  leadTimeLastMinuteDays?: number | null;
+  leadTimeLastMinutePercent?: number | null;
+
   cleaningFee?: number | null;
   maxGuests?: number | null;
   minimumNights?: number | null;
@@ -145,6 +150,11 @@ export function PropertyEditPage() {
     maximumNightlyRate: "",
     dynamicPricingEnabled: false,
     weekendMarkupPercent: "",
+
+    leadTimePricingEnabled: false,
+    leadTimeLastMinuteDays: "3",
+    leadTimeLastMinutePercent: "",
+
     cleaningFee: "",
     maxGuests: "",
     minimumNights: "1",
@@ -213,11 +223,28 @@ maximumNightlyRate:
     ? String(p.maximumNightlyRate)
     : "",
 dynamicPricingEnabled: Boolean(p.dynamicPricingEnabled),
+
 weekendMarkupPercent:
   p.weekendMarkupPercent !== null &&
   p.weekendMarkupPercent !== undefined
     ? String(p.weekendMarkupPercent)
     : "",
+
+leadTimePricingEnabled:
+  Boolean(p.leadTimePricingEnabled),
+
+leadTimeLastMinuteDays:
+  p.leadTimeLastMinuteDays !== null &&
+  p.leadTimeLastMinuteDays !== undefined
+    ? String(p.leadTimeLastMinuteDays)
+    : "3",
+
+leadTimeLastMinutePercent:
+  p.leadTimeLastMinutePercent !== null &&
+  p.leadTimeLastMinutePercent !== undefined
+    ? String(p.leadTimeLastMinutePercent)
+    : "",
+
 cleaningFee:
             p.cleaningFee !== null && p.cleaningFee !== undefined
               ? String(p.cleaningFee)
@@ -312,10 +339,25 @@ maximumNightlyRate:
     ? null
     : Number(form.maximumNightlyRate),
 dynamicPricingEnabled: form.dynamicPricingEnabled,
+
 weekendMarkupPercent:
   form.weekendMarkupPercent.trim() === ""
     ? null
     : Number(form.weekendMarkupPercent),
+
+leadTimePricingEnabled:
+  form.leadTimePricingEnabled,
+
+leadTimeLastMinuteDays:
+  form.leadTimeLastMinuteDays.trim() === ""
+    ? 3
+    : Number(form.leadTimeLastMinuteDays),
+
+leadTimeLastMinutePercent:
+  form.leadTimeLastMinutePercent.trim() === ""
+    ? null
+    : Number(form.leadTimeLastMinutePercent),
+
 cleaningFee:
             form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
           maxGuests: form.maxGuests.trim() === "" ? null : Number(form.maxGuests),
@@ -806,6 +848,68 @@ async function handleUploadPhotos(
               required
             />
           </div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Lead Time Pricing</div>
+
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      minHeight: 42,
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.leadTimePricingEnabled}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          leadTimePricingEnabled: e.target.checked,
+        }))
+      }
+    />
+    Enable Lead Time Rule
+  </label>
+</div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Last Minute Window (Days)</div>
+
+  <input
+    type="number"
+    min="1"
+    value={form.leadTimeLastMinuteDays}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        leadTimeLastMinuteDays: e.target.value,
+      }))
+    }
+    style={inputStyle}
+    disabled={!form.leadTimePricingEnabled}
+  />
+</div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Last Minute Adjustment (%)</div>
+
+  <input
+    type="number"
+    step="0.01"
+    value={form.leadTimeLastMinutePercent}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        leadTimeLastMinutePercent: e.target.value,
+      }))
+    }
+    placeholder="-15"
+    style={inputStyle}
+    disabled={!form.leadTimePricingEnabled}
+  />
+</div>
 
           <div style={{ display: "grid", gap: 6 }}>
             <div style={labelStyle}>Address</div>
