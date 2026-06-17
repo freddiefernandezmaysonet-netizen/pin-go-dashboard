@@ -11,7 +11,7 @@ import {
   eachDayOfInterval,
   isSameMonth,
 } from "date-fns";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -20,7 +20,8 @@ const API_BASE =
 
 export function PropertyCalendarPage() {
   const { id } = useParams();
-
+  const navigate = useNavigate();
+  
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [nightlyRates, setNightlyRates] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
