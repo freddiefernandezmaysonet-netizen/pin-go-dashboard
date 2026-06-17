@@ -83,6 +83,8 @@ type PropertyItem = {
   baseNightlyRate?: number | null;
   minimumNightlyRate?: number | null;
   maximumNightlyRate?: number | null;
+  dynamicPricingEnabled?: boolean | null;
+  weekendMarkupPercent?: number | null;
   cleaningFee?: number | null;
   maxGuests?: number | null;
   minimumNights?: number | null;
@@ -141,6 +143,8 @@ export function PropertyEditPage() {
     baseNightlyRate: "",
     minimumNightlyRate: "",
     maximumNightlyRate: "",
+    dynamicPricingEnabled: false,
+    weekendMarkupPercent: "",
     cleaningFee: "",
     maxGuests: "",
     minimumNights: "1",
@@ -196,19 +200,25 @@ export function PropertyEditPage() {
             p.longitude !== null && p.longitude !== undefined
               ? String(p.longitude)
               : "",
-          baseNightlyRate:
-            p.baseNightlyRate !== null && p.baseNightlyRate !== undefined
-              ? String(p.baseNightlyRate)
-              : "",
-          minimumNightlyRate:
-            p.minimumNightlyRate !== null && p.minimumNightlyRate !== undefined
-              ? String(p.minimumNightlyRate)
-              : "",
-          maximumNightlyRate:
-            p.maximumNightlyRate !== null && p.maximumNightlyRate !== undefined
-              ? String(p.maximumNightlyRate)
-              : "",
-          cleaningFee:
+         baseNightlyRate:
+  p.baseNightlyRate !== null && p.baseNightlyRate !== undefined
+    ? String(p.baseNightlyRate)
+    : "",
+minimumNightlyRate:
+  p.minimumNightlyRate !== null && p.minimumNightlyRate !== undefined
+    ? String(p.minimumNightlyRate)
+    : "",
+maximumNightlyRate:
+  p.maximumNightlyRate !== null && p.maximumNightlyRate !== undefined
+    ? String(p.maximumNightlyRate)
+    : "",
+dynamicPricingEnabled: Boolean(p.dynamicPricingEnabled),
+weekendMarkupPercent:
+  p.weekendMarkupPercent !== null &&
+  p.weekendMarkupPercent !== undefined
+    ? String(p.weekendMarkupPercent)
+    : "",
+cleaningFee:
             p.cleaningFee !== null && p.cleaningFee !== undefined
               ? String(p.cleaningFee)
               : "",
@@ -289,19 +299,24 @@ export function PropertyEditPage() {
           latitude,
           longitude,
           slug: form.slug,
-          baseNightlyRate:
-            form.baseNightlyRate.trim() === ""
-              ? null
-              : Number(form.baseNightlyRate),
-          minimumNightlyRate:
-            form.minimumNightlyRate.trim() === ""
-              ? null
-              : Number(form.minimumNightlyRate),
-         maximumNightlyRate:
-           form.maximumNightlyRate.trim() === ""
-             ? null
-             : Number(form.maximumNightlyRate),
-         cleaningFee:
+         baseNightlyRate:
+  form.baseNightlyRate.trim() === ""
+    ? null
+    : Number(form.baseNightlyRate),
+minimumNightlyRate:
+  form.minimumNightlyRate.trim() === ""
+    ? null
+    : Number(form.minimumNightlyRate),
+maximumNightlyRate:
+  form.maximumNightlyRate.trim() === ""
+    ? null
+    : Number(form.maximumNightlyRate),
+dynamicPricingEnabled: form.dynamicPricingEnabled,
+weekendMarkupPercent:
+  form.weekendMarkupPercent.trim() === ""
+    ? null
+    : Number(form.weekendMarkupPercent),
+cleaningFee:
             form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
           maxGuests: form.maxGuests.trim() === "" ? null : Number(form.maxGuests),
           minimumNights: Number(form.minimumNights || 1),
@@ -1183,7 +1198,7 @@ async function handleUploadPhotos(
 
 </div>   
 
-          <div style={responsiveGridStyle}>
+       <div style={responsiveGridStyle}>
   <div style={{ display: "grid", gap: 6 }}>
     <div style={labelStyle}>Nightly Rate</div>
     <input
@@ -1233,7 +1248,53 @@ async function handleUploadPhotos(
       placeholder="300.00"
       style={inputStyle}
     />
-  </div> 
+  </div>
+
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Dynamic Pricing</div>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        minHeight: 42,
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={form.dynamicPricingEnabled}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            dynamicPricingEnabled: e.target.checked,
+          }))
+        }
+      />
+      Enable Dynamic Pricing
+    </label>
+  </div>
+
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Weekend Markup (%)</div>
+
+    <input
+      type="number"
+      min="0"
+      step="0.01"
+      value={form.weekendMarkupPercent}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          weekendMarkupPercent: e.target.value,
+        }))
+      }
+      placeholder="15"
+      style={inputStyle}
+      disabled={!form.dynamicPricingEnabled}
+    />
+  </div>  
+
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Cleaning Fee</div>
                 <input
