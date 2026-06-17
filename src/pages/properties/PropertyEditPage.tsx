@@ -1337,71 +1337,6 @@ async function handleUploadPhotos(
       disabled={!form.dynamicPricingEnabled}
     />
   </div>  
-
-        <div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Last Minute Window (Days)</div>
-
-<div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Lead Time Pricing</div>
-
-  <label
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      minHeight: 42,
-    }}
-  >
-    <input
-      type="checkbox"
-      checked={form.leadTimePricingEnabled}
-      onChange={(e) =>
-        setForm((s) => ({
-          ...s,
-          leadTimePricingEnabled: e.target.checked,
-        }))
-      }
-    />
-    Enable Lead Time Rule
-  </label>
-</div>
-
-
-  <input
-    type="number"
-    min="1"
-    value={form.leadTimeLastMinuteDays}
-    onChange={(e) =>
-      setForm((s) => ({
-        ...s,
-        leadTimeLastMinuteDays: e.target.value,
-      }))
-    }
-    style={inputStyle}
-    disabled={!form.leadTimePricingEnabled}
-  />
-</div>
-
-<div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Last Minute Adjustment (%)</div>
-
-  <input
-    type="number"
-    step="0.01"
-    value={form.leadTimeLastMinutePercent}
-    onChange={(e) =>
-      setForm((s) => ({
-        ...s,
-        leadTimeLastMinutePercent: e.target.value,
-      }))
-    }
-    placeholder="-15"
-    style={inputStyle}
-    disabled={!form.leadTimePricingEnabled}
-  />
-</div>
-
-
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Cleaning Fee</div>
                 <input
@@ -1417,6 +1352,88 @@ async function handleUploadPhotos(
                 />
               </div>
             </div>
+
+            <div
+  style={{
+    border: "1px solid #bfdbfe",
+    borderRadius: 16,
+    padding: 16,
+    background: "#ffffff",
+    display: "grid",
+    gap: 14,
+  }}
+>
+  <div>
+    <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+      Lead Time Rule
+    </div>
+    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+      Automatically adjust prices when a stay is close to arrival.
+    </div>
+  </div>
+
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      fontSize: 14,
+      fontWeight: 800,
+      color: "#111827",
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.leadTimePricingEnabled}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          leadTimePricingEnabled: e.target.checked,
+        }))
+      }
+      disabled={!form.dynamicPricingEnabled}
+    />
+    Enable Lead Time Rule
+  </label>
+
+  <div style={responsiveGridStyle}>
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Last Minute Window</div>
+      <input
+        type="number"
+        min="1"
+        value={form.leadTimeLastMinuteDays}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            leadTimeLastMinuteDays: e.target.value,
+          }))
+        }
+        placeholder="3"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.leadTimePricingEnabled}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Adjustment (%)</div>
+      <input
+        type="number"
+        step="0.01"
+        value={form.leadTimeLastMinutePercent}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            leadTimeLastMinutePercent: e.target.value,
+          }))
+        }
+        placeholder="-15"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.leadTimePricingEnabled}
+      />
+    </div>
+  </div>
+</div>
 
             <div style={responsiveGridStyle}>
               <div style={{ display: "grid", gap: 6 }}>
