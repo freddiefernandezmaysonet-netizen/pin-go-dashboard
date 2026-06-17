@@ -223,7 +223,9 @@ const propertyData = await propertyRes.json();
     : "";
 
   const baseNightlyRate = Number(property?.baseNightlyRate ?? 0);
- 
+  const minimumNightlyRate = Number(property?.minimumNightlyRate ?? 0);
+  const maximumNightlyRate = Number(property?.maximumNightlyRate ?? 0);
+  
   async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
@@ -498,6 +500,12 @@ async function handleCreateManualReservation() {
           : `${nightlyRates.length} custom rate(s), ${reservations.length} reservation(s), and ${blockedDates.length} blocked date(s) loaded.`}
       </p>
 
+<div style={styles.pricingBoundsCard}>
+  Base ${baseNightlyRate.toFixed(0)}
+  {minimumNightlyRate > 0 ? ` · Min $${minimumNightlyRate.toFixed(0)}` : ""}
+  {maximumNightlyRate > 0 ? ` · Max $${maximumNightlyRate.toFixed(0)}` : ""}
+</div>
+      
       <div
         style={{
           display: "flex",
@@ -826,7 +834,18 @@ async function handleCreateManualReservation() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  calendarGrid: {
+ pricingBoundsCard: {
+  marginTop: 12,
+  width: "fit-content",
+  borderRadius: 999,
+  padding: "8px 12px",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 900,
+},
+
+ calendarGrid: {
     marginTop: 24,
     display: "grid",
     gridTemplateColumns: "repeat(7, minmax(120px, 1fr))",
