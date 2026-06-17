@@ -874,43 +874,6 @@ async function handleUploadPhotos(
   </label>
 </div>
 
-<div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Last Minute Window (Days)</div>
-
-  <input
-    type="number"
-    min="1"
-    value={form.leadTimeLastMinuteDays}
-    onChange={(e) =>
-      setForm((s) => ({
-        ...s,
-        leadTimeLastMinuteDays: e.target.value,
-      }))
-    }
-    style={inputStyle}
-    disabled={!form.leadTimePricingEnabled}
-  />
-</div>
-
-<div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Last Minute Adjustment (%)</div>
-
-  <input
-    type="number"
-    step="0.01"
-    value={form.leadTimeLastMinutePercent}
-    onChange={(e) =>
-      setForm((s) => ({
-        ...s,
-        leadTimeLastMinutePercent: e.target.value,
-      }))
-    }
-    placeholder="-15"
-    style={inputStyle}
-    disabled={!form.leadTimePricingEnabled}
-  />
-</div>
-
           <div style={{ display: "grid", gap: 6 }}>
             <div style={labelStyle}>Address</div>
             <input
@@ -1398,6 +1361,44 @@ async function handleUploadPhotos(
       disabled={!form.dynamicPricingEnabled}
     />
   </div>  
+
+        <div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Last Minute Window (Days)</div>
+
+  <input
+    type="number"
+    min="1"
+    value={form.leadTimeLastMinuteDays}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        leadTimeLastMinuteDays: e.target.value,
+      }))
+    }
+    style={inputStyle}
+    disabled={!form.leadTimePricingEnabled}
+  />
+</div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Last Minute Adjustment (%)</div>
+
+  <input
+    type="number"
+    step="0.01"
+    value={form.leadTimeLastMinutePercent}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        leadTimeLastMinutePercent: e.target.value,
+      }))
+    }
+    placeholder="-15"
+    style={inputStyle}
+    disabled={!form.leadTimePricingEnabled}
+  />
+</div>
+
 
               <div style={{ display: "grid", gap: 6 }}>
                 <div style={labelStyle}>Cleaning Fee</div>
