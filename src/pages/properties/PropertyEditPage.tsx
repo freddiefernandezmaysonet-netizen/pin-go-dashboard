@@ -1265,10 +1265,7 @@ async function handleUploadPhotos(
       step="0.01"
       value={form.minimumNightlyRate}
       onChange={(e) =>
-        setForm((s) => ({
-          ...s,
-          minimumNightlyRate: e.target.value,
-        }))
+        setForm((s) => ({ ...s, minimumNightlyRate: e.target.value }))
       }
       placeholder="100.00"
       style={inputStyle}
@@ -1283,10 +1280,7 @@ async function handleUploadPhotos(
       step="0.01"
       value={form.maximumNightlyRate}
       onChange={(e) =>
-        setForm((s) => ({
-          ...s,
-          maximumNightlyRate: e.target.value,
-        }))
+        setForm((s) => ({ ...s, maximumNightlyRate: e.target.value }))
       }
       placeholder="300.00"
       style={inputStyle}
@@ -1294,81 +1288,81 @@ async function handleUploadPhotos(
   </div>
 
   <div style={{ display: "grid", gap: 6 }}>
-    <div style={labelStyle}>Dynamic Pricing</div>
-
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        minHeight: 42,
-      }}
-    >
-      <input
-        type="checkbox"
-        checked={form.dynamicPricingEnabled}
-        onChange={(e) =>
-          setForm((s) => ({
-            ...s,
-            dynamicPricingEnabled: e.target.checked,
-          }))
-        }
-      />
-      Enable Dynamic Pricing
-    </label>
-  </div>
-
-  <div style={{ display: "grid", gap: 6 }}>
-    <div style={labelStyle}>Weekend Markup (%)</div>
-
+    <div style={labelStyle}>Cleaning Fee</div>
     <input
       type="number"
       min="0"
       step="0.01"
-      value={form.weekendMarkupPercent}
+      value={form.cleaningFee}
       onChange={(e) =>
-        setForm((s) => ({
-          ...s,
-          weekendMarkupPercent: e.target.value,
-        }))
+        setForm((s) => ({ ...s, cleaningFee: e.target.value }))
       }
-      placeholder="15"
+      placeholder="75.00"
       style={inputStyle}
-      disabled={!form.dynamicPricingEnabled}
     />
-  </div>  
-              <div style={{ display: "grid", gap: 6 }}>
-                <div style={labelStyle}>Cleaning Fee</div>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.cleaningFee}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, cleaningFee: e.target.value }))
-                  }
-                  placeholder="75.00"
-                  style={inputStyle}
-                />
-              </div>
-            </div>
+  </div>
+</div>
 
-            <div
+<div style={responsiveGridStyle}>
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Max Guests</div>
+    <input
+      type="number"
+      min="1"
+      value={form.maxGuests}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, maxGuests: e.target.value }))
+      }
+      placeholder="4"
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Minimum Nights</div>
+    <input
+      type="number"
+      min="1"
+      value={form.minimumNights}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, minimumNights: e.target.value }))
+      }
+      placeholder="1"
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Maximum Nights</div>
+    <input
+      type="number"
+      min="1"
+      value={form.maximumNights}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, maximumNights: e.target.value }))
+      }
+      placeholder="Optional"
+      style={inputStyle}
+    />
+  </div>
+</div>
+
+<div
   style={{
     border: "1px solid #bfdbfe",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     background: "#ffffff",
     display: "grid",
-    gap: 14,
+    gap: 16,
   }}
 >
   <div>
-    <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
-      Lead Time Rule
+    <div style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>
+      Dynamic Pricing
     </div>
-    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-      Automatically adjust prices when a stay is close to arrival.
+    <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+      Automatically adjust rates using simple pricing rules.
     </div>
   </div>
 
@@ -1384,102 +1378,118 @@ async function handleUploadPhotos(
   >
     <input
       type="checkbox"
-      checked={form.leadTimePricingEnabled}
+      checked={form.dynamicPricingEnabled}
       onChange={(e) =>
         setForm((s) => ({
           ...s,
-          leadTimePricingEnabled: e.target.checked,
+          dynamicPricingEnabled: e.target.checked,
         }))
       }
-      disabled={!form.dynamicPricingEnabled}
     />
-    Enable Lead Time Rule
+    Enable Dynamic Pricing
   </label>
 
   <div style={responsiveGridStyle}>
     <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Last Minute Window</div>
+      <div style={labelStyle}>Weekend Markup (%)</div>
       <input
         type="number"
-        min="1"
-        value={form.leadTimeLastMinuteDays}
-        onChange={(e) =>
-          setForm((s) => ({
-            ...s,
-            leadTimeLastMinuteDays: e.target.value,
-          }))
-        }
-        placeholder="3"
-        style={inputStyle}
-        disabled={!form.dynamicPricingEnabled || !form.leadTimePricingEnabled}
-      />
-    </div>
-
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Adjustment (%)</div>
-      <input
-        type="number"
+        min="0"
         step="0.01"
-        value={form.leadTimeLastMinutePercent}
+        value={form.weekendMarkupPercent}
         onChange={(e) =>
           setForm((s) => ({
             ...s,
-            leadTimeLastMinutePercent: e.target.value,
+            weekendMarkupPercent: e.target.value,
           }))
         }
-        placeholder="-15"
+        placeholder="15"
         style={inputStyle}
-        disabled={!form.dynamicPricingEnabled || !form.leadTimePricingEnabled}
+        disabled={!form.dynamicPricingEnabled}
       />
     </div>
   </div>
+
+  <div
+    style={{
+      borderTop: "1px solid #dbeafe",
+      paddingTop: 16,
+      display: "grid",
+      gap: 14,
+    }}
+  >
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+        Lead Time Rule
+      </div>
+      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+        Adjust prices automatically when arrival is close.
+      </div>
+    </div>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        fontSize: 14,
+        fontWeight: 800,
+        color: "#111827",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={form.leadTimePricingEnabled}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            leadTimePricingEnabled: e.target.checked,
+          }))
+        }
+        disabled={!form.dynamicPricingEnabled}
+      />
+      Enable Lead Time Rule
+    </label>
+
+    <div style={responsiveGridStyle}>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Last Minute Window</div>
+        <input
+          type="number"
+          min="1"
+          value={form.leadTimeLastMinuteDays}
+          onChange={(e) =>
+            setForm((s) => ({
+              ...s,
+              leadTimeLastMinuteDays: e.target.value,
+            }))
+          }
+          placeholder="3"
+          style={inputStyle}
+          disabled={!form.dynamicPricingEnabled || !form.leadTimePricingEnabled}
+        />
+      </div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Adjustment (%)</div>
+        <input
+          type="number"
+          step="0.01"
+          value={form.leadTimeLastMinutePercent}
+          onChange={(e) =>
+            setForm((s) => ({
+              ...s,
+              leadTimeLastMinutePercent: e.target.value,
+            }))
+          }
+          placeholder="-15"
+          style={inputStyle}
+          disabled={!form.dynamicPricingEnabled || !form.leadTimePricingEnabled}
+        />
+      </div>
+    </div>
+  </div>
 </div>
-
-            <div style={responsiveGridStyle}>
-              <div style={{ display: "grid", gap: 6 }}>
-                <div style={labelStyle}>Max Guests</div>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.maxGuests}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, maxGuests: e.target.value }))
-                  }
-                  placeholder="4"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={{ display: "grid", gap: 6 }}>
-                <div style={labelStyle}>Minimum Nights</div>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.minimumNights}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, minimumNights: e.target.value }))
-                  }
-                  placeholder="1"
-                  style={inputStyle}
-                />
-              </div>
-
-              <div style={{ display: "grid", gap: 6 }}>
-                <div style={labelStyle}>Maximum Nights</div>
-                <input
-                  type="number"
-                  min="1"
-                  value={form.maximumNights}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, maximumNights: e.target.value }))
-                  }
-                  placeholder="Optional"
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-          </div>
-
           <div
             style={{
               borderTop: "1px solid #bfdbfe",
@@ -2075,6 +2085,8 @@ async function handleUploadPhotos(
 </Link>
   </div>
 </div>
+
+          </div>
 
           </div>
           <div style={cardStyle}>
