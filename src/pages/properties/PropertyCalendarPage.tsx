@@ -249,18 +249,15 @@ function applyPricingBounds(rate: number) {
 }
 
 function getDisplayRateForDay(day: Date, rate: any) {
-  const rawRate = rate ? Number(rate.rate ?? 0) : baseNightlyRate;
+  const finalRate = rate
+    ? Number(rate.rate ?? 0)
+    : baseNightlyRate;
 
-  if (!rawRate || rawRate <= 0) {
+  if (!finalRate || finalRate <= 0) {
     return null;
   }
 
-  const weekendAdjustedRate =
-    dynamicPricingEnabled && weekendMarkupPercent > 0 && isWeekendNight(day)
-      ? rawRate * (1 + weekendMarkupPercent / 100)
-      : rawRate;
-
-  return Math.round(applyPricingBounds(weekendAdjustedRate));
+  return Math.round(finalRate);
 }
 
 function formatRateReason(reason: string) {
