@@ -863,9 +863,7 @@ export function PropertyCalendarPage() {
                 blockedDate.reason ? (
                   <div style={styles.sourceText}>{blockedDate.reason}</div>
                 ) : null
-              ) : (
-                <div style={styles.sourceText}>Ready to book</div>
-              )}
+                ) : null}
             </div>
           );
         })}
@@ -1424,7 +1422,7 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 999,
   },
   dayRate: {
-    fontSize: 24,
+    fontSize: 30,
     lineHeight: 1,
     fontWeight: 950,
     color: "#2563eb",
@@ -1452,14 +1450,14 @@ const styles: Record<string, CSSProperties> = {
   rateReason: {
     width: "fit-content",
     borderRadius: 999,
-    padding: "4px 8px",
+    padding: "2px 6px",
     background: "#f8fafc",
     color: "#475569",
-    fontSize: 11,
-    fontWeight: 900,
+    fontSize: 10,
+    fontWeight: 800,
   },
   guestText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 950,
     color: "#0f172a",
     overflow: "hidden",
