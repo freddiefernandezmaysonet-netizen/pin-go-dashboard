@@ -714,38 +714,8 @@ export function PropertyCalendarPage() {
             automatically.
           </div>
         </div>
-
-        <div style={styles.guardrailsCard}>
-          <div style={styles.cardTitle}>Pricing Guardrails</div>
-          <div style={styles.guardrailGrid}>
-            <div>
-              <div style={styles.guardrailLabel}>Base</div>
-              <div style={styles.guardrailValue}>
-                ${baseNightlyRate.toFixed(0)}
-              </div>
-            </div>
-
-            <div>
-              <div style={styles.guardrailLabel}>Minimum</div>
-              <div style={styles.guardrailValue}>
-                ${minimumNightlyRate.toFixed(0)}
-              </div>
-            </div>
-
-            <div>
-              <div style={styles.guardrailLabel}>Maximum</div>
-              <div style={styles.guardrailValue}>
-                ${maximumNightlyRate.toFixed(0)}
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.guardrailHint}>
-            Dynamic pricing stays within these limits.
-          </div>
-        </div>
-      </div>
-
+       </div>  
+  
       <div style={styles.calendarToolbar}>
         <button
           type="button"
@@ -766,60 +736,89 @@ export function PropertyCalendarPage() {
         </button>
       </div>
 
-      <div style={styles.legendCard}>
-  <div style={styles.legendTitle}>
-    Calendar Intelligence
-  </div>
+<div style={styles.legendCard}>
+  <div style={styles.legendCombinedRow}>
+    <div style={styles.legendSection}>
+      <div style={styles.legendTitle}>Calendar Intelligence</div>
 
-  <div style={styles.legendGrid}>
-    <div style={styles.legendItem}>
-      <span
-        style={{
-          ...styles.legendDot,
-          background: "#16a34a",
-        }}
-      />
-      Available — Ready to book
+      <div style={styles.legendGrid}>
+        <div style={styles.legendItem}>
+          <span
+            style={{
+              ...styles.legendDot,
+              background: "#16a34a",
+            }}
+          />
+          Available — Ready to book
+        </div>
+
+        <div style={styles.legendItem}>
+          <span
+            style={{
+              ...styles.legendDot,
+              background: "#2563eb",
+            }}
+          />
+          Booked — Reservation active
+        </div>
+
+        <div style={styles.legendItem}>
+          <span
+            style={{
+              ...styles.legendDot,
+              background: "#dc2626",
+            }}
+          />
+          Blocked — Owner stay or maintenance
+        </div>
+
+        <div style={styles.legendItem}>
+          <span
+            style={{
+              ...styles.legendDot,
+              background: "#0f172a",
+            }}
+          />
+          Selected range
+        </div>
+
+        <div style={styles.legendItem}>
+          <span
+            style={{
+              ...styles.legendDot,
+              background: "#cbd5e1",
+            }}
+          />
+          Past or inactive dates
+        </div>
+      </div>
     </div>
 
-    <div style={styles.legendItem}>
-      <span
-        style={{
-          ...styles.legendDot,
-          background: "#2563eb",
-        }}
-      />
-      Booked — Reservation active
-    </div>
+    <div style={styles.guardrailsInline}>
+      <div style={styles.legendTitle}>Pricing Guardrails</div>
 
-    <div style={styles.legendItem}>
-      <span
-        style={{
-          ...styles.legendDot,
-          background: "#dc2626",
-        }}
-      />
-      Blocked — Owner stay or maintenance
-    </div>
+      <div style={styles.guardrailsInlineGrid}>
+        <div>
+          <div style={styles.guardrailLabel}>Base</div>
+          <div style={styles.guardrailValue}>
+            ${baseNightlyRate.toFixed(0)}
+          </div>
+        </div>
 
-    <div style={styles.legendItem}>
-      <span
-        style={{
-          ...styles.legendDot,
-          background: "#0f172a",
-        }}
-      />
-      Selected range
-    </div>
+        <div>
+          <div style={styles.guardrailLabel}>Min</div>
+          <div style={styles.guardrailValue}>
+            ${minimumNightlyRate.toFixed(0)}
+          </div>
+        </div>
 
-    <div style={styles.legendItem}>
-      <span
-        style={{
-          ...styles.legendDot,
-          background: "#cbd5e1",
-        }}
-      />
-      Past or inactive dates
+        <div>
+          <div style={styles.guardrailLabel}>Max</div>
+          <div style={styles.guardrailValue}>
+            ${maximumNightlyRate.toFixed(0)}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1651,6 +1650,28 @@ legendDot: {
   height: 10,
   borderRadius: 999,
   flexShrink: 0,
+},
+legendCombinedRow: {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 24,
+  flexWrap: "wrap",
+  alignItems: "flex-start",
+},
+
+legendSection: {
+  flex: 1,
+  minWidth: 520,
+},
+
+guardrailsInline: {
+  minWidth: 260,
+},
+
+guardrailsInlineGrid: {
+  display: "flex",
+  gap: 22,
+  flexWrap: "wrap",
 },
 
 };
