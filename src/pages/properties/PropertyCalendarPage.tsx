@@ -292,7 +292,14 @@ export function PropertyCalendarPage() {
         highDemandAdjustments +
         lowDemandAdjustments,
     };
-  }, [visibleMonthDays, rateByDate, dynamicPricingEnabled, weekendMarkupPercent]);
+  
+ }, [
+  visibleMonthDays,
+  rateByDate,
+  dynamicPricingEnabled,
+  weekendMarkupPercent,
+  baseNightlyRate,
+]);
 
   const occupancySummary = useMemo(() => {
     const totalDays = visibleMonthDays.length || 1;
