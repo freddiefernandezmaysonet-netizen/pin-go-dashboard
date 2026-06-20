@@ -766,6 +766,64 @@ export function PropertyCalendarPage() {
         </button>
       </div>
 
+      <div style={styles.legendCard}>
+  <div style={styles.legendTitle}>
+    Calendar Intelligence
+  </div>
+
+  <div style={styles.legendGrid}>
+    <div style={styles.legendItem}>
+      <span
+        style={{
+          ...styles.legendDot,
+          background: "#16a34a",
+        }}
+      />
+      Available — Ready to book
+    </div>
+
+    <div style={styles.legendItem}>
+      <span
+        style={{
+          ...styles.legendDot,
+          background: "#2563eb",
+        }}
+      />
+      Booked — Reservation active
+    </div>
+
+    <div style={styles.legendItem}>
+      <span
+        style={{
+          ...styles.legendDot,
+          background: "#dc2626",
+        }}
+      />
+      Blocked — Owner stay or maintenance
+    </div>
+
+    <div style={styles.legendItem}>
+      <span
+        style={{
+          ...styles.legendDot,
+          background: "#0f172a",
+        }}
+      />
+      Selected range
+    </div>
+
+    <div style={styles.legendItem}>
+      <span
+        style={{
+          ...styles.legendDot,
+          background: "#cbd5e1",
+        }}
+      />
+      Past or inactive dates
+    </div>
+  </div>
+</div>
+
       <div style={styles.calendarGrid}>
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
           <div key={weekday} style={styles.weekday}>
@@ -1557,4 +1615,42 @@ const styles: Record<string, CSSProperties> = {
     color: "#2563eb",
     fontWeight: 900,
   },
+legendCard: {
+  marginTop: 16,
+  padding: 16,
+  borderRadius: 18,
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
+},
+
+legendTitle: {
+  fontSize: 13,
+  fontWeight: 950,
+  color: "#0f172a",
+  marginBottom: 12,
+},
+
+legendGrid: {
+  display: "flex",
+  gap: 18,
+  flexWrap: "wrap",
+},
+
+legendItem: {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#475569",
+},
+
+legendDot: {
+  width: 10,
+  height: 10,
+  borderRadius: 999,
+  flexShrink: 0,
+},
+
 };
