@@ -661,59 +661,7 @@ export function PropertyCalendarPage() {
           <div style={styles.summaryValue}>{revenueSummary.manualOverrides}</div>
           <div style={styles.summaryHint}>Human pricing adjustments</div>
         </div>
-      </div>
-
-      <div style={styles.intelligenceRow}>
-        <div style={styles.aiSummaryCard}>
-          <div style={styles.cardHeader}>
-            <div>
-              <div style={styles.cardTitle}>AI Revenue Summary</div>
-              <div style={styles.cardSubtitle}>
-                Pin&Go pricing activity for {format(month, "MMMM yyyy")}
-              </div>
-            </div>
-            <div style={styles.aiBadge}>Live</div>
-          </div>
-
-          <div style={styles.aiMetricGrid}>
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↑</span>
-              <div>
-                <strong>{revenueSummary.weekendBoosts}</strong>
-                <span> Weekend Boosts</span>
-              </div>
-            </div>
-
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↓</span>
-              <div>
-                <strong>{revenueSummary.lastMinuteDiscounts}</strong>
-                <span> Last Minute Discounts</span>
-              </div>
-            </div>
-
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↑</span>
-              <div>
-                <strong>{revenueSummary.highDemandAdjustments}</strong>
-                <span> High Demand Adjustments</span>
-              </div>
-            </div>
-
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↓</span>
-              <div>
-                <strong>{revenueSummary.lowDemandAdjustments}</strong>
-                <span> Low Demand Adjustments</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.aiFooter}>
-            🦾 Pin&Go is monitoring demand and applying pricing rules
-            automatically.
-          </div>
-        </div>
+    
        </div>  
   
       <div style={styles.calendarToolbar}>
@@ -921,6 +869,59 @@ export function PropertyCalendarPage() {
             </div>
           );
         })}
+      </div>
+
+      <div style={styles.intelligenceRow}>
+        <div style={styles.aiSummaryCard}>
+          <div style={styles.cardHeader}>
+            <div>
+              <div style={styles.cardTitle}>AI Revenue Summary</div>
+              <div style={styles.cardSubtitle}>
+                Pin&Go pricing activity for {format(month, "MMMM yyyy")}
+              </div>
+            </div>
+            <div style={styles.aiBadge}>Live</div>
+          </div>
+
+          <div style={styles.aiMetricGrid}>
+            <div style={styles.aiMetric}>
+              <span style={styles.metricSignal}>↑</span>
+              <div>
+                <strong>{revenueSummary.weekendBoosts}</strong>
+                <span> Weekend Boosts</span>
+              </div>
+            </div>
+
+            <div style={styles.aiMetric}>
+              <span style={styles.metricSignal}>↓</span>
+              <div>
+                <strong>{revenueSummary.lastMinuteDiscounts}</strong>
+                <span> Last Minute Discounts</span>
+              </div>
+            </div>
+
+            <div style={styles.aiMetric}>
+              <span style={styles.metricSignal}>↑</span>
+              <div>
+                <strong>{revenueSummary.highDemandAdjustments}</strong>
+                <span> High Demand Adjustments</span>
+              </div>
+            </div>
+
+            <div style={styles.aiMetric}>
+              <span style={styles.metricSignal}>↓</span>
+              <div>
+                <strong>{revenueSummary.lowDemandAdjustments}</strong>
+                <span> Low Demand Adjustments</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.aiFooter}>
+            🦾 Pin&Go is monitoring demand and applying pricing rules
+            automatically.
+          </div>
+        </div>
       </div>
 
       {hasSelectedRange && (
