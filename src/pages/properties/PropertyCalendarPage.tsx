@@ -40,10 +40,7 @@ export function PropertyCalendarPage() {
   const [selectedRange, setSelectedRange] = useState<{
     start: Date | null;
     end: Date | null;
-  }>({
-    start: null,
-    end: null,
-  });
+  }>({ start: null, end: null });
 
   const [rateInput, setRateInput] = useState("");
   const [showSetRateForm, setShowSetRateForm] = useState(false);
@@ -54,7 +51,6 @@ export function PropertyCalendarPage() {
   const today = startOfDay(new Date());
 
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
-
   const to = useMemo(
     () => format(startOfMonth(addMonths(month, 1)), "yyyy-MM-dd"),
     [month]
@@ -105,15 +101,12 @@ export function PropertyCalendarPage() {
         if (!active) return;
 
         setProperty(propertyRes.ok ? propertyData.item : null);
-
         setNightlyRates(
           ratesRes.ok && Array.isArray(ratesData.rates) ? ratesData.rates : []
         );
-
         setReservations(
           Array.isArray(reservationsData.items) ? reservationsData.items : []
         );
-
         setBlockedDates(
           blockedRes.ok && Array.isArray(blockedData.items)
             ? blockedData.items
@@ -121,7 +114,6 @@ export function PropertyCalendarPage() {
         );
       } catch (error) {
         console.error("Failed to load calendar data", error);
-
         if (active) {
           setNightlyRates([]);
           setReservations([]);
@@ -174,31 +166,20 @@ export function PropertyCalendarPage() {
   }
 
   function handleDayClick(day: Date) {
-    if (startOfDay(day) < today) {
-      return;
-    }
+    if (startOfDay(day) < today) return;
 
     setSelectedDay(day);
 
     setSelectedRange((current) => {
       if (!current.start || current.end) {
-        return {
-          start: day,
-          end: null,
-        };
+        return { start: day, end: null };
       }
 
       if (day < current.start) {
-        return {
-          start: day,
-          end: current.start,
-        };
+        return { start: day, end: current.start };
       }
 
-      return {
-        start: current.start,
-        end: day,
-      };
+      return { start: current.start, end: day };
     });
   }
 
@@ -250,19 +231,19 @@ export function PropertyCalendarPage() {
   function getRateReasonForDay(day: Date, rate: any) {
     const reason = rate?.reason;
 
-    if (reason === "LEAD_TIME_RULE") return "↓ Last Minute";
-    if (reason === "OCCUPANCY_LOW_RULE") return "↓ Low Demand";
-    if (reason === "OCCUPANCY_HIGH_RULE") return "↑ High Demand";
+    if (reason === "LEAD_TIME_RULE") return "Last Minute";
+    if (reason === "OCCUPANCY_LOW_RULE") return "Low Demand";
+    if (reason === "OCCUPANCY_HIGH_RULE") return "High Demand";
     if (reason === "CUSTOM_RATE") return "Manual Override";
     if (reason === "Calendar override") return "Manual Override";
-    if (reason === "WEEKEND_RULE") return "↑ Weekend Boost";
+    if (reason === "WEEKEND_RULE") return "Weekend Boost";
 
     if (
       dynamicPricingEnabled &&
       weekendMarkupPercent > 0 &&
       isWeekendNight(day)
     ) {
-      return "↑ Weekend Boost";
+      return "Weekend Boost";
     }
 
     return "Base Rate";
@@ -292,10 +273,10 @@ export function PropertyCalendarPage() {
       const rate = rateByDate.get(getDateKey(day));
       const reason = getRateReasonForDay(day, rate);
 
-      if (reason === "↑ Weekend Boost") weekendBoosts += 1;
-      if (reason === "↓ Last Minute") lastMinuteDiscounts += 1;
-      if (reason === "↑ High Demand") highDemandAdjustments += 1;
-      if (reason === "↓ Low Demand") lowDemandAdjustments += 1;
+      if (reason === "Weekend Boost") weekendBoosts += 1;
+      if (reason === "Last Minute") lastMinuteDiscounts += 1;
+      if (reason === "High Demand") highDemandAdjustments += 1;
+      if (reason === "Low Demand") lowDemandAdjustments += 1;
       if (reason === "Manual Override") manualOverrides += 1;
     }
 
@@ -311,13 +292,7 @@ export function PropertyCalendarPage() {
         highDemandAdjustments +
         lowDemandAdjustments,
     };
-  }, [
-    visibleMonthDays,
-    rateByDate,
-    dynamicPricingEnabled,
-    weekendMarkupPercent,
-    baseNightlyRate,
-  ]);
+  }, [visibleMonthDays, rateByDate, dynamicPricingEnabled, weekendMarkupPercent]);
 
   const occupancySummary = useMemo(() => {
     const totalDays = visibleMonthDays.length || 1;
@@ -368,9 +343,7 @@ export function PropertyCalendarPage() {
         {
           method: "PUT",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             rates: eachDayOfInterval({
               start: selectedRange.start,
@@ -441,9 +414,7 @@ export function PropertyCalendarPage() {
         {
           method: "POST",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             startDate,
             endDate,
@@ -471,11 +442,7 @@ export function PropertyCalendarPage() {
           : []
       );
 
-      setSelectedRange({
-        start: null,
-        end: null,
-      });
-
+      setSelectedRange({ start: null, end: null });
       setShowSetRateForm(false);
       setRateInput("");
     } catch (error: any) {
@@ -540,11 +507,7 @@ export function PropertyCalendarPage() {
           : []
       );
 
-      setSelectedRange({
-        start: null,
-        end: null,
-      });
-
+      setSelectedRange({ start: null, end: null });
       setShowSetRateForm(false);
       setRateInput("");
     } catch (error: any) {
@@ -570,9 +533,7 @@ export function PropertyCalendarPage() {
         {
           method: "POST",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             guestName: manualGuestName.trim(),
             guestEmail: manualGuestEmail.trim() || null,
@@ -597,11 +558,7 @@ export function PropertyCalendarPage() {
       setManualGuestPhone("");
       setManualPaymentState("NONE");
       setShowCreateReservationForm(false);
-
-      setSelectedRange({
-        start: null,
-        end: null,
-      });
+      setSelectedRange({ start: null, end: null });
     } catch (error: any) {
       alert(String(error?.message || error));
     } finally {
@@ -613,7 +570,6 @@ export function PropertyCalendarPage() {
     <div style={styles.page}>
       <div style={styles.header}>
         <div>
-          <div style={styles.eyebrow}>Autonomous Revenue Calendar</div>
           <h1 style={styles.title}>Property Calendar</h1>
           <p style={styles.subtitle}>
             {loading
@@ -622,157 +578,212 @@ export function PropertyCalendarPage() {
           </p>
         </div>
 
-        <div style={styles.autoPilotPill}>
-          <span style={styles.autoPilotIcon}>🦾</span>
-          Auto Pilot Active
-        </div>
+        <div style={styles.autoPilotPill}>🦾 Auto Pilot Active</div>
       </div>
 
       <div style={styles.summaryGrid}>
         <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Occupancy</div>
-          <div style={styles.summaryValue}>
-            {occupancySummary.occupancyPercent}%
+          <div>
+            <div style={styles.summaryLabel}>Occupancy</div>
+            <div style={styles.summaryValue}>
+              {occupancySummary.occupancyPercent}%
+            </div>
+            <div style={styles.summaryHint}>
+              {occupancySummary.bookedDays} booked ·{" "}
+              {occupancySummary.availableDays} available
+            </div>
           </div>
-          <div style={styles.summaryHint}>
-            {occupancySummary.bookedDays} booked ·{" "}
-            {occupancySummary.availableDays} available
-          </div>
+          <div style={styles.summaryIcon}>◔</div>
         </div>
 
         <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Revenue Optimizations</div>
-          <div style={styles.summaryValue}>
-            {revenueSummary.totalOptimizations}
+          <div>
+            <div style={styles.summaryLabel}>Revenue Optimizations</div>
+            <div style={styles.summaryValue}>
+              {revenueSummary.totalOptimizations}
+            </div>
+            <div style={styles.summaryHint}>Pricing engine actions this month</div>
           </div>
-          <div style={styles.summaryHint}>
-            Pricing engine actions this month
-          </div>
+          <div style={styles.summaryIconGreen}>⌁</div>
         </div>
 
         <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Blocked Dates</div>
-          <div style={styles.summaryValue}>{occupancySummary.blockedDays}</div>
-          <div style={styles.summaryHint}>Owner stays or maintenance</div>
+          <div>
+            <div style={styles.summaryLabel}>Blocked Dates</div>
+            <div style={styles.summaryValue}>{occupancySummary.blockedDays}</div>
+            <div style={styles.summaryHint}>Owner stay or maintenance</div>
+          </div>
+          <div style={styles.summaryIconRed}>▣</div>
         </div>
 
         <div style={styles.summaryCard}>
-          <div style={styles.summaryLabel}>Manual Overrides</div>
-          <div style={styles.summaryValue}>{revenueSummary.manualOverrides}</div>
-          <div style={styles.summaryHint}>Human pricing adjustments</div>
+          <div>
+            <div style={styles.summaryLabel}>Manual Overrides</div>
+            <div style={styles.summaryValue}>{revenueSummary.manualOverrides}</div>
+            <div style={styles.summaryHint}>Human pricing adjustments</div>
+          </div>
+          <div style={styles.summaryIconPurple}>✎</div>
         </div>
-    
-       </div>  
-  
+      </div>
+
+      <div style={styles.controlCenterCard}>
+        <div style={styles.legendColumn}>
+          <div style={styles.sectionTitle}>Calendar Intelligence</div>
+
+          <div style={styles.legendList}>
+            <div style={styles.legendItem}>
+              <span style={{ ...styles.legendDot, background: "#16a34a" }} />
+              Available
+            </div>
+
+            <div style={styles.legendItem}>
+              <span style={{ ...styles.legendDot, background: "#2563eb" }} />
+              Booked
+            </div>
+
+            <div style={styles.legendItem}>
+              <span style={{ ...styles.legendDot, background: "#dc2626" }} />
+              Blocked
+            </div>
+
+            <div style={styles.legendItem}>
+              <span style={{ ...styles.legendDot, background: "#8b5cf6" }} />
+              Selected range
+            </div>
+
+            <div style={styles.legendItem}>
+              <span style={{ ...styles.legendDot, background: "#94a3b8" }} />
+              Past or inactive
+            </div>
+          </div>
+        </div>
+
+        <div style={styles.aiColumn}>
+          <div style={styles.aiHeader}>
+            <div>
+              <div style={styles.sectionTitle}>AI Revenue Summary</div>
+              <div style={styles.sectionSubtitle}>
+                Pin&Go pricing activity for {format(month, "MMMM yyyy")}
+              </div>
+            </div>
+
+            <div style={styles.liveBadge}>Live</div>
+          </div>
+
+          <div style={styles.aiMetricsRow}>
+            <div style={styles.aiMetricCard}>
+              <div style={styles.aiIconUp}>↑</div>
+              <div>
+                <div style={styles.aiMetricValue}>
+                  {revenueSummary.weekendBoosts}
+                </div>
+                <div style={styles.aiMetricLabel}>Weekend Boosts</div>
+              </div>
+            </div>
+
+            <div style={styles.aiMetricCard}>
+              <div style={styles.aiIconDown}>↓</div>
+              <div>
+                <div style={styles.aiMetricValue}>
+                  {revenueSummary.lastMinuteDiscounts}
+                </div>
+                <div style={styles.aiMetricLabel}>Last Minute</div>
+              </div>
+            </div>
+
+            <div style={styles.aiMetricCard}>
+              <div style={styles.aiIconUpWarm}>↑</div>
+              <div>
+                <div style={styles.aiMetricValue}>
+                  {revenueSummary.highDemandAdjustments}
+                </div>
+                <div style={styles.aiMetricLabel}>High Demand</div>
+              </div>
+            </div>
+
+            <div style={styles.aiMetricCard}>
+              <div style={styles.aiIconDownBlue}>↓</div>
+              <div>
+                <div style={styles.aiMetricValue}>
+                  {revenueSummary.lowDemandAdjustments}
+                </div>
+                <div style={styles.aiMetricLabel}>Low Demand</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.aiFooter}>
+            🦾 Pin&Go is monitoring demand and applying pricing rules automatically.
+          </div>
+        </div>
+
+        <div style={styles.guardrailsColumn}>
+          <div style={styles.sectionTitle}>Pricing Guardrails</div>
+
+          <div style={styles.guardrailsBox}>
+            <div>
+              <div style={styles.guardrailLabel}>Base</div>
+              <div style={styles.guardrailValue}>${baseNightlyRate.toFixed(0)}</div>
+            </div>
+
+            <div>
+              <div style={styles.guardrailLabel}>Min</div>
+              <div style={styles.guardrailValue}>
+                ${minimumNightlyRate.toFixed(0)}
+              </div>
+            </div>
+
+            <div>
+              <div style={styles.guardrailLabel}>Max</div>
+              <div style={styles.guardrailValue}>
+                ${maximumNightlyRate.toFixed(0)}
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.guardrailsActive}>● Guardrails are active</div>
+        </div>
+      </div>
+
       <div style={styles.calendarToolbar}>
         <button
           type="button"
-          style={styles.navButton}
-          onClick={() => setMonth(startOfMonth(addMonths(month, -1)))}
+          style={styles.todayButton}
+          onClick={() => setMonth(startOfMonth(new Date()))}
         >
-          ← Previous
+          Today
         </button>
-
-        <strong style={styles.monthTitle}>{format(month, "MMMM yyyy")}</strong>
 
         <button
           type="button"
-          style={styles.navButton}
+          style={styles.iconButton}
+          onClick={() => setMonth(startOfMonth(addMonths(month, -1)))}
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          style={styles.iconButton}
           onClick={() => setMonth(startOfMonth(addMonths(month, 1)))}
         >
-          Next →
+          ›
         </button>
-      </div>
 
-<div style={styles.legendCard}>
-  <div style={styles.legendCombinedRow}>
-    <div style={styles.legendSection}>
-      <div style={styles.legendTitle}>Calendar Intelligence</div>
+        <div style={styles.monthTitle}>{format(month, "MMMM yyyy")}⌄</div>
 
-      <div style={styles.legendGrid}>
-        <div style={styles.legendItem}>
-          <span
-            style={{
-              ...styles.legendDot,
-              background: "#16a34a",
-            }}
-          />
-          Available — Ready to book
-        </div>
-
-        <div style={styles.legendItem}>
-          <span
-            style={{
-              ...styles.legendDot,
-              background: "#2563eb",
-            }}
-          />
-          Booked — Reservation active
-        </div>
-
-        <div style={styles.legendItem}>
-          <span
-            style={{
-              ...styles.legendDot,
-              background: "#dc2626",
-            }}
-          />
-          Blocked — Owner stay or maintenance
-        </div>
-
-        <div style={styles.legendItem}>
-          <span
-            style={{
-              ...styles.legendDot,
-              background: "#0f172a",
-            }}
-          />
-          Selected range
-        </div>
-
-        <div style={styles.legendItem}>
-          <span
-            style={{
-              ...styles.legendDot,
-              background: "#cbd5e1",
-            }}
-          />
-          Past or inactive dates
+        <div style={styles.viewButtons}>
+          <button type="button" style={styles.viewButtonActive}>
+            Month
+          </button>
+          <button type="button" style={styles.viewButton}>
+            Week
+          </button>
         </div>
       </div>
-    </div>
-
-    <div style={styles.guardrailsInline}>
-      <div style={styles.legendTitle}>Pricing Guardrails</div>
-
-      <div style={styles.guardrailsInlineGrid}>
-        <div>
-          <div style={styles.guardrailLabel}>Base</div>
-          <div style={styles.guardrailValue}>
-            ${baseNightlyRate.toFixed(0)}
-          </div>
-        </div>
-
-        <div>
-          <div style={styles.guardrailLabel}>Min</div>
-          <div style={styles.guardrailValue}>
-            ${minimumNightlyRate.toFixed(0)}
-          </div>
-        </div>
-
-        <div>
-          <div style={styles.guardrailLabel}>Max</div>
-          <div style={styles.guardrailValue}>
-            ${maximumNightlyRate.toFixed(0)}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
       <div style={styles.calendarGrid}>
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((weekday) => (
+        {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((weekday) => (
           <div key={weekday} style={styles.weekday}>
             {weekday}
           </div>
@@ -787,6 +798,7 @@ export function PropertyCalendarPage() {
           const status = getStatusForDay(day);
           const rateReason = getRateReasonForDay(day, rate);
           const displayRate = getDisplayRateForDay(day, rate);
+          const selected = isDayInSelectedRange(day);
 
           return (
             <div
@@ -801,21 +813,23 @@ export function PropertyCalendarPage() {
               }}
               style={{
                 ...styles.dayCard,
-                opacity: !isSameMonth(day, month) || isPastDay ? 0.35 : 1,
-                borderColor: isDayInSelectedRange(day)
-                  ? "#2563eb"
-                  : status === "Booked"
-                  ? "#bfdbfe"
+                opacity: !isSameMonth(day, month) || isPastDay ? 0.45 : 1,
+                borderColor: selected
+                  ? "#8b5cf6"
                   : status === "Blocked"
-                  ? "#fecaca"
+                  ? "#fca5a5"
                   : "#e2e8f0",
-                background: isDayInSelectedRange(day) ? "#eff6ff" : "#ffffff",
-                cursor: isPastDay ? "not-allowed" : "pointer",
+                background:
+                  status === "Blocked"
+                    ? "#fff1f2"
+                    : selected
+                    ? "#f5f3ff"
+                    : "#ffffff",
               }}
             >
               <div style={styles.dayTopRow}>
                 <div style={styles.dayNumber}>{format(day, "d")}</div>
-                <div
+                <span
                   style={{
                     ...styles.statusDot,
                     background:
@@ -828,98 +842,73 @@ export function PropertyCalendarPage() {
                 />
               </div>
 
-              <div style={styles.dayRate}>
-                {displayRate !== null ? `$${displayRate.toFixed(0)}` : "—"}
+              <div
+                style={{
+                  ...styles.dayRate,
+                  color: status === "Blocked" ? "#dc2626" : "#2563eb",
+                }}
+              >
+                {status === "Blocked"
+                  ? "$0"
+                  : displayRate !== null
+                  ? `$${displayRate.toFixed(0)}`
+                  : "—"}
               </div>
 
               <div
                 style={{
-                  ...styles.statusPill,
-                  ...(status === "Booked"
-                    ? styles.bookedPill
-                    : status === "Blocked"
-                    ? styles.blockedPill
-                    : styles.availablePill),
+                  ...styles.dayStatus,
+                  color:
+                    status === "Booked"
+                      ? "#2563eb"
+                      : status === "Blocked"
+                      ? "#dc2626"
+                      : "#16a34a",
                 }}
               >
                 {status}
               </div>
 
-              <div style={styles.rateReason}>{rateReason}</div>
+              {reservation ? (
+                <div style={styles.dayMeta}>
+                  {reservation.guestName || "Guest"}
+                </div>
+              ) : blockedDate ? (
+                <div style={styles.dayMeta}>
+                  {blockedDate.reason || "Owner Stay"}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    ...styles.reasonPill,
+                    color:
+                      rateReason === "High Demand"
+                        ? "#ea580c"
+                        : rateReason === "Weekend Boost"
+                        ? "#166534"
+                        : "#475569",
+                    background:
+                      rateReason === "High Demand"
+                        ? "#ffedd5"
+                        : rateReason === "Weekend Boost"
+                        ? "#dcfce7"
+                        : "#f1f5f9",
+                  }}
+                >
+                  {rateReason}
+                </div>
+              )}
 
               {reservation ? (
-                <>
-                  <div style={styles.guestText}>
-                    {reservation.guestName || "Guest"}
-                  </div>
-
-                  <div style={styles.sourceText}>
-                    {reservation.source ||
-                      reservation.externalProvider ||
-                      "Direct"}
-                  </div>
-                </>
-              ) : blockedDate ? (
-                blockedDate.reason ? (
-                  <div style={styles.sourceText}>{blockedDate.reason}</div>
-                ) : null
-                ) : null}
+                <div style={styles.dayMetaMuted}>
+                  {reservation.source ||
+                    reservation.externalProvider ||
+                    "Direct Booking"}
+                </div>
+              ) : null}
             </div>
           );
         })}
-      </div>
-
-      <div style={styles.intelligenceRow}>
-        <div style={styles.aiSummaryCard}>
-          <div style={styles.cardHeader}>
-            <div>
-              <div style={styles.cardTitle}>AI Revenue Summary</div>
-              <div style={styles.cardSubtitle}>
-                Pin&Go pricing activity for {format(month, "MMMM yyyy")}
-              </div>
-            </div>
-            <div style={styles.aiBadge}>Live</div>
-          </div>
-
-          <div style={styles.aiMetricGrid}>
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↑</span>
-              <div>
-                <strong>{revenueSummary.weekendBoosts}</strong>
-                <span> Weekend Boosts</span>
-              </div>
-            </div>
-
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↓</span>
-              <div>
-                <strong>{revenueSummary.lastMinuteDiscounts}</strong>
-                <span> Last Minute Discounts</span>
-              </div>
-            </div>
-
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↑</span>
-              <div>
-                <strong>{revenueSummary.highDemandAdjustments}</strong>
-                <span> High Demand Adjustments</span>
-              </div>
-            </div>
-
-            <div style={styles.aiMetric}>
-              <span style={styles.metricSignal}>↓</span>
-              <div>
-                <strong>{revenueSummary.lowDemandAdjustments}</strong>
-                <span> Low Demand Adjustments</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.aiFooter}>
-            🦾 Pin&Go is monitoring demand and applying pricing rules
-            automatically.
-          </div>
-        </div>
       </div>
 
       {hasSelectedRange && (
@@ -945,11 +934,7 @@ export function PropertyCalendarPage() {
               type="button"
               onClick={handleBlockDates}
               disabled={savingBlock}
-              style={{
-                ...styles.actionButton,
-                opacity: savingBlock ? 0.7 : 1,
-                cursor: savingBlock ? "not-allowed" : "pointer",
-              }}
+              style={styles.actionButton}
             >
               {savingBlock ? "Blocking..." : "Block Dates"}
             </button>
@@ -958,11 +943,7 @@ export function PropertyCalendarPage() {
               type="button"
               onClick={handleUnblockDates}
               disabled={savingUnblock}
-              style={{
-                ...styles.secondaryActionButton,
-                opacity: savingUnblock ? 0.7 : 1,
-                cursor: savingUnblock ? "not-allowed" : "pointer",
-              }}
+              style={styles.secondaryActionButton}
             >
               {savingUnblock ? "Unblocking..." : "Unblock Dates"}
             </button>
@@ -979,10 +960,7 @@ export function PropertyCalendarPage() {
               type="button"
               style={styles.clearButton}
               onClick={() => {
-                setSelectedRange({
-                  start: null,
-                  end: null,
-                });
+                setSelectedRange({ start: null, end: null });
                 setShowSetRateForm(false);
                 setShowCreateReservationForm(false);
                 setRateInput("");
@@ -1012,11 +990,7 @@ export function PropertyCalendarPage() {
                 type="button"
                 onClick={handleApplyRate}
                 disabled={savingRate}
-                style={{
-                  ...styles.actionButton,
-                  opacity: savingRate ? 0.7 : 1,
-                  cursor: savingRate ? "not-allowed" : "pointer",
-                }}
+                style={styles.actionButton}
               >
                 {savingRate ? "Applying..." : "Apply Manual Rate"}
               </button>
@@ -1025,9 +999,7 @@ export function PropertyCalendarPage() {
 
           {showCreateReservationForm && (
             <div style={styles.inlineActionForm}>
-              <div style={styles.inlineActionLabel}>
-                Create manual reservation
-              </div>
+              <div style={styles.inlineActionLabel}>Create manual reservation</div>
 
               <input
                 type="text"
@@ -1067,11 +1039,7 @@ export function PropertyCalendarPage() {
                 type="button"
                 onClick={handleCreateManualReservation}
                 disabled={savingManualReservation}
-                style={{
-                  ...styles.primaryActionButton,
-                  opacity: savingManualReservation ? 0.7 : 1,
-                  cursor: savingManualReservation ? "not-allowed" : "pointer",
-                }}
+                style={styles.primaryActionButton}
               >
                 {savingManualReservation ? "Creating..." : "Create Reservation"}
               </button>
@@ -1082,44 +1050,25 @@ export function PropertyCalendarPage() {
 
       {selectedDay && (
         <div style={styles.selectedDayPanel}>
-          <div style={styles.cardHeader}>
-            <div>
-              <h3 style={styles.selectedDayTitle}>
-                {format(selectedDay, "MMMM d, yyyy")}
-              </h3>
-              <div style={styles.cardSubtitle}>
-                {getRateReasonForDay(
-                  selectedDay,
-                  rateByDate.get(getDateKey(selectedDay))
-                )}
-              </div>
-            </div>
+          <h3 style={styles.selectedDayTitle}>
+            {format(selectedDay, "MMMM d, yyyy")}
+          </h3>
 
-            <div style={styles.autoPilotPillSmall}>🦾 Auto Pilot</div>
+          <div style={styles.detailLine}>
+            Status: {getStatusForDay(selectedDay)}
           </div>
 
-          <div style={styles.selectedDayGrid}>
-            <div>
-              <div style={styles.guardrailLabel}>Nightly Rate</div>
-              <div style={styles.guardrailValue}>
-                {getDisplayRateForDay(
+          <div style={styles.detailLine}>
+            Rate:{" "}
+            {getDisplayRateForDay(
+              selectedDay,
+              rateByDate.get(getDateKey(selectedDay))
+            ) !== null
+              ? `$${getDisplayRateForDay(
                   selectedDay,
                   rateByDate.get(getDateKey(selectedDay))
-                ) !== null
-                  ? `$${getDisplayRateForDay(
-                      selectedDay,
-                      rateByDate.get(getDateKey(selectedDay))
-                    )?.toFixed(0)}`
-                  : "—"}
-              </div>
-            </div>
-
-            <div>
-              <div style={styles.guardrailLabel}>Status</div>
-              <div style={styles.guardrailValue}>
-                {getStatusForDay(selectedDay)}
-              </div>
-            </div>
+                )?.toFixed(0)}`
+              : "—"}
           </div>
 
           {getReservationForDay(selectedDay) && (
@@ -1128,32 +1077,18 @@ export function PropertyCalendarPage() {
                 Guest: {getReservationForDay(selectedDay)?.guestName || "Guest"}
               </div>
 
-              <div style={styles.detailLine}>
-                Source:{" "}
-                {getReservationForDay(selectedDay)?.source ||
-                  getReservationForDay(selectedDay)?.externalProvider ||
-                  "Direct"}
-              </div>
-
               <button
                 type="button"
                 style={styles.primaryActionButton}
                 onClick={() => {
                   const reservation = getReservationForDay(selectedDay);
                   if (!reservation?.id) return;
-
                   navigate(`/reservations/${reservation.id}`);
                 }}
               >
                 Open Reservation
               </button>
             </>
-          )}
-
-          {getBlockedDateForDay(selectedDay)?.reason && (
-            <div style={styles.detailLine}>
-              Reason: {getBlockedDateForDay(selectedDay)?.reason}
-            </div>
           )}
         </div>
       )}
@@ -1168,41 +1103,32 @@ export function PropertyCalendarPage() {
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
-    padding: 24,
-    background:
-      "linear-gradient(180deg, #f8fafc 0%, #ffffff 42%, #f8fafc 100%)",
+    padding: 28,
+    background: "#ffffff",
     color: "#0f172a",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
-    gap: 18,
     alignItems: "flex-start",
-    flexWrap: "wrap",
-  },
-  eyebrow: {
-    fontSize: 12,
-    fontWeight: 950,
-    color: "#2563eb",
-    textTransform: "uppercase",
-    letterSpacing: "0.12em",
+    gap: 20,
   },
   title: {
-    margin: "6px 0 0",
-    fontSize: 34,
+    margin: 0,
+    fontSize: 30,
     lineHeight: 1.1,
     fontWeight: 950,
     color: "#020617",
   },
   subtitle: {
     margin: "8px 0 0",
-    color: "#64748b",
+    color: "#334155",
     fontSize: 14,
     fontWeight: 700,
   },
   autoPilotPill: {
-    minHeight: 44,
-    padding: "0 16px",
+    height: 44,
+    padding: "0 18px",
     borderRadius: 999,
     background: "#0f172a",
     color: "#ffffff",
@@ -1211,200 +1137,354 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     fontSize: 14,
     fontWeight: 950,
-    boxShadow: "0 14px 30px rgba(15,23,42,0.18)",
-  },
-  autoPilotIcon: {
-    fontSize: 18,
+    boxShadow: "0 14px 30px rgba(15,23,42,0.16)",
   },
   summaryGrid: {
-    marginTop: 24,
+    marginTop: 28,
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(160px, 1fr))",
-    gap: 14,
+    gridTemplateColumns: "repeat(4, minmax(180px, 1fr))",
+    gap: 24,
   },
   summaryCard: {
-    padding: 18,
-    borderRadius: 22,
+    minHeight: 92,
+    padding: 20,
+    borderRadius: 18,
     background: "#ffffff",
     border: "1px solid #e2e8f0",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
+    boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   summaryLabel: {
     fontSize: 12,
-    color: "#64748b",
-    fontWeight: 900,
+    color: "#475569",
+    fontWeight: 950,
     textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    letterSpacing: "0.06em",
   },
   summaryValue: {
     marginTop: 8,
     fontSize: 30,
+    lineHeight: 1,
     fontWeight: 950,
     color: "#020617",
   },
   summaryHint: {
-    marginTop: 4,
+    marginTop: 8,
     fontSize: 12,
-    color: "#64748b",
-    fontWeight: 700,
+    color: "#334155",
+    fontWeight: 750,
   },
-  intelligenceRow: {
-    marginTop: 16,
-    display: "grid",
-    gridTemplateColumns: "minmax(280px, 1.45fr) minmax(260px, 0.8fr)",
-    gap: 14,
-    alignItems: "stretch",
-  },
-  aiSummaryCard: {
-    padding: 20,
-    borderRadius: 24,
-    background:
-      "linear-gradient(135deg, #eff6ff 0%, #ffffff 48%, #ecfeff 100%)",
-    border: "1px solid #bfdbfe",
-    boxShadow: "0 18px 40px rgba(37,99,235,0.08)",
-  },
-  guardrailsCard: {
-    padding: 20,
-    borderRadius: 24,
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: 950,
-    color: "#0f172a",
-  },
-  cardSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
-    fontWeight: 800,
-    color: "#64748b",
-  },
-  aiBadge: {
+  summaryIcon: {
+    width: 48,
+    height: 48,
     borderRadius: 999,
-    padding: "5px 10px",
-    background: "#dcfce7",
-    color: "#166534",
-    fontSize: 11,
-    fontWeight: 950,
-  },
-  aiMetricGrid: {
-    marginTop: 16,
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(180px, 1fr))",
-    gap: 10,
-  },
-  aiMetric: {
-    padding: 12,
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid #dbeafe",
-    display: "flex",
-    gap: 10,
-    alignItems: "center",
-    color: "#0f172a",
-    fontSize: 13,
-    fontWeight: 800,
-  },
-  metricSignal: {
-    width: 28,
-    height: 28,
-    borderRadius: 999,
-    background: "#2563eb",
-    color: "#ffffff",
+    background: "#f3f0ff",
+    color: "#2563eb",
     display: "grid",
     placeItems: "center",
-    fontSize: 15,
+    fontSize: 26,
     fontWeight: 950,
+  },
+  summaryIconGreen: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
+    background: "#dcfce7",
+    color: "#16a34a",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 26,
+    fontWeight: 950,
+  },
+  summaryIconRed: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
+    background: "#ffe4e6",
+    color: "#dc2626",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 22,
+    fontWeight: 950,
+  },
+  summaryIconPurple: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
+    background: "#f3e8ff",
+    color: "#7c3aed",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 24,
+    fontWeight: 950,
+  },
+  controlCenterCard: {
+    marginTop: 24,
+    padding: 22,
+    borderRadius: 20,
+    border: "1px solid #e2e8f0",
+    background: "#ffffff",
+    boxShadow: "0 16px 36px rgba(15,23,42,0.05)",
+    display: "grid",
+    gridTemplateColumns: "220px minmax(520px, 1fr) 300px",
+    gap: 24,
+    alignItems: "stretch",
+  },
+  legendColumn: {
+    borderRight: "1px solid #e2e8f0",
+    paddingRight: 22,
+  },
+  aiColumn: {
+    borderRight: "1px solid #e2e8f0",
+    paddingRight: 22,
+  },
+  guardrailsColumn: {
+    minWidth: 260,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 950,
+    color: "#0f172a",
+    textTransform: "uppercase",
+    letterSpacing: "0.02em",
+  },
+  sectionSubtitle: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#475569",
+    fontWeight: 750,
+  },
+  legendList: {
+    marginTop: 22,
+    display: "grid",
+    gap: 16,
+  },
+  legendItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 13,
+    fontWeight: 850,
+    color: "#0f172a",
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    flexShrink: 0,
+  },
+  aiHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 16,
+    alignItems: "flex-start",
+  },
+  liveBadge: {
+    borderRadius: 999,
+    padding: "7px 11px",
+    background: "#dcfce7",
+    color: "#16a34a",
+    fontSize: 12,
+    fontWeight: 950,
+  },
+  aiMetricsRow: {
+    marginTop: 18,
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(120px, 1fr))",
+    gap: 12,
+  },
+  aiMetricCard: {
+    padding: 16,
+    borderRadius: 16,
+    border: "1px solid #e2e8f0",
+    background: "#ffffff",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
+  aiIconUp: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    background: "#dcfce7",
+    color: "#16a34a",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 24,
+    fontWeight: 950,
+  },
+  aiIconDown: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    background: "#f3e8ff",
+    color: "#7c3aed",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 24,
+    fontWeight: 950,
+  },
+  aiIconUpWarm: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    background: "#ffedd5",
+    color: "#ea580c",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 24,
+    fontWeight: 950,
+  },
+  aiIconDownBlue: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    background: "#dbeafe",
+    color: "#2563eb",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 24,
+    fontWeight: 950,
+  },
+  aiMetricValue: {
+    fontSize: 28,
+    lineHeight: 1,
+    fontWeight: 950,
+    color: "#020617",
+  },
+  aiMetricLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#334155",
+    fontWeight: 850,
   },
   aiFooter: {
     marginTop: 14,
-    fontSize: 12,
-    color: "#1e3a8a",
-    fontWeight: 850,
-  },
-  guardrailGrid: {
-    marginTop: 14,
+    height: 40,
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
     display: "flex",
-    gap: 24,
-    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#334155",
+    fontSize: 13,
+    fontWeight: 800,
+  },
+  guardrailsBox: {
+    marginTop: 22,
+    padding: 18,
+    borderRadius: 16,
+    border: "1px solid #e2e8f0",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 14,
   },
   guardrailLabel: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#475569",
     fontWeight: 850,
   },
   guardrailValue: {
     marginTop: 4,
+    fontSize: 24,
+    lineHeight: 1,
+    color: "#2563eb",
+    fontWeight: 950,
+  },
+  guardrailsActive: {
+    marginTop: 0,
+    padding: "14px 18px",
+    borderRadius: "0 0 16px 16px",
+    border: "1px solid #e2e8f0",
+    borderTop: "none",
+    color: "#16a34a",
+    fontSize: 13,
+    fontWeight: 950,
+  },
+  calendarToolbar: {
+    marginTop: 20,
+    display: "grid",
+    gridTemplateColumns: "auto auto auto 1fr auto",
+    alignItems: "center",
+    gap: 10,
+  },
+  todayButton: {
+    height: 44,
+    padding: "0 22px",
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
+    background: "#ffffff",
+    color: "#2563eb",
+    fontSize: 14,
+    fontWeight: 950,
+    cursor: "pointer",
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
+    background: "#ffffff",
+    color: "#0f172a",
+    fontSize: 28,
+    lineHeight: 1,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  monthTitle: {
+    justifySelf: "center",
     fontSize: 22,
     fontWeight: 950,
     color: "#020617",
   },
-  guardrailHint: {
-    marginTop: 14,
-    fontSize: 12,
-    color: "#64748b",
-    fontWeight: 750,
-  },
-  calendarToolbar: {
+  viewButtons: {
     display: "flex",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 26,
+    gap: 8,
   },
-  navButton: {
-    height: 40,
-    padding: "0 14px",
-    borderRadius: 14,
+  viewButtonActive: {
+    height: 44,
+    padding: "0 18px",
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
+    background: "#f3f0ff",
+    color: "#0f172a",
+    fontSize: 14,
+    fontWeight: 950,
+  },
+  viewButton: {
+    height: 44,
+    padding: "0 18px",
+    borderRadius: 12,
     border: "1px solid #e2e8f0",
     background: "#ffffff",
-    color: "#0f172a",
-    fontSize: 13,
-    fontWeight: 900,
-    cursor: "pointer",
-    boxShadow: "0 8px 18px rgba(15,23,42,0.05)",
-  },
-  monthTitle: {
-    minWidth: 180,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: 950,
-    color: "#020617",
+    color: "#475569",
+    fontSize: 14,
+    fontWeight: 850,
   },
   calendarGrid: {
-    marginTop: 18,
+    marginTop: 12,
     display: "grid",
     gridTemplateColumns: "repeat(7, minmax(120px, 1fr))",
-    gap: 10,
+    gap: 8,
   },
   weekday: {
     fontSize: 12,
     fontWeight: 950,
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    padding: "0 8px",
+    color: "#475569",
+    textAlign: "center",
+    padding: "6px 0",
   },
   dayCard: {
-    minHeight: 138,
-    background: "#ffffff",
+    minHeight: 118,
     border: "1px solid #e2e8f0",
-    borderRadius: 22,
+    borderRadius: 14,
     padding: 12,
     display: "grid",
     alignContent: "start",
-    gap: 7,
-    boxShadow: "0 12px 28px rgba(15,23,42,0.06)",
+    gap: 6,
     cursor: "pointer",
-    transition: "border-color 160ms ease, transform 160ms ease",
   },
   dayTopRow: {
     display: "flex",
@@ -1412,8 +1492,8 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
   },
   dayNumber: {
-    fontSize: 13,
-    fontWeight: 950,
+    fontSize: 14,
+    fontWeight: 850,
     color: "#0f172a",
   },
   statusDot: {
@@ -1422,52 +1502,36 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 999,
   },
   dayRate: {
-    fontSize: 30,
+    marginTop: 2,
+    fontSize: 24,
     lineHeight: 1,
     fontWeight: 950,
-    color: "#2563eb",
     letterSpacing: "-0.04em",
   },
-  statusPill: {
-    width: "fit-content",
-    borderRadius: 999,
-    padding: "4px 9px",
-    fontSize: 11,
+  dayStatus: {
+    fontSize: 12,
     fontWeight: 950,
   },
-  availablePill: {
-    background: "#dcfce7",
-    color: "#166534",
-  },
-  bookedPill: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
-  },
-  blockedPill: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-  },
-  rateReason: {
+  reasonPill: {
     width: "fit-content",
+    marginTop: 2,
+    padding: "4px 8px",
     borderRadius: 999,
-    padding: "2px 6px",
-    background: "#f8fafc",
-    color: "#475569",
-    fontSize: 10,
-    fontWeight: 800,
-  },
-  guestText: {
     fontSize: 11,
-    fontWeight: 950,
+    fontWeight: 850,
+  },
+  dayMeta: {
+    fontSize: 11,
     color: "#0f172a",
+    fontWeight: 850,
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-  sourceText: {
-    fontSize: 11,
+  dayMetaMuted: {
+    fontSize: 10,
+    color: "#475569",
     fontWeight: 800,
-    color: "#64748b",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
@@ -1475,7 +1539,7 @@ const styles: Record<string, CSSProperties> = {
   rangeActionPanel: {
     marginTop: 20,
     padding: 18,
-    borderRadius: 22,
+    borderRadius: 18,
     border: "1px solid #bfdbfe",
     background: "#eff6ff",
     display: "flex",
@@ -1483,7 +1547,6 @@ const styles: Record<string, CSSProperties> = {
     gap: 16,
     alignItems: "center",
     flexWrap: "wrap",
-    boxShadow: "0 18px 40px rgba(37,99,235,0.08)",
   },
   rangeActionTitle: {
     fontSize: 15,
@@ -1504,7 +1567,7 @@ const styles: Record<string, CSSProperties> = {
   primaryActionButton: {
     height: 40,
     padding: "0 14px",
-    borderRadius: 13,
+    borderRadius: 12,
     border: "none",
     background: "#0f172a",
     color: "#ffffff",
@@ -1515,7 +1578,7 @@ const styles: Record<string, CSSProperties> = {
   actionButton: {
     height: 40,
     padding: "0 14px",
-    borderRadius: 13,
+    borderRadius: 12,
     border: "none",
     background: "#2563eb",
     color: "#ffffff",
@@ -1526,7 +1589,7 @@ const styles: Record<string, CSSProperties> = {
   secondaryActionButton: {
     height: 40,
     padding: "0 14px",
-    borderRadius: 13,
+    borderRadius: 12,
     border: "1px solid #bfdbfe",
     background: "#ffffff",
     color: "#1d4ed8",
@@ -1537,7 +1600,7 @@ const styles: Record<string, CSSProperties> = {
   clearButton: {
     height: 40,
     padding: "0 14px",
-    borderRadius: 13,
+    borderRadius: 12,
     border: "1px solid #e2e8f0",
     background: "#ffffff",
     color: "#64748b",
@@ -1565,7 +1628,7 @@ const styles: Record<string, CSSProperties> = {
     height: 40,
     width: 170,
     padding: "0 12px",
-    borderRadius: 13,
+    borderRadius: 12,
     border: "1px solid #bfdbfe",
     background: "#ffffff",
     color: "#0f172a",
@@ -1577,29 +1640,14 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 24,
     padding: 20,
     border: "1px solid #e5e7eb",
-    borderRadius: 22,
+    borderRadius: 18,
     background: "#ffffff",
-    boxShadow: "0 18px 40px rgba(15,23,42,0.06)",
   },
   selectedDayTitle: {
     margin: 0,
     fontSize: 20,
     fontWeight: 950,
     color: "#020617",
-  },
-  selectedDayGrid: {
-    marginTop: 16,
-    display: "flex",
-    gap: 28,
-    flexWrap: "wrap",
-  },
-  autoPilotPillSmall: {
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: "#f1f5f9",
-    color: "#0f172a",
-    fontSize: 12,
-    fontWeight: 950,
   },
   detailLine: {
     marginTop: 10,
@@ -1613,64 +1661,4 @@ const styles: Record<string, CSSProperties> = {
     color: "#2563eb",
     fontWeight: 900,
   },
-legendCard: {
-  marginTop: 16,
-  padding: 16,
-  borderRadius: 18,
-  background: "#ffffff",
-  border: "1px solid #e2e8f0",
-  boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
-},
-
-legendTitle: {
-  fontSize: 13,
-  fontWeight: 950,
-  color: "#0f172a",
-  marginBottom: 12,
-},
-
-legendGrid: {
-  display: "flex",
-  gap: 18,
-  flexWrap: "wrap",
-},
-
-legendItem: {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  fontSize: 12,
-  fontWeight: 800,
-  color: "#475569",
-},
-
-legendDot: {
-  width: 10,
-  height: 10,
-  borderRadius: 999,
-  flexShrink: 0,
-},
-legendCombinedRow: {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 24,
-  flexWrap: "wrap",
-  alignItems: "flex-start",
-},
-
-legendSection: {
-  flex: 1,
-  minWidth: 520,
-},
-
-guardrailsInline: {
-  minWidth: 260,
-},
-
-guardrailsInlineGrid: {
-  display: "flex",
-  gap: 22,
-  flexWrap: "wrap",
-},
-
 };
