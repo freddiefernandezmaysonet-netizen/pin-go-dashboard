@@ -276,7 +276,7 @@ function formatRateReason(reason: string) {
 }
 
 function getRateReasonForDay(day: Date, rate: any) {
-  if (rate?.reason) return formatRateReason(rate.reason);
+  const reason = rate?.reason;
 
   if (
     dynamicPricingEnabled &&
@@ -286,8 +286,25 @@ function getRateReasonForDay(day: Date, rate: any) {
     return "Weekend Rule";
   }
 
+  if (reason === "LEAD_TIME_RULE") {
+    return "Lead Time Rule";
+  }
+
+  if (reason === "OCCUPANCY_LOW_RULE") {
+    return "Occupancy Low Rule";
+  }
+
+  if (reason === "OCCUPANCY_HIGH_RULE") {
+    return "Occupancy High Rule";
+  }
+
+  if (reason === "CUSTOM_RATE") {
+    return "Custom Rate";
+  }
+
   return "Base Rate";
 }
+
  async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
