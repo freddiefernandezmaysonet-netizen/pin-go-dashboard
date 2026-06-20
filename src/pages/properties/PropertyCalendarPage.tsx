@@ -263,8 +263,20 @@ function getDisplayRateForDay(day: Date, rate: any) {
   return Math.round(applyPricingBounds(weekendAdjustedRate));
 }
 
+function formatRateReason(reason: string) {
+  if (reason === "BASE_RATE") return "Base Rate";
+  if (reason === "CUSTOM_RATE") return "Custom Rate";
+  if (reason === "Calendar override") return "Calendar Override";
+  if (reason === "WEEKEND_RULE") return "Weekend Rule";
+  if (reason === "LEAD_TIME_RULE") return "Lead Time Rule";
+  if (reason === "OCCUPANCY_LOW_RULE") return "Occupancy Low Rule";
+  if (reason === "OCCUPANCY_HIGH_RULE") return "Occupancy High Rule";
+
+  return reason;
+}
+
 function getRateReasonForDay(day: Date, rate: any) {
-  if (rate?.reason) return rate.reason;
+  if (rate?.reason) return formatRateReason(rate.reason);
 
   if (
     dynamicPricingEnabled &&
@@ -276,7 +288,6 @@ function getRateReasonForDay(day: Date, rate: any) {
 
   return "Base Rate";
 }
-
  async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
