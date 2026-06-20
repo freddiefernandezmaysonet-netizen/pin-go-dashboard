@@ -90,6 +90,12 @@ type PropertyItem = {
   leadTimeLastMinuteDays?: number | null;
   leadTimeLastMinutePercent?: number | null;
 
+  occupancyPricingEnabled?: boolean | null;
+  occupancyLookaheadDays?: number | null;
+  occupancyLowThresholdPercent?: number | null;
+  occupancyLowAdjustmentPercent?: number | null;
+  occupancyHighThresholdPercent?: number | null;
+  occupancyHighAdjustmentPercent?: number | null;
   cleaningFee?: number | null;
   maxGuests?: number | null;
   minimumNights?: number | null;
@@ -155,6 +161,12 @@ export function PropertyEditPage() {
     leadTimeLastMinuteDays: "3",
     leadTimeLastMinutePercent: "",
 
+    occupancyPricingEnabled: false,
+    occupancyLookaheadDays: "30",
+    occupancyLowThresholdPercent: "",
+    occupancyLowAdjustmentPercent: "",
+    occupancyHighThresholdPercent: "",
+    occupancyHighAdjustmentPercent: "",
     cleaningFee: "",
     maxGuests: "",
     minimumNights: "1",
@@ -243,6 +255,39 @@ leadTimeLastMinutePercent:
   p.leadTimeLastMinutePercent !== null &&
   p.leadTimeLastMinutePercent !== undefined
     ? String(p.leadTimeLastMinutePercent)
+    : "",
+
+occupancyPricingEnabled:
+  Boolean(p.occupancyPricingEnabled),
+
+occupancyLookaheadDays:
+  p.occupancyLookaheadDays !== null &&
+  p.occupancyLookaheadDays !== undefined
+    ? String(p.occupancyLookaheadDays)
+    : "30",
+
+occupancyLowThresholdPercent:
+  p.occupancyLowThresholdPercent !== null &&
+  p.occupancyLowThresholdPercent !== undefined
+    ? String(p.occupancyLowThresholdPercent)
+    : "",
+
+occupancyLowAdjustmentPercent:
+  p.occupancyLowAdjustmentPercent !== null &&
+  p.occupancyLowAdjustmentPercent !== undefined
+    ? String(p.occupancyLowAdjustmentPercent)
+    : "",
+
+occupancyHighThresholdPercent:
+  p.occupancyHighThresholdPercent !== null &&
+  p.occupancyHighThresholdPercent !== undefined
+    ? String(p.occupancyHighThresholdPercent)
+    : "",
+
+occupancyHighAdjustmentPercent:
+  p.occupancyHighAdjustmentPercent !== null &&
+  p.occupancyHighAdjustmentPercent !== undefined
+    ? String(p.occupancyHighAdjustmentPercent)
     : "",
 
 cleaningFee:
@@ -352,14 +397,41 @@ leadTimeLastMinuteDays:
   form.leadTimeLastMinuteDays.trim() === ""
     ? 3
     : Number(form.leadTimeLastMinuteDays),
-
 leadTimeLastMinutePercent:
   form.leadTimeLastMinutePercent.trim() === ""
     ? null
     : Number(form.leadTimeLastMinutePercent),
 
+occupancyPricingEnabled:
+  form.occupancyPricingEnabled,
+
+occupancyLookaheadDays:
+  form.occupancyLookaheadDays.trim() === ""
+    ? 30
+    : Number(form.occupancyLookaheadDays),
+
+occupancyLowThresholdPercent:
+  form.occupancyLowThresholdPercent.trim() === ""
+    ? null
+    : Number(form.occupancyLowThresholdPercent),
+
+occupancyLowAdjustmentPercent:
+  form.occupancyLowAdjustmentPercent.trim() === ""
+    ? null
+    : Number(form.occupancyLowAdjustmentPercent),
+
+occupancyHighThresholdPercent:
+  form.occupancyHighThresholdPercent.trim() === ""
+    ? null
+    : Number(form.occupancyHighThresholdPercent),
+
+occupancyHighAdjustmentPercent:
+  form.occupancyHighAdjustmentPercent.trim() === ""
+    ? null
+    : Number(form.occupancyHighAdjustmentPercent),
+
 cleaningFee:
-            form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
+       form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
           maxGuests: form.maxGuests.trim() === "" ? null : Number(form.maxGuests),
           minimumNights: Number(form.minimumNights || 1),
           maximumNights:
@@ -1489,6 +1561,140 @@ async function handleUploadPhotos(
       </div>
     </div>
   </div>
+<div
+  style={{
+    borderTop: "1px solid #dbeafe",
+    paddingTop: 16,
+    display: "grid",
+    gap: 14,
+  }}
+>
+  <div>
+    <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+      Occupancy Rule
+    </div>
+    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+      Adjust prices based on upcoming occupancy.
+    </div>
+  </div>
+
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      fontSize: 14,
+      fontWeight: 800,
+      color: "#111827",
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.occupancyPricingEnabled}
+      onChange={(e) =>
+        setForm((s) => ({
+          ...s,
+          occupancyPricingEnabled: e.target.checked,
+        }))
+      }
+      disabled={!form.dynamicPricingEnabled}
+    />
+    Enable Occupancy Rule
+  </label>
+
+  <div style={responsiveGridStyle}>
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Lookahead Window</div>
+      <input
+        type="number"
+        min="1"
+        value={form.occupancyLookaheadDays}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            occupancyLookaheadDays: e.target.value,
+          }))
+        }
+        placeholder="30"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.occupancyPricingEnabled}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Low Occupancy Threshold (%)</div>
+      <input
+        type="number"
+        step="0.01"
+        value={form.occupancyLowThresholdPercent}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            occupancyLowThresholdPercent: e.target.value,
+          }))
+        }
+        placeholder="35"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.occupancyPricingEnabled}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Low Occupancy Adjustment (%)</div>
+      <input
+        type="number"
+        step="0.01"
+        value={form.occupancyLowAdjustmentPercent}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            occupancyLowAdjustmentPercent: e.target.value,
+          }))
+        }
+        placeholder="-10"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.occupancyPricingEnabled}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>High Occupancy Threshold (%)</div>
+      <input
+        type="number"
+        step="0.01"
+        value={form.occupancyHighThresholdPercent}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            occupancyHighThresholdPercent: e.target.value,
+          }))
+        }
+        placeholder="85"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.occupancyPricingEnabled}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>High Occupancy Adjustment (%)</div>
+      <input
+        type="number"
+        step="0.01"
+        value={form.occupancyHighAdjustmentPercent}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            occupancyHighAdjustmentPercent: e.target.value,
+          }))
+        }
+        placeholder="10"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled || !form.occupancyPricingEnabled}
+      />
+    </div>
+  </div>
+</div>
+
 </div>
           <div
             style={{
