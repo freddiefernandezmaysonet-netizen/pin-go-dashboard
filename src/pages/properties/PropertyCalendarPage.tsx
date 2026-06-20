@@ -776,12 +776,8 @@ export function PropertyCalendarPage() {
           <button type="button" style={styles.viewButtonActive}>
             Month
           </button>
-          <button type="button" style={styles.viewButton}>
-            Week
-          </button>
-        </div>
-      </div>
-
+               </div>
+              </div>
       <div style={styles.calendarGrid}>
         {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((weekday) => (
           <div key={weekday} style={styles.weekday}>
@@ -1503,10 +1499,10 @@ const styles: Record<string, CSSProperties> = {
   },
   dayRate: {
     marginTop: 2,
-    fontSize: 24,
+    fontSize: 35,
     lineHeight: 1,
     fontWeight: 950,
-    letterSpacing: "-0.04em",
+    letterSpacing: "-0.05em",
   },
   dayStatus: {
     fontSize: 12,
