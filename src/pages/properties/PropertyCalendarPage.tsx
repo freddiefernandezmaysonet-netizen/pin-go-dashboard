@@ -301,32 +301,44 @@ export function PropertyCalendarPage() {
   baseNightlyRate,
 ]);
 
-  const occupancySummary = useMemo(() => {
-    const totalDays = visibleMonthDays.length || 1;
+const occupancySummary = useMemo(() => {
+  const lookaheadDays = Number(property?.occupancyLookaheadDays ?? 30);
+  const windowDays =
+    Number.isFinite(lookaheadDays) && lookaheadDays > 0 ? lookaheadDays : 30;
 
-    let bookedDays = 0;
-    let blockedDays = 0;
+  const occupancyStart = today;
+  const occupancyEnd = addDays(occupancyStart, windowDays);
 
-    for (const day of visibleMonthDays) {
-      if (getReservationForDay(day)) {
-        bookedDays += 1;
-      } else if (getBlockedDateForDay(day)) {
-        blockedDays += 1;
-      }
+  const occupancyDays = eachDayOfInterval({
+    start: occupancyStart,
+    end: addDays(occupancyEnd, -1),
+  });
+
+  const totalDays = occupancyDays.length || 1;
+
+  let bookedDays = 0;
+  let blockedDays = 0;
+
+  for (const day of occupancyDays) {
+    if (getReservationForDay(day)) {
+      bookedDays += 1;
+    } else if (getBlockedDateForDay(day)) {
+      blockedDays += 1;
     }
+  }
 
-    const availableDays = totalDays - bookedDays - blockedDays;
-    const occupancyPercent = Math.round((bookedDays / totalDays) * 100);
+  const availableDays = totalDays - bookedDays - blockedDays;
+  const occupancyPercent = Math.round((bookedDays / totalDays) * 100);
 
-    return {
-      totalDays,
-      bookedDays,
-      blockedDays,
-      availableDays,
-      occupancyPercent,
-    };
-  }, [visibleMonthDays, reservations, blockedDates]);
-
+  return {
+    totalDays,
+    bookedDays,
+    blockedDays,
+    availableDays,
+    occupancyPercent,
+    windowDays,
+  };
+}, [property?.occupancyLookaheadDays, reservations, blockedDates, today]);
   async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
