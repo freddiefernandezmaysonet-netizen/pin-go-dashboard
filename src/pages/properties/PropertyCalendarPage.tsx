@@ -228,7 +228,17 @@ export function PropertyCalendarPage() {
     return Math.round(finalRate);
   }
 
- function getRateReasonForDay(day: Date, rate: any) {
+const occupancyLowThresholdPercent =
+  property?.occupancyLowThresholdPercent != null
+    ? Number(property.occupancyLowThresholdPercent)
+    : null;
+
+const occupancyHighThresholdPercent =
+  property?.occupancyHighThresholdPercent != null
+    ? Number(property.occupancyHighThresholdPercent)
+    : null;
+
+function getRateReasonForDay(day: Date, rate: any) {
   const reason = rate?.reason;
 
   if (reason === "CUSTOM_RATE") return "Manual Override";
@@ -236,11 +246,17 @@ export function PropertyCalendarPage() {
 
   const reasons: string[] = [];
 
-  if (reason === "OCCUPANCY_LOW_RULE") {
+  if (
+    occupancyLowThresholdPercent !== null &&
+    occupancySummary.occupancyPercent <= occupancyLowThresholdPercent
+  ) {
     reasons.push("Low Demand");
   }
 
-  if (reason === "OCCUPANCY_HIGH_RULE") {
+  if (
+    occupancyHighThresholdPercent !== null &&
+    occupancySummary.occupancyPercent >= occupancyHighThresholdPercent
+  ) {
     reasons.push("High Demand");
   }
 
@@ -248,12 +264,11 @@ export function PropertyCalendarPage() {
     reasons.push("Last Minute");
   }
 
-  const hasWeekendBoost =
+  if (
     dynamicPricingEnabled &&
     weekendMarkupPercent > 0 &&
-    isWeekendNight(day);
-
-  if (reason === "WEEKEND_RULE" || hasWeekendBoost) {
+    isWeekendNight(day)
+  ) {
     reasons.push("Weekend Boost");
   }
 
@@ -263,6 +278,7 @@ export function PropertyCalendarPage() {
 
   return "Base Rate";
 }
+
   function getStatusForDay(day: Date) {
     const reservation = getReservationForDay(day);
     const blockedDate = getBlockedDateForDay(day);
