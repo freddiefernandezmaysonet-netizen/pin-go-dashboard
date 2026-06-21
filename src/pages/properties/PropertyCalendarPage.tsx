@@ -228,27 +228,41 @@ export function PropertyCalendarPage() {
     return Math.round(finalRate);
   }
 
-  function getRateReasonForDay(day: Date, rate: any) {
-    const reason = rate?.reason;
+ function getRateReasonForDay(day: Date, rate: any) {
+  const reason = rate?.reason;
 
-    if (reason === "LEAD_TIME_RULE") return "Last Minute";
-    if (reason === "OCCUPANCY_LOW_RULE") return "Low Demand";
-    if (reason === "OCCUPANCY_HIGH_RULE") return "High Demand";
-    if (reason === "CUSTOM_RATE") return "Manual Override";
-    if (reason === "Calendar override") return "Manual Override";
-    if (reason === "WEEKEND_RULE") return "Weekend Boost";
+  if (reason === "CUSTOM_RATE") return "Manual Override";
+  if (reason === "Calendar override") return "Manual Override";
 
-    if (
-      dynamicPricingEnabled &&
-      weekendMarkupPercent > 0 &&
-      isWeekendNight(day)
-    ) {
-      return "Weekend Boost";
-    }
+  const reasons: string[] = [];
 
-    return "Base Rate";
+  if (reason === "OCCUPANCY_LOW_RULE") {
+    reasons.push("Low Demand");
   }
 
+  if (reason === "OCCUPANCY_HIGH_RULE") {
+    reasons.push("High Demand");
+  }
+
+  if (reason === "LEAD_TIME_RULE") {
+    reasons.push("Last Minute");
+  }
+
+  const hasWeekendBoost =
+    dynamicPricingEnabled &&
+    weekendMarkupPercent > 0 &&
+    isWeekendNight(day);
+
+  if (reason === "WEEKEND_RULE" || hasWeekendBoost) {
+    reasons.push("Weekend Boost");
+  }
+
+  if (reasons.length > 0) {
+    return reasons.join(" + ");
+  }
+
+  return "Base Rate";
+}
   function getStatusForDay(day: Date) {
     const reservation = getReservationForDay(day);
     const blockedDate = getBlockedDateForDay(day);
