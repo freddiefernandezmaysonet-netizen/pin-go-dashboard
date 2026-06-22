@@ -320,24 +320,12 @@ function getRateReasonForDay(day: Date, rate: any) {
 ]);
 
 const occupancySummary = useMemo(() => {
-  const lookaheadDays = Number(property?.occupancyLookaheadDays ?? 30);
-  const windowDays =
-    Number.isFinite(lookaheadDays) && lookaheadDays > 0 ? lookaheadDays : 30;
-
-  const occupancyStart = today;
-  const occupancyEnd = addDays(occupancyStart, windowDays);
-
-  const occupancyDays = eachDayOfInterval({
-    start: occupancyStart,
-    end: addDays(occupancyEnd, -1),
-  });
-
-  const totalDays = occupancyDays.length || 1;
+  const totalDays = visibleMonthDays.length || 1;
 
   let bookedDays = 0;
   let blockedDays = 0;
 
-  for (const day of occupancyDays) {
+  for (const day of visibleMonthDays) {
     if (getReservationForDay(day)) {
       bookedDays += 1;
     } else if (getBlockedDateForDay(day)) {
@@ -345,6 +333,17 @@ const occupancySummary = useMemo(() => {
     }
   }
 
+  const availableDays = totalDays - bookedDays - blockedDays;
+  const occupancyPercent = Math.round((bookedDays / totalDays) * 100);
+
+  return {
+    totalDays,
+    bookedDays,
+    blockedDays,
+    availableDays,
+    occupancyPercent,
+  };
+}, [visibleMonthDays, reservations, blockedDates]);
   const availableDays = totalDays - bookedDays - blockedDays;
   const occupancyPercent = Math.round((bookedDays / totalDays) * 100);
 
@@ -627,7 +626,7 @@ const occupancySummary = useMemo(() => {
               {occupancySummary.occupancyPercent}%
             </div>
             <div style={styles.summaryHint}>
-  Rolling {occupancySummary.windowDays}-day window ·{" "}
+ {format(month, "MMMM yyyy")} ·{" "}
 {occupancySummary.bookedDays} booked ·{" "}
 {occupancySummary.blockedDays} blocked
 </div>
