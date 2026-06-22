@@ -1518,6 +1518,28 @@ const customSeasons = seasons.filter(
   Enable Seasonal Pricing
 </label>
 
+
+  <div style={responsiveGridStyle}>
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Weekend Markup (%)</div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={form.weekendMarkupPercent}
+        onChange={(e) =>
+          setForm((s) => ({
+            ...s,
+            weekendMarkupPercent: e.target.value,
+          }))
+        }
+        placeholder="15"
+        style={inputStyle}
+        disabled={!form.dynamicPricingEnabled}
+      />
+    </div>
+  </div>
+
 {form.seasonalPricingEnabled ? (
   <div
     style={{
@@ -1625,26 +1647,6 @@ const customSeasons = seasons.filter(
   </div>
 ) : null}
 
-  <div style={responsiveGridStyle}>
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Weekend Markup (%)</div>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={form.weekendMarkupPercent}
-        onChange={(e) =>
-          setForm((s) => ({
-            ...s,
-            weekendMarkupPercent: e.target.value,
-          }))
-        }
-        placeholder="15"
-        style={inputStyle}
-        disabled={!form.dynamicPricingEnabled}
-      />
-    </div>
-  </div>
 
   <div
     style={{
