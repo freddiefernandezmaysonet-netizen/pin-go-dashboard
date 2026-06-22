@@ -84,6 +84,7 @@ type PropertyItem = {
   minimumNightlyRate?: number | null;
   maximumNightlyRate?: number | null;
   dynamicPricingEnabled?: boolean | null;
+  seasonalPricingEnabled?: boolean | null;
   weekendMarkupPercent?: number | null;
 
   leadTimePricingEnabled?: boolean | null;
@@ -155,6 +156,7 @@ export function PropertyEditPage() {
     minimumNightlyRate: "",
     maximumNightlyRate: "",
     dynamicPricingEnabled: false,
+    seasonalPricingEnabled: false,
     weekendMarkupPercent: "",
 
     leadTimePricingEnabled: false,
@@ -235,7 +237,7 @@ maximumNightlyRate:
     ? String(p.maximumNightlyRate)
     : "",
 dynamicPricingEnabled: Boolean(p.dynamicPricingEnabled),
-
+seasonalPricingEnabled: Boolean(p.seasonalPricingEnabled),
 weekendMarkupPercent:
   p.weekendMarkupPercent !== null &&
   p.weekendMarkupPercent !== undefined
@@ -384,7 +386,7 @@ maximumNightlyRate:
     ? null
     : Number(form.maximumNightlyRate),
 dynamicPricingEnabled: form.dynamicPricingEnabled,
-
+seasonalPricingEnabled: form.seasonalPricingEnabled,
 weekendMarkupPercent:
   form.weekendMarkupPercent.trim() === ""
     ? null
@@ -1460,6 +1462,30 @@ async function handleUploadPhotos(
     />
     Enable Dynamic Pricing
   </label>
+
+  <label
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 14,
+    fontWeight: 800,
+    color: "#111827",
+  }}
+>
+  <input
+    type="checkbox"
+    checked={form.seasonalPricingEnabled}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        seasonalPricingEnabled: e.target.checked,
+      }))
+    }
+    disabled={!form.dynamicPricingEnabled}
+  />
+  Enable Seasonal Pricing
+</label>
 
   <div style={responsiveGridStyle}>
     <div style={{ display: "grid", gap: 6 }}>
