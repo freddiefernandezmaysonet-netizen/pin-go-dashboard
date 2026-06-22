@@ -47,7 +47,8 @@ export function PropertyCalendarPage() {
   const [savingRate, setSavingRate] = useState(false);
   const [savingBlock, setSavingBlock] = useState(false);
   const [savingUnblock, setSavingUnblock] = useState(false);
-
+  const [blockReason, setBlockReason] = useState("");
+  
   const today = startOfDay(new Date());
 
   const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
@@ -454,7 +455,7 @@ const occupancySummary = useMemo(() => {
           body: JSON.stringify({
             startDate,
             endDate,
-            reason: "Calendar block",
+            reason: blockReason.trim() || "Calendar block",
           }),
         }
       );
@@ -546,7 +547,8 @@ const occupancySummary = useMemo(() => {
       setSelectedRange({ start: null, end: null });
       setShowSetRateForm(false);
       setRateInput("");
-    } catch (error: any) {
+      setBlockReason("");
+   } catch (error: any) {
       alert(String(error?.message || error));
     } finally {
       setSavingUnblock(false);
@@ -950,6 +952,21 @@ const occupancySummary = useMemo(() => {
             <div style={styles.rangeActionTitle}>Range selected</div>
             <div style={styles.rangeActionSubtitle}>{selectedRangeLabel}</div>
           </div>
+
+          <div style={styles.inlineActionForm}>
+  <div style={styles.inlineActionLabel}>Block reason</div>
+
+  <input
+    type="text"
+    value={blockReason}
+    onChange={(e) => setBlockReason(e.target.value)}
+    placeholder="Owner stay, maintenance, personal use..."
+    style={{
+      ...styles.inlineActionInput,
+      width: 280,
+    }}
+  />
+</div>
 
           <div style={styles.rangeActionButtons}>
             <button
