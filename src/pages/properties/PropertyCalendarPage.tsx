@@ -228,40 +228,31 @@ export function PropertyCalendarPage() {
     return Math.round(finalRate);
   }
 
-const occupancyLowThresholdPercent =
-  property?.occupancyLowThresholdPercent != null
-    ? Number(property.occupancyLowThresholdPercent)
-    : null;
+function formatAppliedRule(rule: string) {
+  if (rule === "LEAD_TIME_RULE") return "Last Minute";
+  if (rule === "OCCUPANCY_LOW_RULE") return "Low Demand";
+  if (rule === "OCCUPANCY_HIGH_RULE") return "High Demand";
+  if (rule === "CUSTOM_RATE") return "Manual Override";
+  if (rule === "Calendar override") return "Manual Override";
+  if (rule === "WEEKEND_RULE") return "Weekend Boost";
+  if (rule === "BASE_RATE") return "Base Rate";
 
-const occupancyHighThresholdPercent =
-  property?.occupancyHighThresholdPercent != null
-    ? Number(property.occupancyHighThresholdPercent)
-    : null;
+  return rule;
+}
 
 function getRateReasonForDay(day: Date, rate: any) {
+  const appliedRules = Array.isArray(rate?.appliedRules)
+    ? rate.appliedRules
+    : [];
+
+  if (appliedRules.length > 0) {
+    return appliedRules.map(formatAppliedRule).join(" + ");
+  }
+
   const reason = rate?.reason;
 
-  if (reason === "CUSTOM_RATE") return "Manual Override";
-  if (reason === "Calendar override") return "Manual Override";
-
-  const reasons: string[] = [];
-
-  if (
-    occupancyLowThresholdPercent !== null &&
-    occupancySummary.occupancyPercent <= occupancyLowThresholdPercent
-  ) {
-    reasons.push("Low Demand");
-  }
-
-  if (
-    occupancyHighThresholdPercent !== null &&
-    occupancySummary.occupancyPercent >= occupancyHighThresholdPercent
-  ) {
-    reasons.push("High Demand");
-  }
-
-  if (reason === "LEAD_TIME_RULE") {
-    reasons.push("Last Minute");
+  if (reason) {
+    return formatAppliedRule(reason);
   }
 
   if (
@@ -269,17 +260,13 @@ function getRateReasonForDay(day: Date, rate: any) {
     weekendMarkupPercent > 0 &&
     isWeekendNight(day)
   ) {
-    reasons.push("Weekend Boost");
-  }
-
-  if (reasons.length > 0) {
-    return reasons.join(" + ");
+    return "Weekend Boost";
   }
 
   return "Base Rate";
 }
-
-  function getStatusForDay(day: Date) {
+  
+ function getStatusForDay(day: Date) {
     const reservation = getReservationForDay(day);
     const blockedDate = getBlockedDateForDay(day);
 
