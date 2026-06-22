@@ -230,6 +230,7 @@ export function PropertyCalendarPage() {
   }
 
 function formatAppliedRule(rule: string) {
+  if (rule === "SEASONAL_RULE") return "Seasonal";
   if (rule === "LEAD_TIME_RULE") return "Last Minute";
   if (rule === "OCCUPANCY_LOW_RULE") return "Low Demand";
   if (rule === "OCCUPANCY_HIGH_RULE") return "High Demand";
