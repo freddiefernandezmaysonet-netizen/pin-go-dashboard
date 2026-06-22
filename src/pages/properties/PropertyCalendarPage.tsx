@@ -347,16 +347,7 @@ const occupancySummary = useMemo(() => {
   const availableDays = totalDays - bookedDays - blockedDays;
   const occupancyPercent = Math.round((bookedDays / totalDays) * 100);
 
-  return {
-    totalDays,
-    bookedDays,
-    blockedDays,
-    availableDays,
-    occupancyPercent,
-    windowDays,
-  };
-}, [property?.occupancyLookaheadDays, reservations, blockedDates, today]);
-  async function handleApplyRate() {
+   async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
     if (startOfDay(selectedRange.start) < today) {
