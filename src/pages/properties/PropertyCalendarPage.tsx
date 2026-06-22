@@ -626,8 +626,8 @@ const occupancySummary = useMemo(() => {
             </div>
             <div style={styles.summaryHint}>
   Rolling {occupancySummary.windowDays}-day window ·{" "}
-  {occupancySummary.bookedDays} booked ·{" "}
-  {occupancySummary.availableDays} available
+{occupancySummary.bookedDays} booked ·{" "}
+{occupancySummary.blockedDays} blocked
 </div>
           </div>
           <div style={styles.summaryIcon}>◔</div>
