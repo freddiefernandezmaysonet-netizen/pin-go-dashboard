@@ -281,45 +281,52 @@ function getRateReasonForDay(day: Date, rate: any) {
     return calendarDays.filter((day) => isSameMonth(day, month));
   }, [calendarDays, month]);
 
-  const revenueSummary = useMemo(() => {
-    let weekendBoosts = 0;
-    let lastMinuteDiscounts = 0;
-    let highDemandAdjustments = 0;
-    let lowDemandAdjustments = 0;
-    let manualOverrides = 0;
+const revenueSummary = useMemo(() => {
+  let seasonalAdjustments = 0;
+  let weekendBoosts = 0;
+  let lastMinuteDiscounts = 0;
+  let highDemandAdjustments = 0;
+  let lowDemandAdjustments = 0;
+  let manualOverrides = 0;
 
-    for (const day of visibleMonthDays) {
-      const rate = rateByDate.get(getDateKey(day));
-      const reason = getRateReasonForDay(day, rate);
+  for (const day of visibleMonthDays) {
+    const rate = rateByDate.get(getDateKey(day));
+    const appliedRules = Array.isArray(rate?.appliedRules)
+      ? rate.appliedRules
+      : rate?.reason
+      ? [rate.reason]
+      : [];
 
-      if (reason === "Weekend Boost") weekendBoosts += 1;
-      if (reason === "Last Minute") lastMinuteDiscounts += 1;
-      if (reason === "High Demand") highDemandAdjustments += 1;
-      if (reason === "Low Demand") lowDemandAdjustments += 1;
-      if (reason === "Manual Override") manualOverrides += 1;
+    if (appliedRules.includes("SEASONAL_RULE")) seasonalAdjustments += 1;
+    if (appliedRules.includes("WEEKEND_RULE")) weekendBoosts += 1;
+    if (appliedRules.includes("LEAD_TIME_RULE")) lastMinuteDiscounts += 1;
+    if (appliedRules.includes("OCCUPANCY_HIGH_RULE")) highDemandAdjustments += 1;
+    if (appliedRules.includes("OCCUPANCY_LOW_RULE")) lowDemandAdjustments += 1;
+
+    if (
+      appliedRules.includes("CUSTOM_RATE") ||
+      appliedRules.includes("Calendar override")
+    ) {
+      manualOverrides += 1;
     }
+  }
 
-    return {
-      weekendBoosts,
-      lastMinuteDiscounts,
-      highDemandAdjustments,
+  return {
+    seasonalAdjustments,
+    weekendBoosts,
+    lastMinuteDiscounts,
+    highDemandAdjustments,
+    lowDemandAdjustments,
+    manualOverrides,
+    totalOptimizations:
+      seasonalAdjustments +
+      weekendBoosts +
+      lastMinuteDiscounts +
+      highDemandAdjustments +
       lowDemandAdjustments,
-      manualOverrides,
-      totalOptimizations:
-        weekendBoosts +
-        lastMinuteDiscounts +
-        highDemandAdjustments +
-        lowDemandAdjustments,
-    };
+  };
+}, [visibleMonthDays, rateByDate]);
   
- }, [
-  visibleMonthDays,
-  rateByDate,
-  dynamicPricingEnabled,
-  weekendMarkupPercent,
-  baseNightlyRate,
-]);
-
 const occupancySummary = useMemo(() => {
   const totalDays = visibleMonthDays.length || 1;
 
@@ -703,11 +710,21 @@ const occupancySummary = useMemo(() => {
               <div style={styles.aiIconUp}>↑</div>
               <div>
                 <div style={styles.aiMetricValue}>
-                  {revenueSummary.weekendBoosts}
+                  {revenueSummary.seasonalAdjustments}
                 </div>
-                <div style={styles.aiMetricLabel}>Weekend Boosts</div>
+                <div style={styles.aiMetricLabel}>Seasonal</div>
               </div>
             </div>
+
+           <div style={styles.aiMetricCard}>
+  <div style={styles.aiIconUp}>↑</div>
+  <div>
+    <div style={styles.aiMetricValue}>
+      {revenueSummary.weekendBoosts}
+    </div>
+    <div style={styles.aiMetricLabel}>Weekend Boosts</div>
+  </div>
+</div>
 
             <div style={styles.aiMetricCard}>
               <div style={styles.aiIconDown}>↓</div>
@@ -1331,7 +1348,7 @@ const styles: Record<string, CSSProperties> = {
   aiMetricsRow: {
     marginTop: 18,
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(120px, 1fr))",
+    gridTemplateColumns: "repeat(5, minmax(120px, 1fr))",
     gap: 12,
   },
   aiMetricCard: {
