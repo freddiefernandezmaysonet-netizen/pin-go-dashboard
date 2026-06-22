@@ -52,6 +52,18 @@ type PropertyBlockedDateItem = {
   reason?: string | null;
 };
 
+type PropertySeasonItem = {
+  id: string;
+  name: string;
+  startMonth: number;
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+  adjustmentPercent: number;
+  isActive: boolean;
+  source: string;
+};
+
 type PropertyItem = {
   id: string;
   name: string;
@@ -132,6 +144,7 @@ export function PropertyEditPage() {
   });
 
   const [taxes, setTaxes] = useState<PropertyTaxItem[]>([]);
+  const [seasons, setSeasons] = useState<PropertySeasonItem[]>([]);
   const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
   const [editingTax, setEditingTax] = useState<PropertyTaxItem | null>(null);
 
@@ -206,6 +219,17 @@ export function PropertyEditPage() {
         setOrganizationSlug(p.organization?.slug ?? "");
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
         setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
+
+        fetch(`${API_BASE}/api/dashboard/properties/${id}/seasons`, {
+  credentials: "include",
+})
+  .then((r) => r.json())
+  .then((seasonData) => {
+    setSeasons(Array.isArray(seasonData.items) ? seasonData.items : []);
+  })
+  .catch(() => {
+    setSeasons([]);
+  });
 
         setForm({
           name: p.name ?? "",
@@ -804,6 +828,13 @@ async function handleUploadPhotos(
     organizationSlug && form.slug
       ? `${publicBaseUrl}/book/${organizationSlug}/${form.slug}`
       : "";
+const recommendedSeasons = seasons.filter(
+  (season) => season.source === "PIN_GO_DEFAULT" && season.isActive
+);
+
+const customSeasons = seasons.filter(
+  (season) => season.source === "CUSTOM" && season.isActive
+);
 
   const distributionStatus =
     form.distributionStatus || (form.distributionEnabled ? "ACTIVE" : "DISABLED");
@@ -1486,6 +1517,113 @@ async function handleUploadPhotos(
   />
   Enable Seasonal Pricing
 </label>
+
+{form.seasonalPricingEnabled ? (
+  <div
+    style={{
+      borderTop: "1px solid #dbeafe",
+      paddingTop: 16,
+      display: "grid",
+      gap: 14,
+    }}
+  >
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+        Pin&Go Recommended Seasons
+      </div>
+      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+        Market-based seasons automatically applied by Pin&Go.
+      </div>
+    </div>
+
+    {recommendedSeasons.length === 0 ? (
+      <div style={{ fontSize: 13, color: "#6b7280" }}>
+        No recommended seasons applied yet.
+      </div>
+    ) : (
+      <div style={{ display: "grid", gap: 8 }}>
+        {recommendedSeasons.map((season) => (
+          <div
+            key={season.id}
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid #dbeafe",
+              background: "#f8fafc",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
+                {season.name}
+              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                {season.startMonth}/{season.startDay} → {season.endMonth}/
+                {season.endDay}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 14, fontWeight: 900, color: "#2563eb" }}>
+              {season.adjustmentPercent > 0 ? "+" : ""}
+              {season.adjustmentPercent}%
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+        Custom Seasons
+      </div>
+      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+        Property-specific seasons created by the host.
+      </div>
+    </div>
+
+    {customSeasons.length === 0 ? (
+      <div style={{ fontSize: 13, color: "#6b7280" }}>
+        No custom seasons yet.
+      </div>
+    ) : (
+      <div style={{ display: "grid", gap: 8 }}>
+        {customSeasons.map((season) => (
+          <div
+            key={season.id}
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid #e5e7eb",
+              background: "#ffffff",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
+                {season.name}
+              </div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                {season.startMonth}/{season.startDay} → {season.endMonth}/
+                {season.endDay}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 14, fontWeight: 900, color: "#7c3aed" }}>
+              {season.adjustmentPercent > 0 ? "+" : ""}
+              {season.adjustmentPercent}%
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+) : null}
 
   <div style={responsiveGridStyle}>
     <div style={{ display: "grid", gap: 6 }}>
