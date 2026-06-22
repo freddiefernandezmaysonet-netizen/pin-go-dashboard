@@ -344,9 +344,7 @@ const occupancySummary = useMemo(() => {
     occupancyPercent,
   };
 }, [visibleMonthDays, reservations, blockedDates]);
-  const availableDays = totalDays - bookedDays - blockedDays;
-  const occupancyPercent = Math.round((bookedDays / totalDays) * 100);
-
+ 
    async function handleApplyRate() {
     if (!id || !selectedRange.start) return;
 
