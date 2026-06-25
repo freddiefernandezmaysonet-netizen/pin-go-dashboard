@@ -52,9 +52,12 @@ type PropertyBlockedDateItem = {
   reason?: string | null;
 };
 
+type PropertySeasonType = "PEAK" | "SHOULDER" | "LOW";
+
 type PropertySeasonItem = {
   id: string;
   name: string;
+  type: PropertySeasonType;
   startMonth: number;
   startDay: number;
   endMonth: number;
@@ -836,6 +839,36 @@ const customSeasons = seasons.filter(
   (season) => season.source === "CUSTOM" && season.isActive
 );
 
+function getSeasonTypeLabel(type?: PropertySeasonType) {
+  if (type === "PEAK") return "Peak Season";
+  if (type === "LOW") return "Low Season";
+  return "Shoulder Season";
+}
+
+function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
+  if (type === "PEAK") {
+    return {
+      background: "#dcfce7",
+      color: "#166534",
+      border: "1px solid #bbf7d0",
+    };
+  }
+
+  if (type === "LOW") {
+    return {
+      background: "#fee2e2",
+      color: "#991b1b",
+      border: "1px solid #fecaca",
+    };
+  }
+
+  return {
+    background: "#fef3c7",
+    color: "#92400e",
+    border: "1px solid #fde68a",
+  };
+}
+
   const distributionStatus =
     form.distributionStatus || (form.distributionEnabled ? "ACTIVE" : "DISABLED");
 
@@ -1584,7 +1617,21 @@ const customSeasons = seasons.filter(
               <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
                 {season.name}
               </div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+             <div
+  style={{
+    display: "inline-flex",
+    marginTop: 6,
+    padding: "3px 8px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 900,
+    ...getSeasonTypeStyle(season.type),
+  }}
+>
+  {getSeasonTypeLabel(season.type)}
+</div>
+
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                 {season.startMonth}/{season.startDay} → {season.endMonth}/
                 {season.endDay}
               </div>
@@ -1632,6 +1679,20 @@ const customSeasons = seasons.filter(
               <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
                 {season.name}
               </div>
+              <div
+  style={{
+    display: "inline-flex",
+    marginTop: 6,
+    padding: "3px 8px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 900,
+    ...getSeasonTypeStyle(season.type),
+  }}
+>
+  {getSeasonTypeLabel(season.type)}
+</div>
+
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                 {season.startMonth}/{season.startDay} → {season.endMonth}/
                 {season.endDay}
