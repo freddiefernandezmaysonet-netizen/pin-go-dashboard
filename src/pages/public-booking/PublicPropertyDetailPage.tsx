@@ -168,12 +168,13 @@ export default function PublicPropertyDetailPage() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);  
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
   const [pricing, setPricing] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-    
+ 
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   const [adults, setAdults] = useState(1);
@@ -449,6 +450,12 @@ useEffect(() => {
         throw new Error("Check-out must be after check-in.");
       }
 
+      if (!stayNotificationsConsent) {
+  throw new Error(
+    "Please enable Stay Notifications to continue with your reservation."
+  );
+}
+      
       if (nights < (property.minimumNights ?? 1)) {
         throw new Error(
           `Minimum stay is ${property.minimumNights ?? 1} night(s).`
@@ -464,17 +471,18 @@ useEffect(() => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          propertyId: property.id,
-          checkIn,
-          checkOut,
-          guestName: guestName.trim(),
-          adults,
-          children,
-          guestEmail: guestEmail.trim(),
-          guestPhone: guestPhone.trim(),
-          selectedAmenityIds,
-        }),
+       body: JSON.stringify({
+  propertyId: property.id,
+  checkIn,
+  checkOut,
+  guestName: guestName.trim(),
+  adults,
+  children,
+  guestEmail: guestEmail.trim(),
+  guestPhone: guestPhone.trim(),
+  stayNotificationsConsent,
+  selectedAmenityIds,
+}),
       });
 
       const data = await res.json();
@@ -898,6 +906,34 @@ useEffect(() => {
                         style={styles.input}
                       />
                     </label>
+
+                    <div style={styles.stayNotificationsCard}>
+  <label style={styles.stayNotificationsLabel}>
+    <input
+      type="checkbox"
+      checked={stayNotificationsConsent}
+      onChange={(e) => setStayNotificationsConsent(e.target.checked)}
+      style={styles.stayNotificationsCheckbox}
+    />
+
+    <div>
+      <div style={styles.stayNotificationsTitle}>
+        📲 Pin&Go Smart Stay
+      </div>
+
+      <div style={styles.stayNotificationsText}>
+        Receive important updates about your stay, including your booking
+        confirmation, smart lock access code, check-in instructions,
+        check-out reminders, and important property alerts.
+      </div>
+
+      <div style={styles.stayNotificationsLegal}>
+        Message frequency varies. Message &amp; data rates may apply.
+        Reply STOP to opt out and HELP for assistance.
+      </div>
+    </div>
+  </label>
+</div>
 
                     {optionalAmenities.length > 0 ? (
                       <div style={styles.addOnsBox}>
@@ -2023,6 +2059,49 @@ calendarInner: {
   width: "max-content",
   maxWidth: "100%",
   margin: "0 auto",
+},
+stayNotificationsCard: {
+  marginTop: 16,
+  border: "1px solid #bfdbfe",
+  borderRadius: 18,
+  padding: 16,
+  background: "#eff6ff",
+},
+
+stayNotificationsLabel: {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  cursor: "pointer",
+},
+
+stayNotificationsCheckbox: {
+  marginTop: 4,
+  width: 18,
+  height: 18,
+  cursor: "pointer",
+},
+
+stayNotificationsTitle: {
+  fontSize: 15,
+  fontWeight: 950,
+  color: "#0f172a",
+  marginBottom: 6,
+},
+
+stayNotificationsText: {
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: "#334155",
+  fontWeight: 700,
+},
+
+stayNotificationsLegal: {
+  marginTop: 8,
+  fontSize: 11,
+  lineHeight: 1.5,
+  color: "#64748b",
+  fontWeight: 700,
 },
 
 };
