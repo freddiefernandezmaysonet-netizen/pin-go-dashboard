@@ -1104,7 +1104,20 @@ useEffect(() => {
                       You will be redirected to Stripe Checkout to complete your
                       payment.
                     </p>
-                  </form>
+                 <div style={styles.legalLinks}>
+  <span>
+    By completing your reservation, you agree to Pin&amp;Go&apos;s{" "}
+    <Link to="/terms" style={styles.legalLink}>
+      Terms of Service
+    </Link>{" "}
+    and{" "}
+    <Link to="/privacy" style={styles.legalLink}>
+      Privacy Policy
+    </Link>
+    .
+  </span>
+</div>
+                 </form>
                 </div>
               </div>
             </section>
@@ -2102,6 +2115,20 @@ stayNotificationsLegal: {
   lineHeight: 1.5,
   color: "#64748b",
   fontWeight: 700,
+},
+
+legalLinks: {
+  marginTop: 14,
+  textAlign: "center",
+  fontSize: 12,
+  color: "#64748b",
+  lineHeight: 1.6,
+},
+
+legalLink: {
+  color: "#2563eb",
+  fontWeight: 800,
+  textDecoration: "none",
 },
 
 };

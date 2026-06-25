@@ -76,6 +76,24 @@ export default function TermsPage() {
         modifications, and comply with all applicable laws.
       </p>
 
+      <h3>Pin&amp;Go Smart Stay Notifications</h3>
+<p>
+  Guests who choose to enable <strong>Pin&amp;Go Smart Stay</strong> during the
+  reservation process consent to receive transactional communications related to
+  their stay. These communications may include reservation confirmations,
+  check-in instructions, smart lock access codes, check-out reminders, security
+  alerts, maintenance notifications, and other operational messages necessary
+  to provide the requested services.
+</p>
+
+<p>
+  Pin&amp;Go Smart Stay is intended solely for operational communications and
+  is not used to deliver unsolicited marketing messages. Message frequency
+  varies depending on the reservation. Message and data rates may apply.
+  Recipients may reply <strong>STOP</strong> to opt out of future SMS messages
+  or <strong>HELP</strong> for assistance.
+</p>
+
       <h3>Third-Party Services</h3>
       <p>
         Pin&amp;Go services may depend on third-party providers such as TTLock,
@@ -100,7 +118,15 @@ export default function TermsPage() {
       </p>
 
       <h3>Contact</h3>
-      <p>Email: support@pin-ngo.com</p>
+
+<p>Email: support@pin-ngo.com</p>
+
+<p>
+  For questions regarding Pin&amp;Go Smart Stay notifications or SMS
+  communications, contact support@pin-ngo.com or reply
+  <strong> HELP </strong>
+  to any Pin&amp;Go SMS message.
+</p>
     </div>
   );
 }
