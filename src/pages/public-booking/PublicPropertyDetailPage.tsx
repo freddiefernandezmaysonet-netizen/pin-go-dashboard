@@ -1107,11 +1107,11 @@ useEffect(() => {
                  <div style={styles.legalLinks}>
   <span>
     By completing your reservation, you agree to Pin&amp;Go&apos;s{" "}
-    <Link to="/terms" style={styles.legalLink}>
+    <Link to="/legal/terms" style={styles.legalLink}>
       Terms of Service
     </Link>{" "}
     and{" "}
-    <Link to="/privacy" style={styles.legalLink}>
+    <Link to="/legal/privacy" style={styles.legalLink}>
       Privacy Policy
     </Link>
     .
