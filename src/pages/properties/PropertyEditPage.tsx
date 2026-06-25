@@ -1604,6 +1604,29 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
   Enable Seasonal Pricing
 </label>
 
+<label
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 14,
+    fontWeight: 800,
+    color: "#111827",
+  }}
+>
+  <input
+    type="checkbox"
+    checked={form.holidayPricingEnabled}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        holidayPricingEnabled: e.target.checked,
+      }))
+    }
+    disabled={!form.dynamicPricingEnabled}
+  />
+  Enable Holiday Pricing
+</label>
 
 {form.seasonalPricingEnabled ? (
   <div
