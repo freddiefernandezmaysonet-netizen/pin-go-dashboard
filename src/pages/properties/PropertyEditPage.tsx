@@ -112,6 +112,7 @@ type PropertyItem = {
   maximumNightlyRate?: number | null;
   dynamicPricingEnabled?: boolean | null;
   seasonalPricingEnabled?: boolean | null;
+  holidayPricingEnabled?: boolean | null;
   weekendMarkupPercent?: number | null;
 
   leadTimePricingEnabled?: boolean | null;
@@ -186,6 +187,7 @@ export function PropertyEditPage() {
     maximumNightlyRate: "",
     dynamicPricingEnabled: false,
     seasonalPricingEnabled: false,
+    holidayPricingEnabled: false,
     weekendMarkupPercent: "",
 
     leadTimePricingEnabled: false,
@@ -291,6 +293,7 @@ maximumNightlyRate:
     : "",
 dynamicPricingEnabled: Boolean(p.dynamicPricingEnabled),
 seasonalPricingEnabled: Boolean(p.seasonalPricingEnabled),
+holidayPricingEnabled: Boolean(p.holidayPricingEnabled),
 weekendMarkupPercent:
   p.weekendMarkupPercent !== null &&
   p.weekendMarkupPercent !== undefined
@@ -440,6 +443,7 @@ maximumNightlyRate:
     : Number(form.maximumNightlyRate),
 dynamicPricingEnabled: form.dynamicPricingEnabled,
 seasonalPricingEnabled: form.seasonalPricingEnabled,
+holidayPricingEnabled: form.holidayPricingEnabled,
 weekendMarkupPercent:
   form.weekendMarkupPercent.trim() === ""
     ? null
