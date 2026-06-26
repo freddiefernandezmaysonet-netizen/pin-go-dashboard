@@ -231,6 +231,7 @@ export function PropertyCalendarPage() {
 
 function formatAppliedRule(rule: string) {
   if (rule === "SEASONAL_RULE") return "Seasonal";
+  if (rule === "HOLIDAY_RULE") return "Holiday";
   if (rule === "LEAD_TIME_RULE") return "Last Minute";
   if (rule === "OCCUPANCY_LOW_RULE") return "Low Demand";
   if (rule === "OCCUPANCY_HIGH_RULE") return "High Demand";
@@ -268,6 +269,48 @@ function getRateReasonForDay(day: Date, rate: any) {
   return "Base Rate";
 }
   
+function formatMoney(value: unknown) {
+  const amount = Number(value ?? 0);
+
+  if (!Number.isFinite(amount)) {
+    return "$0.00";
+  }
+
+  return `$${amount.toFixed(2)}`;
+}
+
+function formatAdjustmentAmount(value: unknown) {
+  const amount = Number(value ?? 0);
+
+  if (!Number.isFinite(amount)) {
+    return "$0.00";
+  }
+
+  if (amount > 0) {
+    return `+${formatMoney(amount)}`;
+  }
+
+  if (amount < 0) {
+    return `-${formatMoney(Math.abs(amount))}`;
+  }
+
+  return "$0.00";
+}
+
+function getSelectedDayRate() {
+  if (!selectedDay) return null;
+
+  return rateByDate.get(getDateKey(selectedDay)) ?? null;
+}
+
+function getSelectedPricingBreakdown() {
+  const selectedRate = getSelectedDayRate();
+
+  return Array.isArray(selectedRate?.pricingBreakdown)
+    ? selectedRate.pricingBreakdown
+    : [];
+}
+
  function getStatusForDay(day: Date) {
     const reservation = getReservationForDay(day);
     const blockedDate = getBlockedDateForDay(day);
@@ -1126,6 +1169,174 @@ const occupancySummary = useMemo(() => {
                 )?.toFixed(0)}`
               : "—"}
           </div>
+
+                   {getSelectedPricingBreakdown().length > 0 ? (
+            <div
+              style={{
+                marginTop: 18,
+                padding: 16,
+                borderRadius: 16,
+                border: "1px solid #e2e8f0",
+                background: "#f8fafc",
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 950,
+                    color: "#0f172a",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Revenue Decision
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontSize: 12,
+                    fontWeight: 750,
+                    color: "#64748b",
+                  }}
+                >
+                  How Pin&Go calculated this nightly rate.
+                </div>
+              </div>
+
+                              <div
+                  style={{
+                    marginTop: 10,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "#dcfce7",
+                      color: "#166534",
+                      fontSize: 11,
+                      fontWeight: 950,
+                    }}
+                  >
+                    APMS Decision
+                  </span>
+
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "#eff6ff",
+                      color: "#1d4ed8",
+                      fontSize: 11,
+                      fontWeight: 950,
+                    }}
+                  >
+                    Revenue Engine
+                  </span>
+
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "5px 9px",
+                      borderRadius: 999,
+                      background: "#f8fafc",
+                      color: "#475569",
+                      border: "1px solid #e2e8f0",
+                      fontSize: 11,
+                      fontWeight: 950,
+                    }}
+                  >
+                    Explainable Pricing
+                  </span>
+                </div>
+
+              <div style={{ display: "grid", gap: 8 }}>
+                {getSelectedPricingBreakdown().map((step: any, index: number) => {
+                  const isFinal = step.rule === "FINAL_RATE";
+                  const isBase =
+                    step.rule === "BASE_RATE" ||
+                    step.rule === "CUSTOM_RATE";
+
+                  return (
+                    <div
+                      key={`${step.rule}-${index}`}
+                      style={{
+                        paddingTop: isFinal ? 10 : 0,
+                        marginTop: isFinal ? 4 : 0,
+                        borderTop: isFinal ? "1px solid #cbd5e1" : "none",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontSize: isFinal ? 14 : 13,
+                            fontWeight: isFinal ? 950 : 850,
+                            color: "#0f172a",
+                          }}
+                        >
+                          {step.label}
+                        </div>
+
+                        {step.adjustmentPercent !== null &&
+                        step.adjustmentPercent !== undefined ? (
+                          <div
+                            style={{
+                              marginTop: 2,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              color:
+                                Number(step.adjustmentPercent) >= 0
+                                  ? "#166534"
+                                  : "#2563eb",
+                            }}
+                          >
+                            {Number(step.adjustmentPercent) > 0 ? "+" : ""}
+                            {Number(step.adjustmentPercent)}%
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div
+                        style={{
+                          textAlign: "right",
+                          fontSize: isFinal ? 15 : 13,
+                          fontWeight: isFinal ? 950 : 900,
+                          color: isFinal
+                            ? "#0f172a"
+                            : isBase
+                            ? "#2563eb"
+                            : Number(step.adjustment ?? 0) >= 0
+                            ? "#166534"
+                            : "#dc2626",
+                        }}
+                      >
+                        {isFinal || isBase
+                          ? formatMoney(step.newValue)
+                          : formatAdjustmentAmount(step.adjustment)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
 
           {getReservationForDay(selectedDay) && (
             <>
