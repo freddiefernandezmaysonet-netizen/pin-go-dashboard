@@ -130,6 +130,7 @@ type AmenityIconKey =
   | "pool"
   | "beach"
   | "hotTub"
+  | "bath"
   | "grill"
   | "outdoor"
   | "kitchen"
@@ -158,6 +159,7 @@ const AMENITY_ICONS: Array<[string[], AmenityIconKey]> = [
   [["parking", "garage"], "parking"],
   [["pool", "swimming"], "pool"],
   [["beach", "beachfront", "ocean"], "beach"],
+  [["bath", "bathroom", "shower", "tub"], "bath"],
   [["hot tub", "jacuzzi", "spa"], "hotTub"],
   [["bbq", "grill", "barbecue"], "grill"],
   [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden"], "outdoor"],
@@ -238,6 +240,16 @@ function AmenityIcon({ name }: { name: string }) {
           <path d="M3 16c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" />
           <path d="M3 20c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" />
           <path d="M7 12V5h10v7" />
+        </svg>
+      ) : icon === "bath" ? (
+        <svg {...common}>
+          <path d="M4 11h16" />
+          <path d="M5 11v3a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-3" />
+          <path d="M7 19l-1 2" />
+          <path d="M18 19l1 2" />
+          <path d="M8 11V6a3 3 0 0 1 3-3h1" />
+          <path d="M12 4h4" />
+          <path d="M16 4v3" />
         </svg>
       ) : icon === "grill" || icon === "fireplace" ? (
         <svg {...common}>
