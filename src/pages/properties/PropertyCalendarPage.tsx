@@ -1171,7 +1171,8 @@ const occupancySummary = useMemo(() => {
           </div>
 
                    {getSelectedPricingBreakdown().length > 0 ? (
-            <div
+                        
+                          <div
               style={{
                 marginTop: 18,
                 padding: 16,
@@ -1180,6 +1181,9 @@ const occupancySummary = useMemo(() => {
                 background: "#f8fafc",
                 display: "grid",
                 gap: 12,
+                maxWidth: 760,
+                width: "100%",
+                boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
               }}
             >
               <div>
@@ -1274,15 +1278,18 @@ const occupancySummary = useMemo(() => {
                     <div
                       key={`${step.rule}-${index}`}
                       style={{
-                        paddingTop: isFinal ? 10 : 0,
-                        marginTop: isFinal ? 4 : 0,
+                        padding: isFinal ? "12px 0 0" : "8px 10px",
+                        marginTop: isFinal ? 6 : 0,
                         borderTop: isFinal ? "1px solid #cbd5e1" : "none",
-                        display: "flex",
-                        justifyContent: "space-between",
+                        borderRadius: isFinal ? 0 : 12,
+                        background: isFinal ? "transparent" : "#ffffff",
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) auto",
                         gap: 12,
                         alignItems: "center",
                       }}
                     >
+
                       <div>
                         <div
                           style={{
