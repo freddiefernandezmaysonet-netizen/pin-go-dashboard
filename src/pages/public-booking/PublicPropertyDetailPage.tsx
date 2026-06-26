@@ -388,6 +388,164 @@ function AmenityIcon({ name }: { name: string }) {
     </span>
   );
 }
+
+type PublicFeatureIconType =
+  | "access"
+  | "confirmation"
+  | "checkout"
+  | "communication";
+
+function PublicFeatureIcon({ type }: { type: PublicFeatureIconType }) {
+  const common = {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <span style={styles.trustIcon} aria-hidden="true">
+      <svg {...common}>
+        {type === "access" ? (
+          <>
+            <rect x="5" y="10" width="14" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            <path d="M12 14v2" />
+          </>
+        ) : type === "confirmation" ? (
+          <>
+            <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />
+          </>
+        ) : type === "checkout" ? (
+          <>
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M3 10h18" />
+            <path d="M7 15h3" />
+            <path d="M14 15h3" />
+          </>
+        ) : (
+          <>
+            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" />
+            <path d="M8 9h8" />
+            <path d="M8 13h5" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
+type PinGoPanelIconType =
+  | "access"
+  | "updates"
+  | "flow"
+  | "property";
+
+function PinGoPanelIcon({ type }: { type: PinGoPanelIconType }) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <span style={styles.pinGoFeatureIcon} aria-hidden="true">
+      <svg {...common}>
+        {type === "access" ? (
+          <>
+            <rect x="5" y="10" width="14" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            <path d="M12 14v2" />
+          </>
+        ) : type === "updates" ? (
+          <>
+            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" />
+            <path d="M8 9h8" />
+            <path d="M8 13h5" />
+          </>
+        ) : type === "flow" ? (
+          <>
+            <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />
+          </>
+        ) : (
+          <>
+            <path d="M3 11 12 4l9 7" />
+            <path d="M5 10v10h14V10" />
+            <path d="M9 20v-6h6v6" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
+type StayDetailIconType = "checkIn" | "checkOut";
+
+function StayDetailIcon({ type }: { type: StayDetailIconType }) {
+  const common = {
+    width: 22,
+    height: 22,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <span style={styles.stayDetailIcon} aria-hidden="true">
+      <svg {...common}>
+        {type === "checkIn" ? (
+          <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </>
+        ) : (
+          <>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
+function SmartStayIcon() {
+  const common = {
+    width: 20,
+    height: 20,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <span style={styles.smartStayIcon} aria-hidden="true">
+      <svg {...common}>
+        <rect x="7" y="2" width="10" height="20" rx="2" />
+        <path d="M11 18h2" />
+        <path d="M9 6h6" />
+        <path d="M9.5 11.5 11.5 13.5 15 10" />
+      </svg>
+    </span>
+  );
+}
+
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
 
@@ -869,7 +1027,7 @@ useEffect(() => {
 
     <div style={styles.stayDetailsGrid}>
       <div style={styles.stayDetailItem}>
-        <div style={styles.stayDetailIcon}>🕒</div>
+        <StayDetailIcon type="checkIn" />
 
         <div>
           <strong>Check-In</strong>
@@ -880,7 +1038,7 @@ useEffect(() => {
       </div>
 
       <div style={styles.stayDetailItem}>
-        <div style={styles.stayDetailIcon}>🚪</div>
+        <StayDetailIcon type="checkOut" />
 
         <div>
           <strong>Check-Out</strong>
@@ -896,32 +1054,31 @@ useEffect(() => {
 
   <h3 style={styles.trustTitle}>Designed for a smoother stay</h3>
 
-<div style={styles.trustGrid}>
+ <div style={styles.trustGrid}>
   <div style={styles.trustCard}>
-    <div style={styles.trustIcon}>🔐</div>
+    <PublicFeatureIcon type="access" />
     <strong>Smart access</strong>
     <span>Digital access prepared for your stay.</span>
   </div>
 
   <div style={styles.trustCard}>
-    <div style={styles.trustIcon}>⚡</div>
+    <PublicFeatureIcon type="confirmation" />
     <strong>Instant confirmation</strong>
     <span>Booking details delivered after payment.</span>
   </div>
 
   <div style={styles.trustCard}>
-    <div style={styles.trustIcon}>💳</div>
+    <PublicFeatureIcon type="checkout" />
     <strong>Secure checkout</strong>
     <span>Protected payment through Stripe.</span>
   </div>
 
   <div style={styles.trustCard}>
-    <div style={styles.trustIcon}>📞</div>
+    <PublicFeatureIcon type="communication" />
     <strong>Direct communication</strong>
     <span>Stay connected with the host.</span>
   </div>
 </div>
- 
  {includedAmenities.length > 0 ? (
     <div style={styles.includedAmenitiesBox}>
       <div style={styles.includedAmenitiesTitle}>Included with your stay</div>
@@ -932,6 +1089,7 @@ useEffect(() => {
   <AmenityIcon name={amenity.name} />
   <span>{amenity.name}</span>
 </div>
+       
         ))}
       </div>
     </div>
@@ -952,13 +1110,28 @@ useEffect(() => {
                           stay.
                         </p>
                       </div>
+                       <div style={styles.pinGoFeatureGrid}>
+  <div style={styles.pinGoFeature}>
+    <PinGoPanelIcon type="access" />
+    <span>Smart access</span>
+  </div>
 
-                      <div style={styles.pinGoFeatureGrid}>
-                        <div style={styles.pinGoFeature}>🔐 Smart access</div>
-                        <div style={styles.pinGoFeature}>📲 Guest updates</div>
-                        <div style={styles.pinGoFeature}>⚡ Contactless flow</div>
-                        <div style={styles.pinGoFeature}>🏡 Smart property</div>
-                      </div>
+  <div style={styles.pinGoFeature}>
+    <PinGoPanelIcon type="updates" />
+    <span>Guest updates</span>
+  </div>
+
+  <div style={styles.pinGoFeature}>
+    <PinGoPanelIcon type="flow" />
+    <span>Contactless flow</span>
+  </div>
+
+  <div style={styles.pinGoFeature}>
+    <PinGoPanelIcon type="property" />
+    <span>Smart property</span>
+  </div>
+</div>
+                     
                     </div>
                   </div>
 
@@ -1149,10 +1322,10 @@ useEffect(() => {
     />
 
     <div>
-      <div style={styles.stayNotificationsTitle}>
-        📲 Pin&Go Smart Stay
-      </div>
-
+    <div style={styles.stayNotificationsTitle}>
+  <SmartStayIcon />
+  <span>Pin&Go Smart Stay</span>
+</div>
       <div style={styles.stayNotificationsText}>
         Receive important updates about your stay, including your booking
         confirmation, smart lock access code, check-in instructions,
@@ -1685,17 +1858,20 @@ trustCard: {
   gap: 12,
   color: "#0f172a",
 },
-  trustIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
-    display: "grid",
-    placeItems: "center",
-    background: "#ffffff",
-    border: "1px solid #e2e8f0",
-    fontSize: 21,
-  },
- 
+   
+trustIcon: {
+  width: 44,
+  height: 44,
+  borderRadius: 16,
+  display: "grid",
+  placeItems: "center",
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  color: "#1d4ed8",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
+
+},
+
 overviewText: {
   marginTop: 20,
   color: "#475569",
@@ -1728,7 +1904,9 @@ stayDetailIcon: {
   placeItems: "center",
   background: "#eff6ff",
   border: "1px solid #bfdbfe",
-  fontSize: 20,
+  color: "#1d4ed8",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
+  flexShrink: 0,
 },
 
 pinGoPanel: {
@@ -1762,16 +1940,30 @@ pinGoPanel: {
   gap: 12,
 },
 
-  pinGoFeature: {
-     background: "rgba(255,255,255,0.12)",
-     border: "1px solid rgba(255,255,255,0.20)",
-     borderRadius: 20,
-     padding: "16px 15px",
-     fontSize: 14,
-     fontWeight: 950,
-     backdropFilter: "blur(8px)",
-     },
+ pinGoFeature: {
+  background: "rgba(255,255,255,0.12)",
+  border: "1px solid rgba(255,255,255,0.20)",
+  borderRadius: 20,
+  padding: "14px 15px",
+  fontSize: 14,
+  fontWeight: 950,
+  backdropFilter: "blur(8px)",
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+},
 
+pinGoFeatureIcon: {
+  width: 32,
+  height: 32,
+  borderRadius: 14,
+  display: "grid",
+  placeItems: "center",
+  background: "rgba(255,255,255,0.12)",
+  border: "1px solid rgba(255,255,255,0.22)",
+  color: "#ffffff",
+  flexShrink: 0,
+},
   bookingCard: {
     background: "#fff",
     border: "1px solid #e2e8f0",
@@ -2330,12 +2522,27 @@ stayNotificationsCheckbox: {
 },
 
 stayNotificationsTitle: {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
   fontSize: 15,
   fontWeight: 950,
   color: "#0f172a",
   marginBottom: 6,
 },
 
+smartStayIcon: {
+  width: 34,
+  height: 34,
+  borderRadius: 12,
+  display: "grid",
+  placeItems: "center",
+  background: "#ffffff",
+  border: "1px solid #bfdbfe",
+  color: "#1d4ed8",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
+  flexShrink: 0,
+},
 stayNotificationsText: {
   fontSize: 13,
   lineHeight: 1.55,
