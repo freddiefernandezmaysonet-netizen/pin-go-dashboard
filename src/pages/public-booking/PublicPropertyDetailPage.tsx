@@ -70,6 +70,21 @@ function formatMoney(value: string | number | null | undefined) {
 }).format(n);
 }
 
+function formatDisplayNightlyRate(value: string | number | null | undefined) {
+  const n = Number(value ?? 0);
+
+  if (!Number.isFinite(n) || n <= 0) {
+    return "$0";
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(n));
+}
+
 function diffNights(checkIn: string, checkOut: string) {
   if (!checkIn || !checkOut) return 0;
 
@@ -111,40 +126,65 @@ function calculateAmenityAmount(
   return amenity.feeType === "PER_NIGHT" ? amount * nights : amount;
 }
 
-const AMENITY_ICONS: Array<[string[], string]> = [
-  [["wifi", "wi-fi", "internet"], "📶"],
-  [["parking", "garage"], "🚗"],
-  [["pool", "swimming"], "🏊"],
-  [["beach", "beachfront", "ocean"], "🏖️"],
-  [["hot tub", "jacuzzi", "spa"], "🛁"],
-  [["bbq", "grill", "barbecue"], "🔥"],
-  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden"], "🌿"],
-  [["kitchen", "cook"], "🍳"],
-  [["coffee", "espresso"], "☕"],
-  [["gym", "fitness"], "🏋️"],
-  [["smart tv", "tv", "television"], "📺"],
-  [["air conditioning", "a/c", "air conditioner"], "❄️"],
-  [["washer", "laundry", "washing machine"], "🧺"],
-  [["dryer"], "♨️"],
-  [["pet", "dog", "cat"], "🐶"],
-  [["workspace", "desk", "office"], "💻"],
-  [["fireplace"], "🔥"],
-  [["bike", "bicycle"], "🚲"],
-  [["dock", "marina", "boat"], "⛵"],
-  [["game room", "games", "arcade"], "🎮"],
-  [["pool table", "billiard"], "🎱"],
-  [["home theater", "cinema", "movie"], "🎬"],
-  [["elevator", "lift"], "🛗"],
-  [["smart lock", "self check-in", "keyless"], "🔐"],
-  [["crib", "baby", "infant"], "👶"],
-  [["king bed", "queen bed", "bed"], "🛏️"],
-  [["breakfast"], "🥐"],
-  [["safe"], "🔒"],
-  [["security camera", "camera"], "📹"],
-  [["ev charger", "electric vehicle"], "🔌"],
+type AmenityIconKey =
+  | "wifi"
+  | "parking"
+  | "pool"
+  | "beach"
+  | "hotTub"
+  | "grill"
+  | "outdoor"
+  | "kitchen"
+  | "coffee"
+  | "gym"
+  | "tv"
+  | "ac"
+  | "laundry"
+  | "pet"
+  | "workspace"
+  | "fireplace"
+  | "bike"
+  | "boat"
+  | "games"
+  | "elevator"
+  | "lock"
+  | "baby"
+  | "bed"
+  | "breakfast"
+  | "camera"
+  | "ev"
+  | "default";
+
+const AMENITY_ICONS: Array<[string[], AmenityIconKey]> = [
+  [["wifi", "wi-fi", "internet"], "wifi"],
+  [["parking", "garage"], "parking"],
+  [["pool", "swimming"], "pool"],
+  [["beach", "beachfront", "ocean"], "beach"],
+  [["hot tub", "jacuzzi", "spa"], "hotTub"],
+  [["bbq", "grill", "barbecue"], "grill"],
+  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden"], "outdoor"],
+  [["kitchen", "cook"], "kitchen"],
+  [["coffee", "espresso"], "coffee"],
+  [["gym", "fitness"], "gym"],
+  [["smart tv", "tv", "television"], "tv"],
+  [["air conditioning", "a/c", "air conditioner"], "ac"],
+  [["washer", "dryer", "laundry", "washing machine"], "laundry"],
+  [["pet", "dog", "cat"], "pet"],
+  [["workspace", "desk", "office"], "workspace"],
+  [["fireplace"], "fireplace"],
+  [["bike", "bicycle"], "bike"],
+  [["dock", "marina", "boat"], "boat"],
+  [["game room", "games", "arcade", "pool table", "billiard"], "games"],
+  [["elevator", "lift"], "elevator"],
+  [["smart lock", "self check-in", "keyless", "safe"], "lock"],
+  [["crib", "baby", "infant"], "baby"],
+  [["king bed", "queen bed", "bed"], "bed"],
+  [["breakfast"], "breakfast"],
+  [["security camera", "camera"], "camera"],
+  [["ev charger", "electric vehicle"], "ev"],
 ];
 
-function getAmenityIcon(name: string) {
+function getAmenityIconKey(name: string): AmenityIconKey {
   const value = name.toLowerCase();
 
   for (const [keywords, icon] of AMENITY_ICONS) {
@@ -153,9 +193,191 @@ function getAmenityIcon(name: string) {
     }
   }
 
-  return "✨";
+  return "default";
 }
 
+function AmenityIcon({ name }: { name: string }) {
+  const icon = getAmenityIconKey(name);
+
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  const shellStyle: React.CSSProperties = {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    color: "#0f172a",
+    flexShrink: 0,
+  };
+
+  return (
+    <span style={shellStyle} aria-hidden="true">
+      {icon === "wifi" ? (
+        <svg {...common}>
+          <path d="M5 13a10 10 0 0 1 14 0" />
+          <path d="M8.5 16.5a5 5 0 0 1 7 0" />
+          <path d="M12 20h.01" />
+        </svg>
+      ) : icon === "parking" ? (
+        <svg {...common}>
+          <path d="M9 19V5h5a4 4 0 0 1 0 8H9" />
+          <path d="M9 13h5" />
+        </svg>
+      ) : icon === "pool" || icon === "beach" || icon === "hotTub" ? (
+        <svg {...common}>
+          <path d="M3 16c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" />
+          <path d="M3 20c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 2-1" />
+          <path d="M7 12V5h10v7" />
+        </svg>
+      ) : icon === "grill" || icon === "fireplace" ? (
+        <svg {...common}>
+          <path d="M8 14a4 4 0 0 1 8 0" />
+          <path d="M6 14h12" />
+          <path d="M8 18h8" />
+          <path d="M9 22l1-4" />
+          <path d="M15 22l-1-4" />
+          <path d="M12 3c1.5 1.5 1.5 3 0 4.5" />
+        </svg>
+      ) : icon === "outdoor" ? (
+        <svg {...common}>
+          <path d="M12 22V12" />
+          <path d="M12 12c-4 0-7-2.5-8-7 4 0 7 2.5 8 7Z" />
+          <path d="M12 12c4 0 7-2.5 8-7-4 0-7 2.5-8 7Z" />
+        </svg>
+      ) : icon === "kitchen" ? (
+        <svg {...common}>
+          <path d="M7 3v18" />
+          <path d="M4 3v6a3 3 0 0 0 6 0V3" />
+          <path d="M17 3v18" />
+          <path d="M14 7h6" />
+        </svg>
+      ) : icon === "coffee" || icon === "breakfast" ? (
+        <svg {...common}>
+          <path d="M4 8h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8Z" />
+          <path d="M16 10h2a2 2 0 0 1 0 4h-2" />
+          <path d="M6 3v2" />
+          <path d="M10 3v2" />
+          <path d="M14 3v2" />
+        </svg>
+      ) : icon === "gym" ? (
+        <svg {...common}>
+          <path d="M6 6v12" />
+          <path d="M18 6v12" />
+          <path d="M3 9v6" />
+          <path d="M21 9v6" />
+          <path d="M6 12h12" />
+        </svg>
+      ) : icon === "tv" || icon === "workspace" ? (
+        <svg {...common}>
+          <rect x="4" y="5" width="16" height="11" rx="2" />
+          <path d="M8 21h8" />
+          <path d="M12 16v5" />
+        </svg>
+      ) : icon === "ac" ? (
+        <svg {...common}>
+          <path d="M12 3v18" />
+          <path d="M5 6l14 12" />
+          <path d="M19 6L5 18" />
+          <path d="M8 3l4 4 4-4" />
+          <path d="M8 21l4-4 4 4" />
+        </svg>
+      ) : icon === "laundry" ? (
+        <svg {...common}>
+          <rect x="6" y="3" width="12" height="18" rx="2" />
+          <circle cx="12" cy="13" r="4" />
+          <path d="M9 7h.01" />
+        </svg>
+      ) : icon === "pet" ? (
+        <svg {...common}>
+          <circle cx="6" cy="9" r="2" />
+          <circle cx="18" cy="9" r="2" />
+          <circle cx="9" cy="5" r="2" />
+          <circle cx="15" cy="5" r="2" />
+          <path d="M8 16c0-2 2-4 4-4s4 2 4 4c0 1.5-1 3-4 3s-4-1.5-4-3Z" />
+        </svg>
+      ) : icon === "bike" ? (
+        <svg {...common}>
+          <circle cx="6" cy="17" r="3" />
+          <circle cx="18" cy="17" r="3" />
+          <path d="M8.5 17 12 9l3.5 8" />
+          <path d="M10 9h4" />
+          <path d="M14 6h2" />
+        </svg>
+      ) : icon === "boat" ? (
+        <svg {...common}>
+          <path d="M4 17h16l-2 4H6l-2-4Z" />
+          <path d="M12 3v14" />
+          <path d="M12 5 7 13h5" />
+          <path d="M12 5l5 8h-5" />
+        </svg>
+      ) : icon === "games" ? (
+        <svg {...common}>
+          <rect x="4" y="8" width="16" height="9" rx="4" />
+          <path d="M8 12h4" />
+          <path d="M10 10v4" />
+          <path d="M16 12h.01" />
+          <path d="M18 14h.01" />
+        </svg>
+      ) : icon === "elevator" ? (
+        <svg {...common}>
+          <rect x="6" y="3" width="12" height="18" rx="2" />
+          <path d="M10 8l2-2 2 2" />
+          <path d="M10 16l2 2 2-2" />
+        </svg>
+      ) : icon === "lock" ? (
+        <svg {...common}>
+          <rect x="5" y="10" width="14" height="10" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          <path d="M12 14v2" />
+        </svg>
+      ) : icon === "baby" ? (
+        <svg {...common}>
+          <path d="M7 10h10l-1 9H8l-1-9Z" />
+          <path d="M9 10V7a3 3 0 0 1 6 0v3" />
+          <path d="M9 19l-2 2" />
+          <path d="M15 19l2 2" />
+        </svg>
+      ) : icon === "bed" ? (
+        <svg {...common}>
+          <path d="M4 11V5" />
+          <path d="M20 19v-6a2 2 0 0 0-2-2H4v8" />
+          <path d="M4 15h16" />
+          <path d="M8 11V9h4v2" />
+        </svg>
+      ) : icon === "camera" ? (
+        <svg {...common}>
+          <rect x="4" y="7" width="16" height="12" rx="2" />
+          <circle cx="12" cy="13" r="3" />
+          <path d="M9 7l1.5-2h3L15 7" />
+        </svg>
+      ) : icon === "ev" ? (
+        <svg {...common}>
+          <path d="M7 2v8" />
+          <path d="M11 2v8" />
+          <path d="M7 10h4a3 3 0 0 1 3 3v1" />
+          <path d="M14 14h3a3 3 0 0 1 3 3v5" />
+          <path d="M6 22h8" />
+        </svg>
+      ) : (
+        <svg {...common}>
+          <path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
+        </svg>
+      )}
+    </span>
+  );
+}
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
 
@@ -696,10 +918,10 @@ useEffect(() => {
 
       <div style={styles.includedAmenitiesGrid}>
         {includedAmenities.map((amenity) => (
-          <div key={amenity.id} style={styles.includedAmenityPill}>
-            <span>{getAmenityIcon(amenity.name)}</span>
-            <span>{amenity.name}</span>
-          </div>
+         <div key={amenity.id} style={styles.includedAmenityPill}>
+  <AmenityIcon name={amenity.name} />
+  <span>{amenity.name}</span>
+</div>
         ))}
       </div>
     </div>
@@ -738,7 +960,7 @@ useEffect(() => {
     Starting at
   </div>
 
-  {formatMoney(property.baseNightlyRate)}
+  {formatDisplayNightlyRate(property.baseNightlyRate)}
 
   <span style={styles.bookingPriceUnit}>
     / night
@@ -1000,7 +1222,7 @@ useEffect(() => {
                         <span>
   {pricing?.nightlyRates?.length
     ? "Nightly rates"
-    : `${formatMoney(property.baseNightlyRate)} × ${nights || 0} nights`}
+    : `${formatDisplayNightlyRate(property.baseNightlyRate)} × ${nights || 0} nights`}
 </span>
   <strong>{formatMoney(displayNightlySubtotal)}</strong>
                       </div>
@@ -1009,7 +1231,7 @@ useEffect(() => {
     {pricing.nightlyRates.map((item: any) => (
       <div key={item.date} style={styles.nightlyRateItem}>
         <span>{format(fromDateInputValue(item.date)!, "MMM d, yyyy")}</span>
-        <strong>{formatMoney(item.rate)}</strong>
+        <strong>{formatDisplayNightlyRate(item.rate)}</strong>
       </div>
     ))}
   </div>
@@ -1830,17 +2052,19 @@ includedAmenitiesGrid: {
 },
 
 includedAmenityPill: {
-  display: "flex",
+  display: "inline-flex",
   alignItems: "center",
-  gap: 8,
-  borderRadius: 999,
-  padding: "10px 14px",
-  background: "#eff6ff",
-  border: "1px solid #bfdbfe",
-  color: "#1d4ed8",
+  gap: 10,
+  borderRadius: 18,
+  padding: "9px 13px 9px 9px",
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  color: "#0f172a",
   fontSize: 13,
-  fontWeight: 900,
+  fontWeight: 850,
+  boxShadow: "0 8px 20px rgba(15,23,42,0.04)",
 },
+ 
  reserveButton: {
     marginTop: 18,
     width: "100%",
