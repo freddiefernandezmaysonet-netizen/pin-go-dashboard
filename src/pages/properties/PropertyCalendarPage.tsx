@@ -94,16 +94,25 @@ export function PropertyCalendarPage() {
           { credentials: "include" }
         );
         const reservationsData = await reservationsRes.json();
-        const blockedRes = await fetch(
+              const blockedRes = await fetch(
           `${API_BASE}/api/dashboard/properties/${id}/blocked-dates`,
           { credentials: "include" }
         );
         const blockedData = await blockedRes.json();
 
+        const missionControlRes = await fetch(
+          `${API_BASE}/api/dashboard/properties/${id}/mission-control?from=${from}&to=${to}`,
+          { credentials: "include" }
+        );
+        const missionControlData = await missionControlRes.json();
+
         if (!active) return;
 
         setProperty(propertyRes.ok ? propertyData.item : null);
-        
+        setMissionControlSnapshot(
+          missionControlRes.ok ? missionControlData.item : null
+        );
+
         setNightlyRates(
           ratesRes.ok && Array.isArray(ratesData.rates) ? ratesData.rates : []
         );
