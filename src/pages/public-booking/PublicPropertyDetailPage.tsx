@@ -70,21 +70,6 @@ function formatMoney(value: string | number | null | undefined) {
 }).format(n);
 }
 
-function formatDisplayNightlyRate(value: string | number | null | undefined) {
-  const n = Number(value ?? 0);
-
-  if (!Number.isFinite(n) || n <= 0) {
-    return "$0";
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.round(n));
-}
-
 function diffNights(checkIn: string, checkOut: string) {
   if (!checkIn || !checkOut) return 0;
 
@@ -960,7 +945,7 @@ useEffect(() => {
     Starting at
   </div>
 
-  {formatDisplayNightlyRate(property.baseNightlyRate)}
+  {formatMoney(property.baseNightlyRate)}
 
   <span style={styles.bookingPriceUnit}>
     / night
@@ -1222,7 +1207,7 @@ useEffect(() => {
                         <span>
   {pricing?.nightlyRates?.length
     ? "Nightly rates"
-    : `${formatDisplayNightlyRate(property.baseNightlyRate)} × ${nights || 0} nights`}
+    : `${formatMoney(property.baseNightlyRate)} × ${nights || 0} nights`}
 </span>
   <strong>{formatMoney(displayNightlySubtotal)}</strong>
                       </div>
@@ -1231,7 +1216,7 @@ useEffect(() => {
     {pricing.nightlyRates.map((item: any) => (
       <div key={item.date} style={styles.nightlyRateItem}>
         <span>{format(fromDateInputValue(item.date)!, "MMM d, yyyy")}</span>
-        <strong>{formatDisplayNightlyRate(item.rate)}</strong>
+        <strong>{formatMoney(item.rate)}</strong>
       </div>
     ))}
   </div>
