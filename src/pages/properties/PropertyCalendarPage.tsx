@@ -27,6 +27,8 @@ export function PropertyCalendarPage() {
   const [reservations, setReservations] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
   const [property, setProperty] = useState<any | null>(null);
+  const [missionControlSnapshot, setMissionControlSnapshot] =
+    useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [showCreateReservationForm, setShowCreateReservationForm] =
@@ -92,7 +94,6 @@ export function PropertyCalendarPage() {
           { credentials: "include" }
         );
         const reservationsData = await reservationsRes.json();
-
         const blockedRes = await fetch(
           `${API_BASE}/api/dashboard/properties/${id}/blocked-dates`,
           { credentials: "include" }
@@ -102,6 +103,7 @@ export function PropertyCalendarPage() {
         if (!active) return;
 
         setProperty(propertyRes.ok ? propertyData.item : null);
+        
         setNightlyRates(
           ratesRes.ok && Array.isArray(ratesData.rates) ? ratesData.rates : []
         );
@@ -119,6 +121,7 @@ export function PropertyCalendarPage() {
           setNightlyRates([]);
           setReservations([]);
           setBlockedDates([]);
+          setMissionControlSnapshot(null);
         }
       } finally {
         if (active) setLoading(false);
@@ -369,7 +372,75 @@ const revenueSummary = useMemo(() => {
       lowDemandAdjustments,
   };
 }, [visibleMonthDays, rateByDate]);
-  
+ 
+const missionControlStatus =
+  missionControlSnapshot?.autopilotStatus ?? "ACTIVE";
+
+const missionControlEngineHealth = Array.isArray(
+  missionControlSnapshot?.engineHealth
+)
+  ? missionControlSnapshot.engineHealth
+  : [];
+
+const revenueEngineHealth = missionControlEngineHealth.find(
+  (item: any) => item.engine === "Revenue"
+);
+
+const missionControlRecommendedActions = Array.isArray(
+  missionControlSnapshot?.recommendedActions
+)
+  ? missionControlSnapshot.recommendedActions
+  : [];
+
+const primaryMissionControlAction =
+  missionControlRecommendedActions[0] ?? null;
+
+const autonomyScore = Number(
+  missionControlSnapshot?.autonomyScore?.score ?? 100
+);
+
+const interventionsAvoided = Number(
+  missionControlSnapshot?.freedomMetrics?.interventionsAvoided ?? 0
+);
+
+const autonomousDecisions = Number(
+  missionControlSnapshot?.freedomMetrics?.autonomousDecisions ?? 0
+);
+
+function formatAutopilotStatus(status: string) {
+  if (status === "ACTIVE") return "Auto Pilot Active";
+  if (status === "NEEDS_ATTENTION") return "Needs Attention";
+  if (status === "PAUSED") return "Auto Pilot Paused";
+  if (status === "ERROR") return "Auto Pilot Error";
+
+  return "Auto Pilot";
+}
+
+function getAutopilotPillStyle(status: string): CSSProperties {
+  if (status === "ERROR") {
+    return {
+      ...styles.autoPilotPill,
+      background: "#991b1b",
+    };
+  }
+
+  if (status === "NEEDS_ATTENTION") {
+    return {
+      ...styles.autoPilotPill,
+      background: "#92400e",
+    };
+  }
+
+  if (status === "PAUSED") {
+    return {
+      ...styles.autoPilotPill,
+      background: "#475569",
+    };
+  }
+
+  return styles.autoPilotPill;
+}
+ 
 const occupancySummary = useMemo(() => {
   const totalDays = visibleMonthDays.length || 1;
 
@@ -654,8 +725,9 @@ const occupancySummary = useMemo(() => {
               : `${nightlyRates.length} rate signal(s), ${reservations.length} reservation(s), and ${blockedDates.length} blocked date(s) loaded.`}
           </p>
         </div>
-
-        <div style={styles.autoPilotPill}>🦾 Auto Pilot Active</div>
+        <div style={getAutopilotPillStyle(missionControlStatus)}>
+          🦾 {formatAutopilotStatus(missionControlStatus)}
+        </div>     
       </div>
 
       <div style={styles.summaryGrid}>
@@ -703,6 +775,74 @@ const occupancySummary = useMemo(() => {
           <div style={styles.summaryIconPurple}>✎</div>
         </div>
       </div>
+
+             <div style={styles.missionControlCard}>
+        <div>
+          <div style={styles.sectionTitle}>Mission Control</div>
+          <div style={styles.sectionSubtitle}>
+            APMS health and autonomous execution for this property.
+          </div>
+        </div>
+
+        <div style={styles.missionControlGrid}>
+          <div style={styles.missionMetricCard}>
+            <div style={styles.missionMetricLabel}>Autonomy Score</div>
+            <div style={styles.missionMetricValue}>{autonomyScore}%</div>
+            <div style={styles.missionMetricHint}>
+              {missionControlSnapshot
+                ? "Operations completed without manual intervention"
+                : "Waiting for APMS snapshot"}
+            </div>
+          </div>
+
+          <div style={styles.missionMetricCard}>
+            <div style={styles.missionMetricLabel}>Revenue Engine</div>
+            <div style={styles.missionMetricValue}>
+              {revenueEngineHealth?.status ?? "HEALTHY"}
+            </div>
+            <div style={styles.missionMetricHint}>
+              {revenueEngineHealth?.message ??
+                "Revenue decisions are being monitored."}
+            </div>
+          </div>
+
+          <div style={styles.missionMetricCard}>
+            <div style={styles.missionMetricLabel}>Interventions Avoided</div>
+            <div style={styles.missionMetricValue}>
+              {interventionsAvoided}
+            </div>
+            <div style={styles.missionMetricHint}>
+              Host actions avoided in this APMS window
+            </div>
+          </div>
+
+          <div style={styles.missionMetricCard}>
+            <div style={styles.missionMetricLabel}>Autonomous Decisions</div>
+            <div style={styles.missionMetricValue}>
+              {autonomousDecisions}
+            </div>
+            <div style={styles.missionMetricHint}>
+              Decisions executed by Pin&Go engines
+            </div>
+          </div>
+        </div>
+
+        {primaryMissionControlAction ? (
+          <div style={styles.missionActionBox}>
+            <div style={styles.missionActionTitle}>
+              Recommended Action
+            </div>
+            <div style={styles.missionActionText}>
+              {primaryMissionControlAction.title}
+            </div>
+            <div style={styles.missionActionMeta}>
+              {primaryMissionControlAction.requiresHumanAction
+                ? "Host attention required"
+                : "No immediate host action required"}
+            </div>
+          </div>
+        ) : null}
+      </div>     
 
       <div style={styles.controlCenterCard}>
         <div style={styles.legendColumn}>
@@ -1494,6 +1634,75 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 24,
     fontWeight: 950,
   },
+  
+    missionControlCard: {
+    marginTop: 24,
+    padding: 22,
+    borderRadius: 20,
+    border: "1px solid #dbeafe",
+    background: "linear-gradient(135deg, #eff6ff 0%, #ffffff 55%)",
+    boxShadow: "0 16px 36px rgba(15,23,42,0.06)",
+    display: "grid",
+    gap: 18,
+  },
+  missionControlGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(170px, 1fr))",
+    gap: 14,
+  },
+  missionMetricCard: {
+    padding: 16,
+    borderRadius: 16,
+    border: "1px solid #dbeafe",
+    background: "#ffffff",
+  },
+  missionMetricLabel: {
+    fontSize: 11,
+    fontWeight: 950,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "#475569",
+  },
+  missionMetricValue: {
+    marginTop: 8,
+    fontSize: 28,
+    lineHeight: 1,
+    fontWeight: 950,
+    color: "#0f172a",
+  },
+  missionMetricHint: {
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 1.35,
+    fontWeight: 750,
+    color: "#475569",
+  },
+  missionActionBox: {
+    padding: 16,
+    borderRadius: 16,
+    border: "1px solid #bbf7d0",
+    background: "#f0fdf4",
+  },
+  missionActionTitle: {
+    fontSize: 12,
+    fontWeight: 950,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "#166534",
+  },
+  missionActionText: {
+    marginTop: 6,
+    fontSize: 14,
+    fontWeight: 900,
+    color: "#0f172a",
+  },
+  missionActionMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: 800,
+    color: "#166534",
+  },
+
   controlCenterCard: {
     marginTop: 24,
     padding: 22,
