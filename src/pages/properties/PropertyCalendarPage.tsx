@@ -464,6 +464,67 @@ function getMissionActivityEngineLabel(engine: string) {
   return `${engine} Engine`;
 }
 
+function getMissionStatusPillStyle(status: string) {
+  const normalizedStatus = String(status ?? "").toUpperCase();
+
+  if (
+    normalizedStatus === "ACTIVE" ||
+    normalizedStatus === "HEALTHY" ||
+    normalizedStatus === "SUCCESS"
+  ) {
+    return {
+      color: "#166534",
+      background: "#dcfce7",
+      borderColor: "#bbf7d0",
+    };
+  }
+
+  if (
+    normalizedStatus === "NEEDS_ATTENTION" ||
+    normalizedStatus === "WARNING"
+  ) {
+    return {
+      color: "#92400e",
+      background: "#fef3c7",
+      borderColor: "#fde68a",
+    };
+  }
+
+  if (normalizedStatus === "ERROR" || normalizedStatus === "FAILED") {
+    return {
+      color: "#991b1b",
+      background: "#fee2e2",
+      borderColor: "#fecaca",
+    };
+  }
+
+  return {
+    color: "#334155",
+    background: "#f1f5f9",
+    borderColor: "#e2e8f0",
+  };
+}
+
+function formatMissionStatusLabel(status: string) {
+  return String(status ?? "PENDING").replaceAll("_", " ");
+}
+
+function formatMissionEngineTime(engineHealth: any) {
+  const rawDate = engineHealth?.lastExecutionAt;
+  const date = rawDate ? new Date(rawDate) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return "No execution yet";
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 const recentApmsActivities = [...missionControlRecentAuditEntries]
   .filter((entry: any) => entry?.engine && entry?.summary)
   .sort(
@@ -849,127 +910,219 @@ const occupancySummary = useMemo(() => {
           <div style={styles.summaryIconPurple}>✎</div>
         </div>
       </div>
+    
+       <div style={styles.missionControlCard}>
+  <div style={styles.missionEnterpriseHeader}>
+    <div>
+      <div style={styles.missionEyebrow}>APMS Mission Control</div>
+      <div style={styles.missionEnterpriseTitle}>
+        Autonomous property operations
+      </div>
+      <div style={styles.missionEnterpriseSubtitle}>
+        Live engine health, operational memory, and autonomous execution for this property.
+      </div>
+    </div>
 
-        <div style={styles.missionControlCard}>
-  <div>
-    <div style={styles.sectionTitle}>Mission Control</div>
-    <div style={styles.sectionSubtitle}>
-      APMS health and autonomous execution for this property.
+    <div style={styles.missionStatusCluster}>
+      <div
+        style={{
+          ...styles.missionStatusPill,
+          ...getMissionStatusPillStyle(missionControlStatus),
+        }}
+      >
+        <span style={styles.missionStatusDot} />
+        {formatMissionStatusLabel(missionControlStatus)}
+      </div>
+      <div style={styles.missionGeneratedLabel}>
+        {missionControlSnapshot ? "Live snapshot" : "Waiting for snapshot"}
+      </div>
     </div>
   </div>
 
-  <div style={styles.missionControlGrid}>
-    <div style={styles.missionMetricCard}>
-      <div style={styles.missionMetricLabel}>Autonomy Score</div>
-      <div style={styles.missionMetricValue}>{autonomyScore}%</div>
-      <div style={styles.missionMetricHint}>
-        {missionControlSnapshot
-          ? "Operations completed without manual intervention"
-          : "Waiting for APMS snapshot"}
+  <div style={styles.missionHeroGrid}>
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Autonomy Score</div>
+      <div style={styles.missionHeroValue}>{autonomyScore}%</div>
+      <div style={styles.missionProgressShell}>
+        <div
+          style={{
+            ...styles.missionProgressFill,
+            width: `${Math.min(Math.max(autonomyScore, 0), 100)}%`,
+          }}
+        />
+      </div>
+      <div style={styles.missionHeroHint}>
+        Operations completed without manual intervention
       </div>
     </div>
 
-    <div style={styles.missionMetricCard}>
-      <div style={styles.missionMetricLabel}>Interventions Avoided</div>
-      <div style={styles.missionMetricValue}>
-        {interventionsAvoided}
-      </div>
-      <div style={styles.missionMetricHint}>
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Interventions Avoided</div>
+      <div style={styles.missionHeroValue}>{interventionsAvoided}</div>
+      <div style={styles.missionHeroHint}>
         Host actions avoided in this APMS window
       </div>
     </div>
 
-    <div style={styles.missionMetricCard}>
-      <div style={styles.missionMetricLabel}>Autonomous Decisions</div>
-      <div style={styles.missionMetricValue}>
-        {autonomousDecisions}
-      </div>
-      <div style={styles.missionMetricHint}>
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Autonomous Decisions</div>
+      <div style={styles.missionHeroValue}>{autonomousDecisions}</div>
+      <div style={styles.missionHeroHint}>
         Decisions executed by Pin&Go engines
       </div>
     </div>
 
-    <div style={styles.missionMetricCard}>
-      <div style={styles.missionMetricLabel}>Autopilot Status</div>
-      <div style={styles.missionMetricValue}>
-        {missionControlStatus}
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Engines Online</div>
+      <div style={styles.missionHeroValue}>
+        {missionControlEngineHealth.length}
       </div>
-      <div style={styles.missionMetricHint}>
-        Property-level APMS operating state
+      <div style={styles.missionHeroHint}>
+        Active APMS engines reporting health
       </div>
     </div>
   </div>
 
-  <div style={styles.missionControlGrid}>
-    <div style={styles.missionMetricCard}>
-      <div style={styles.missionMetricLabel}>Revenue Engine</div>
-      <div style={styles.missionMetricValue}>
-        {revenueEngineHealth?.status ?? "PENDING"}
-      </div>
-      <div style={styles.missionMetricHint}>
-        {revenueEngineHealth?.message ??
-          "Waiting for revenue engine activity."}
-      </div>
-    </div>
-
-    <div style={styles.missionMetricCard}>
-      <div style={styles.missionMetricLabel}>Reservation Auto Pilot</div>
-      <div style={styles.missionMetricValue}>
-        {reservationEngineHealth?.status ?? "PENDING"}
-      </div>
-      <div style={styles.missionMetricHint}>
-        {reservationEngineHealth?.message ??
-          "Waiting for reservation autopilot activity."}
-      </div>
-    </div>
-  </div>
-    {recentApmsActivities.length > 0 ? (
-    <div style={styles.missionActivitySection}>
+  <div style={styles.missionPanel}>
+    <div style={styles.missionPanelHeader}>
       <div>
-        <div style={styles.missionActivityTitle}>
-          Recent APMS Activity
+        <div style={styles.missionPanelTitle}>Engine Health</div>
+        <div style={styles.missionPanelMeta}>
+          Revenue, Reservation, and future APMS engines
         </div>
-        <div style={styles.missionActivitySubtitle}>
-          Latest autonomous actions completed by Pin&Go for this property.
+      </div>
+    </div>
+
+    <div style={styles.missionEngineGrid}>
+      <div style={styles.missionEngineCard}>
+        <div style={styles.missionEngineHeader}>
+          <div>
+            <div style={styles.missionEngineName}>Revenue Engine</div>
+            <div style={styles.missionEngineTimestamp}>
+              {formatMissionEngineTime(revenueEngineHealth)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...styles.missionStatusPill,
+              ...getMissionStatusPillStyle(
+                revenueEngineHealth?.status ?? "PENDING"
+              ),
+            }}
+          >
+            {revenueEngineHealth?.status ?? "PENDING"}
+          </div>
+        </div>
+
+        <div style={styles.missionEngineMessage}>
+          {revenueEngineHealth?.message ??
+            "Waiting for revenue engine activity."}
         </div>
       </div>
 
-      <div style={styles.missionActivityList}>
+      <div style={styles.missionEngineCard}>
+        <div style={styles.missionEngineHeader}>
+          <div>
+            <div style={styles.missionEngineName}>
+              Reservation Auto Pilot
+            </div>
+            <div style={styles.missionEngineTimestamp}>
+              {formatMissionEngineTime(reservationEngineHealth)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...styles.missionStatusPill,
+              ...getMissionStatusPillStyle(
+                reservationEngineHealth?.status ?? "PENDING"
+              ),
+            }}
+          >
+            {reservationEngineHealth?.status ?? "PENDING"}
+          </div>
+        </div>
+
+        <div style={styles.missionEngineMessage}>
+          {reservationEngineHealth?.message ??
+            "Waiting for reservation autopilot activity."}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {recentApmsActivities.length > 0 ? (
+    <div style={styles.missionPanel}>
+      <div style={styles.missionPanelHeader}>
+        <div>
+          <div style={styles.missionPanelTitle}>Recent APMS Activity</div>
+          <div style={styles.missionPanelMeta}>
+            Latest autonomous actions completed by Pin&Go
+          </div>
+        </div>
+      </div>
+
+      <div style={styles.missionActivityTimeline}>
         {recentApmsActivities.map((entry: any) => (
           <div
             key={entry.decisionId ?? `${entry.engine}-${entry.summary}`}
-            style={styles.missionActivityItem}
+            style={styles.missionActivityRow}
           >
-            <div style={styles.missionActivityTopRow}>
-              <div style={styles.missionActivityEngine}>
-                {getMissionActivityEngineLabel(entry.engine)}
-              </div>
-              <div style={styles.missionActivityStatus}>
-                {entry.status ?? "SUCCESS"}
-              </div>
-            </div>
+            <div style={styles.missionActivityMarker} />
 
-            <div style={styles.missionActivitySummary}>
-              {entry.summary}
-            </div>
+            <div style={styles.missionActivityContent}>
+              <div style={styles.missionActivityTopRow}>
+                <div style={styles.missionActivityEngine}>
+                  {getMissionActivityEngineLabel(entry.engine)}
+                </div>
 
-            <div style={styles.missionActivityMeta}>
-              {formatMissionActivityTime(entry)}
+                <div
+                  style={{
+                    ...styles.missionStatusPill,
+                    ...getMissionStatusPillStyle(entry.status ?? "SUCCESS"),
+                  }}
+                >
+                  {entry.status ?? "SUCCESS"}
+                </div>
+              </div>
+
+              <div style={styles.missionActivitySummary}>
+                {entry.summary}
+              </div>
+
+              <div style={styles.missionActivityMeta}>
+                {formatMissionActivityTime(entry)}
+              </div>
             </div>
           </div>
         ))}
       </div>
     </div>
-  ) : null}   
+  ) : null}
 
   {primaryMissionControlAction ? (
     <div style={styles.missionActionBox}>
-      <div style={styles.missionActionTitle}>
-        Recommended Action
+      <div style={styles.missionActionHeader}>
+        <div>
+          <div style={styles.missionActionTitle}>Recommended Action</div>
+          <div style={styles.missionActionText}>
+            {primaryMissionControlAction.title}
+          </div>
+        </div>
+
+        <div
+          style={{
+            ...styles.missionStatusPill,
+            ...getMissionStatusPillStyle("SUCCESS"),
+          }}
+        >
+          {primaryMissionControlAction.requiresHumanAction
+            ? "Review"
+            : "Optional"}
+        </div>
       </div>
-      <div style={styles.missionActionText}>
-        {primaryMissionControlAction.title}
-      </div>
+
       <div style={styles.missionActionMeta}>
         {primaryMissionControlAction.requiresHumanAction
           ? "Host attention required"
@@ -977,8 +1130,9 @@ const occupancySummary = useMemo(() => {
       </div>
     </div>
   ) : null}
-</div>    
-      <div style={styles.controlCenterCard}>
+</div>
+       
+       <div style={styles.controlCenterCard}>
         <div style={styles.legendColumn}>
           <div style={styles.sectionTitle}>Calendar Intelligence</div>
 
@@ -1769,131 +1923,267 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 950,
   },
   
-    missionControlCard: {
-    marginTop: 24,
-    padding: 22,
-    borderRadius: 20,
-    border: "1px solid #dbeafe",
-    background: "linear-gradient(135deg, #eff6ff 0%, #ffffff 55%)",
-    boxShadow: "0 16px 36px rgba(15,23,42,0.06)",
-    display: "grid",
-    gap: 18,
-  },
-  missionControlGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(170px, 1fr))",
-    gap: 14,
-  },
-  missionMetricCard: {
-    padding: 16,
-    borderRadius: 16,
-    border: "1px solid #dbeafe",
-    background: "#ffffff",
-  },
-  missionMetricLabel: {
-    fontSize: 11,
-    fontWeight: 950,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    color: "#475569",
-  },
-  missionMetricValue: {
-    marginTop: 8,
-    fontSize: 28,
-    lineHeight: 1,
-    fontWeight: 950,
-    color: "#0f172a",
-  },
-  missionMetricHint: {
-    marginTop: 8,
-    fontSize: 12,
-    lineHeight: 1.35,
-    fontWeight: 750,
-    color: "#475569",
-  },
-  missionActionBox: {
-    padding: 16,
-    borderRadius: 16,
-    border: "1px solid #bbf7d0",
-    background: "#f0fdf4",
-  },
-  missionActionTitle: {
-    fontSize: 12,
-    fontWeight: 950,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    color: "#166534",
-  },
-  missionActionText: {
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: 900,
-    color: "#0f172a",
-  },
-  missionActionMeta: {
-    marginTop: 4,
-    fontSize: 12,
-    fontWeight: 800,
-    color: "#166534",
-  },
+  missionControlCard: {
+  marginTop: 24,
+  borderRadius: 24,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+  boxShadow: "0 24px 70px rgba(15,23,42,0.10)",
+  overflow: "hidden",
+  display: "grid",
+},
 
-missionActivitySection: {
+missionEnterpriseHeader: {
+  padding: 24,
+  background:
+    "linear-gradient(135deg, #0f172a 0%, #1e293b 56%, #334155 100%)",
+  color: "#ffffff",
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 20,
+  alignItems: "flex-start",
+},
+
+missionEyebrow: {
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.12em",
+  color: "#93c5fd",
+},
+
+missionEnterpriseTitle: {
+  marginTop: 8,
+  fontSize: 24,
+  lineHeight: 1.05,
+  fontWeight: 950,
+  color: "#ffffff",
+},
+
+missionEnterpriseSubtitle: {
+  marginTop: 8,
+  maxWidth: 620,
+  fontSize: 13,
+  lineHeight: 1.45,
+  fontWeight: 700,
+  color: "#cbd5e1",
+},
+
+missionStatusCluster: {
+  display: "grid",
+  justifyItems: "end",
+  gap: 8,
+  minWidth: 150,
+},
+
+missionStatusPill: {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 7,
+  padding: "7px 10px",
+  borderRadius: 999,
+  border: "1px solid",
+  fontSize: 10,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+  whiteSpace: "nowrap",
+},
+
+missionStatusDot: {
+  width: 7,
+  height: 7,
+  borderRadius: 999,
+  background: "currentColor",
+},
+
+missionGeneratedLabel: {
+  fontSize: 11,
+  fontWeight: 800,
+  color: "#cbd5e1",
+},
+
+missionHeroGrid: {
+  padding: 18,
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(170px, 1fr))",
+  gap: 14,
+  background: "#f8fafc",
+  borderBottom: "1px solid #e2e8f0",
+},
+
+missionHeroCard: {
   padding: 16,
   borderRadius: 18,
-  border: "1px solid #dbeafe",
-  background: "rgba(255,255,255,0.78)",
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
+},
+
+missionHeroLabel: {
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "#64748b",
+},
+
+missionHeroValue: {
+  marginTop: 10,
+  fontSize: 30,
+  lineHeight: 1,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+missionHeroHint: {
+  marginTop: 9,
+  fontSize: 12,
+  lineHeight: 1.35,
+  fontWeight: 750,
+  color: "#64748b",
+},
+
+missionProgressShell: {
+  marginTop: 12,
+  height: 8,
+  borderRadius: 999,
+  background: "#e2e8f0",
+  overflow: "hidden",
+},
+
+missionProgressFill: {
+  height: "100%",
+  borderRadius: 999,
+  background: "linear-gradient(90deg, #22c55e, #16a34a)",
+},
+
+missionPanel: {
+  margin: 18,
+  marginTop: 0,
+  padding: 16,
+  borderRadius: 20,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+  boxShadow: "0 12px 30px rgba(15,23,42,0.04)",
   display: "grid",
   gap: 14,
 },
-missionActivityTitle: {
-  fontSize: 12,
+
+missionPanelHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 12,
+},
+
+missionPanelTitle: {
+  fontSize: 13,
   fontWeight: 950,
   textTransform: "uppercase",
-  letterSpacing: "0.06em",
+  letterSpacing: "0.08em",
   color: "#0f172a",
 },
-missionActivitySubtitle: {
+
+missionPanelMeta: {
   marginTop: 4,
   fontSize: 12,
   fontWeight: 750,
   color: "#64748b",
 },
-missionActivityList: {
+
+missionEngineGrid: {
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(220px, 1fr))",
+  gridTemplateColumns: "repeat(2, minmax(240px, 1fr))",
   gap: 12,
 },
-missionActivityItem: {
+
+missionEngineCard: {
+  padding: 16,
+  borderRadius: 18,
+  border: "1px solid #e2e8f0",
+  background:
+    "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+},
+
+missionEngineHeader: {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+},
+
+missionEngineName: {
+  fontSize: 14,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+missionEngineTimestamp: {
+  marginTop: 4,
+  fontSize: 11,
+  fontWeight: 800,
+  color: "#94a3b8",
+},
+
+missionEngineMessage: {
+  marginTop: 14,
+  fontSize: 13,
+  lineHeight: 1.4,
+  fontWeight: 750,
+  color: "#475569",
+},
+
+missionActivityTimeline: {
+  display: "grid",
+  gap: 10,
+},
+
+missionActivityRow: {
+  display: "grid",
+  gridTemplateColumns: "18px 1fr",
+  gap: 12,
+  alignItems: "start",
+},
+
+missionActivityMarker: {
+  width: 10,
+  height: 10,
+  marginTop: 8,
+  borderRadius: 999,
+  background: "#2563eb",
+  boxShadow: "0 0 0 5px #dbeafe",
+},
+
+missionActivityContent: {
   padding: 14,
   borderRadius: 16,
   border: "1px solid #e2e8f0",
-  background: "#ffffff",
+  background: "#f8fafc",
 },
+
 missionActivityTopRow: {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   gap: 12,
 },
+
 missionActivityEngine: {
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 950,
   color: "#0f172a",
 },
-missionActivityStatus: {
-  fontSize: 10,
-  fontWeight: 950,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  color: "#166534",
-},
+
 missionActivitySummary: {
   marginTop: 8,
   fontSize: 13,
-  lineHeight: 1.35,
+  lineHeight: 1.4,
   fontWeight: 800,
   color: "#334155",
 },
+
 missionActivityMeta: {
   marginTop: 8,
   fontSize: 11,
@@ -1901,6 +2191,46 @@ missionActivityMeta: {
   color: "#64748b",
 },
 
+missionActionBox: {
+  margin: 18,
+  marginTop: 0,
+  padding: 16,
+  borderRadius: 20,
+  border: "1px solid #bbf7d0",
+  background:
+    "linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)",
+},
+
+missionActionHeader: {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+},
+
+missionActionTitle: {
+  fontSize: 12,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "#166534",
+},
+
+missionActionText: {
+  marginTop: 6,
+  fontSize: 14,
+  lineHeight: 1.35,
+  fontWeight: 900,
+  color: "#0f172a",
+},
+
+missionActionMeta: {
+  marginTop: 8,
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#166534",
+},
+   
   controlCenterCard: {
     marginTop: 24,
     padding: 22,
