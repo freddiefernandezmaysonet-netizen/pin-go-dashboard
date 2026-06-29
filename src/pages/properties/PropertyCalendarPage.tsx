@@ -391,14 +391,53 @@ const missionControlEngineHealth = Array.isArray(
   ? missionControlSnapshot.engineHealth
   : [];
 
-const revenueEngineHealth = missionControlEngineHealth.find(
-  (item: any) => item.engine === "Revenue"
-);
+const missionEngineDisplayOrder = [
+  "Revenue",
+  "Reservation",
+  "Access",
+  "Cleaning",
+  "Messaging",
+  "Distribution",
+];
 
-const reservationEngineHealth = missionControlEngineHealth.find(
-  (engine: any) => engine.engine === "Reservation"
-);
+function getMissionEngineSortValue(engine: string) {
+  const index = missionEngineDisplayOrder.indexOf(engine);
 
+  return index >= 0 ? index : missionEngineDisplayOrder.length;
+}
+
+function getMissionEngineFallbackMessage(engine: string) {
+  if (engine === "Revenue") return "Waiting for revenue engine activity.";
+  if (engine === "Reservation")
+    return "Waiting for reservation autopilot activity.";
+  if (engine === "Access") return "Waiting for access engine activity.";
+  if (engine === "Cleaning") return "Waiting for cleaning engine activity.";
+  if (engine === "Messaging") return "Waiting for messaging engine activity.";
+  if (engine === "Distribution")
+    return "Waiting for distribution engine activity.";
+
+  return "Waiting for APMS engine activity.";
+}
+
+const missionControlEngineCards =
+  missionControlEngineHealth.length > 0
+    ? [...missionControlEngineHealth].sort(
+        (engineA: any, engineB: any) =>
+          getMissionEngineSortValue(engineA.engine) -
+          getMissionEngineSortValue(engineB.engine)
+      )
+    : [
+        {
+          engine: "Revenue",
+          status: "PENDING",
+          message: "Waiting for revenue engine activity.",
+        },
+        {
+          engine: "Reservation",
+          status: "PENDING",
+          message: "Waiting for reservation autopilot activity.",
+        },
+      ];
 const missionControlRecommendedActions = Array.isArray(
   missionControlSnapshot?.recommendedActions
 )
@@ -992,66 +1031,41 @@ const occupancySummary = useMemo(() => {
         </div>
       </div>
     </div>
+        <div style={styles.missionEngineGrid}>
+      {missionControlEngineCards.map((engineHealth: any) => (
+        <div key={engineHealth.engine} style={styles.missionEngineCard}>
+          <div style={styles.missionEngineHeader}>
+            <div>
+              <div style={styles.missionEngineName}>
+                {getMissionActivityEngineLabel(engineHealth.engine)}
+              </div>
 
-    <div style={styles.missionEngineGrid}>
-      <div style={styles.missionEngineCard}>
-        <div style={styles.missionEngineHeader}>
-          <div>
-            <div style={styles.missionEngineName}>Revenue Engine</div>
-            <div style={styles.missionEngineTimestamp}>
-              {formatMissionEngineTime(revenueEngineHealth)}
+              <div style={styles.missionEngineTimestamp}>
+                {formatMissionEngineTime(engineHealth)}
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...styles.missionStatusPill,
+                ...getMissionStatusPillStyle(
+                  engineHealth?.status ?? "PENDING"
+                ),
+              }}
+            >
+              {formatMissionStatusLabel(engineHealth?.status ?? "PENDING")}
             </div>
           </div>
 
-          <div
-            style={{
-              ...styles.missionStatusPill,
-              ...getMissionStatusPillStyle(
-                revenueEngineHealth?.status ?? "PENDING"
-              ),
-            }}
-          >
-            {revenueEngineHealth?.status ?? "PENDING"}
+          <div style={styles.missionEngineMessage}>
+            {engineHealth?.message ??
+              getMissionEngineFallbackMessage(engineHealth.engine)}
           </div>
         </div>
-
-        <div style={styles.missionEngineMessage}>
-          {revenueEngineHealth?.message ??
-            "Waiting for revenue engine activity."}
-        </div>
-      </div>
-
-      <div style={styles.missionEngineCard}>
-        <div style={styles.missionEngineHeader}>
-          <div>
-            <div style={styles.missionEngineName}>
-              Reservation Auto Pilot
-            </div>
-            <div style={styles.missionEngineTimestamp}>
-              {formatMissionEngineTime(reservationEngineHealth)}
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...styles.missionStatusPill,
-              ...getMissionStatusPillStyle(
-                reservationEngineHealth?.status ?? "PENDING"
-              ),
-            }}
-          >
-            {reservationEngineHealth?.status ?? "PENDING"}
-          </div>
-        </div>
-
-        <div style={styles.missionEngineMessage}>
-          {reservationEngineHealth?.message ??
-            "Waiting for reservation autopilot activity."}
-        </div>
-      </div>
+      ))}
     </div>
   </div>
-
+  
   {recentApmsActivities.length > 0 ? (
     <div style={styles.missionPanel}>
       <div style={styles.missionPanelHeader}>
@@ -2095,7 +2109,7 @@ missionPanelMeta: {
 
 missionEngineGrid: {
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(240px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
   gap: 12,
 },
 
