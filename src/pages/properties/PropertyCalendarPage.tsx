@@ -395,6 +395,10 @@ const revenueEngineHealth = missionControlEngineHealth.find(
   (item: any) => item.engine === "Revenue"
 );
 
+const reservationEngineHealth = missionControlEngineHealth.find(
+  (engine: any) => engine.engine === "Reservation"
+);
+
 const missionControlRecommendedActions = Array.isArray(
   missionControlSnapshot?.recommendedActions
 )
@@ -785,74 +789,96 @@ const occupancySummary = useMemo(() => {
         </div>
       </div>
 
-             <div style={styles.missionControlCard}>
-        <div>
-          <div style={styles.sectionTitle}>Mission Control</div>
-          <div style={styles.sectionSubtitle}>
-            APMS health and autonomous execution for this property.
-          </div>
-        </div>
+        <div style={styles.missionControlCard}>
+  <div>
+    <div style={styles.sectionTitle}>Mission Control</div>
+    <div style={styles.sectionSubtitle}>
+      APMS health and autonomous execution for this property.
+    </div>
+  </div>
 
-        <div style={styles.missionControlGrid}>
-          <div style={styles.missionMetricCard}>
-            <div style={styles.missionMetricLabel}>Autonomy Score</div>
-            <div style={styles.missionMetricValue}>{autonomyScore}%</div>
-            <div style={styles.missionMetricHint}>
-              {missionControlSnapshot
-                ? "Operations completed without manual intervention"
-                : "Waiting for APMS snapshot"}
-            </div>
-          </div>
+  <div style={styles.missionControlGrid}>
+    <div style={styles.missionMetricCard}>
+      <div style={styles.missionMetricLabel}>Autonomy Score</div>
+      <div style={styles.missionMetricValue}>{autonomyScore}%</div>
+      <div style={styles.missionMetricHint}>
+        {missionControlSnapshot
+          ? "Operations completed without manual intervention"
+          : "Waiting for APMS snapshot"}
+      </div>
+    </div>
 
-          <div style={styles.missionMetricCard}>
-            <div style={styles.missionMetricLabel}>Revenue Engine</div>
-            <div style={styles.missionMetricValue}>
-              {revenueEngineHealth?.status ?? "HEALTHY"}
-            </div>
-            <div style={styles.missionMetricHint}>
-              {revenueEngineHealth?.message ??
-                "Revenue decisions are being monitored."}
-            </div>
-          </div>
+    <div style={styles.missionMetricCard}>
+      <div style={styles.missionMetricLabel}>Interventions Avoided</div>
+      <div style={styles.missionMetricValue}>
+        {interventionsAvoided}
+      </div>
+      <div style={styles.missionMetricHint}>
+        Host actions avoided in this APMS window
+      </div>
+    </div>
 
-          <div style={styles.missionMetricCard}>
-            <div style={styles.missionMetricLabel}>Interventions Avoided</div>
-            <div style={styles.missionMetricValue}>
-              {interventionsAvoided}
-            </div>
-            <div style={styles.missionMetricHint}>
-              Host actions avoided in this APMS window
-            </div>
-          </div>
+    <div style={styles.missionMetricCard}>
+      <div style={styles.missionMetricLabel}>Autonomous Decisions</div>
+      <div style={styles.missionMetricValue}>
+        {autonomousDecisions}
+      </div>
+      <div style={styles.missionMetricHint}>
+        Decisions executed by Pin&Go engines
+      </div>
+    </div>
 
-          <div style={styles.missionMetricCard}>
-            <div style={styles.missionMetricLabel}>Autonomous Decisions</div>
-            <div style={styles.missionMetricValue}>
-              {autonomousDecisions}
-            </div>
-            <div style={styles.missionMetricHint}>
-              Decisions executed by Pin&Go engines
-            </div>
-          </div>
-        </div>
+    <div style={styles.missionMetricCard}>
+      <div style={styles.missionMetricLabel}>Autopilot Status</div>
+      <div style={styles.missionMetricValue}>
+        {missionControlStatus}
+      </div>
+      <div style={styles.missionMetricHint}>
+        Property-level APMS operating state
+      </div>
+    </div>
+  </div>
 
-        {primaryMissionControlAction ? (
-          <div style={styles.missionActionBox}>
-            <div style={styles.missionActionTitle}>
-              Recommended Action
-            </div>
-            <div style={styles.missionActionText}>
-              {primaryMissionControlAction.title}
-            </div>
-            <div style={styles.missionActionMeta}>
-              {primaryMissionControlAction.requiresHumanAction
-                ? "Host attention required"
-                : "No immediate host action required"}
-            </div>
-          </div>
-        ) : null}
-      </div>     
+  <div style={styles.missionControlGrid}>
+    <div style={styles.missionMetricCard}>
+      <div style={styles.missionMetricLabel}>Revenue Engine</div>
+      <div style={styles.missionMetricValue}>
+        {revenueEngineHealth?.status ?? "PENDING"}
+      </div>
+      <div style={styles.missionMetricHint}>
+        {revenueEngineHealth?.message ??
+          "Waiting for revenue engine activity."}
+      </div>
+    </div>
 
+    <div style={styles.missionMetricCard}>
+      <div style={styles.missionMetricLabel}>Reservation Auto Pilot</div>
+      <div style={styles.missionMetricValue}>
+        {reservationEngineHealth?.status ?? "PENDING"}
+      </div>
+      <div style={styles.missionMetricHint}>
+        {reservationEngineHealth?.message ??
+          "Waiting for reservation autopilot activity."}
+      </div>
+    </div>
+  </div>
+
+  {primaryMissionControlAction ? (
+    <div style={styles.missionActionBox}>
+      <div style={styles.missionActionTitle}>
+        Recommended Action
+      </div>
+      <div style={styles.missionActionText}>
+        {primaryMissionControlAction.title}
+      </div>
+      <div style={styles.missionActionMeta}>
+        {primaryMissionControlAction.requiresHumanAction
+          ? "Host attention required"
+          : "No immediate host action required"}
+      </div>
+    </div>
+  ) : null}
+</div>    
       <div style={styles.controlCenterCard}>
         <div style={styles.legendColumn}>
           <div style={styles.sectionTitle}>Calendar Intelligence</div>
