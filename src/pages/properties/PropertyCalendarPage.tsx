@@ -420,6 +420,67 @@ const autonomousDecisions = Number(
   missionControlSnapshot?.freedomMetrics?.autonomousDecisions ?? 0
 );
 
+const missionControlRecentAuditEntries = Array.isArray(
+  missionControlSnapshot?.recentAuditEntries
+)
+  ? missionControlSnapshot.recentAuditEntries
+  : [];
+
+function getMissionActivityTimestamp(entry: any) {
+  const rawDate = entry?.completedAt ?? entry?.startedAt ?? entry?.generatedAt;
+  const date = rawDate ? new Date(rawDate) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return 0;
+  }
+
+  return date.getTime();
+}
+
+function formatMissionActivityTime(entry: any) {
+  const rawDate = entry?.completedAt ?? entry?.startedAt ?? entry?.generatedAt;
+  const date = rawDate ? new Date(rawDate) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return "Recently";
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getMissionActivityEngineLabel(engine: string) {
+  if (engine === "Reservation") return "Reservation Auto Pilot";
+  if (engine === "Revenue") return "Revenue Engine";
+  if (engine === "Access") return "Access Engine";
+  if (engine === "Cleaning") return "Cleaning Engine";
+  if (engine === "Messaging") return "Messaging Engine";
+  if (engine === "Distribution") return "Distribution Engine";
+
+  return `${engine} Engine`;
+}
+
+const recentApmsActivities = [...missionControlRecentAuditEntries]
+  .filter((entry: any) => entry?.engine && entry?.summary)
+  .sort(
+    (a: any, b: any) =>
+      getMissionActivityTimestamp(b) - getMissionActivityTimestamp(a)
+  )
+  .reduce((items: any[], entry: any) => {
+    const alreadyIncluded = items.some(
+      (item) => item.engine === entry.engine
+    );
+
+    if (alreadyIncluded) return items;
+
+    return [...items, entry];
+  }, [])
+  .slice(0, 4);
+
 function formatAutopilotStatus(status: string) {
   if (status === "ACTIVE") return "Auto Pilot Active";
   if (status === "NEEDS_ATTENTION") return "Needs Attention";
@@ -862,6 +923,44 @@ const occupancySummary = useMemo(() => {
       </div>
     </div>
   </div>
+    {recentApmsActivities.length > 0 ? (
+    <div style={styles.missionActivitySection}>
+      <div>
+        <div style={styles.missionActivityTitle}>
+          Recent APMS Activity
+        </div>
+        <div style={styles.missionActivitySubtitle}>
+          Latest autonomous actions completed by Pin&Go for this property.
+        </div>
+      </div>
+
+      <div style={styles.missionActivityList}>
+        {recentApmsActivities.map((entry: any) => (
+          <div
+            key={entry.decisionId ?? `${entry.engine}-${entry.summary}`}
+            style={styles.missionActivityItem}
+          >
+            <div style={styles.missionActivityTopRow}>
+              <div style={styles.missionActivityEngine}>
+                {getMissionActivityEngineLabel(entry.engine)}
+              </div>
+              <div style={styles.missionActivityStatus}>
+                {entry.status ?? "SUCCESS"}
+              </div>
+            </div>
+
+            <div style={styles.missionActivitySummary}>
+              {entry.summary}
+            </div>
+
+            <div style={styles.missionActivityMeta}>
+              {formatMissionActivityTime(entry)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null}   
 
   {primaryMissionControlAction ? (
     <div style={styles.missionActionBox}>
@@ -1737,6 +1836,70 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 800,
     color: "#166534",
   },
+
+missionActivitySection: {
+  padding: 16,
+  borderRadius: 18,
+  border: "1px solid #dbeafe",
+  background: "rgba(255,255,255,0.78)",
+  display: "grid",
+  gap: 14,
+},
+missionActivityTitle: {
+  fontSize: 12,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "#0f172a",
+},
+missionActivitySubtitle: {
+  marginTop: 4,
+  fontSize: 12,
+  fontWeight: 750,
+  color: "#64748b",
+},
+missionActivityList: {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(220px, 1fr))",
+  gap: 12,
+},
+missionActivityItem: {
+  padding: 14,
+  borderRadius: 16,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+},
+missionActivityTopRow: {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+},
+missionActivityEngine: {
+  fontSize: 12,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+missionActivityStatus: {
+  fontSize: 10,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "#166534",
+},
+missionActivitySummary: {
+  marginTop: 8,
+  fontSize: 13,
+  lineHeight: 1.35,
+  fontWeight: 800,
+  color: "#334155",
+},
+missionActivityMeta: {
+  marginTop: 8,
+  fontSize: 11,
+  fontWeight: 800,
+  color: "#64748b",
+},
 
   controlCenterCard: {
     marginTop: 24,
