@@ -1701,55 +1701,85 @@ const occupancySummary = useMemo(() => {
     ) : null}
   </div>
 ) : null}
-     
      {autoResolutionLogItems.length > 0 ? (
-  <div style={styles.missionPanel}>
-    <div style={styles.missionPanelHeader}>
+  <div style={styles.autoResolutionPanel}>
+    <div style={styles.autoResolutionHeader}>
       <div>
-        <div style={styles.missionPanelTitle}>Auto Resolution Log</div>
-        <div style={styles.missionPanelMeta}>
-          Completed operations Pin&Go handled automatically
+        <div style={styles.autoResolutionEyebrow}>
+          Auto Resolution Log
+        </div>
+
+        <div style={styles.autoResolutionHeading}>
+          Operations resolved by Pin&Go
+        </div>
+
+        <div style={styles.autoResolutionSubheading}>
+          Autonomous APMS actions completed without host intervention.
         </div>
       </div>
 
-      <div style={styles.autoResolutionCountPill}>
-        {autoResolutionLogItems.length} resolved
+      <div style={styles.autoResolutionStats}>
+        <div style={styles.autoResolutionStatCard}>
+          <div style={styles.autoResolutionStatValue}>
+            {autoResolutionLogItems.length}
+          </div>
+          <div style={styles.autoResolutionStatLabel}>
+            Resolved automatically
+          </div>
+        </div>
+
+        <div style={styles.autoResolutionStatCard}>
+          <div style={styles.autoResolutionStatValue}>0</div>
+          <div style={styles.autoResolutionStatLabel}>
+            Host actions required
+          </div>
+        </div>
       </div>
     </div>
 
-    <div style={styles.autoResolutionGrid}>
+    <div style={styles.autoResolutionTimeline}>
       {autoResolutionLogItems.map((entry: any, index: number) => (
         <div
           key={`${entry.decisionId ?? entry.id ?? index}-auto-resolution`}
-          style={styles.autoResolutionItem}
+          style={styles.autoResolutionTimelineRow}
         >
-          <div style={styles.autoResolutionTopRow}>
-            <div style={styles.autoResolutionIcon}>✓</div>
+          <div style={styles.autoResolutionTimelineRail}>
+            <div style={styles.autoResolutionTimelineDot}>✓</div>
+            {index < autoResolutionLogItems.length - 1 ? (
+              <div style={styles.autoResolutionTimelineLine} />
+            ) : null}
+          </div>
 
-            <div style={styles.autoResolutionContent}>
-              <div style={styles.autoResolutionTitle}>
-                {getAutoResolutionTitle(entry)}
-              </div>
-
-              <div style={styles.autoResolutionDescription}>
-                {getAutoResolutionDescription(entry)}
-              </div>
-
-              {getMissionActivityDetail(entry) ? (
-                <div style={styles.autoResolutionDetail}>
-                  {getMissionActivityDetail(entry)}
-                </div>
-              ) : null}
-
-              <div style={styles.autoResolutionMetaRow}>
-                <span style={styles.autoResolutionEngine}>
+          <div style={styles.autoResolutionEnterpriseCard}>
+            <div style={styles.autoResolutionCardTopRow}>
+              <div>
+                <div style={styles.autoResolutionEngineBadge}>
                   {getMissionActivityEngineLabel(entry.engine)}
-                </span>
+                </div>
 
-                <span style={styles.autoResolutionTime}>
-                  {formatMissionActivityTime(entry)}
-                </span>
+                <div style={styles.autoResolutionTitle}>
+                  {getAutoResolutionTitle(entry)}
+                </div>
               </div>
+
+              <div style={styles.autoResolutionResolvedPill}>
+                Resolved automatically
+              </div>
+            </div>
+
+            <div style={styles.autoResolutionDescription}>
+              {getAutoResolutionDescription(entry)}
+            </div>
+
+            {getMissionActivityDetail(entry) ? (
+              <div style={styles.autoResolutionDetail}>
+                {getMissionActivityDetail(entry)}
+              </div>
+            ) : null}
+
+            <div style={styles.autoResolutionFooter}>
+              <span>APMS execution completed</span>
+              <span>{formatMissionActivityTime(entry)}</span>
             </div>
           </div>
         </div>
@@ -1757,7 +1787,7 @@ const occupancySummary = useMemo(() => {
     </div>
   </div>
 ) : null}
-
+    
       </div>
        
        <div style={styles.controlCenterCard}>
@@ -2975,6 +3005,213 @@ missionActionCount: {
   color: "#475569",
 },
   
+autoResolutionPanel: {
+  margin: 18,
+  marginTop: 0,
+  padding: 0,
+  borderRadius: 22,
+  border: "1px solid #cbd5e1",
+  background:
+    "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+  boxShadow: "0 18px 44px rgba(15,23,42,0.08)",
+  overflow: "hidden",
+},
+
+autoResolutionHeader: {
+  padding: 18,
+  background:
+    "linear-gradient(135deg, #020617 0%, #0f172a 58%, #1e293b 100%)",
+  color: "#ffffff",
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 18,
+},
+
+autoResolutionEyebrow: {
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.12em",
+  color: "#86efac",
+},
+
+autoResolutionHeading: {
+  marginTop: 7,
+  fontSize: 20,
+  lineHeight: 1.1,
+  fontWeight: 950,
+  color: "#ffffff",
+},
+
+autoResolutionSubheading: {
+  marginTop: 7,
+  fontSize: 12,
+  lineHeight: 1.45,
+  fontWeight: 750,
+  color: "#cbd5e1",
+},
+
+autoResolutionStats: {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(110px, 1fr))",
+  gap: 10,
+  minWidth: 260,
+},
+
+autoResolutionStatCard: {
+  padding: 12,
+  borderRadius: 16,
+  border: "1px solid rgba(255,255,255,0.14)",
+  background: "rgba(255,255,255,0.08)",
+  backdropFilter: "blur(10px)",
+},
+
+autoResolutionStatValue: {
+  fontSize: 24,
+  lineHeight: 1,
+  fontWeight: 950,
+  color: "#ffffff",
+},
+
+autoResolutionStatLabel: {
+  marginTop: 6,
+  fontSize: 10,
+  lineHeight: 1.25,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "#cbd5e1",
+},
+
+autoResolutionTimeline: {
+  padding: 18,
+  display: "grid",
+  gap: 0,
+},
+
+autoResolutionTimelineRow: {
+  display: "grid",
+  gridTemplateColumns: "34px 1fr",
+  gap: 12,
+},
+
+autoResolutionTimelineRail: {
+  display: "grid",
+  justifyItems: "center",
+  gridTemplateRows: "28px 1fr",
+},
+
+autoResolutionTimelineDot: {
+  width: 28,
+  height: 28,
+  borderRadius: 999,
+  background: "#dcfce7",
+  color: "#166534",
+  border: "1px solid #bbf7d0",
+  display: "grid",
+  placeItems: "center",
+  fontSize: 13,
+  fontWeight: 950,
+  boxShadow: "0 0 0 5px #f0fdf4",
+},
+
+autoResolutionTimelineLine: {
+  width: 2,
+  minHeight: 18,
+  background: "#e2e8f0",
+},
+
+autoResolutionEnterpriseCard: {
+  marginBottom: 14,
+  padding: 16,
+  borderRadius: 18,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
+},
+
+autoResolutionCardTopRow: {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 14,
+},
+
+autoResolutionEngineBadge: {
+  display: "inline-flex",
+  alignItems: "center",
+  width: "fit-content",
+  padding: "5px 9px",
+  borderRadius: 999,
+  border: "1px solid #dbeafe",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 10,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+},
+
+autoResolutionResolvedPill: {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "6px 9px",
+  borderRadius: 999,
+  border: "1px solid #bbf7d0",
+  background: "#dcfce7",
+  color: "#166534",
+  fontSize: 10,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  whiteSpace: "nowrap",
+},
+
+autoResolutionTitle: {
+  marginTop: 9,
+  fontSize: 15,
+  lineHeight: 1.25,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+autoResolutionDescription: {
+  marginTop: 9,
+  fontSize: 13,
+  lineHeight: 1.45,
+  fontWeight: 780,
+  color: "#475569",
+},
+
+autoResolutionDetail: {
+  marginTop: 10,
+  width: "fit-content",
+  padding: "6px 9px",
+  borderRadius: 999,
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  color: "#334155",
+  fontSize: 11,
+  lineHeight: 1.2,
+  fontWeight: 900,
+},
+
+autoResolutionFooter: {
+  marginTop: 12,
+  paddingTop: 10,
+  borderTop: "1px solid #e2e8f0",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+  fontSize: 11,
+  fontWeight: 850,
+  color: "#64748b",
+},
+
   controlCenterCard: {
     marginTop: 24,
     padding: 22,
