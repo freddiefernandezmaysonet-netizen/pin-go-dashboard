@@ -447,6 +447,94 @@ const missionControlRecommendedActions = Array.isArray(
 const primaryMissionControlAction =
   missionControlRecommendedActions[0] ?? null;
 
+const secondaryMissionControlActions =
+  missionControlRecommendedActions.slice(1, 3);
+
+const hiddenMissionControlActionCount = Math.max(
+  missionControlRecommendedActions.length - 3,
+  0
+);
+
+function getMissionActionVisualStatus(action: any) {
+  if (!action?.requiresHumanAction) {
+    return "SUCCESS";
+  }
+
+  const priority = String(action?.priority ?? "").toUpperCase();
+
+  if (priority === "CRITICAL" || priority === "HIGH") {
+    return "ERROR";
+  }
+
+  return "WARNING";
+}
+
+function getMissionActionBadgeLabel(action: any) {
+  if (!action?.requiresHumanAction) {
+    return "All clear";
+  }
+
+  const priority = String(action?.priority ?? "").toUpperCase();
+
+  if (priority === "CRITICAL" || priority === "HIGH") {
+    return "Review now";
+  }
+
+  return "Review";
+}
+
+function getMissionActionFooterLabel(action: any) {
+  if (!action?.requiresHumanAction) {
+    return "Pin&Go handled this automatically.";
+  }
+
+  return "Host attention required.";
+}
+
+function getMissionActionBoxStyle(action: any): CSSProperties {
+  const visualStatus = getMissionActionVisualStatus(action);
+
+  if (visualStatus === "ERROR") {
+    return {
+      ...styles.missionActionBox,
+      borderColor: "#fecaca",
+      background:
+        "linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)",
+    };
+  }
+
+  if (visualStatus === "WARNING") {
+    return {
+      ...styles.missionActionBox,
+      borderColor: "#fde68a",
+      background:
+        "linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)",
+    };
+  }
+
+  return styles.missionActionBox;
+}
+
+function getMissionActionTitleStyle(action: any): CSSProperties {
+  const visualStatus = getMissionActionVisualStatus(action);
+
+  if (visualStatus === "ERROR") {
+    return {
+      ...styles.missionActionTitle,
+      color: "#991b1b",
+    };
+  }
+
+  if (visualStatus === "WARNING") {
+    return {
+      ...styles.missionActionTitle,
+      color: "#92400e",
+    };
+  }
+
+  return styles.missionActionTitle;
+}
+
 const autonomyScore = Number(
   missionControlSnapshot?.autonomyScore?.score ?? 100
 );
@@ -1275,35 +1363,93 @@ const occupancySummary = useMemo(() => {
   ) : null}
 
   {primaryMissionControlAction ? (
-    <div style={styles.missionActionBox}>
-      <div style={styles.missionActionHeader}>
-        <div>
-          <div style={styles.missionActionTitle}>Recommended Action</div>
-          <div style={styles.missionActionText}>
-            {primaryMissionControlAction.title}
-          </div>
+  <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
+    <div style={styles.missionActionHeader}>
+      <div>
+        <div style={getMissionActionTitleStyle(primaryMissionControlAction)}>
+          Recommended Action
         </div>
 
-        <div
-          style={{
-            ...styles.missionStatusPill,
-            ...getMissionStatusPillStyle("SUCCESS"),
-          }}
-        >
-          {primaryMissionControlAction.requiresHumanAction
-            ? "Review"
-            : "Optional"}
+        <div style={styles.missionActionText}>
+          {primaryMissionControlAction.title}
         </div>
       </div>
 
-      <div style={styles.missionActionMeta}>
-        {primaryMissionControlAction.requiresHumanAction
-          ? "Host attention required"
-          : "No immediate host action required"}
+      <div
+        style={{
+          ...styles.missionStatusPill,
+          ...getMissionStatusPillStyle(
+            getMissionActionVisualStatus(primaryMissionControlAction)
+          ),
+        }}
+      >
+        {getMissionActionBadgeLabel(primaryMissionControlAction)}
       </div>
     </div>
-  ) : null}
-</div>
+
+    <div style={styles.missionActionMeta}>
+      {primaryMissionControlAction.description ??
+        getMissionActionFooterLabel(primaryMissionControlAction)}
+    </div>
+
+    <div
+      style={{
+        marginTop: 8,
+        fontSize: 11,
+        fontWeight: 850,
+        color: primaryMissionControlAction.requiresHumanAction
+          ? "#92400e"
+          : "#166534",
+      }}
+    >
+      {getMissionActionFooterLabel(primaryMissionControlAction)}
+    </div>
+
+    {secondaryMissionControlActions.length > 0 ? (
+      <div style={styles.missionActionList}>
+        {secondaryMissionControlActions.map((action: any, index: number) => (
+          <div
+            key={`${action.engine}-${action.title}-${index}`}
+            style={styles.missionActionItem}
+          >
+            <div style={styles.missionActionItemTopRow}>
+              <div>
+                <div style={styles.missionActionText}>{action.title}</div>
+
+                <div style={styles.missionActionEngine}>
+                  {action.engine ?? "APMS"}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...styles.missionStatusPill,
+                  ...getMissionStatusPillStyle(
+                    getMissionActionVisualStatus(action)
+                  ),
+                }}
+              >
+                {getMissionActionBadgeLabel(action)}
+              </div>
+            </div>
+
+            <div style={styles.missionActionMeta}>
+              {action.description ?? getMissionActionFooterLabel(action)}
+            </div>
+          </div>
+        ))}
+
+        {hiddenMissionControlActionCount > 0 ? (
+          <div style={styles.missionActionCount}>
+            +{hiddenMissionControlActionCount} more grouped action
+            {hiddenMissionControlActionCount === 1 ? "" : "s"}
+          </div>
+        ) : null}
+      </div>
+    ) : null}
+  </div>
+) : null}
+ </div>
        
        <div style={styles.controlCenterCard}>
         <div style={styles.legendColumn}>
@@ -2419,7 +2565,42 @@ missionActionMeta: {
   fontWeight: 800,
   color: "#166534",
 },
-   
+ 
+missionActionList: {
+  marginTop: 14,
+  display: "grid",
+  gap: 10,
+},
+
+missionActionItem: {
+  padding: 12,
+  borderRadius: 16,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+},
+
+missionActionItemTopRow: {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+},
+
+missionActionEngine: {
+  marginTop: 5,
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+  color: "#64748b",
+},
+
+missionActionCount: {
+  fontSize: 12,
+  fontWeight: 850,
+  color: "#475569",
+},
+  
   controlCenterCard: {
     marginTop: 24,
     padding: 22,
