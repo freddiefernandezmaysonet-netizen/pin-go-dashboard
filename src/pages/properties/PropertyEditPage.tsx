@@ -166,6 +166,12 @@ export function PropertyEditPage() {
   const [editingSeason, setEditingSeason] = useState<PropertySeasonItem | null>(null);
   const [savingSeason, setSavingSeason] = useState(false);
   const [deletingSeasonId, setDeletingSeasonId] = useState<string | null>(null);
+  const [editingRecommendedSeasonId, setEditingRecommendedSeasonId] =
+    useState<string | null>(null);
+  const [recommendedSeasonAdjustmentInput, setRecommendedSeasonAdjustmentInput] =
+    useState("");
+  const [savingRecommendedSeasonId, setSavingRecommendedSeasonId] =
+    useState<string | null>(null);
   const [holidayPricing, setHolidayPricing] = useState<PropertyHolidayPricingItem[]>([]);
   const [newSeason, setNewSeason] = useState({
   name: "",
@@ -988,6 +994,62 @@ async function handleDeleteSeason(seasonId: string) {
     setErr(String(e?.message ?? e));
   } finally {
     setDeletingSeasonId(null);
+  }
+}
+
+async function handleSaveRecommendedSeasonAdjustment(
+  season: PropertySeasonItem
+) {
+  if (!id) return;
+
+  const adjustmentPercent = Number(recommendedSeasonAdjustmentInput);
+
+  if (
+    !Number.isFinite(adjustmentPercent) ||
+    adjustmentPercent < -100 ||
+    adjustmentPercent > 300
+  ) {
+    throw new Error("Adjustment percent must be between -100 and 300");
+  }
+
+  setSavingRecommendedSeasonId(season.id);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/seasons/${season.id}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adjustmentPercent,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(
+        data?.error || "Failed to update Pin&Go recommended season"
+      );
+    }
+
+    setSeasons((prev) =>
+      prev.map((item) =>
+        item.id === season.id ? { ...item, ...data.item } : item
+      )
+    );
+
+    setEditingRecommendedSeasonId(null);
+    setRecommendedSeasonAdjustmentInput("");
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setSavingRecommendedSeasonId(null);
   }
 }
 
@@ -1912,11 +1974,85 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                 {season.endDay}
               </div>
             </div>
+            {editingRecommendedSeasonId === season.id ? (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
+    }}
+  >
+    <input
+      type="number"
+      step="0.01"
+      value={recommendedSeasonAdjustmentInput}
+      onChange={(e) =>
+        setRecommendedSeasonAdjustmentInput(e.target.value)
+      }
+      style={{
+        ...inputStyle,
+        width: 110,
+      }}
+    />
 
-            <div style={{ fontSize: 14, fontWeight: 900, color: "#2563eb" }}>
-              {season.adjustmentPercent > 0 ? "+" : ""}
-              {season.adjustmentPercent}%
-            </div>
+    <button
+      type="button"
+      disabled={savingRecommendedSeasonId === season.id}
+      onClick={async () => {
+        try {
+          await handleSaveRecommendedSeasonAdjustment(season);
+        } catch (e: any) {
+          setErr(String(e?.message ?? e));
+        }
+      }}
+      style={{
+        ...primarySmallButtonStyle,
+        opacity: savingRecommendedSeasonId === season.id ? 0.7 : 1,
+        cursor:
+          savingRecommendedSeasonId === season.id
+            ? "not-allowed"
+            : "pointer",
+      }}
+    >
+      {savingRecommendedSeasonId === season.id ? "Saving..." : "Save"}
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setEditingRecommendedSeasonId(null);
+        setRecommendedSeasonAdjustmentInput("");
+      }}
+      style={secondarySmallButtonStyle}
+    >
+      Cancel
+    </button>
+  </div>
+) : (
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ fontSize: 14, fontWeight: 900, color: "#2563eb" }}>
+      {season.adjustmentPercent > 0 ? "+" : ""}
+      {season.adjustmentPercent}%
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
+        setEditingRecommendedSeasonId(season.id);
+        setRecommendedSeasonAdjustmentInput(
+          String(season.adjustmentPercent)
+        );
+      }}
+      style={iconButtonStyle}
+      title="Edit recommended season adjustment"
+    >
+      ✏️
+    </button>
+  </div>
+)}
+            
           </div>
         ))}
       </div>
@@ -2418,6 +2554,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     )}
   </div>
 ) : null}
+
   <div
     style={{
       borderTop: "1px solid #dbeafe",
