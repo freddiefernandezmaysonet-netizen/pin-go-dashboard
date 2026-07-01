@@ -159,9 +159,22 @@ export function PropertyEditPage() {
     amount: "",
   });
 
-  const [taxes, setTaxes] = useState<PropertyTaxItem[]>([]);
   const [seasons, setSeasons] = useState<PropertySeasonItem[]>([]);
+  const [creatingSeason, setCreatingSeason] = useState(false);
+  const [editingSeasonId, setEditingSeasonId] = useState<string | null>(null);
+  const [editingSeason, setEditingSeason] = useState<PropertySeasonItem | null>(null);
+  const [savingSeason, setSavingSeason] = useState(false);
+  const [deletingSeasonId, setDeletingSeasonId] = useState<string | null>(null);
   const [holidayPricing, setHolidayPricing] = useState<PropertyHolidayPricingItem[]>([]);
+  const [newSeason, setNewSeason] = useState({
+  name: "",
+  type: "SHOULDER" as PropertySeasonType,
+  startMonth: "",
+  startDay: "",
+  endMonth: "",
+  endDay: "",
+  adjustmentPercent: "",
+});
   const [editingTaxId, setEditingTaxId] = useState<string | null>(null);
   const [editingTax, setEditingTax] = useState<PropertyTaxItem | null>(null);
 
@@ -850,6 +863,216 @@ async function handleUploadPhotos(
     setEditingTaxId(null);
     setEditingTax(null);
   }
+
+async function handleSaveSeason() {
+  if (!id || !editingSeasonId || !editingSeason) return;
+
+  const cleanName = editingSeason.name.trim();
+  const startMonth = Number(editingSeason.startMonth);
+  const startDay = Number(editingSeason.startDay);
+  const endMonth = Number(editingSeason.endMonth);
+  const endDay = Number(editingSeason.endDay);
+  const adjustmentPercent = Number(editingSeason.adjustmentPercent);
+
+  if (!cleanName) {
+    throw new Error("Season name is required");
+  }
+
+  if (!Number.isInteger(startMonth) || startMonth < 1 || startMonth > 12) {
+    throw new Error("Start month must be between 1 and 12");
+  }
+
+  if (!Number.isInteger(endMonth) || endMonth < 1 || endMonth > 12) {
+    throw new Error("End month must be between 1 and 12");
+  }
+
+  if (!Number.isInteger(startDay) || startDay < 1 || startDay > 31) {
+    throw new Error("Start day must be between 1 and 31");
+  }
+
+  if (!Number.isInteger(endDay) || endDay < 1 || endDay > 31) {
+    throw new Error("End day must be between 1 and 31");
+  }
+
+  if (
+    !Number.isFinite(adjustmentPercent) ||
+    adjustmentPercent < -100 ||
+    adjustmentPercent > 300
+  ) {
+    throw new Error("Adjustment percent must be between -100 and 300");
+  }
+
+  setSavingSeason(true);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/seasons/${editingSeasonId}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: cleanName,
+          type: newSeason.type,
+          startMonth,
+          startDay,
+          endMonth,
+          endDay,
+          adjustmentPercent,
+          isActive: true,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to update custom season");
+    }
+
+    setSeasons((prev) =>
+      prev.map((season) =>
+        season.id === editingSeasonId ? data.item : season
+      )
+    );
+
+    setEditingSeasonId(null);
+    setEditingSeason(null);
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setSavingSeason(false);
+  }
+}
+
+async function handleDeleteSeason(seasonId: string) {
+  if (!id) return;
+
+  if (!window.confirm("Delete this custom season?")) {
+    return;
+  }
+
+  setDeletingSeasonId(seasonId);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/seasons/${seasonId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to delete custom season");
+    }
+
+    setSeasons((prev) =>
+      prev.map((season) =>
+        season.id === seasonId ? { ...season, isActive: false } : season
+      )
+    );
+
+    if (editingSeasonId === seasonId) {
+      setEditingSeasonId(null);
+      setEditingSeason(null);
+    }
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setDeletingSeasonId(null);
+  }
+}
+
+  async function handleCreateSeason() {
+  if (!id) return;
+
+  const cleanName = newSeason.name.trim();
+  const startMonth = Number(newSeason.startMonth);
+  const startDay = Number(newSeason.startDay);
+  const endMonth = Number(newSeason.endMonth);
+  const endDay = Number(newSeason.endDay);
+  const adjustmentPercent = Number(newSeason.adjustmentPercent);
+
+  if (!cleanName) {
+    throw new Error("Season name is required");
+  }
+
+  if (!Number.isInteger(startMonth) || startMonth < 1 || startMonth > 12) {
+    throw new Error("Start month must be between 1 and 12");
+  }
+
+  if (!Number.isInteger(endMonth) || endMonth < 1 || endMonth > 12) {
+    throw new Error("End month must be between 1 and 12");
+  }
+
+  if (!Number.isInteger(startDay) || startDay < 1 || startDay > 31) {
+    throw new Error("Start day must be between 1 and 31");
+  }
+
+  if (!Number.isInteger(endDay) || endDay < 1 || endDay > 31) {
+    throw new Error("End day must be between 1 and 31");
+  }
+
+  if (
+    !Number.isFinite(adjustmentPercent) ||
+    adjustmentPercent < -100 ||
+    adjustmentPercent > 300
+  ) {
+    throw new Error("Adjustment percent must be between -100 and 300");
+  }
+
+  setCreatingSeason(true);
+  setErr(null);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/dashboard/properties/${id}/seasons`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+     body: JSON.stringify({
+  name: cleanName,
+  type: editingSeason.type,
+  startMonth,
+  startDay,
+  endMonth,
+  endDay,
+  adjustmentPercent,
+  isActive: true,
+}),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to create custom season");
+    }
+
+    setSeasons((prev) => [...prev, data.item]);
+
+    setNewSeason({
+      name: "",
+      type: "SHOULDER",
+      startMonth: "",
+      startDay: "",
+      endMonth: "",
+      endDay: "",
+      adjustmentPercent: "",
+    });
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setCreatingSeason(false);
+  }
+}
 
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
@@ -1708,20 +1931,353 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
       </div>
     </div>
 
-    {customSeasons.length === 0 ? (
-      <div style={{ fontSize: 13, color: "#6b7280" }}>
-        No custom seasons yet.
-      </div>
-    ) : (
-      <div style={{ display: "grid", gap: 8 }}>
-        {customSeasons.map((season) => (
+    <div
+  style={{
+    display: "grid",
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    border: "1px solid #e5e7eb",
+    background: "#f9fafb",
+  }}
+>
+  <div style={{ fontSize: 13, fontWeight: 900, color: "#111827" }}>
+    Add Custom Season
+  </div>
+
+  <div
+    style={{
+      display: "grid",
+      gap: 12,
+      gridTemplateColumns:
+        "minmax(180px, 1fr) repeat(4, minmax(90px, 120px)) minmax(140px, 160px) auto",
+      alignItems: "end",
+    }}
+  >
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Season Name</div>
+      <input
+        value={newSeason.name}
+        onChange={(e) =>
+          setNewSeason((s) => ({ ...s, name: e.target.value }))
+        }
+        placeholder="Summer Peak"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Season Type</div>
+  <select
+    value={newSeason.type}
+    onChange={(e) =>
+      setNewSeason((s) => ({
+        ...s,
+        type: e.target.value as PropertySeasonType,
+      }))
+    }
+    style={inputStyle}
+  >
+    <option value="PEAK">Peak Season</option>
+    <option value="SHOULDER">Shoulder Season</option>
+    <option value="LOW">Low Season</option>
+  </select>
+</div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Start Month</div>
+      <input
+        type="number"
+        min="1"
+        max="12"
+        value={newSeason.startMonth}
+        onChange={(e) =>
+          setNewSeason((s) => ({ ...s, startMonth: e.target.value }))
+        }
+        placeholder="6"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Start Day</div>
+      <input
+        type="number"
+        min="1"
+        max="31"
+        value={newSeason.startDay}
+        onChange={(e) =>
+          setNewSeason((s) => ({ ...s, startDay: e.target.value }))
+        }
+        placeholder="1"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>End Month</div>
+      <input
+        type="number"
+        min="1"
+        max="12"
+        value={newSeason.endMonth}
+        onChange={(e) =>
+          setNewSeason((s) => ({ ...s, endMonth: e.target.value }))
+        }
+        placeholder="8"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>End Day</div>
+      <input
+        type="number"
+        min="1"
+        max="31"
+        value={newSeason.endDay}
+        onChange={(e) =>
+          setNewSeason((s) => ({ ...s, endDay: e.target.value }))
+        }
+        placeholder="31"
+        style={inputStyle}
+      />
+    </div>
+
+    <div style={{ display: "grid", gap: 6 }}>
+      <div style={labelStyle}>Adjustment (%)</div>
+      <input
+        type="number"
+        step="0.01"
+        value={newSeason.adjustmentPercent}
+        onChange={(e) =>
+          setNewSeason((s) => ({
+            ...s,
+            adjustmentPercent: e.target.value,
+          }))
+        }
+        placeholder="20"
+        style={inputStyle}
+      />
+    </div>
+
+    <button
+      type="button"
+      disabled={creatingSeason}
+      onClick={async () => {
+        try {
+          await handleCreateSeason();
+        } catch (e: any) {
+          setErr(String(e?.message ?? e));
+        }
+      }}
+      style={{
+        ...primaryButtonStyle,
+        opacity: creatingSeason ? 0.7 : 1,
+        cursor: creatingSeason ? "not-allowed" : "pointer",
+      }}
+    >
+      {creatingSeason ? "Adding..." : "Add"}
+    </button>
+  </div>
+</div>
+
+   {customSeasons.length === 0 ? (
+  <div style={{ fontSize: 13, color: "#6b7280" }}>
+    No custom seasons yet.
+  </div>
+) : (
+  <div style={{ display: "grid", gap: 8 }}>
+    {customSeasons.map((season) => (
+      <div
+        key={season.id}
+        style={{
+          padding: 12,
+          borderRadius: 12,
+          border: "1px solid #e5e7eb",
+          background: "#ffffff",
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        {editingSeasonId === season.id ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={responsiveGridStyle}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Season Name</div>
+                <input
+                  value={editingSeason?.name ?? ""}
+                  onChange={(e) =>
+                    setEditingSeason((s) =>
+                      s ? { ...s, name: e.target.value } : s
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Season Type</div>
+  <select
+    value={editingSeason?.type ?? "SHOULDER"}
+    onChange={(e) =>
+      setEditingSeason((s) =>
+        s
+          ? {
+              ...s,
+              type: e.target.value as PropertySeasonType,
+            }
+          : s
+      )
+    }
+    style={inputStyle}
+  >
+    <option value="PEAK">Peak Season</option>
+    <option value="SHOULDER">Shoulder Season</option>
+    <option value="LOW">Low Season</option>
+  </select>
+</div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Start Month</div>
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={editingSeason?.startMonth ?? ""}
+                  onChange={(e) =>
+                    setEditingSeason((s) =>
+                      s
+                        ? {
+                            ...s,
+                            startMonth: Number(e.target.value || 0),
+                          }
+                        : s
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Start Day</div>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={editingSeason?.startDay ?? ""}
+                  onChange={(e) =>
+                    setEditingSeason((s) =>
+                      s
+                        ? {
+                            ...s,
+                            startDay: Number(e.target.value || 0),
+                          }
+                        : s
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>End Month</div>
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={editingSeason?.endMonth ?? ""}
+                  onChange={(e) =>
+                    setEditingSeason((s) =>
+                      s
+                        ? {
+                            ...s,
+                            endMonth: Number(e.target.value || 0),
+                          }
+                        : s
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>End Day</div>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={editingSeason?.endDay ?? ""}
+                  onChange={(e) =>
+                    setEditingSeason((s) =>
+                      s
+                        ? {
+                            ...s,
+                            endDay: Number(e.target.value || 0),
+                          }
+                        : s
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={labelStyle}>Adjustment (%)</div>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingSeason?.adjustmentPercent ?? ""}
+                  onChange={(e) =>
+                    setEditingSeason((s) =>
+                      s
+                        ? {
+                            ...s,
+                            adjustmentPercent: Number(e.target.value || 0),
+                          }
+                        : s
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                disabled={savingSeason}
+                onClick={async () => {
+                  try {
+                    await handleSaveSeason();
+                  } catch (e: any) {
+                    setErr(String(e?.message ?? e));
+                  }
+                }}
+                style={{
+                  ...primarySmallButtonStyle,
+                  opacity: savingSeason ? 0.7 : 1,
+                  cursor: savingSeason ? "not-allowed" : "pointer",
+                }}
+              >
+                {savingSeason ? "Saving..." : "Save"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingSeasonId(null);
+                  setEditingSeason(null);
+                }}
+                style={secondarySmallButtonStyle}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
           <div
-            key={season.id}
             style={{
-              padding: 12,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              background: "#ffffff",
               display: "flex",
               justifyContent: "space-between",
               gap: 12,
@@ -1732,19 +2288,20 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
                 {season.name}
               </div>
+
               <div
-  style={{
-    display: "inline-flex",
-    marginTop: 6,
-    padding: "3px 8px",
-    borderRadius: 999,
-    fontSize: 11,
-    fontWeight: 900,
-    ...getSeasonTypeStyle(season.type),
-  }}
->
-  {getSeasonTypeLabel(season.type)}
-</div>
+                style={{
+                  display: "inline-flex",
+                  marginTop: 6,
+                  padding: "3px 8px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  ...getSeasonTypeStyle(season.type),
+                }}
+              >
+                {getSeasonTypeLabel(season.type)}
+              </div>
 
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
                 {season.startMonth}/{season.startDay} → {season.endMonth}/
@@ -1752,75 +2309,53 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               </div>
             </div>
 
-            <div style={{ fontSize: 14, fontWeight: 900, color: "#7c3aed" }}>
-              {season.adjustmentPercent > 0 ? "+" : ""}
-              {season.adjustmentPercent}%
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#7c3aed" }}>
+                {season.adjustmentPercent > 0 ? "+" : ""}
+                {season.adjustmentPercent}%
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingSeasonId(season.id);
+                  setEditingSeason({ ...season });
+                }}
+                style={iconButtonStyle}
+                title="Edit custom season"
+              >
+                ✏️
+              </button>
+
+              <button
+                type="button"
+                disabled={deletingSeasonId === season.id}
+                onClick={async () => {
+                  try {
+                    await handleDeleteSeason(season.id);
+                  } catch (e: any) {
+                    setErr(String(e?.message ?? e));
+                  }
+                }}
+                style={{
+                  ...iconButtonStyle,
+                  opacity: deletingSeasonId === season.id ? 0.5 : 1,
+                  cursor:
+                    deletingSeasonId === season.id
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+                title="Delete custom season"
+              >
+                🗑️
+              </button>
             </div>
           </div>
-        ))}
+        )}
       </div>
-    )}
+    ))}
   </div>
-) : null}
-
-{form.holidayPricingEnabled ? (
-  <div
-    style={{
-      borderTop: "1px solid #dbeafe",
-      paddingTop: 16,
-      display: "grid",
-      gap: 14,
-    }}
-  >
-    <div>
-      <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
-        Holiday Pricing
-      </div>
-      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-        Holiday windows automatically applied by Pin&Go.
-      </div>
-    </div>
-
-    {holidayPricing.length === 0 ? (
-      <div style={{ fontSize: 13, color: "#6b7280" }}>
-        No holiday pricing applied yet.
-      </div>
-    ) : (
-      <div style={{ display: "grid", gap: 8 }}>
-        {holidayPricing
-          .filter((holiday) => holiday.isActive)
-          .map((holiday) => (
-            <div
-              key={holiday.id}
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                border: "1px solid #fde68a",
-                background: "#fffbeb",
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
-                  {holiday.name}
-                </div>
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                  {holiday.startMonth}/{holiday.startDay} → {holiday.endMonth}/
-                  {holiday.endDay}
-                </div>
-              </div>
-
-              <div style={{ fontSize: 14, fontWeight: 900, color: "#b45309" }}>
-                {holiday.adjustmentPercent > 0 ? "+" : ""}
-                {holiday.adjustmentPercent}%
-              </div>
-            </div>
-          ))}
-      </div>
-    )}
+)} 
   </div>
 ) : null}
 
