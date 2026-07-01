@@ -535,6 +535,90 @@ function getMissionActionTitleStyle(action: any): CSSProperties {
   return styles.missionActionTitle;
 }
 
+function getMissionActionEngineDisplayLabel(engine: unknown) {
+  const engineName = String(engine ?? "MissionControl");
+
+  if (engineName === "MissionControl") {
+    return "APMS Command Center";
+  }
+
+  return getMissionActivityEngineLabel(engineName);
+}
+
+function getMissionActionLastSignalLabel(action: any) {
+  const engineName = String(action?.engine ?? "");
+  const matchingEngineHealth = missionControlEngineHealth.find(
+    (engineHealth: any) => engineHealth?.engine === engineName
+  );
+
+  const rawDate =
+    matchingEngineHealth?.lastExecutionAt ??
+    missionControlSnapshot?.generatedAt;
+
+  const date = rawDate ? new Date(rawDate) : null;
+
+  if (!date || Number.isNaN(date.getTime())) {
+    return "Live APMS signal";
+  }
+
+  const formattedDate = date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  if (matchingEngineHealth?.lastExecutionAt) {
+    return `Last ${engineName || "APMS"} signal: ${formattedDate}`;
+  }
+
+  return `Last APMS check: ${formattedDate}`;
+}
+
+function getMissionActionMetaStyle(action: any): CSSProperties {
+  const visualStatus = getMissionActionVisualStatus(action);
+
+  if (visualStatus === "ERROR") {
+    return {
+      ...styles.missionActionMeta,
+      color: "#991b1b",
+    };
+  }
+
+  if (visualStatus === "WARNING") {
+    return {
+      ...styles.missionActionMeta,
+      color: "#92400e",
+    };
+  }
+
+  return styles.missionActionMeta;
+}
+
+function getMissionActionFooterStyle(action: any): CSSProperties {
+  const visualStatus = getMissionActionVisualStatus(action);
+
+  if (visualStatus === "ERROR") {
+    return {
+      ...styles.missionActionFooter,
+      color: "#991b1b",
+      background: "#fee2e2",
+      borderColor: "#fecaca",
+    };
+  }
+
+  if (visualStatus === "WARNING") {
+    return {
+      ...styles.missionActionFooter,
+      color: "#92400e",
+      background: "#fef3c7",
+      borderColor: "#fde68a",
+    };
+  }
+
+  return styles.missionActionFooter;
+}
+
 const autonomyScore = Number(
   missionControlSnapshot?.autonomyScore?.score ?? 100
 );
@@ -1370,6 +1454,18 @@ const occupancySummary = useMemo(() => {
           Recommended Action
         </div>
 
+        <div style={styles.missionActionTopMeta}>
+          <span style={styles.missionActionEngineBadge}>
+            {getMissionActionEngineDisplayLabel(
+              primaryMissionControlAction.engine
+            )}
+          </span>
+
+          <span style={styles.missionActionSignal}>
+            {getMissionActionLastSignalLabel(primaryMissionControlAction)}
+          </span>
+        </div>
+
         <div style={styles.missionActionText}>
           {primaryMissionControlAction.title}
         </div>
@@ -1387,22 +1483,21 @@ const occupancySummary = useMemo(() => {
       </div>
     </div>
 
-    <div style={styles.missionActionMeta}>
+    <div style={getMissionActionMetaStyle(primaryMissionControlAction)}>
       {primaryMissionControlAction.description ??
         getMissionActionFooterLabel(primaryMissionControlAction)}
     </div>
 
-    <div
-      style={{
-        marginTop: 8,
-        fontSize: 11,
-        fontWeight: 850,
-        color: primaryMissionControlAction.requiresHumanAction
-          ? "#92400e"
-          : "#166534",
-      }}
-    >
-      {getMissionActionFooterLabel(primaryMissionControlAction)}
+    <div style={styles.missionActionFooterRow}>
+      <div style={getMissionActionFooterStyle(primaryMissionControlAction)}>
+        {getMissionActionFooterLabel(primaryMissionControlAction)}
+      </div>
+
+      <div style={styles.missionActionTrustText}>
+        {primaryMissionControlAction.requiresHumanAction
+          ? "Pin&Go detected a real signal that needs host review."
+          : "Pin&Go is monitoring this property and no host action is needed."}
+      </div>
     </div>
 
     {secondaryMissionControlActions.length > 0 ? (
@@ -1414,11 +1509,17 @@ const occupancySummary = useMemo(() => {
           >
             <div style={styles.missionActionItemTopRow}>
               <div>
-                <div style={styles.missionActionText}>{action.title}</div>
+                <div style={styles.missionActionMiniMeta}>
+                  <span style={styles.missionActionEngineBadge}>
+                    {getMissionActionEngineDisplayLabel(action.engine)}
+                  </span>
 
-                <div style={styles.missionActionEngine}>
-                  {action.engine ?? "APMS"}
+                  <span style={styles.missionActionSignal}>
+                    {getMissionActionLastSignalLabel(action)}
+                  </span>
                 </div>
+
+                <div style={styles.missionActionText}>{action.title}</div>
               </div>
 
               <div
@@ -1433,7 +1534,7 @@ const occupancySummary = useMemo(() => {
               </div>
             </div>
 
-            <div style={styles.missionActionMeta}>
+            <div style={getMissionActionMetaStyle(action)}>
               {action.description ?? getMissionActionFooterLabel(action)}
             </div>
           </div>
@@ -1449,7 +1550,8 @@ const occupancySummary = useMemo(() => {
     ) : null}
   </div>
 ) : null}
- </div>
+     
+      </div>
        
        <div style={styles.controlCenterCard}>
         <div style={styles.legendColumn}>
@@ -2566,6 +2668,71 @@ missionActionMeta: {
   color: "#166534",
 },
  
+missionActionTopMeta: {
+  marginTop: 10,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+},
+
+missionActionMiniMeta: {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+},
+
+missionActionEngineBadge: {
+  display: "inline-flex",
+  alignItems: "center",
+  width: "fit-content",
+  padding: "5px 9px",
+  borderRadius: 999,
+  border: "1px solid #dbeafe",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 10,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.07em",
+},
+
+missionActionSignal: {
+  fontSize: 11,
+  fontWeight: 850,
+  color: "#64748b",
+},
+
+missionActionFooterRow: {
+  marginTop: 12,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+},
+
+missionActionFooter: {
+  display: "inline-flex",
+  alignItems: "center",
+  width: "fit-content",
+  padding: "7px 10px",
+  borderRadius: 999,
+  border: "1px solid #bbf7d0",
+  background: "#dcfce7",
+  color: "#166534",
+  fontSize: 11,
+  fontWeight: 950,
+},
+
+missionActionTrustText: {
+  fontSize: 11,
+  lineHeight: 1.35,
+  fontWeight: 850,
+  color: "#64748b",
+},
+
 missionActionList: {
   marginTop: 14,
   display: "grid",
