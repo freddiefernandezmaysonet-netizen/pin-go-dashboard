@@ -915,7 +915,6 @@ async function handleSaveSeason() {
         headers: {
           "Content-Type": "application/json",
         },
-       body: JSON.stringify({
   body: JSON.stringify({
   name: cleanName,
   type: editingSeason.type ?? "SHOULDER",
