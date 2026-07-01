@@ -880,6 +880,157 @@ function formatMissionEngineTime(engineHealth: any) {
   });
 }
 
+function isAutoResolutionEntry(entry: any) {
+  const status = String(entry?.status ?? "").toUpperCase();
+  const severity = String(entry?.severity ?? "").toUpperCase();
+
+  if (status !== "SUCCESS") return false;
+  if (severity === "WARNING" || severity === "CRITICAL") return false;
+  if (!entry?.engine || !entry?.summary) return false;
+
+  return true;
+}
+
+function getAutoResolutionTitle(entry: any) {
+  const engine = String(entry?.engine ?? "");
+  const reason = String(entry?.reason ?? "").toUpperCase();
+  const trigger = String(entry?.metadata?.trigger ?? "").toUpperCase();
+
+  if (
+    trigger === "HOLIDAY_PRICING_UPDATE" ||
+    reason.includes("HOLIDAY_PRICING_UPDATE")
+  ) {
+    return "Holiday pricing synchronized";
+  }
+
+  if (
+    trigger === "SEASON_CREATE" ||
+    trigger === "SEASON_UPDATE" ||
+    trigger === "SEASON_DELETE" ||
+    reason.includes("SEASON")
+  ) {
+    return "Seasonal pricing synchronized";
+  }
+
+  if (
+    trigger === "NIGHTLY_RATE_UPDATE" ||
+    reason.includes("NIGHTLY_RATE")
+  ) {
+    return "Nightly rates synchronized";
+  }
+
+  if (
+    trigger === "BLOCKED_DATE_CREATE" ||
+    reason.includes("BLOCKED_DATE_CREATE")
+  ) {
+    return "Availability block synchronized";
+  }
+
+  if (
+    trigger === "BLOCKED_DATE_DELETE" ||
+    reason.includes("BLOCKED_DATE_DELETE")
+  ) {
+    return "Availability reopened";
+  }
+
+  if (
+    trigger === "MANUAL_RESERVATION" ||
+    reason.includes("MANUAL_RESERVATION")
+  ) {
+    return "Manual reservation synchronized";
+  }
+
+  if (
+    trigger === "DIRECT_BOOKING" ||
+    reason.includes("DIRECT_BOOKING")
+  ) {
+    return "Direct booking processed";
+  }
+
+  if (
+    trigger === "DYNAMIC_PRICING_WORKER" ||
+    reason.includes("DYNAMIC_PRICING_WORKER")
+  ) {
+    return "Autonomous pricing sync completed";
+  }
+
+  if (engine === "Revenue") return "Pricing decision completed";
+  if (engine === "Distribution") return "Channel operation completed";
+  if (engine === "Reservation") return "Reservation workflow completed";
+  if (engine === "Access") return "Access workflow completed";
+  if (engine === "Cleaning") return "Cleaning workflow completed";
+  if (engine === "Messaging") return "Message workflow completed";
+
+  return "APMS operation completed";
+}
+
+function getAutoResolutionDescription(entry: any) {
+  const engine = String(entry?.engine ?? "");
+  const metadata = entry?.metadata ?? {};
+
+  if (engine === "Distribution" && metadata.pushedToChannex === true) {
+    return "Pin&Go confirmed the latest property update was pushed to Channex.";
+  }
+
+  if (engine === "Distribution") {
+    return "Pin&Go completed the latest channel operation successfully.";
+  }
+
+  if (engine === "Revenue") {
+    return "Pin&Go recalculated pricing using the active rules and guardrails.";
+  }
+
+  if (engine === "Reservation") {
+    return "Pin&Go processed the reservation workflow and kept the property timeline updated.";
+  }
+
+  if (engine === "Access") {
+    return "Pin&Go completed the access workflow for this operational step.";
+  }
+
+  if (engine === "Cleaning") {
+    return "Pin&Go completed the cleaning workflow for this reservation window.";
+  }
+
+  if (engine === "Messaging") {
+    return "Pin&Go completed the communication workflow successfully.";
+  }
+
+  return entry?.summary ?? "Pin&Go completed this APMS operation successfully.";
+}
+
+function getAutoResolutionDedupKey(entry: any) {
+  return [
+    entry?.engine ?? "APMS",
+    entry?.metadata?.trigger ?? entry?.reason ?? "",
+    getAutoResolutionTitle(entry),
+    getMissionActivityDetail(entry) ?? "",
+  ]
+    .join(":")
+    .toLowerCase();
+}
+
+const autoResolutionLogItems = [...missionControlRecentAuditEntries]
+  .filter(isAutoResolutionEntry)
+  .sort(
+    (a: any, b: any) =>
+      getMissionActivityTimestamp(b) - getMissionActivityTimestamp(a)
+  )
+  .reduce((items: any[], entry: any) => {
+    const dedupKey = getAutoResolutionDedupKey(entry);
+
+    const alreadyIncluded = items.some(
+      (item) => getAutoResolutionDedupKey(item) === dedupKey
+    );
+
+    if (alreadyIncluded) {
+      return items;
+    }
+
+    return [...items, entry];
+  }, [])
+  .slice(0, 5);
+
 const recentApmsActivities = [...missionControlRecentAuditEntries]
   .filter((entry: any) => entry?.engine && entry?.summary)
   .sort(
@@ -1551,6 +1702,62 @@ const occupancySummary = useMemo(() => {
   </div>
 ) : null}
      
+     {autoResolutionLogItems.length > 0 ? (
+  <div style={styles.missionPanel}>
+    <div style={styles.missionPanelHeader}>
+      <div>
+        <div style={styles.missionPanelTitle}>Auto Resolution Log</div>
+        <div style={styles.missionPanelMeta}>
+          Completed operations Pin&Go handled automatically
+        </div>
+      </div>
+
+      <div style={styles.autoResolutionCountPill}>
+        {autoResolutionLogItems.length} resolved
+      </div>
+    </div>
+
+    <div style={styles.autoResolutionGrid}>
+      {autoResolutionLogItems.map((entry: any, index: number) => (
+        <div
+          key={`${entry.decisionId ?? entry.id ?? index}-auto-resolution`}
+          style={styles.autoResolutionItem}
+        >
+          <div style={styles.autoResolutionTopRow}>
+            <div style={styles.autoResolutionIcon}>✓</div>
+
+            <div style={styles.autoResolutionContent}>
+              <div style={styles.autoResolutionTitle}>
+                {getAutoResolutionTitle(entry)}
+              </div>
+
+              <div style={styles.autoResolutionDescription}>
+                {getAutoResolutionDescription(entry)}
+              </div>
+
+              {getMissionActivityDetail(entry) ? (
+                <div style={styles.autoResolutionDetail}>
+                  {getMissionActivityDetail(entry)}
+                </div>
+              ) : null}
+
+              <div style={styles.autoResolutionMetaRow}>
+                <span style={styles.autoResolutionEngine}>
+                  {getMissionActivityEngineLabel(entry.engine)}
+                </span>
+
+                <span style={styles.autoResolutionTime}>
+                  {formatMissionActivityTime(entry)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+) : null}
+
       </div>
        
        <div style={styles.controlCenterCard}>
