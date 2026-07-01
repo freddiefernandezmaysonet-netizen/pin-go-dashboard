@@ -916,13 +916,15 @@ async function handleSaveSeason() {
           "Content-Type": "application/json",
         },
        body: JSON.stringify({
+  body: JSON.stringify({
   name: cleanName,
-  type: newSeason.type,
+  type: editingSeason.type ?? "SHOULDER",
   startMonth,
   startDay,
   endMonth,
   endDay,
   adjustmentPercent,
+  isActive: true,
 }),
       }
     );
@@ -1038,15 +1040,14 @@ async function handleDeleteSeason(seasonId: string) {
       headers: {
         "Content-Type": "application/json",
       },
-     body: JSON.stringify({
+   body: JSON.stringify({
   name: cleanName,
-  type: editingSeason.type,
+  type: newSeason.type ?? "SHOULDER",
   startMonth,
   startDay,
   endMonth,
   endDay,
   adjustmentPercent,
-  isActive: true,
 }),
     });
 
