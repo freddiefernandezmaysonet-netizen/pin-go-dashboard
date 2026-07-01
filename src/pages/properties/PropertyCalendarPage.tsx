@@ -544,6 +544,150 @@ function getMissionStatusPillStyle(status: string) {
   };
 }
 
+function formatMissionMetadataPercent(value: unknown) {
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    return null;
+  }
+
+  return `${amount > 0 ? "+" : ""}${amount}%`;
+}
+
+function getMissionActivityReasonLabel(entry: any) {
+  const reason = String(entry?.reason ?? "").toUpperCase();
+  const trigger = String(entry?.metadata?.trigger ?? "").toUpperCase();
+
+  if (
+    reason.includes("HOLIDAY_PRICING_UPDATE") ||
+    trigger === "HOLIDAY_PRICING_UPDATE"
+  ) {
+    return "Holiday pricing updated";
+  }
+
+  if (reason.includes("SEASON_CREATE") || trigger === "SEASON_CREATE") {
+    return "Season created";
+  }
+
+  if (reason.includes("SEASON_UPDATE") || trigger === "SEASON_UPDATE") {
+    return "Season updated";
+  }
+
+  if (reason.includes("SEASON_DELETE") || trigger === "SEASON_DELETE") {
+    return "Season removed";
+  }
+
+  if (
+    reason.includes("NIGHTLY_RATE") ||
+    trigger === "NIGHTLY_RATE_UPDATE"
+  ) {
+    return "Nightly rate synced";
+  }
+
+  if (
+    reason.includes("BLOCKED_DATE_CREATE") ||
+    trigger === "BLOCKED_DATE_CREATE"
+  ) {
+    return "Dates blocked";
+  }
+
+  if (
+    reason.includes("BLOCKED_DATE_DELETE") ||
+    trigger === "BLOCKED_DATE_DELETE"
+  ) {
+    return "Dates unblocked";
+  }
+
+  if (
+    reason.includes("MANUAL_RESERVATION") ||
+    trigger === "MANUAL_RESERVATION"
+  ) {
+    return "Manual reservation synced";
+  }
+
+  if (reason.includes("DIRECT_BOOKING") || trigger === "DIRECT_BOOKING") {
+    return "Direct booking synced";
+  }
+
+  if (
+    reason.includes("DYNAMIC_PRICING_WORKER") ||
+    trigger === "DYNAMIC_PRICING_WORKER"
+  ) {
+    return "Autonomous pricing sync";
+  }
+
+  if (reason) {
+    return reason
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/^\w/, (letter) => letter.toUpperCase());
+  }
+
+  return "Autonomous action completed";
+}
+
+function getMissionActivityDetail(entry: any) {
+  const metadata = entry?.metadata ?? {};
+  const trigger = String(metadata.trigger ?? "").toUpperCase();
+
+  if (trigger === "HOLIDAY_PRICING_UPDATE") {
+    const percent = formatMissionMetadataPercent(metadata.adjustmentPercent);
+    return [
+      metadata.holidayName ?? "Holiday pricing",
+      percent,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  if (
+    trigger === "SEASON_CREATE" ||
+    trigger === "SEASON_UPDATE" ||
+    trigger === "SEASON_DELETE"
+  ) {
+    const percent = formatMissionMetadataPercent(metadata.adjustmentPercent);
+    return [
+      metadata.seasonName ?? "Season",
+      metadata.seasonType,
+      percent,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  if (trigger === "NIGHTLY_RATE_UPDATE") {
+    const ratesCount = metadata.ratesCount;
+    const changedRateDates = Array.isArray(metadata.changedRateDates)
+      ? metadata.changedRateDates.join(", ")
+      : null;
+
+    return [
+      ratesCount ? `${ratesCount} rate${Number(ratesCount) === 1 ? "" : "s"}` : null,
+      changedRateDates,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
+  if (
+    trigger === "BLOCKED_DATE_CREATE" ||
+    trigger === "BLOCKED_DATE_DELETE"
+  ) {
+    return [
+      metadata.blockedStartDate,
+      metadata.blockedEndDate,
+    ]
+      .filter(Boolean)
+      .join(" → ");
+  }
+
+  if (metadata.pushedToChannex === true) {
+    return "Pushed to Channex";
+  }
+
+  return null;
+}
+
 function formatMissionStatusLabel(status: string) {
   return String(status ?? "PENDING").replaceAll("_", " ");
 }
@@ -570,16 +714,7 @@ const recentApmsActivities = [...missionControlRecentAuditEntries]
     (a: any, b: any) =>
       getMissionActivityTimestamp(b) - getMissionActivityTimestamp(a)
   )
-  .reduce((items: any[], entry: any) => {
-    const alreadyIncluded = items.some(
-      (item) => item.engine === entry.engine
-    );
-
-    if (alreadyIncluded) return items;
-
-    return [...items, entry];
-  }, [])
-  .slice(0, 4);
+  .slice(0, 8);
 
 function formatAutopilotStatus(status: string) {
   if (status === "ACTIVE") return "Auto Pilot Active";
@@ -1100,14 +1235,24 @@ const occupancySummary = useMemo(() => {
                   {entry.status ?? "SUCCESS"}
                 </div>
               </div>
+               <div style={styles.missionActivityReason}>
+  {getMissionActivityReasonLabel(entry)}
+</div>
 
-              <div style={styles.missionActivitySummary}>
-                {entry.summary}
-              </div>
+{getMissionActivityDetail(entry) ? (
+  <div style={styles.missionActivityDetail}>
+    {getMissionActivityDetail(entry)}
+  </div>
+) : null}
 
-              <div style={styles.missionActivityMeta}>
-                {formatMissionActivityTime(entry)}
-              </div>
+<div style={styles.missionActivitySummary}>
+  {entry.summary}
+</div>
+
+<div style={styles.missionActivityMeta}>
+  {formatMissionActivityTime(entry)}
+</div>
+              
             </div>
           </div>
         ))}
@@ -2188,6 +2333,22 @@ missionActivityEngine: {
   fontSize: 13,
   fontWeight: 950,
   color: "#0f172a",
+},
+
+missionActivityReason: {
+  marginTop: 8,
+  fontSize: 14,
+  lineHeight: 1.25,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+missionActivityDetail: {
+  marginTop: 5,
+  fontSize: 12,
+  lineHeight: 1.35,
+  fontWeight: 850,
+  color: "#2563eb",
 },
 
 missionActivitySummary: {
