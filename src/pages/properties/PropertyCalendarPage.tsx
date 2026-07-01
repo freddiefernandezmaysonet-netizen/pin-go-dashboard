@@ -714,6 +714,20 @@ const recentApmsActivities = [...missionControlRecentAuditEntries]
     (a: any, b: any) =>
       getMissionActivityTimestamp(b) - getMissionActivityTimestamp(a)
   )
+  .reduce(
+    (items: any[], entry: any) => {
+      const revenueCount = items.filter(
+        (item) => item.engine === "Revenue"
+      ).length;
+
+      if (entry.engine === "Revenue" && revenueCount >= 2) {
+        return items;
+      }
+
+      return [...items, entry];
+    },
+    []
+  )
   .slice(0, 8);
 
 function formatAutopilotStatus(status: string) {
