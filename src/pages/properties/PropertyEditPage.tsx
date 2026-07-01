@@ -2358,7 +2358,66 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
   </div>
 ) : null}
 
+ {form.holidayPricingEnabled ? (
+  <div
+    style={{
+      borderTop: "1px solid #dbeafe",
+      paddingTop: 16,
+      display: "grid",
+      gap: 14,
+    }}
+  >
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+        Holiday Pricing
+      </div>
+      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+        Holiday windows automatically applied by Pin&Go.
+      </div>
+    </div>
 
+    {holidayPricing.filter((holiday) => holiday.isActive).length === 0 ? (
+      <div style={{ fontSize: 13, color: "#6b7280" }}>
+        No holiday pricing applied yet.
+      </div>
+    ) : (
+      <div style={{ display: "grid", gap: 8 }}>
+        {holidayPricing
+          .filter((holiday) => holiday.isActive)
+          .map((holiday) => (
+            <div
+              key={holiday.id}
+              style={{
+                padding: 12,
+                borderRadius: 12,
+                border: "1px solid #fde68a",
+                background: "#fffbeb",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: "#111827" }}>
+                  {holiday.name}
+                </div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                  {holiday.startMonth}/{holiday.startDay} → {holiday.endMonth}/
+                  {holiday.endDay}
+                </div>
+              </div>
+
+              <div style={{ fontSize: 14, fontWeight: 900, color: "#b45309" }}>
+                {holiday.adjustmentPercent > 0 ? "+" : ""}
+                {holiday.adjustmentPercent}%
+              </div>
+            </div>
+          ))}
+      </div>
+    )}
+  </div>
+) : null}
   <div
     style={{
       borderTop: "1px solid #dbeafe",
