@@ -159,6 +159,7 @@ export function PropertyEditPage() {
     amount: "",
   });
 
+  const [taxes, setTaxes] = useState<PropertyTaxItem[]>([]);
   const [seasons, setSeasons] = useState<PropertySeasonItem[]>([]);
   const [creatingSeason, setCreatingSeason] = useState(false);
   const [editingSeasonId, setEditingSeasonId] = useState<string | null>(null);
@@ -914,16 +915,15 @@ async function handleSaveSeason() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: cleanName,
-          type: newSeason.type,
-          startMonth,
-          startDay,
-          endMonth,
-          endDay,
-          adjustmentPercent,
-          isActive: true,
-        }),
+       body: JSON.stringify({
+  name: cleanName,
+  type: newSeason.type,
+  startMonth,
+  startDay,
+  endMonth,
+  endDay,
+  adjustmentPercent,
+}),
       }
     );
 
@@ -1949,8 +1949,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     style={{
       display: "grid",
       gap: 12,
-      gridTemplateColumns:
-        "minmax(180px, 1fr) repeat(4, minmax(90px, 120px)) minmax(140px, 160px) auto",
+      gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
       alignItems: "end",
     }}
   >
