@@ -2720,16 +2720,22 @@ missionProgressFill: {
 missionPanel: {
   margin: 18,
   marginTop: 0,
-  padding: 16,
-  borderRadius: 20,
-  border: "1px solid #e2e8f0",
-  background: "#ffffff",
-  boxShadow: "0 12px 30px rgba(15,23,42,0.04)",
+  padding: 0,
+  borderRadius: 22,
+  border: "1px solid #cbd5e1",
+  background:
+    "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+  boxShadow: "0 18px 44px rgba(15,23,42,0.08)",
+  overflow: "hidden",
   display: "grid",
-  gap: 14,
+  gap: 0,
 },
 
 missionPanelHeader: {
+  padding: 18,
+  background:
+    "linear-gradient(135deg, #020617 0%, #0f172a 58%, #1e293b 100%)",
+  color: "#ffffff",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "flex-start",
@@ -2737,26 +2743,26 @@ missionPanelHeader: {
 },
 
 missionPanelTitle: {
-  fontSize: 13,
+  fontSize: 11,
   fontWeight: 950,
   textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  color: "#0f172a",
+  letterSpacing: "0.12em",
+  color: "#93c5fd",
 },
 
 missionPanelMeta: {
-  marginTop: 4,
+  marginTop: 7,
   fontSize: 12,
   fontWeight: 750,
-  color: "#64748b",
+  color: "#cbd5e1",
 },
 
 missionEngineGrid: {
+  padding: 18,
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
   gap: 12,
 },
-
 missionEngineCard: {
   padding: 16,
   borderRadius: 18,
@@ -2794,6 +2800,7 @@ missionEngineMessage: {
 },
 
 missionActivityTimeline: {
+  padding: 18,
   display: "grid",
   gap: 10,
 },
