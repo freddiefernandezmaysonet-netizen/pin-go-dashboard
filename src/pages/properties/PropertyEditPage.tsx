@@ -173,6 +173,12 @@ export function PropertyEditPage() {
   const [savingRecommendedSeasonId, setSavingRecommendedSeasonId] =
     useState<string | null>(null);
   const [holidayPricing, setHolidayPricing] = useState<PropertyHolidayPricingItem[]>([]);
+  const [editingHolidayPricingId, setEditingHolidayPricingId] =
+    useState<string | null>(null);
+  const [holidayPricingAdjustmentInput, setHolidayPricingAdjustmentInput] =
+    useState("");
+  const [savingHolidayPricingId, setSavingHolidayPricingId] =
+    useState<string | null>(null);
   const [newSeason, setNewSeason] = useState({
   name: "",
   type: "SHOULDER" as PropertySeasonType,
@@ -994,6 +1000,60 @@ async function handleDeleteSeason(seasonId: string) {
     setErr(String(e?.message ?? e));
   } finally {
     setDeletingSeasonId(null);
+  }
+}
+
+async function handleSaveHolidayPricingAdjustment(
+  holiday: PropertyHolidayPricingItem
+) {
+  if (!id) return;
+
+  const adjustmentPercent = Number(holidayPricingAdjustmentInput);
+
+  if (
+    !Number.isFinite(adjustmentPercent) ||
+    adjustmentPercent < -100 ||
+    adjustmentPercent > 300
+  ) {
+    throw new Error("Holiday adjustment percent must be between -100 and 300");
+  }
+
+  setSavingHolidayPricingId(holiday.id);
+  setErr(null);
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/holiday-pricing/${holiday.id}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adjustmentPercent,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to update holiday pricing");
+    }
+
+    setHolidayPricing((prev) =>
+      prev.map((item) =>
+        item.id === holiday.id ? { ...item, ...data.item } : item
+      )
+    );
+
+    setEditingHolidayPricingId(null);
+    setHolidayPricingAdjustmentInput("");
+  } catch (e: any) {
+    setErr(String(e?.message ?? e));
+  } finally {
+    setSavingHolidayPricingId(null);
   }
 }
 
@@ -2543,11 +2603,85 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                   {holiday.endDay}
                 </div>
               </div>
+              {editingHolidayPricingId === holiday.id ? (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
+    }}
+  >
+    <input
+      type="number"
+      step="0.01"
+      value={holidayPricingAdjustmentInput}
+      onChange={(e) =>
+        setHolidayPricingAdjustmentInput(e.target.value)
+      }
+      style={{
+        ...inputStyle,
+        width: 110,
+      }}
+    />
 
-              <div style={{ fontSize: 14, fontWeight: 900, color: "#b45309" }}>
-                {holiday.adjustmentPercent > 0 ? "+" : ""}
-                {holiday.adjustmentPercent}%
-              </div>
+    <button
+      type="button"
+      disabled={savingHolidayPricingId === holiday.id}
+      onClick={async () => {
+        try {
+          await handleSaveHolidayPricingAdjustment(holiday);
+        } catch (e: any) {
+          setErr(String(e?.message ?? e));
+        }
+      }}
+      style={{
+        ...primarySmallButtonStyle,
+        opacity: savingHolidayPricingId === holiday.id ? 0.7 : 1,
+        cursor:
+          savingHolidayPricingId === holiday.id
+            ? "not-allowed"
+            : "pointer",
+      }}
+    >
+      {savingHolidayPricingId === holiday.id ? "Saving..." : "Save"}
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setEditingHolidayPricingId(null);
+        setHolidayPricingAdjustmentInput("");
+      }}
+      style={secondarySmallButtonStyle}
+    >
+      Cancel
+    </button>
+  </div>
+) : (
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ fontSize: 14, fontWeight: 900, color: "#b45309" }}>
+      {holiday.adjustmentPercent > 0 ? "+" : ""}
+      {holiday.adjustmentPercent}%
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
+        setEditingHolidayPricingId(holiday.id);
+        setHolidayPricingAdjustmentInput(
+          String(holiday.adjustmentPercent)
+        );
+      }}
+      style={iconButtonStyle}
+      title="Edit holiday pricing adjustment"
+    >
+      ✏️
+    </button>
+  </div>
+)}
+              
             </div>
           ))}
       </div>
