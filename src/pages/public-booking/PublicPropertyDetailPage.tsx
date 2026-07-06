@@ -24,6 +24,7 @@ type PublicProperty = {
   checkInTime?: string | null;
   checkOutTime?: string | null;
   timezone?: string | null;
+  cancellationPolicy?: PublicCancellationPolicy | null;
   amenities?: Array<{
   id: string;
   name: string;
@@ -42,6 +43,36 @@ type PublicProperty = {
     name: string;
     slug: string;
   };
+};
+
+type PublicCancellationPolicy = {
+  policyId: string | null;
+  name: string;
+  type:
+    | "FLEXIBLE"
+    | "MODERATE"
+    | "FIRM"
+    | "STRICT"
+    | "CUSTOM"
+    | "NON_REFUNDABLE";
+  source: string;
+  guestSelfCancellationEnabled: boolean;
+  autoRefundEligibleCancellations: boolean;
+  requireHostApprovalOutsidePolicy: boolean;
+  freeCancellationHoursBeforeCheckIn: number;
+  refundBasis:
+    | "TOTAL_AMOUNT"
+    | "NIGHTLY_SUBTOTAL"
+    | "NIGHTLY_PLUS_CLEANING"
+    | "CUSTOM";
+  refundPercentBeforeDeadline: number;
+  refundPercentAfterDeadline: number;
+  cleaningFeeRefundable: boolean;
+  amenitiesRefundable: boolean;
+  taxesRefundable: boolean;
+  nonRefundableDiscountPercent: number | null;
+  description: string | null;
+  snapshotAt: string;
 };
 
 const API_BASE =
@@ -81,6 +112,72 @@ function formatNightlyDisplayMoney(value: string | number | null | undefined) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(Math.round(n));
+}
+
+function formatCancellationWindow(hours: number) {
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return "after booking confirmation";
+  }
+
+  const days = hours / 24;
+
+  if (Number.isInteger(days) && days >= 1) {
+    return `${days} day${days === 1 ? "" : "s"} before check-in`;
+  }
+
+  return `${hours} hour${hours === 1 ? "" : "s"} before check-in`;
+}
+
+function formatRefundPercent(value: number) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n)) return "0%";
+
+  return `${Math.max(0, Math.min(100, n))}%`;
+}
+
+function getCancellationPolicySummary(
+  policy?: PublicCancellationPolicy | null
+) {
+  if (!policy) return null;
+
+  if (policy.type === "NON_REFUNDABLE") {
+    return {
+      title: policy.name || "Non-refundable",
+      headline: "This reservation is non-refundable.",
+      description:
+        policy.description ||
+        "Refunds are not automatic unless the host approves an exception.",
+      beforeDeadline: "0%",
+      afterDeadline: "0%",
+      deadline: "No automatic refund window",
+      approvalNote: "Host approval may be required for exceptions.",
+    };
+  }
+
+  const deadline = formatCancellationWindow(
+    policy.freeCancellationHoursBeforeCheckIn
+  );
+
+  const beforeDeadline = formatRefundPercent(
+    policy.refundPercentBeforeDeadline
+  );
+
+  const afterDeadline = formatRefundPercent(policy.refundPercentAfterDeadline);
+
+  return {
+    title: policy.name || "Cancellation policy",
+    headline: `${beforeDeadline} refund until ${deadline}.`,
+    description:
+      policy.description ||
+      `Guests may receive a ${beforeDeadline} refund until ${deadline}. After that, ${afterDeadline} refund applies according to the host policy.`,
+    beforeDeadline,
+    afterDeadline,
+    deadline,
+    approvalNote: policy.requireHostApprovalOutsidePolicy
+      ? "Cancellations outside the policy window may require host approval."
+      : "Eligible cancellations can be processed automatically by Pin&Go.",
+  };
 }
 
 function diffNights(checkIn: string, checkOut: string) {
@@ -573,6 +670,11 @@ export default function PublicPropertyDetailPage() {
   
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
+
+const cancellationPolicySummary = useMemo(
+  () => getCancellationPolicySummary(property?.cancellationPolicy),
+  [property?.cancellationPolicy]
+);
 
   const blockedDateObjects = useMemo(
     () =>
@@ -1466,6 +1568,52 @@ useEffect(() => {
                         <strong>{formatMoney(displayTotal)}</strong>
                       </div>
                     </div>
+
+                   {cancellationPolicySummary ? (
+  <div style={styles.cancellationPolicyBox}>
+    <div style={styles.cancellationPolicyHeader}>
+      <span style={styles.cancellationPolicyIcon}>↩</span>
+
+      <div>
+        <div style={styles.cancellationPolicyEyebrow}>
+          Cancellation policy
+        </div>
+        <div style={styles.cancellationPolicyTitle}>
+          {cancellationPolicySummary.title}
+        </div>
+      </div>
+    </div>
+
+    <div style={styles.cancellationPolicyHeadline}>
+      {cancellationPolicySummary.headline}
+    </div>
+
+    <p style={styles.cancellationPolicyText}>
+      {cancellationPolicySummary.description}
+    </p>
+
+    <div style={styles.cancellationPolicyGrid}>
+      <div style={styles.cancellationPolicyMetric}>
+        <span>Before deadline</span>
+        <strong>{cancellationPolicySummary.beforeDeadline}</strong>
+      </div>
+
+      <div style={styles.cancellationPolicyMetric}>
+        <span>After deadline</span>
+        <strong>{cancellationPolicySummary.afterDeadline}</strong>
+      </div>
+
+      <div style={styles.cancellationPolicyMetric}>
+        <span>Deadline</span>
+        <strong>{cancellationPolicySummary.deadline}</strong>
+      </div>
+    </div>
+
+    <div style={styles.cancellationPolicyNote}>
+      {cancellationPolicySummary.approvalNote}
+    </div>
+  </div>
+) : null}
 
                     {bookingError ? (
                       <div style={styles.inlineError}>{bookingError}</div>
@@ -2572,4 +2720,91 @@ legalLink: {
   textDecoration: "none",
 },
 
+cancellationPolicyBox: {
+  marginTop: 18,
+  border: "1px solid #bbf7d0",
+  borderRadius: 20,
+  padding: 16,
+  background:
+    "linear-gradient(135deg, rgba(240,253,244,0.94), rgba(255,255,255,0.96))",
+  display: "grid",
+  gap: 12,
+},
+
+cancellationPolicyHeader: {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+},
+
+cancellationPolicyIcon: {
+  width: 38,
+  height: 38,
+  borderRadius: 14,
+  display: "grid",
+  placeItems: "center",
+  background: "#ffffff",
+  border: "1px solid #bbf7d0",
+  color: "#15803d",
+  fontSize: 20,
+  fontWeight: 950,
+  flexShrink: 0,
+},
+
+cancellationPolicyEyebrow: {
+  fontSize: 11,
+  fontWeight: 950,
+  color: "#15803d",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+},
+
+cancellationPolicyTitle: {
+  marginTop: 3,
+  fontSize: 16,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+cancellationPolicyHeadline: {
+  fontSize: 14,
+  fontWeight: 950,
+  color: "#14532d",
+  lineHeight: 1.45,
+},
+
+cancellationPolicyText: {
+  margin: 0,
+  color: "#334155",
+  fontSize: 13,
+  lineHeight: 1.55,
+  fontWeight: 700,
+},
+
+cancellationPolicyGrid: {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+  gap: 10,
+},
+
+cancellationPolicyMetric: {
+  border: "1px solid #dcfce7",
+  background: "#ffffff",
+  borderRadius: 14,
+  padding: "10px 12px",
+  display: "grid",
+  gap: 4,
+  color: "#64748b",
+  fontSize: 11,
+  fontWeight: 900,
+},
+
+cancellationPolicyNote: {
+  borderTop: "1px solid #dcfce7",
+  paddingTop: 10,
+  color: "#166534",
+  fontSize: 12,
+  lineHeight: 1.45,
+  fontWeight: 850,
+},
 };
