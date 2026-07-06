@@ -2,7 +2,6 @@
 
 import { PmsControlCenter } from "../../components/dashboard/PmsControlCenter";
 import { LocksCapacityCard } from "../../components/dashboard/LocksCapacityCard";
-import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
 
 type MetricsResp = {
   upcomingArrivals: number;
@@ -188,8 +187,6 @@ export function OverviewPage() {
     
     <LocksCapacityCard />
 
-    <HostPayoutsCard />
-  
        <div
         style={{
           border: "1px solid #e5e7eb",
