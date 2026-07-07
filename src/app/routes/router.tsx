@@ -44,7 +44,9 @@ import PublicBookingSitePage from "../../pages/public-booking/PublicBookingSiteP
 import PublicPropertyDetailPage from "../../pages/public-booking/PublicPropertyDetailPage";
 import PublicBookingSuccessPage from "../../pages/public-booking/PublicBookingSuccessPage";
 import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCancelPage";
+import GuestCancellationPage from "../../pages/public-booking/GuestCancellationPage";
 import OrganizationSettingsPage from "../../pages/organization/OrganizationSettingsPage";
+
 
 function RootRedirect() {
   const host = window.location.hostname;
@@ -77,6 +79,10 @@ export const router = createBrowserRouter([
   {
   path: "/booking/cancel",
   element: <PublicBookingCancelPage />,
+  },
+  {
+  path: "/booking/manage/:guestToken",
+  element: <GuestCancellationPage />,
   },
   {
   path: "/",
