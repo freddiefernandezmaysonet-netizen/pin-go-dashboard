@@ -451,23 +451,23 @@ function getPolicySummary(form: PolicyForm) {
     return `${rulesSummary}${scenariosSummary}`;
   }
 
-  const days = form.freeCancellationHoursBeforeCheckIn / 24;
-  const deadlineLabel =
+   const cancellationWindowText =
     form.freeCancellationHoursBeforeCheckIn === 0
-      ? "until booking confirmation"
-      : days >= 1 && Number.isInteger(days)
-      ? `${days} day(s) before check-in`
-      : `${form.freeCancellationHoursBeforeCheckIn} hour(s) before check-in`;
-
-  if (form.type === "NON_REFUNDABLE") {
+      ? "after booking confirmation"
+      : `until ${formatHoursBeforeCheckIn(
+          form.freeCancellationHoursBeforeCheckIn
+        )} before check-in`;
+  
+if (form.type === "NON_REFUNDABLE") {
     return "Guests cannot receive an automatic refund unless the host approves an exception.";
   }
 
-  return `Guests receive ${form.refundPercentBeforeDeadline}% refund until ${deadlineLabel}. After that, ${form.refundPercentAfterDeadline}% refund applies${
+   return `Guests receive ${form.refundPercentBeforeDeadline}% refund ${cancellationWindowText}. After that, ${form.refundPercentAfterDeadline}% refund applies${
     form.requireHostApprovalOutsidePolicy
       ? " with host approval outside policy."
       : "."
   }`;
+
 }
 
 function ToggleRow({
@@ -525,11 +525,13 @@ export function CancellationPolicyCard({
   );
 
   const generatedSummary = useMemo(() => getPolicySummary(form), [form]);
-  const guestFacingPreview = useMemo(
-    () => form.guestFacingSummary.trim() || generatedSummary,
-    [form.guestFacingSummary, generatedSummary]
-  );
+   const guestFacingPreview = useMemo(() => {
+    if (canEditGuestFacingSummary && form.guestFacingSummary.trim()) {
+      return form.guestFacingSummary.trim();
+    }
 
+    return generatedSummary;
+  }, [canEditGuestFacingSummary, form.guestFacingSummary, generatedSummary]);
    const normalizedRulesPreview = useMemo(
     () => normalizeRefundRules(form.refundRules),
     [form.refundRules]
@@ -537,8 +539,9 @@ export function CancellationPolicyCard({
 
   const isBusy = loadState === "loading" || loadState === "saving";
   const canEditRefundRules = form.type === "CUSTOM";
-
-  async function loadPolicy() {
+  const canEditGuestFacingSummary = form.type === "CUSTOM";
+  
+async function loadPolicy() {
     if (!propertyId) return;
 
     try {
@@ -652,7 +655,7 @@ export function CancellationPolicyCard({
         nonRefundableScenarios: normalizeNonRefundableScenarios(
           form.nonRefundableScenarios
         ),
-        guestFacingSummary: form.guestFacingSummary.trim(),
+        guestFacingSummary: guestFacingPreview.trim(),
         cleaningFeeRefundable: form.cleaningFeeRefundable,
         amenitiesRefundable: form.amenitiesRefundable,
         taxesRefundable: form.taxesRefundable,
@@ -750,11 +753,14 @@ export function CancellationPolicyCard({
             disabled={isBusy}
           />
         </label>
-
-        <label style={labelStyle}>
+               <label style={labelStyle}>
           Guest-facing summary
           <textarea
-            value={form.guestFacingSummary}
+            value={
+              canEditGuestFacingSummary
+                ? form.guestFacingSummary
+                : generatedSummary
+            }
             onChange={(event) =>
               setForm((current) => ({
                 ...current,
@@ -762,14 +768,22 @@ export function CancellationPolicyCard({
               }))
             }
             placeholder={generatedSummary}
-            style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
-            disabled={isBusy}
+            style={{
+              ...inputStyle,
+              minHeight: 110,
+              resize: "vertical",
+              background: canEditGuestFacingSummary ? "#ffffff" : "#f8fafc",
+              color: canEditGuestFacingSummary ? "#0f172a" : "#475569",
+            }}
+            disabled={isBusy || !canEditGuestFacingSummary}
           />
           <span style={fieldHelpStyle}>
-            Shown to the guest before booking and stored as part of the
-            reservation policy snapshot.
+            {canEditGuestFacingSummary
+              ? "Custom policies can use a host-defined guest-facing summary."
+              : "This text is generated automatically from the selected policy rules and free cancellation window."}
           </span>
         </label>
+        
       </div>
 
       <div style={gridStyle}>
