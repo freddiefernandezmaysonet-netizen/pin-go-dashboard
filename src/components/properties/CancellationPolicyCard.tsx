@@ -7,6 +7,8 @@ import {
 import type {
   CancellationPolicyType,
   CancellationRefundBasis,
+  CancellationRefundRule,
+  CancellationNonRefundableScenario,
   DashboardCancellationPolicy,
   SaveCancellationPolicyInput,
 } from "../../api/cancellationPolicy";
@@ -27,11 +29,26 @@ type PolicyForm = {
   refundBasis: CancellationRefundBasis;
   refundPercentBeforeDeadline: number;
   refundPercentAfterDeadline: number;
+  refundRules: CancellationRefundRule[];
+  nonRefundableScenarios: CancellationNonRefundableScenario[];
+  guestFacingSummary: string;
   cleaningFeeRefundable: boolean;
   amenitiesRefundable: boolean;
   taxesRefundable: boolean;
   nonRefundableDiscountPercent: number | null;
   description: string;
+};
+
+type DashboardCancellationPolicyV11 = DashboardCancellationPolicy & {
+  refundRules?: CancellationRefundRule[] | null;
+  nonRefundableScenarios?: CancellationNonRefundableScenario[] | null;
+  guestFacingSummary?: string | null;
+};
+
+type SaveCancellationPolicyV11Input = SaveCancellationPolicyInput & {
+  refundRules: CancellationRefundRule[];
+  nonRefundableScenarios: CancellationNonRefundableScenario[];
+  guestFacingSummary: string;
 };
 
 const POLICY_TYPES: Array<{
@@ -71,6 +88,14 @@ const POLICY_TYPES: Array<{
   },
 ];
 
+const DEFAULT_NON_REFUNDABLE_SCENARIOS: CancellationNonRefundableScenario[] = [
+  "EARLY_DEPARTURE",
+  "DELAYED_ARRIVAL",
+  "REDUCED_NIGHTS",
+  "WEATHER_RE_SCHEDULE",
+  "OTHER",
+];
+
 const REFUND_BASIS_OPTIONS: Array<{
   value: CancellationRefundBasis;
   label: string;
@@ -81,6 +106,43 @@ const REFUND_BASIS_OPTIONS: Array<{
   { value: "CUSTOM", label: "Custom basis" },
 ];
 
+const STRICT_TIERED_RULES: CancellationRefundRule[] = [
+  {
+    minHoursBeforeCheckIn: 720,
+    refundPercent: 100,
+    label: "Full refund",
+  },
+  {
+    minHoursBeforeCheckIn: 336,
+    refundPercent: 50,
+    label: "Partial refund",
+  },
+  {
+    minHoursBeforeCheckIn: 0,
+    refundPercent: 0,
+    label: "No refund",
+  },
+];
+
+const NON_REFUNDABLE_RULES: CancellationRefundRule[] = [
+  {
+    minHoursBeforeCheckIn: 0,
+    refundPercent: 0,
+    label: "No refund",
+  },
+];
+
+const NON_REFUNDABLE_SCENARIO_OPTIONS: Array<{
+  value: CancellationNonRefundableScenario;
+  label: string;
+}> = [
+  { value: "EARLY_DEPARTURE", label: "Early departure" },
+  { value: "DELAYED_ARRIVAL", label: "Delayed arrival" },
+  { value: "REDUCED_NIGHTS", label: "Reducing reserved nights" },
+  { value: "WEATHER_RE_SCHEDULE", label: "Weather-related reschedules" },
+  { value: "OTHER", label: "Other post-booking changes" },
+];
+
 function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
   if (type === "MODERATE") {
     return {
@@ -88,6 +150,10 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
       freeCancellationHoursBeforeCheckIn: 120,
       refundPercentBeforeDeadline: 100,
       refundPercentAfterDeadline: 50,
+      refundRules: [],
+      nonRefundableScenarios: [],
+      guestFacingSummary:
+        "Guests can cancel for a full refund until 5 days before check-in. After that, a partial refund may apply according to the property's cancellation policy.",
       description:
         "Guests can cancel for a full refund until 5 days before check-in. After that, a partial refund may apply.",
     };
@@ -99,6 +165,10 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
       freeCancellationHoursBeforeCheckIn: 168,
       refundPercentBeforeDeadline: 100,
       refundPercentAfterDeadline: 50,
+      refundRules: [],
+      nonRefundableScenarios: [],
+      guestFacingSummary:
+        "Guests can cancel for a full refund until 7 days before check-in. After that, a partial refund may apply according to the property's cancellation policy.",
       description:
         "Guests can cancel for a full refund until 7 days before check-in. After that, a partial refund may apply.",
     };
@@ -107,11 +177,15 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
   if (type === "STRICT") {
     return {
       name: "Strict",
-      freeCancellationHoursBeforeCheckIn: 336,
-      refundPercentBeforeDeadline: 50,
+      freeCancellationHoursBeforeCheckIn: 720,
+      refundPercentBeforeDeadline: 100,
       refundPercentAfterDeadline: 0,
+      refundRules: STRICT_TIERED_RULES,
+      nonRefundableScenarios: DEFAULT_NON_REFUNDABLE_SCENARIOS,
+      guestFacingSummary:
+        "Travelers who cancel at least 30 days before check-in will get back 100% of the amount they've paid. If they cancel between 14 and 30 days before check-in, they'll get back 50%. Otherwise, they won't get a refund. No refunds will be made for early departures, delayed arrival, reducing nights, weather-related reschedules, or other post-booking changes.",
       description:
-        "Guests may receive a partial refund until 14 days before check-in. After that, host approval is required.",
+        "Cancel at least 30 days before check-in for a 100% refund. Cancel between 14 and 30 days before check-in for a 50% refund. Otherwise, no refund applies.",
     };
   }
 
@@ -121,6 +195,10 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
       freeCancellationHoursBeforeCheckIn: 0,
       refundPercentBeforeDeadline: 0,
       refundPercentAfterDeadline: 0,
+      refundRules: NON_REFUNDABLE_RULES,
+      nonRefundableScenarios: DEFAULT_NON_REFUNDABLE_SCENARIOS,
+      guestFacingSummary:
+        "This reservation is non-refundable. No refunds will be made for early departures, delayed arrival, reducing nights, weather-related reschedules, or other post-booking changes.",
       description:
         "This reservation is non-refundable unless the host approves an exception.",
     };
@@ -141,15 +219,20 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
     freeCancellationHoursBeforeCheckIn: 168,
     refundPercentBeforeDeadline: 100,
     refundPercentAfterDeadline: 0,
+    refundRules: [],
+    nonRefundableScenarios: [],
+    guestFacingSummary:
+      "Guests can cancel for a full refund until 7 days before check-in. After that, host approval may be required.",
     description:
       "Guests can cancel for a full refund until 7 days before check-in. After that, host approval may be required.",
   };
 }
 
-function policyToForm(
-  policy: DashboardCancellationPolicy | null
-): PolicyForm {
+function policyToForm(policy: DashboardCancellationPolicy | null): PolicyForm {
   if (policy) {
+    const policyV11 = policy as DashboardCancellationPolicyV11;
+    const preset = getPreset(policy.type);
+
     return {
       name: policy.name,
       type: policy.type,
@@ -162,6 +245,19 @@ function policyToForm(
       refundBasis: policy.refundBasis,
       refundPercentBeforeDeadline: policy.refundPercentBeforeDeadline,
       refundPercentAfterDeadline: policy.refundPercentAfterDeadline,
+      refundRules: normalizeRefundRules(
+        policyV11.refundRules ?? preset.refundRules ?? []
+      ),
+      nonRefundableScenarios: normalizeNonRefundableScenarios(
+        policyV11.nonRefundableScenarios ??
+          preset.nonRefundableScenarios ??
+          []
+      ),
+      guestFacingSummary:
+        policyV11.guestFacingSummary ??
+        policy.description ??
+        preset.guestFacingSummary ??
+        "",
       cleaningFeeRefundable: policy.cleaningFeeRefundable,
       amenitiesRefundable: policy.amenitiesRefundable,
       taxesRefundable: policy.taxesRefundable,
@@ -170,21 +266,30 @@ function policyToForm(
     };
   }
 
+  const preset = getPreset("FLEXIBLE");
+
   return {
-    name: "Flexible",
+    name: preset.name ?? "Flexible",
     type: "FLEXIBLE",
     guestSelfCancellationEnabled: true,
     autoRefundEligibleCancellations: true,
     requireHostApprovalOutsidePolicy: true,
-    freeCancellationHoursBeforeCheckIn: 168,
+    freeCancellationHoursBeforeCheckIn:
+      preset.freeCancellationHoursBeforeCheckIn ?? 168,
     refundBasis: "TOTAL_AMOUNT",
-    refundPercentBeforeDeadline: 100,
-    refundPercentAfterDeadline: 0,
+    refundPercentBeforeDeadline: preset.refundPercentBeforeDeadline ?? 100,
+    refundPercentAfterDeadline: preset.refundPercentAfterDeadline ?? 0,
+    refundRules: normalizeRefundRules(preset.refundRules ?? []),
+    nonRefundableScenarios: normalizeNonRefundableScenarios(
+      preset.nonRefundableScenarios ?? []
+    ),
+    guestFacingSummary: preset.guestFacingSummary ?? "",
     cleaningFeeRefundable: true,
     amenitiesRefundable: true,
     taxesRefundable: true,
     nonRefundableDiscountPercent: null,
     description:
+      preset.description ??
       "Guests can cancel for a full refund until 7 days before check-in. After that, host approval may be required.",
   };
 }
@@ -199,7 +304,117 @@ function normalizeHours(value: number) {
   return Math.max(0, Math.round(value));
 }
 
+function normalizeRefundRules(
+  rules: CancellationRefundRule[] | null | undefined
+): CancellationRefundRule[] {
+  if (!Array.isArray(rules)) return [];
+
+  return rules
+    .map((rule) => {
+      const refundPercent = clampPercent(Number(rule.refundPercent));
+
+      return {
+        ...rule,
+        minHoursBeforeCheckIn: normalizeHours(
+          Number(rule.minHoursBeforeCheckIn)
+        ),
+        refundPercent,
+        label: (rule.label ?? "").trim() || `${refundPercent}% refund`,
+      };
+    })
+    .sort(
+      (first, second) =>
+        second.minHoursBeforeCheckIn - first.minHoursBeforeCheckIn
+    );
+}
+
+function normalizeNonRefundableScenarios(
+  scenarios: CancellationNonRefundableScenario[] | null | undefined
+): CancellationNonRefundableScenario[] {
+  if (!Array.isArray(scenarios)) return [];
+
+  const selected = new Set(scenarios);
+
+  return DEFAULT_NON_REFUNDABLE_SCENARIOS.filter((scenario) =>
+    selected.has(scenario)
+  );
+}
+
+function getScenarioLabel(value: CancellationNonRefundableScenario) {
+  return (
+    NON_REFUNDABLE_SCENARIO_OPTIONS.find((item) => item.value === value)
+      ?.label ?? value
+  );
+}
+
+function formatHoursBeforeCheckIn(hours: number) {
+  const normalizedHours = normalizeHours(hours);
+  const days = normalizedHours / 24;
+
+  if (normalizedHours === 0) return "0 hours";
+  if (days >= 1 && Number.isInteger(days)) {
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  return `${normalizedHours} hour${normalizedHours === 1 ? "" : "s"}`;
+}
+
+function formatRefundRuleWindow(
+  rule: CancellationRefundRule,
+  index: number,
+  rules: CancellationRefundRule[]
+) {
+  const minHours = normalizeHours(Number(rule.minHoursBeforeCheckIn));
+  const previousRule = index > 0 ? rules[index - 1] : null;
+  const previousHours = previousRule
+    ? normalizeHours(Number(previousRule.minHoursBeforeCheckIn))
+    : null;
+
+  if (minHours === 0 && previousHours && previousHours > 0) {
+    return `less than ${formatHoursBeforeCheckIn(
+      previousHours
+    )} before check-in`;
+  }
+
+  if (previousHours && previousHours > minHours) {
+    return `between ${formatHoursBeforeCheckIn(
+      minHours
+    )} and ${formatHoursBeforeCheckIn(previousHours)} before check-in`;
+  }
+
+  if (minHours === 0) {
+    return "after booking";
+  }
+
+  return `at least ${formatHoursBeforeCheckIn(minHours)} before check-in`;
+}
+
 function getPolicySummary(form: PolicyForm) {
+  const normalizedRules = normalizeRefundRules(form.refundRules);
+
+  if (normalizedRules.length > 0) {
+    const rulesSummary = normalizedRules
+      .map((rule, index) => {
+        const label = rule.label ? `${rule.label}: ` : "";
+
+        return `${label}${rule.refundPercent}% refund ${formatRefundRuleWindow(
+          rule,
+          index,
+          normalizedRules
+        )}.`;
+      })
+      .join(" ");
+
+    const scenariosSummary =
+      form.nonRefundableScenarios.length > 0
+        ? ` Non-refundable scenarios include ${form.nonRefundableScenarios
+            .map(getScenarioLabel)
+            .join(", ")}.`
+        : "";
+
+    return `${rulesSummary}${scenariosSummary}`;
+  }
+
   const days = form.freeCancellationHoursBeforeCheckIn / 24;
   const deadlineLabel =
     form.freeCancellationHoursBeforeCheckIn === 0
@@ -213,7 +428,9 @@ function getPolicySummary(form: PolicyForm) {
   }
 
   return `Guests receive ${form.refundPercentBeforeDeadline}% refund until ${deadlineLabel}. After that, ${form.refundPercentAfterDeadline}% refund applies${
-    form.requireHostApprovalOutsidePolicy ? " with host approval outside policy." : "."
+    form.requireHostApprovalOutsidePolicy
+      ? " with host approval outside policy."
+      : "."
   }`;
 }
 
@@ -221,15 +438,23 @@ function ToggleRow({
   title,
   description,
   checked,
+  disabled = false,
   onChange,
 }: {
   title: string;
   description: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (next: boolean) => void;
 }) {
   return (
-    <label style={toggleRowStyle}>
+    <label
+      style={{
+        ...toggleRowStyle,
+        opacity: disabled ? 0.68 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
       <div>
         <div style={{ fontWeight: 800, color: "#0f172a", fontSize: 14 }}>
           {title}
@@ -242,6 +467,7 @@ function ToggleRow({
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
         style={{ width: 18, height: 18 }}
       />
@@ -249,7 +475,9 @@ function ToggleRow({
   );
 }
 
-export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardProps) {
+export function CancellationPolicyCard({
+  propertyId,
+}: CancellationPolicyCardProps) {
   const [form, setForm] = useState<PolicyForm>(policyToForm(null));
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -260,7 +488,16 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
     [form.type]
   );
 
-  const summary = useMemo(() => getPolicySummary(form), [form]);
+  const generatedSummary = useMemo(() => getPolicySummary(form), [form]);
+  const guestFacingPreview = useMemo(
+    () => form.guestFacingSummary.trim() || generatedSummary,
+    [form.guestFacingSummary, generatedSummary]
+  );
+
+  const normalizedRulesPreview = useMemo(
+    () => normalizeRefundRules(form.refundRules),
+    [form.refundRules]
+  );
 
   async function loadPolicy() {
     if (!propertyId) return;
@@ -278,12 +515,86 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
     }
   }
 
+  function handlePolicyTypeChange(nextType: CancellationPolicyType) {
+    const preset = getPreset(nextType);
+
+    setForm((current) => ({
+      ...current,
+      ...preset,
+      type: nextType,
+      refundRules:
+        preset.refundRules !== undefined
+          ? normalizeRefundRules(preset.refundRules)
+          : current.refundRules,
+      nonRefundableScenarios:
+        preset.nonRefundableScenarios !== undefined
+          ? normalizeNonRefundableScenarios(preset.nonRefundableScenarios)
+          : current.nonRefundableScenarios,
+    }));
+  }
+
+  function handleAddRefundRule() {
+    const nextRule: CancellationRefundRule = {
+      minHoursBeforeCheckIn: 0,
+      refundPercent: 0,
+      label: "New rule",
+    };
+
+    setForm((current) => ({
+      ...current,
+      refundRules: [...current.refundRules, nextRule],
+    }));
+  }
+
+  function handleUpdateRefundRule(
+    index: number,
+    patch: Partial<CancellationRefundRule>
+  ) {
+    setForm((current) => ({
+      ...current,
+      refundRules: current.refundRules.map((rule, ruleIndex) =>
+        ruleIndex === index ? { ...rule, ...patch } : rule
+      ),
+    }));
+  }
+
+  function handleDeleteRefundRule(index: number) {
+    setForm((current) => ({
+      ...current,
+      refundRules: current.refundRules.filter(
+        (_rule, ruleIndex) => ruleIndex !== index
+      ),
+    }));
+  }
+
+  function handleScenarioToggle(
+    scenario: CancellationNonRefundableScenario,
+    checked: boolean
+  ) {
+    setForm((current) => {
+      const selected = new Set(current.nonRefundableScenarios);
+
+      if (checked) {
+        selected.add(scenario);
+      } else {
+        selected.delete(scenario);
+      }
+
+      return {
+        ...current,
+        nonRefundableScenarios: DEFAULT_NON_REFUNDABLE_SCENARIOS.filter(
+          (item) => selected.has(item)
+        ),
+      };
+    });
+  }
+
   async function handleSave() {
     try {
       setLoadState("saving");
       setError(null);
 
-      const payload: SaveCancellationPolicyInput = {
+      const payload: SaveCancellationPolicyV11Input = {
         name: form.name,
         type: form.type,
         guestSelfCancellationEnabled: form.guestSelfCancellationEnabled,
@@ -295,6 +606,11 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
         refundBasis: form.refundBasis,
         refundPercentBeforeDeadline: form.refundPercentBeforeDeadline,
         refundPercentAfterDeadline: form.refundPercentAfterDeadline,
+        refundRules: normalizeRefundRules(form.refundRules),
+        nonRefundableScenarios: normalizeNonRefundableScenarios(
+          form.nonRefundableScenarios
+        ),
+        guestFacingSummary: form.guestFacingSummary.trim(),
         cleaningFeeRefundable: form.cleaningFeeRefundable,
         amenitiesRefundable: form.amenitiesRefundable,
         taxesRefundable: form.taxesRefundable,
@@ -325,8 +641,9 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           <p style={eyebrowStyle}>Direct Booking Rules</p>
           <h3 style={titleStyle}>Cancellation Policy</h3>
           <p style={descriptionStyle}>
-            Configure how Pin&Go evaluates guest cancellations, refunds, and
-            host approval rules for this property.
+            Configure how Pin&Go evaluates guest cancellations, refunds, tiered
+            refund rules, non-refundable scenarios, and host approval rules for
+            this property.
           </p>
         </div>
 
@@ -335,7 +652,7 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
             ? "Saving"
             : loadState === "loading"
             ? "Loading"
-            : "Policy Engine V1"}
+            : "Policy Engine V1.1"}
         </span>
       </div>
 
@@ -346,16 +663,11 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           Policy type
           <select
             value={form.type}
-            onChange={(event) => {
-              const nextType = event.target.value as CancellationPolicyType;
-              const preset = getPreset(nextType);
-
-              setForm((current) => ({
-                ...current,
-                ...preset,
-                type: nextType,
-              }));
-            }}
+            onChange={(event) =>
+              handlePolicyTypeChange(
+                event.target.value as CancellationPolicyType
+              )
+            }
             style={inputStyle}
             disabled={isBusy}
           >
@@ -397,6 +709,26 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
             style={{ ...inputStyle, minHeight: 84, resize: "vertical" }}
             disabled={isBusy}
           />
+        </label>
+
+        <label style={labelStyle}>
+          Guest-facing summary
+          <textarea
+            value={form.guestFacingSummary}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                guestFacingSummary: event.target.value,
+              }))
+            }
+            placeholder={generatedSummary}
+            style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
+            disabled={isBusy}
+          />
+          <span style={fieldHelpStyle}>
+            Shown to the guest before booking and stored as part of the
+            reservation policy snapshot.
+          </span>
         </label>
       </div>
 
@@ -485,11 +817,156 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
         </label>
       </div>
 
+      <div style={panelStyle}>
+        <div style={panelHeaderStyle}>
+          <div>
+            <div style={panelTitleStyle}>Tiered refund rules</div>
+            <div style={panelDescriptionStyle}>
+              Add refund windows from most generous to least generous. Pin&Go
+              saves rules from the highest check-in window to the lowest.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAddRefundRule}
+            disabled={isBusy}
+            style={{
+              ...secondaryButtonStyle,
+              opacity: isBusy ? 0.65 : 1,
+              cursor: isBusy ? "not-allowed" : "pointer",
+            }}
+          >
+            Add rule
+          </button>
+        </div>
+
+        {form.refundRules.length === 0 ? (
+          <div style={emptyStateStyle}>
+            No tiered refund rules configured. Pin&Go will continue using the
+            V1 refund deadline fields above.
+          </div>
+        ) : (
+          <div style={rulesListStyle}>
+            {form.refundRules.map((rule, index) => (
+              <div key={index} style={ruleRowStyle}>
+                <label style={labelStyle}>
+                  Min hours before check-in
+                  <input
+                    type="number"
+                    min={0}
+                    value={rule.minHoursBeforeCheckIn}
+                    onChange={(event) =>
+                      handleUpdateRefundRule(index, {
+                        minHoursBeforeCheckIn: normalizeHours(
+                          Number(event.target.value)
+                        ),
+                      })
+                    }
+                    style={inputStyle}
+                    disabled={isBusy}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Refund percent
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={rule.refundPercent}
+                    onChange={(event) =>
+                      handleUpdateRefundRule(index, {
+                        refundPercent: clampPercent(
+                          Number(event.target.value)
+                        ),
+                      })
+                    }
+                    style={inputStyle}
+                    disabled={isBusy}
+                  />
+                </label>
+
+                <label style={labelStyle}>
+                  Rule label
+                  <input
+                    value={rule.label ?? ""}
+                    onChange={(event) =>
+                      handleUpdateRefundRule(index, {
+                        label: event.target.value,
+                      })
+                    }
+                    style={inputStyle}
+                    disabled={isBusy}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteRefundRule(index)}
+                  disabled={isBusy}
+                  style={{
+                    ...dangerButtonStyle,
+                    opacity: isBusy ? 0.65 : 1,
+                    cursor: isBusy ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {normalizedRulesPreview.length > 0 ? (
+          <div style={rulesPreviewStyle}>
+            <strong>Rule preview</strong>
+            {normalizedRulesPreview.map((rule, index) => (
+              <span key={`${rule.minHoursBeforeCheckIn}-${index}`}>
+                {rule.label ? `${rule.label}: ` : ""}
+                {rule.refundPercent}% refund{" "}
+                {formatRefundRuleWindow(
+                  rule,
+                  index,
+                  normalizedRulesPreview
+                )}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div style={panelStyle}>
+        <div style={panelTitleStyle}>Non-refundable scenarios</div>
+        <div style={panelDescriptionStyle}>
+          Select scenarios where Pin&Go should not automatically refund the
+          guest unless the host approves an exception.
+        </div>
+
+        <div style={scenarioGridStyle}>
+          {NON_REFUNDABLE_SCENARIO_OPTIONS.map((scenario) => (
+            <label key={scenario.value} style={scenarioOptionStyle}>
+              <input
+                type="checkbox"
+                checked={form.nonRefundableScenarios.includes(scenario.value)}
+                disabled={isBusy}
+                onChange={(event) =>
+                  handleScenarioToggle(scenario.value, event.target.checked)
+                }
+                style={{ width: 17, height: 17 }}
+              />
+              <span>{scenario.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       <div style={sectionStyle}>
         <ToggleRow
           title="Guest self-cancellation"
           description="Allow guests to cancel from their guest portal when policy rules allow it."
           checked={form.guestSelfCancellationEnabled}
+          disabled={isBusy}
           onChange={(next) =>
             setForm((current) => ({
               ...current,
@@ -502,6 +979,7 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           title="Auto refund eligible cancellations"
           description="Let Pin&Go automatically process refunds when the policy clearly allows it."
           checked={form.autoRefundEligibleCancellations}
+          disabled={isBusy}
           onChange={(next) =>
             setForm((current) => ({
               ...current,
@@ -514,6 +992,7 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           title="Require host approval outside policy"
           description="Escalate cancellations outside the refund window instead of refunding automatically."
           checked={form.requireHostApprovalOutsidePolicy}
+          disabled={isBusy}
           onChange={(next) =>
             setForm((current) => ({
               ...current,
@@ -528,6 +1007,7 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           title="Refund cleaning fee"
           description="Include cleaning fee in eligible refunds."
           checked={form.cleaningFeeRefundable}
+          disabled={isBusy}
           onChange={(next) =>
             setForm((current) => ({
               ...current,
@@ -540,6 +1020,7 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           title="Refund amenities"
           description="Include selected amenity charges in eligible refunds."
           checked={form.amenitiesRefundable}
+          disabled={isBusy}
           onChange={(next) =>
             setForm((current) => ({
               ...current,
@@ -552,6 +1033,7 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
           title="Refund taxes"
           description="Include taxes in eligible refunds when legally appropriate."
           checked={form.taxesRefundable}
+          disabled={isBusy}
           onChange={(next) =>
             setForm((current) => ({
               ...current,
@@ -562,8 +1044,8 @@ export function CancellationPolicyCard({ propertyId }: CancellationPolicyCardPro
       </div>
 
       <div style={summaryStyle}>
-        <strong>Guest-facing summary</strong>
-        <p>{summary}</p>
+        <strong>Checkout preview</strong>
+        <p>{guestFacingPreview}</p>
       </div>
 
       <div style={footerStyle}>
@@ -703,6 +1185,94 @@ const toggleRowStyle: CSSProperties = {
   background: "rgba(255,255,255,0.84)",
 };
 
+const panelStyle: CSSProperties = {
+  display: "grid",
+  gap: 14,
+  marginTop: 16,
+  border: "1px solid rgba(148, 163, 184, 0.24)",
+  borderRadius: 18,
+  padding: 16,
+  background: "rgba(255,255,255,0.78)",
+};
+
+const panelHeaderStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 14,
+  flexWrap: "wrap",
+};
+
+const panelTitleStyle: CSSProperties = {
+  color: "#0f172a",
+  fontSize: 15,
+  fontWeight: 900,
+};
+
+const panelDescriptionStyle: CSSProperties = {
+  color: "#64748b",
+  fontSize: 13,
+  lineHeight: 1.45,
+  marginTop: 4,
+};
+
+const rulesListStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+};
+
+const ruleRowStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+  gap: 12,
+  alignItems: "end",
+  border: "1px solid rgba(148, 163, 184, 0.2)",
+  borderRadius: 14,
+  padding: 12,
+  background: "rgba(248,250,252,0.9)",
+};
+
+const rulesPreviewStyle: CSSProperties = {
+  display: "grid",
+  gap: 6,
+  borderRadius: 14,
+  padding: "12px 14px",
+  background: "rgba(248, 250, 252, 0.94)",
+  border: "1px dashed rgba(100, 116, 139, 0.32)",
+  color: "#334155",
+  fontSize: 13,
+  lineHeight: 1.45,
+};
+
+const scenarioGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 10,
+};
+
+const scenarioOptionStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 9,
+  border: "1px solid rgba(148, 163, 184, 0.24)",
+  borderRadius: 14,
+  padding: "11px 12px",
+  background: "rgba(255,255,255,0.84)",
+  color: "#334155",
+  fontSize: 13,
+  fontWeight: 800,
+};
+
+const emptyStateStyle: CSSProperties = {
+  borderRadius: 14,
+  padding: "12px 14px",
+  background: "rgba(248, 250, 252, 0.94)",
+  border: "1px dashed rgba(100, 116, 139, 0.32)",
+  color: "#64748b",
+  fontSize: 13,
+  lineHeight: 1.45,
+};
+
 const summaryStyle: CSSProperties = {
   marginTop: 16,
   borderRadius: 16,
@@ -729,6 +1299,25 @@ const buttonStyle: CSSProperties = {
   background: "#2563eb",
   color: "#ffffff",
   padding: "10px 14px",
+  fontWeight: 900,
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  border: "1px solid rgba(37, 99, 235, 0.22)",
+  borderRadius: 12,
+  background: "rgba(37, 99, 235, 0.08)",
+  color: "#1d4ed8",
+  padding: "9px 12px",
+  fontWeight: 900,
+  whiteSpace: "nowrap",
+};
+
+const dangerButtonStyle: CSSProperties = {
+  border: "1px solid rgba(220, 38, 38, 0.2)",
+  borderRadius: 12,
+  background: "rgba(254, 242, 242, 0.92)",
+  color: "#991b1b",
+  padding: "10px 12px",
   fontWeight: 900,
 };
 

@@ -14,6 +14,20 @@ export type CancellationRefundBasis =
   | "NIGHTLY_PLUS_CLEANING"
   | "CUSTOM";
 
+export type CancellationRefundRule = {
+  minHoursBeforeCheckIn: number;
+  refundPercent: number;
+  label: string;
+  description?: string | null;
+};
+
+export type CancellationNonRefundableScenario =
+  | "EARLY_DEPARTURE"
+  | "DELAYED_ARRIVAL"
+  | "REDUCED_NIGHTS"
+  | "WEATHER_RE_SCHEDULE"
+  | "OTHER";
+
 export type DashboardCancellationPolicy = {
   id: string;
   propertyId: string;
@@ -28,6 +42,9 @@ export type DashboardCancellationPolicy = {
   refundBasis: CancellationRefundBasis;
   refundPercentBeforeDeadline: number;
   refundPercentAfterDeadline: number;
+  refundRules: CancellationRefundRule[];
+  nonRefundableScenarios: CancellationNonRefundableScenario[];
+  guestFacingSummary: string | null;
   cleaningFeeRefundable: boolean;
   amenitiesRefundable: boolean;
   taxesRefundable: boolean;
@@ -49,6 +66,9 @@ export type DefaultCancellationPolicy = {
   refundBasis: CancellationRefundBasis;
   refundPercentBeforeDeadline: number;
   refundPercentAfterDeadline: number;
+  refundRules: CancellationRefundRule[];
+  nonRefundableScenarios: CancellationNonRefundableScenario[];
+  guestFacingSummary: string | null;
   cleaningFeeRefundable: boolean;
   amenitiesRefundable: boolean;
   taxesRefundable: boolean;
@@ -77,6 +97,9 @@ export type SaveCancellationPolicyInput = {
   refundBasis?: CancellationRefundBasis;
   refundPercentBeforeDeadline?: number;
   refundPercentAfterDeadline?: number;
+  refundRules?: CancellationRefundRule[];
+  nonRefundableScenarios?: CancellationNonRefundableScenario[];
+  guestFacingSummary?: string | null;
   cleaningFeeRefundable?: boolean;
   amenitiesRefundable?: boolean;
   taxesRefundable?: boolean;
