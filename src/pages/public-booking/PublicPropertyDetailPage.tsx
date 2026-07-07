@@ -395,7 +395,70 @@ function getCancellationPolicySummary(
       : "Eligible cancellations can be processed automatically by Pin&Go.",
     noRefundLabel: firstNoRefundRule ? firstNoRefundRule.windowLabel : null,
   };
-} 
+}
+
+function getRefundBasisDisclosure(
+  policy: PublicCancellationPolicy | null | undefined
+) {
+  if (!policy) return null;
+
+  if (policy.refundBasis === "NIGHTLY_SUBTOTAL") {
+    return "Refund percentages apply to the nightly subtotal only. Other charges such as cleaning fees, service fees, taxes, add-ons, or other non-nightly charges may not be refundable unless required by law or specifically stated in this policy.";
+  }
+
+  if (policy.refundBasis === "NIGHTLY_PLUS_CLEANING") {
+    return "Refund percentages apply to the nightly subtotal plus cleaning fee. Taxes, add-ons, service fees, or other non-nightly charges may not be refundable unless required by law or specifically stated in this policy.";
+  }
+
+  if (policy.refundBasis === "TOTAL_AMOUNT") {
+    return "Refund percentages apply to the eligible reservation amount according to the cancellation policy shown for this stay.";
+  }
+
+  if (policy.refundBasis === "CUSTOM") {
+    return "Refund eligibility is calculated using the custom refund basis configured for this property and shown in this policy.";
+  }
+
+  return null;
+}
+
+function buildCancellationTermsAcceptanceText(
+  policy: PublicCancellationPolicy | null | undefined,
+  summary: ReturnType<typeof getCancellationPolicySummary>
+) {
+  if (!policy || !summary) return "";
+
+  const refundBasisDisclosure = getRefundBasisDisclosure(policy);
+
+  const refundTimelineText = summary.rules
+    .map((rule) => {
+      const ruleWindow = rule.dateLabel || rule.windowLabel;
+
+      return `${rule.label}: ${formatRefundPercent(
+        rule.refundPercent
+      )} refund - ${ruleWindow}`;
+    })
+    .join(" | ");
+
+  const scenarioText =
+    summary.scenarios.length > 0
+      ? `Important non-refundable cases: ${summary.scenarios
+          .map((scenario) => getScenarioLabel(scenario))
+          .join(", ")}.`
+      : "";
+
+  return [
+    "I understand and agree to the cancellation terms shown above, including how any eligible refund is calculated.",
+    `Cancellation policy: ${summary.title}.`,
+    summary.headline,
+    summary.summaryText,
+    refundBasisDisclosure ? `Refund basis: ${refundBasisDisclosure}` : "",
+    refundTimelineText ? `Refund timeline: ${refundTimelineText}.` : "",
+    scenarioText,
+    summary.approvalNote,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 function diffNights(checkIn: string, checkOut: string) {
   if (!checkIn || !checkOut) return 0;
@@ -873,6 +936,7 @@ export default function PublicPropertyDetailPage() {
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);  
+  const [cancellationTermsAccepted, setCancellationTermsAccepted] = useState(false);
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
   const [pricing, setPricing] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -892,6 +956,29 @@ const cancellationPolicySummary = useMemo(
   () => getCancellationPolicySummary(property?.cancellationPolicy, checkIn),
   [property?.cancellationPolicy, checkIn]
 );
+
+const cancellationRefundBasisDisclosure = useMemo(
+  () => getRefundBasisDisclosure(property?.cancellationPolicy),
+  [property?.cancellationPolicy]
+);
+
+const cancellationTermsAcceptanceText = useMemo(
+  () =>
+    buildCancellationTermsAcceptanceText(
+      property?.cancellationPolicy,
+      cancellationPolicySummary
+    ),
+  [property?.cancellationPolicy, cancellationPolicySummary]
+);
+
+const requiresCancellationTermsAcceptance = Boolean(cancellationPolicySummary);
+
+const reserveButtonDisabled =
+  submitting ||
+  !checkIn ||
+  !checkOut ||
+  (requiresCancellationTermsAcceptance && !cancellationTermsAccepted);
+
   const blockedDateObjects = useMemo(
     () =>
       blockedDates
@@ -1137,6 +1224,16 @@ useEffect(() => {
   checkOut,
   selectedAmenityIds,
   nights,
+]);
+
+useEffect(() => {
+  setCancellationTermsAccepted(false);
+}, [
+  checkIn,
+  checkOut,
+  property?.cancellationPolicy?.policyId,
+  property?.cancellationPolicy?.snapshotAt,
+  property?.cancellationPolicy?.refundBasis,
 ]); 
  
   async function handleReserve(e: React.FormEvent) {
@@ -1163,7 +1260,16 @@ useEffect(() => {
     "Please enable Stay Notifications to continue with your reservation."
   );
 }
-      
+
+      if (
+        requiresCancellationTermsAcceptance &&
+        !cancellationTermsAccepted
+      ) {
+        throw new Error(
+          "Please review and accept the cancellation terms to continue."
+        );
+      }
+
       if (nights < (property.minimumNights ?? 1)) {
         throw new Error(
           `Minimum stay is ${property.minimumNights ?? 1} night(s).`
@@ -1189,6 +1295,12 @@ useEffect(() => {
   guestEmail: guestEmail.trim(),
   guestPhone: guestPhone.trim(),
   stayNotificationsConsent,
+  guestAcceptedCancellationTerms: cancellationTermsAccepted,
+  guestAcceptedCancellationTermsAt: cancellationTermsAccepted
+    ? new Date().toISOString()
+    : null,
+  guestAcceptedCancellationTermsText: cancellationTermsAcceptanceText,
+  cancellationPolicyRefundBasis: property.cancellationPolicy?.refundBasis ?? null,
   selectedAmenityIds,
 }),
       });
@@ -1890,16 +2002,55 @@ useEffect(() => {
     </div>
   </div>
 ) : null}
+
+                    {cancellationPolicySummary ? (
+                      <div style={styles.cancellationTermsAcknowledgmentCard}>
+                        <label style={styles.cancellationTermsAcknowledgmentLabel}>
+                          <input
+                            type="checkbox"
+                            checked={cancellationTermsAccepted}
+                            onChange={(e) =>
+                              setCancellationTermsAccepted(e.target.checked)
+                            }
+                            style={styles.cancellationTermsCheckbox}
+                          />
+
+                          <div>
+                            <div style={styles.cancellationTermsTitle}>
+                              I have reviewed and agree to the cancellation terms.
+                            </div>
+
+                            <div style={styles.cancellationTermsText}>
+                              I understand that any eligible refund will be
+                              calculated according to the policy shown above.
+                            </div>
+
+                            {cancellationRefundBasisDisclosure ? (
+                              <div style={styles.refundBasisDisclosure}>
+                                <strong style={styles.refundBasisDisclosureTitle}>
+                                  Refund calculation
+                                </strong>
+
+                                <span style={styles.refundBasisDisclosureText}>
+                                  {cancellationRefundBasisDisclosure}
+                                </span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </label>
+                      </div>
+                    ) : null}
+
                     {bookingError ? (
                       <div style={styles.inlineError}>{bookingError}</div>
                     ) : null}
 
                     <button
                       type="submit"
-                      disabled={submitting || !checkIn || !checkOut}
+                      disabled={reserveButtonDisabled}
                       style={{
                         ...styles.reserveButton,
-                        ...(submitting || !checkIn || !checkOut
+                        ...(reserveButtonDisabled
   ? styles.reserveButtonDisabled
   : {}),
 
@@ -2823,6 +2974,70 @@ showAllPhotosButton: {
   cursor: "pointer",
   boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
 },
+
+cancellationTermsAcknowledgmentCard: {
+  marginTop: 14,
+  border: "1px solid #bfdbfe",
+  borderRadius: 18,
+  padding: 15,
+  background: "#eff6ff",
+},
+
+cancellationTermsAcknowledgmentLabel: {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  cursor: "pointer",
+},
+
+cancellationTermsCheckbox: {
+  marginTop: 4,
+  width: 18,
+  height: 18,
+  cursor: "pointer",
+  flexShrink: 0,
+},
+
+cancellationTermsTitle: {
+  fontSize: 14,
+  fontWeight: 950,
+  color: "#0f172a",
+  lineHeight: 1.35,
+},
+
+cancellationTermsText: {
+  marginTop: 5,
+  color: "#334155",
+  fontSize: 12,
+  lineHeight: 1.5,
+  fontWeight: 750,
+},
+
+refundBasisDisclosure: {
+  marginTop: 11,
+  border: "1px solid #bfdbfe",
+  borderRadius: 14,
+  padding: "10px 11px",
+  background: "#ffffff",
+  display: "grid",
+  gap: 4,
+},
+
+refundBasisDisclosureTitle: {
+  color: "#1d4ed8",
+  fontSize: 11,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+},
+
+refundBasisDisclosureText: {
+  color: "#334155",
+  fontSize: 12,
+  lineHeight: 1.5,
+  fontWeight: 700,
+},
+
 paymentMethods: {
   marginTop: 18,
   paddingTop: 18,
