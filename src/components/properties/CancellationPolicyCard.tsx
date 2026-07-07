@@ -180,8 +180,8 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
       freeCancellationHoursBeforeCheckIn: 720,
       refundPercentBeforeDeadline: 100,
       refundPercentAfterDeadline: 0,
-      refundRules: STRICT_TIERED_RULES,
-      nonRefundableScenarios: DEFAULT_NON_REFUNDABLE_SCENARIOS,
+      refundRules: STRICT_TIERED_RULES.map((rule) => ({ ...rule })),
+      nonRefundableScenarios: [...DEFAULT_NON_REFUNDABLE_SCENARIOS],
       guestFacingSummary:
         "Travelers who cancel at least 30 days before check-in will get back 100% of the amount they've paid. If they cancel between 14 and 30 days before check-in, they'll get back 50%. Otherwise, they won't get a refund. No refunds will be made for early departures, delayed arrival, reducing nights, weather-related reschedules, or other post-booking changes.",
       description:
@@ -195,8 +195,8 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
       freeCancellationHoursBeforeCheckIn: 0,
       refundPercentBeforeDeadline: 0,
       refundPercentAfterDeadline: 0,
-      refundRules: NON_REFUNDABLE_RULES,
-      nonRefundableScenarios: DEFAULT_NON_REFUNDABLE_SCENARIOS,
+      refundRules: NON_REFUNDABLE_RULES.map((rule) => ({ ...rule })),
+      nonRefundableScenarios: [...DEFAULT_NON_REFUNDABLE_SCENARIOS],
       guestFacingSummary:
         "This reservation is non-refundable. No refunds will be made for early departures, delayed arrival, reducing nights, weather-related reschedules, or other post-booking changes.",
       description:
@@ -207,10 +207,15 @@ function getPreset(type: CancellationPolicyType): Partial<PolicyForm> {
   if (type === "CUSTOM") {
     return {
       name: "Custom",
-      freeCancellationHoursBeforeCheckIn: 168,
+      freeCancellationHoursBeforeCheckIn: 720,
       refundPercentBeforeDeadline: 100,
       refundPercentAfterDeadline: 0,
-      description: "Custom cancellation policy configured by the host.",
+      refundRules: STRICT_TIERED_RULES.map((rule) => ({ ...rule })),
+      nonRefundableScenarios: [...DEFAULT_NON_REFUNDABLE_SCENARIOS],
+      guestFacingSummary:
+        "Travelers who cancel at least 30 days before check-in will get back 100% of the amount they've paid. If they cancel between 14 and 30 days before check-in, they'll get back 50%. Otherwise, they won't get a refund. No refunds will be made for early departures, delayed arrival, reducing nights, weather-related reschedules, or other post-booking changes.",
+      description:
+        "Custom cancellation policy. The host can edit refund windows, refund percentages, and non-refundable scenarios.",
     };
   }
 
@@ -233,6 +238,43 @@ function policyToForm(policy: DashboardCancellationPolicy | null): PolicyForm {
     const policyV11 = policy as DashboardCancellationPolicyV11;
     const preset = getPreset(policy.type);
 
+    const policyRefundRules = normalizeRefundRules(policyV11.refundRules ?? []);
+    const presetRefundRules = normalizeRefundRules(preset.refundRules ?? []);
+
+    const policyNonRefundableScenarios = normalizeNonRefundableScenarios(
+      policyV11.nonRefundableScenarios ?? []
+    );
+    const presetNonRefundableScenarios = normalizeNonRefundableScenarios(
+      preset.nonRefundableScenarios ?? []
+    );
+
+    const shouldUsePresetRefundRules =
+      policyRefundRules.length === 0 &&
+      (policy.type === "STRICT" ||
+        policy.type === "CUSTOM" ||
+        policy.type === "NON_REFUNDABLE");
+
+    const shouldUsePresetScenarios =
+      policyNonRefundableScenarios.length === 0 &&
+      (policy.type === "STRICT" ||
+        policy.type === "CUSTOM" ||
+        policy.type === "NON_REFUNDABLE");
+
+    const savedGuestFacingSummary =
+      typeof policyV11.guestFacingSummary === "string"
+        ? policyV11.guestFacingSummary.trim()
+        : "";
+
+    const savedDescription =
+      typeof policy.description === "string" ? policy.description.trim() : "";
+
+    const guestFacingSummary =
+      savedGuestFacingSummary ||
+      (policy.type === "CUSTOM" ? preset.guestFacingSummary ?? "" : "") ||
+      savedDescription ||
+      preset.guestFacingSummary ||
+      "";
+
     return {
       name: policy.name,
       type: policy.type,
@@ -245,24 +287,18 @@ function policyToForm(policy: DashboardCancellationPolicy | null): PolicyForm {
       refundBasis: policy.refundBasis,
       refundPercentBeforeDeadline: policy.refundPercentBeforeDeadline,
       refundPercentAfterDeadline: policy.refundPercentAfterDeadline,
-      refundRules: normalizeRefundRules(
-        policyV11.refundRules ?? preset.refundRules ?? []
-      ),
-      nonRefundableScenarios: normalizeNonRefundableScenarios(
-        policyV11.nonRefundableScenarios ??
-          preset.nonRefundableScenarios ??
-          []
-      ),
-      guestFacingSummary:
-        policyV11.guestFacingSummary ??
-        policy.description ??
-        preset.guestFacingSummary ??
-        "",
+      refundRules: shouldUsePresetRefundRules
+        ? presetRefundRules
+        : policyRefundRules,
+      nonRefundableScenarios: shouldUsePresetScenarios
+        ? presetNonRefundableScenarios
+        : policyNonRefundableScenarios,
+      guestFacingSummary,
       cleaningFeeRefundable: policy.cleaningFeeRefundable,
       amenitiesRefundable: policy.amenitiesRefundable,
       taxesRefundable: policy.taxesRefundable,
       nonRefundableDiscountPercent: policy.nonRefundableDiscountPercent,
-      description: policy.description ?? "",
+      description: policy.description ?? preset.description ?? "",
     };
   }
 
