@@ -308,6 +308,14 @@ function getPolicyTypeLabel(type: PublicCancellationPolicy["type"]) {
   return "Refund terms for this stay";
 }
 
+function formatDateLabelForSentence(label?: string | null) {
+  if (!label) return "";
+
+  return label
+    .replace(/^Until\s+/i, "until ")
+    .replace(/^After\s+/i, "after ");
+}
+
 function getCancellationPolicySummary(
   policy: PublicCancellationPolicy | null | undefined,
   checkIn: string
@@ -319,53 +327,76 @@ function getCancellationPolicySummary(
     ? policy.nonRefundableScenarios
     : [];
 
-  const firstRefundRule = rules.find((rule) => rule.refundPercent > 0);
-  const firstNoRefundRule = rules.find((rule) => rule.refundPercent <= 0);
+  const displayRules = rules.map((rule, index) => ({
+    ...rule,
+    windowLabel: getRuleWindowLabel(rule, index, rules),
+    dateLabel: getRuleDateLabel({
+      rule,
+      index,
+      rules,
+      checkIn,
+    }),
+    tone:
+      rule.refundPercent >= 100
+        ? "success"
+        : rule.refundPercent > 0
+        ? "warning"
+        : "danger",
+  }));
+
+  const firstRefundRule = displayRules.find((rule) => rule.refundPercent > 0);
+  const firstNoRefundRule = displayRules.find((rule) => rule.refundPercent <= 0);
 
   const headline =
     policy.type === "NON_REFUNDABLE"
       ? "This reservation is non-refundable."
+      : firstRefundRule?.dateLabel
+      ? `${formatRefundPercent(
+          firstRefundRule.refundPercent
+        )} refund ${formatDateLabelForSentence(firstRefundRule.dateLabel)}.`
       : firstRefundRule
-      ? `${formatRefundPercent(firstRefundRule.refundPercent)} refund ${getRuleWindowLabel(
-          firstRefundRule,
-          rules.indexOf(firstRefundRule),
-          rules
-        )}.`
+      ? `${formatRefundPercent(firstRefundRule.refundPercent)} refund ${
+          firstRefundRule.windowLabel
+        }.`
       : "Cancellation terms apply to this reservation.";
+
+  const selectedDateSummary =
+    checkIn && displayRules.some((rule) => rule.dateLabel)
+      ? `For your selected dates: ${displayRules
+          .filter((rule) => rule.dateLabel)
+          .map((rule) => {
+            const dateLabel = formatDateLabelForSentence(rule.dateLabel);
+
+            if (rule.refundPercent >= 100) {
+              return `full refund ${dateLabel}`;
+            }
+
+            if (rule.refundPercent > 0) {
+              return `${formatRefundPercent(rule.refundPercent)} refund ${dateLabel}`;
+            }
+
+            return `no refund ${dateLabel}`;
+          })
+          .join("; ")}.`
+      : "";
 
   return {
     title: getPolicyTypeLabel(policy.type),
     headline,
     summaryText:
+      selectedDateSummary ||
       policy.guestFacingSummary?.trim() ||
       policy.description ||
       "Review the refund windows below before completing your reservation.",
-    rules: rules.map((rule, index) => ({
-      ...rule,
-      windowLabel: getRuleWindowLabel(rule, index, rules),
-      dateLabel: getRuleDateLabel({
-        rule,
-        index,
-        rules,
-        checkIn,
-      }),
-      tone:
-        rule.refundPercent >= 100
-          ? "success"
-          : rule.refundPercent > 0
-          ? "warning"
-          : "danger",
-    })),
+    rules: displayRules,
     scenarios,
     approvalNote: policy.requireHostApprovalOutsidePolicy
       ? "Cancellations outside the refund policy may require host approval."
       : "Eligible cancellations can be processed automatically by Pin&Go.",
-    noRefundLabel: firstNoRefundRule
-      ? getRuleWindowLabel(firstNoRefundRule, rules.indexOf(firstNoRefundRule), rules)
-      : null,
+    noRefundLabel: firstNoRefundRule ? firstNoRefundRule.windowLabel : null,
   };
-}
- 
+} 
+
 function diffNights(checkIn: string, checkOut: string) {
   if (!checkIn || !checkOut) return 0;
 
