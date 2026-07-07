@@ -519,29 +519,31 @@ export function CancellationPolicyCard({
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
+   const isBusy = loadState === "loading" || loadState === "saving";
+  const canEditRefundRules = form.type === "CUSTOM";
+  const canEditGuestFacingSummary = form.type === "CUSTOM";
+
   const selectedType = useMemo(
     () => POLICY_TYPES.find((item) => item.value === form.type),
     [form.type]
   );
 
   const generatedSummary = useMemo(() => getPolicySummary(form), [form]);
-   const guestFacingPreview = useMemo(() => {
+
+  const guestFacingPreview = useMemo(() => {
     if (canEditGuestFacingSummary && form.guestFacingSummary.trim()) {
       return form.guestFacingSummary.trim();
     }
 
     return generatedSummary;
   }, [canEditGuestFacingSummary, form.guestFacingSummary, generatedSummary]);
-   const normalizedRulesPreview = useMemo(
+
+  const normalizedRulesPreview = useMemo(
     () => normalizeRefundRules(form.refundRules),
     [form.refundRules]
   );
 
-  const isBusy = loadState === "loading" || loadState === "saving";
-  const canEditRefundRules = form.type === "CUSTOM";
-  const canEditGuestFacingSummary = form.type === "CUSTOM";
-  
-async function loadPolicy() {
+  async function loadPolicy() {
     if (!propertyId) return;
 
     try {
@@ -945,7 +947,7 @@ async function loadPolicy() {
                       })
                     }
                     style={inputStyle}
-                    disabled={isBusy}
+                    disabled={isBusy || !canEditRefundRules}
                   />
                 </label>
 
@@ -959,7 +961,7 @@ async function loadPolicy() {
                       })
                     }
                     style={inputStyle}
-                    disabled={isBusy}
+                    disabled={isBusy || !canEditRefundRules}
                   />
                 </label>
 
