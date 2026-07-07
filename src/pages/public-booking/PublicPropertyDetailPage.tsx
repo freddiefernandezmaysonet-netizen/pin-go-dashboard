@@ -45,6 +45,20 @@ type PublicProperty = {
   };
 };
 
+type PublicCancellationRefundRule = {
+  minHoursBeforeCheckIn: number;
+  refundPercent: number;
+  label: string;
+  description?: string | null;
+};
+
+type PublicNonRefundableScenario =
+  | "EARLY_DEPARTURE"
+  | "DELAYED_ARRIVAL"
+  | "REDUCED_NIGHTS"
+  | "WEATHER_RE_SCHEDULE"
+  | "OTHER";
+
 type PublicCancellationPolicy = {
   policyId: string | null;
   name: string;
@@ -67,6 +81,9 @@ type PublicCancellationPolicy = {
     | "CUSTOM";
   refundPercentBeforeDeadline: number;
   refundPercentAfterDeadline: number;
+  refundRules?: PublicCancellationRefundRule[] | null;
+  nonRefundableScenarios?: PublicNonRefundableScenario[] | null;
+  guestFacingSummary?: string | null;
   cleaningFeeRefundable: boolean;
   amenitiesRefundable: boolean;
   taxesRefundable: boolean;
@@ -116,16 +133,16 @@ function formatNightlyDisplayMoney(value: string | number | null | undefined) {
 
 function formatCancellationWindow(hours: number) {
   if (!Number.isFinite(hours) || hours <= 0) {
-    return "after booking confirmation";
+    return "after the last refund window";
   }
 
   const days = hours / 24;
 
   if (Number.isInteger(days) && days >= 1) {
-    return `${days} day${days === 1 ? "" : "s"} before check-in`;
+    return `${days} day${days === 1 ? "" : "s"}`;
   }
 
-  return `${hours} hour${hours === 1 ? "" : "s"} before check-in`;
+  return `${hours} hour${hours === 1 ? "" : "s"}`;
 }
 
 function formatRefundPercent(value: number) {
@@ -136,50 +153,220 @@ function formatRefundPercent(value: number) {
   return `${Math.max(0, Math.min(100, n))}%`;
 }
 
+function getCancellationDeadlineDate(checkIn: string, hours: number) {
+  if (!checkIn || !Number.isFinite(hours) || hours <= 0) {
+    return null;
+  }
+
+  const date = new Date(`${checkIn}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setHours(date.getHours() - hours);
+
+  return format(date, "MMM d, yyyy");
+}
+
+function getScenarioLabel(scenario: PublicNonRefundableScenario) {
+  if (scenario === "EARLY_DEPARTURE") return "Early departures";
+  if (scenario === "DELAYED_ARRIVAL") return "Delayed arrivals";
+  if (scenario === "REDUCED_NIGHTS") return "Reducing reserved nights";
+  if (scenario === "WEATHER_RE_SCHEDULE") return "Weather-related reschedules";
+  return "Other post-booking changes";
+}
+
+function normalizeCancellationRefundRules(
+  policy: PublicCancellationPolicy
+): PublicCancellationRefundRule[] {
+  if (Array.isArray(policy.refundRules) && policy.refundRules.length > 0) {
+    return policy.refundRules
+      .map((rule) => ({
+        minHoursBeforeCheckIn: Math.max(
+          0,
+          Math.round(Number(rule.minHoursBeforeCheckIn ?? 0))
+        ),
+        refundPercent: Math.max(
+          0,
+          Math.min(100, Number(rule.refundPercent ?? 0))
+        ),
+        label: rule.label || `${rule.refundPercent}% refund`,
+        description: rule.description ?? null,
+      }))
+      .sort((a, b) => b.minHoursBeforeCheckIn - a.minHoursBeforeCheckIn);
+  }
+
+  if (policy.type === "NON_REFUNDABLE") {
+    return [
+      {
+        minHoursBeforeCheckIn: 0,
+        refundPercent: 0,
+        label: "No refund",
+        description: "This reservation is non-refundable after booking.",
+      },
+    ];
+  }
+
+  return [
+    {
+      minHoursBeforeCheckIn: policy.freeCancellationHoursBeforeCheckIn,
+      refundPercent: policy.refundPercentBeforeDeadline,
+      label:
+        policy.refundPercentBeforeDeadline >= 100
+          ? "Full refund"
+          : "Refund before deadline",
+      description: `${formatRefundPercent(
+        policy.refundPercentBeforeDeadline
+      )} refund before the cancellation deadline.`,
+    },
+    {
+      minHoursBeforeCheckIn: 0,
+      refundPercent: policy.refundPercentAfterDeadline,
+      label:
+        policy.refundPercentAfterDeadline > 0
+          ? "Partial refund"
+          : "No refund",
+      description: `${formatRefundPercent(
+        policy.refundPercentAfterDeadline
+      )} refund after the cancellation deadline.`,
+    },
+  ].sort((a, b) => b.minHoursBeforeCheckIn - a.minHoursBeforeCheckIn);
+}
+
+function getRuleWindowLabel(
+  rule: PublicCancellationRefundRule,
+  index: number,
+  rules: PublicCancellationRefundRule[]
+) {
+  const previousRule = index > 0 ? rules[index - 1] : null;
+
+  if (index === 0 && rule.minHoursBeforeCheckIn > 0) {
+    return `${formatCancellationWindow(
+      rule.minHoursBeforeCheckIn
+    )}+ before check-in`;
+  }
+
+  if (rule.minHoursBeforeCheckIn > 0 && previousRule) {
+    return `${formatCancellationWindow(
+      rule.minHoursBeforeCheckIn
+    )} to ${formatCancellationWindow(
+      previousRule.minHoursBeforeCheckIn
+    )} before check-in`;
+  }
+
+  if (previousRule) {
+    return `Less than ${formatCancellationWindow(
+      previousRule.minHoursBeforeCheckIn
+    )} before check-in`;
+  }
+
+  return "After booking confirmation";
+}
+
+function getRuleDateLabel({
+  rule,
+  index,
+  rules,
+  checkIn,
+}: {
+  rule: PublicCancellationRefundRule;
+  index: number;
+  rules: PublicCancellationRefundRule[];
+  checkIn: string;
+}) {
+  if (!checkIn) return null;
+
+  const previousRule = index > 0 ? rules[index - 1] : null;
+
+  if (rule.minHoursBeforeCheckIn > 0) {
+    const dateLabel = getCancellationDeadlineDate(
+      checkIn,
+      rule.minHoursBeforeCheckIn
+    );
+
+    return dateLabel ? `Until ${dateLabel}` : null;
+  }
+
+  if (previousRule) {
+    const dateLabel = getCancellationDeadlineDate(
+      checkIn,
+      previousRule.minHoursBeforeCheckIn
+    );
+
+    return dateLabel ? `After ${dateLabel}` : null;
+  }
+
+  return null;
+}
+
+function getPolicyTypeLabel(type: PublicCancellationPolicy["type"]) {
+  if (type === "NON_REFUNDABLE") return "Non-refundable policy";
+  if (type === "STRICT") return "Strict cancellation policy";
+  if (type === "FIRM") return "Firm cancellation policy";
+  if (type === "MODERATE") return "Moderate cancellation policy";
+  if (type === "CUSTOM") return "Custom cancellation policy";
+  return "Flexible cancellation policy";
+}
+
 function getCancellationPolicySummary(
-  policy?: PublicCancellationPolicy | null
+  policy: PublicCancellationPolicy | null | undefined,
+  checkIn: string
 ) {
   if (!policy) return null;
 
-  if (policy.type === "NON_REFUNDABLE") {
-    return {
-      title: policy.name || "Non-refundable",
-      headline: "This reservation is non-refundable.",
-      description:
-        policy.description ||
-        "Refunds are not automatic unless the host approves an exception.",
-      beforeDeadline: "0%",
-      afterDeadline: "0%",
-      deadline: "No automatic refund window",
-      approvalNote: "Host approval may be required for exceptions.",
-    };
-  }
+  const rules = normalizeCancellationRefundRules(policy);
+  const scenarios = Array.isArray(policy.nonRefundableScenarios)
+    ? policy.nonRefundableScenarios
+    : [];
 
-  const deadline = formatCancellationWindow(
-    policy.freeCancellationHoursBeforeCheckIn
-  );
+  const firstRefundRule = rules.find((rule) => rule.refundPercent > 0);
+  const firstNoRefundRule = rules.find((rule) => rule.refundPercent <= 0);
 
-  const beforeDeadline = formatRefundPercent(
-    policy.refundPercentBeforeDeadline
-  );
-
-  const afterDeadline = formatRefundPercent(policy.refundPercentAfterDeadline);
+  const headline =
+    policy.type === "NON_REFUNDABLE"
+      ? "This reservation is non-refundable."
+      : firstRefundRule
+      ? `${formatRefundPercent(firstRefundRule.refundPercent)} refund ${getRuleWindowLabel(
+          firstRefundRule,
+          rules.indexOf(firstRefundRule),
+          rules
+        )}.`
+      : "Cancellation terms apply to this reservation.";
 
   return {
-    title: policy.name || "Cancellation policy",
-    headline: `${beforeDeadline} refund until ${deadline}.`,
-    description:
+    title: getPolicyTypeLabel(policy.type),
+    headline,
+    summaryText:
+      policy.guestFacingSummary?.trim() ||
       policy.description ||
-      `Guests may receive a ${beforeDeadline} refund until ${deadline}. After that, ${afterDeadline} refund applies according to the host policy.`,
-    beforeDeadline,
-    afterDeadline,
-    deadline,
+      "Review the refund windows below before completing your reservation.",
+    rules: rules.map((rule, index) => ({
+      ...rule,
+      windowLabel: getRuleWindowLabel(rule, index, rules),
+      dateLabel: getRuleDateLabel({
+        rule,
+        index,
+        rules,
+        checkIn,
+      }),
+      tone:
+        rule.refundPercent >= 100
+          ? "success"
+          : rule.refundPercent > 0
+          ? "warning"
+          : "danger",
+    })),
+    scenarios,
     approvalNote: policy.requireHostApprovalOutsidePolicy
-      ? "Cancellations outside the policy window may require host approval."
+      ? "Cancellations outside the refund policy may require host approval."
       : "Eligible cancellations can be processed automatically by Pin&Go.",
+    noRefundLabel: firstNoRefundRule
+      ? getRuleWindowLabel(firstNoRefundRule, rules.indexOf(firstNoRefundRule), rules)
+      : null,
   };
 }
-
+ 
 function diffNights(checkIn: string, checkOut: string) {
   if (!checkIn || !checkOut) return 0;
 
@@ -672,10 +859,9 @@ export default function PublicPropertyDetailPage() {
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
 const cancellationPolicySummary = useMemo(
-  () => getCancellationPolicySummary(property?.cancellationPolicy),
-  [property?.cancellationPolicy]
+  () => getCancellationPolicySummary(property?.cancellationPolicy, checkIn),
+  [property?.cancellationPolicy, checkIn]
 );
-
   const blockedDateObjects = useMemo(
     () =>
       blockedDates
@@ -1569,7 +1755,7 @@ useEffect(() => {
                       </div>
                     </div>
 
-                   {cancellationPolicySummary ? (
+                  {cancellationPolicySummary ? (
   <div style={styles.cancellationPolicyBox}>
     <div style={styles.cancellationPolicyHeader}>
       <span style={styles.cancellationPolicyIcon}>↩</span>
@@ -1589,32 +1775,91 @@ useEffect(() => {
     </div>
 
     <p style={styles.cancellationPolicyText}>
-      {cancellationPolicySummary.description}
+      {cancellationPolicySummary.summaryText}
     </p>
 
-    <div style={styles.cancellationPolicyGrid}>
-      <div style={styles.cancellationPolicyMetric}>
-        <span>Before deadline</span>
-        <strong>{cancellationPolicySummary.beforeDeadline}</strong>
-      </div>
+    <div style={styles.cancellationTimeline}>
+      {cancellationPolicySummary.rules.map((rule, index) => (
+        <div
+          key={`${rule.label}-${rule.minHoursBeforeCheckIn}-${index}`}
+          style={styles.cancellationTimelineItem}
+        >
+          <div
+            style={{
+              ...styles.cancellationTimelineMarker,
+              ...(rule.tone === "success"
+                ? styles.cancellationTimelineMarkerSuccess
+                : rule.tone === "warning"
+                ? styles.cancellationTimelineMarkerWarning
+                : styles.cancellationTimelineMarkerDanger),
+            }}
+          >
+            {rule.refundPercent >= 100
+              ? "✓"
+              : rule.refundPercent > 0
+              ? "%"
+              : "×"}
+          </div>
 
-      <div style={styles.cancellationPolicyMetric}>
-        <span>After deadline</span>
-        <strong>{cancellationPolicySummary.afterDeadline}</strong>
-      </div>
+          <div style={styles.cancellationTimelineContent}>
+            <div style={styles.cancellationTimelineTopRow}>
+              <strong>{rule.label}</strong>
 
-      <div style={styles.cancellationPolicyMetric}>
-        <span>Deadline</span>
-        <strong>{cancellationPolicySummary.deadline}</strong>
-      </div>
+              <span
+                style={{
+                  ...styles.cancellationRefundBadge,
+                  ...(rule.tone === "success"
+                    ? styles.cancellationRefundBadgeSuccess
+                    : rule.tone === "warning"
+                    ? styles.cancellationRefundBadgeWarning
+                    : styles.cancellationRefundBadgeDanger),
+                }}
+              >
+                {formatRefundPercent(rule.refundPercent)}
+              </span>
+            </div>
+
+            <div style={styles.cancellationTimelineWindow}>
+              {rule.windowLabel}
+            </div>
+
+            {rule.dateLabel ? (
+              <div style={styles.cancellationTimelineDate}>
+                {rule.dateLabel}
+              </div>
+            ) : null}
+
+            {rule.description ? (
+              <div style={styles.cancellationTimelineDescription}>
+                {rule.description}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ))}
     </div>
+
+    {cancellationPolicySummary.scenarios.length > 0 ? (
+      <div style={styles.cancellationExceptionsBox}>
+        <div style={styles.cancellationExceptionsTitle}>
+          Important non-refundable cases
+        </div>
+
+        <div style={styles.cancellationScenarioGrid}>
+          {cancellationPolicySummary.scenarios.map((scenario) => (
+            <span key={scenario} style={styles.cancellationScenarioPill}>
+              {getScenarioLabel(scenario)}
+            </span>
+          ))}
+        </div>
+      </div>
+    ) : null}
 
     <div style={styles.cancellationPolicyNote}>
       {cancellationPolicySummary.approvalNote}
     </div>
   </div>
 ) : null}
-
                     {bookingError ? (
                       <div style={styles.inlineError}>{bookingError}</div>
                     ) : null}
@@ -2807,4 +3052,141 @@ cancellationPolicyNote: {
   lineHeight: 1.45,
   fontWeight: 850,
 },
+
+cancellationTimeline: {
+  display: "grid",
+  gap: 12,
+},
+
+cancellationTimelineItem: {
+  display: "grid",
+  gridTemplateColumns: "38px 1fr",
+  gap: 12,
+  alignItems: "start",
+},
+
+cancellationTimelineMarker: {
+  width: 34,
+  height: 34,
+  borderRadius: 14,
+  display: "grid",
+  placeItems: "center",
+  fontSize: 15,
+  fontWeight: 950,
+  border: "1px solid",
+},
+
+cancellationTimelineMarkerSuccess: {
+  background: "#dcfce7",
+  borderColor: "#bbf7d0",
+  color: "#15803d",
+},
+
+cancellationTimelineMarkerWarning: {
+  background: "#fef3c7",
+  borderColor: "#fde68a",
+  color: "#92400e",
+},
+
+cancellationTimelineMarkerDanger: {
+  background: "#fee2e2",
+  borderColor: "#fecaca",
+  color: "#991b1b",
+},
+
+cancellationTimelineContent: {
+  border: "1px solid #e2e8f0",
+  borderRadius: 16,
+  padding: "12px 13px",
+  background: "#ffffff",
+  display: "grid",
+  gap: 5,
+},
+
+cancellationTimelineTopRow: {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 10,
+  alignItems: "center",
+  color: "#0f172a",
+  fontSize: 14,
+},
+
+cancellationRefundBadge: {
+  borderRadius: 999,
+  padding: "4px 8px",
+  fontSize: 12,
+  fontWeight: 950,
+  border: "1px solid",
+  whiteSpace: "nowrap",
+},
+
+cancellationRefundBadgeSuccess: {
+  background: "#f0fdf4",
+  borderColor: "#bbf7d0",
+  color: "#15803d",
+},
+
+cancellationRefundBadgeWarning: {
+  background: "#fffbeb",
+  borderColor: "#fde68a",
+  color: "#92400e",
+},
+
+cancellationRefundBadgeDanger: {
+  background: "#fef2f2",
+  borderColor: "#fecaca",
+  color: "#991b1b",
+},
+
+cancellationTimelineWindow: {
+  color: "#334155",
+  fontSize: 13,
+  fontWeight: 850,
+},
+
+cancellationTimelineDate: {
+  color: "#2563eb",
+  fontSize: 12,
+  fontWeight: 900,
+},
+
+cancellationTimelineDescription: {
+  color: "#64748b",
+  fontSize: 12,
+  lineHeight: 1.45,
+  fontWeight: 700,
+},
+
+cancellationExceptionsBox: {
+  borderTop: "1px solid #dcfce7",
+  paddingTop: 12,
+  display: "grid",
+  gap: 10,
+},
+
+cancellationExceptionsTitle: {
+  color: "#14532d",
+  fontSize: 12,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+},
+
+cancellationScenarioGrid: {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+},
+
+cancellationScenarioPill: {
+  borderRadius: 999,
+  padding: "6px 9px",
+  background: "#ffffff",
+  border: "1px solid #dcfce7",
+  color: "#166534",
+  fontSize: 11,
+  fontWeight: 900,
+},
+
 };
