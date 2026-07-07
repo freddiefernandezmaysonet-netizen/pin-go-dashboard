@@ -530,10 +530,13 @@ export function CancellationPolicyCard({
     [form.guestFacingSummary, generatedSummary]
   );
 
-  const normalizedRulesPreview = useMemo(
+   const normalizedRulesPreview = useMemo(
     () => normalizeRefundRules(form.refundRules),
     [form.refundRules]
   );
+
+  const isBusy = loadState === "loading" || loadState === "saving";
+  const canEditRefundRules = form.type === "CUSTOM";
 
   async function loadPolicy() {
     if (!propertyId) return;
@@ -569,7 +572,9 @@ export function CancellationPolicyCard({
     }));
   }
 
-  function handleAddRefundRule() {
+    function handleAddRefundRule() {
+    if (!canEditRefundRules) return;
+
     const nextRule: CancellationRefundRule = {
       minHoursBeforeCheckIn: 0,
       refundPercent: 0,
@@ -581,11 +586,12 @@ export function CancellationPolicyCard({
       refundRules: [...current.refundRules, nextRule],
     }));
   }
-
-  function handleUpdateRefundRule(
+   function handleUpdateRefundRule(
     index: number,
     patch: Partial<CancellationRefundRule>
   ) {
+    if (!canEditRefundRules) return;
+
     setForm((current) => ({
       ...current,
       refundRules: current.refundRules.map((rule, ruleIndex) =>
@@ -593,16 +599,16 @@ export function CancellationPolicyCard({
       ),
     }));
   }
+   function handleDeleteRefundRule(index: number) {
+    if (!canEditRefundRules) return;
 
-  function handleDeleteRefundRule(index: number) {
     setForm((current) => ({
       ...current,
       refundRules: current.refundRules.filter(
         (_rule, ruleIndex) => ruleIndex !== index
       ),
     }));
-  }
-
+  } 
   function handleScenarioToggle(
     scenario: CancellationNonRefundableScenario,
     checked: boolean
@@ -664,11 +670,9 @@ export function CancellationPolicyCard({
     }
   }
 
-  useEffect(() => {
+     useEffect(() => {
     loadPolicy();
   }, [propertyId]);
-
-  const isBusy = loadState === "loading" || loadState === "saving";
 
   return (
     <section style={cardStyle}>
@@ -862,20 +866,28 @@ export function CancellationPolicyCard({
               saves rules from the highest check-in window to the lowest.
             </div>
           </div>
-
-          <button
+                   <button
             type="button"
             onClick={handleAddRefundRule}
-            disabled={isBusy}
+            disabled={isBusy || !canEditRefundRules}
             style={{
               ...secondaryButtonStyle,
-              opacity: isBusy ? 0.65 : 1,
-              cursor: isBusy ? "not-allowed" : "pointer",
+              opacity: isBusy || !canEditRefundRules ? 0.45 : 1,
+              cursor:
+                isBusy || !canEditRefundRules ? "not-allowed" : "pointer",
             }}
           >
             Add rule
           </button>
+         
         </div>
+
+                {!canEditRefundRules ? (
+          <div style={lockedPresetNoticeStyle}>
+            Standard policy presets are locked to keep guest-facing refund
+            terms clear. Select Custom to add, remove, or edit refund rules.
+          </div>
+        ) : null}
 
         {form.refundRules.length === 0 ? (
           <div style={emptyStateStyle}>
@@ -900,7 +912,7 @@ export function CancellationPolicyCard({
                       })
                     }
                     style={inputStyle}
-                    disabled={isBusy}
+                    disabled={isBusy || !canEditRefundRules}
                   />
                 </label>
 
@@ -937,14 +949,17 @@ export function CancellationPolicyCard({
                   />
                 </label>
 
-                <button
+                                <button
                   type="button"
                   onClick={() => handleDeleteRefundRule(index)}
-                  disabled={isBusy}
+                  disabled={isBusy || !canEditRefundRules}
                   style={{
                     ...dangerButtonStyle,
-                    opacity: isBusy ? 0.65 : 1,
-                    cursor: isBusy ? "not-allowed" : "pointer",
+                    opacity: isBusy || !canEditRefundRules ? 0.45 : 1,
+                    cursor:
+                      isBusy || !canEditRefundRules
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
                   Remove
@@ -1297,6 +1312,17 @@ const scenarioOptionStyle: CSSProperties = {
   color: "#334155",
   fontSize: 13,
   fontWeight: 800,
+};
+
+const lockedPresetNoticeStyle: CSSProperties = {
+  border: "1px solid rgba(191, 219, 254, 0.9)",
+  borderRadius: 14,
+  padding: "10px 12px",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontSize: 13,
+  fontWeight: 800,
+  lineHeight: 1.45,
 };
 
 const emptyStateStyle: CSSProperties = {
