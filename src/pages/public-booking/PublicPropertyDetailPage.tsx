@@ -301,12 +301,11 @@ function getRuleDateLabel({
 }
 
 function getPolicyTypeLabel(type: PublicCancellationPolicy["type"]) {
-  if (type === "NON_REFUNDABLE") return "Non-refundable policy";
-  if (type === "STRICT") return "Strict cancellation policy";
-  if (type === "FIRM") return "Firm cancellation policy";
-  if (type === "MODERATE") return "Moderate cancellation policy";
-  if (type === "CUSTOM") return "Custom cancellation policy";
-  return "Flexible cancellation policy";
+  if (type === "NON_REFUNDABLE") {
+    return "Non-refundable reservation";
+  }
+
+  return "Refund terms for this stay";
 }
 
 function getCancellationPolicySummary(
