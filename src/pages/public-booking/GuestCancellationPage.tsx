@@ -78,6 +78,18 @@ type CancellationPreviewResponse = {
   };
   action?: string;
   refundExecution?: string;
+  refund?: {
+    stripeRefundId?: string | null;
+    status?: string | null;
+    amount?: number | null;
+    amountCents?: number | null;
+    currency?: string | null;
+    reason?: string | null;
+    refundMode?: string | null;
+    refundPercent?: number | null;
+    isFullRefund?: boolean | null;
+    refundedAt?: string | null;
+  } | null;
   error?: string;
   message?: string;
   details?: CancellationPreviewResponse;
@@ -152,8 +164,104 @@ function formatScenario(value: string) {
   return "Other post-booking changes";
 }
 
-function getActionCopy(action?: string) {
-  if (action === "HOST_APPROVAL_REQUIRED") {
+function getEffectiveRefundExecution(
+  preview: CancellationPreviewResponse | null | undefined
+) {
+  if (preview?.refundExecution) {
+    return preview.refundExecution;
+  }
+
+  if (preview?.reservation?.paymentState === "REFUNDED") {
+    return "FULL_REFUND_EXECUTED";
+  }
+
+  if (preview?.reservation?.paymentState === "PARTIALLY_REFUNDED") {
+    return "PARTIAL_REFUND_EXECUTED";
+  }
+
+  return null;
+}
+
+function getDisplayedRefundAmount(
+  preview: CancellationPreviewResponse | null | undefined
+) {
+  const refundAmountCents = Number(preview?.refund?.amountCents ?? NaN);
+
+  if (Number.isFinite(refundAmountCents) && refundAmountCents >= 0) {
+    return refundAmountCents / 100;
+  }
+
+  const refundAmount = Number(preview?.refund?.amount ?? NaN);
+
+  if (Number.isFinite(refundAmount) && refundAmount >= 0) {
+    return refundAmount;
+  }
+
+  return Number(preview?.evaluation?.refundAmount ?? 0);
+}
+
+function getRefundAmountLabel(
+  preview: CancellationPreviewResponse | null | undefined
+) {
+  const refundExecution = getEffectiveRefundExecution(preview);
+
+  if (refundExecution === "FULL_REFUND_EXECUTED") {
+    return "Refund processed";
+  }
+
+  if (refundExecution === "PARTIAL_REFUND_EXECUTED") {
+    return "Partial refund processed";
+  }
+
+  if (
+    refundExecution === "NO_REFUND_DUE" ||
+    preview?.reservation?.paymentState === "REFUNDED" ||
+    preview?.reservation?.status === "CANCELLED"
+  ) {
+    return Number(preview?.evaluation?.refundAmountCents ?? 0) > 0
+      ? "Refund amount"
+      : "No refund due";
+  }
+
+  return "Estimated refund";
+}
+
+function getActionCopy(preview: CancellationPreviewResponse | null) {
+  const refundExecution = getEffectiveRefundExecution(preview);
+
+  if (refundExecution === "FULL_REFUND_EXECUTED") {
+    return {
+      title: "Refund processed",
+      text:
+        "Pin&Go cancelled the reservation and submitted the eligible refund through Stripe.",
+    };
+  }
+
+  if (refundExecution === "PARTIAL_REFUND_EXECUTED") {
+    return {
+      title: "Partial refund processed",
+      text:
+        "Pin&Go cancelled the reservation and submitted the eligible partial refund through Stripe. Non-refundable charges were handled according to the cancellation terms accepted at booking.",
+    };
+  }
+
+  if (refundExecution === "REFUND_PENDING_PROPERTY_WORKFLOW") {
+    return {
+      title: "Cancellation recorded",
+      text:
+        "The reservation was cancelled. The eligible refund still needs to be handled by the property workflow.",
+    };
+  }
+
+  if (refundExecution === "GUEST_AUTO_REFUND_FAILED") {
+    return {
+      title: "Refund needs review",
+      text:
+        "The cancellation request was recorded, but the automatic refund could not be completed and needs review.",
+    };
+  }
+
+  if (preview?.action === "HOST_APPROVAL_REQUIRED") {
     return {
       title: "Host approval required",
       text:
@@ -161,15 +269,15 @@ function getActionCopy(action?: string) {
     };
   }
 
-  if (action === "CANCELLATION_ALLOWED_REFUND_PENDING") {
+  if (preview?.action === "CANCELLATION_ALLOWED_REFUND_PENDING") {
     return {
       title: "Cancellation allowed",
       text:
-        "This cancellation is allowed under the policy. The eligible refund is estimated below, but the refund is not automatically sent in this version.",
+        "This cancellation is allowed under the policy. The eligible refund is estimated below and may be submitted through Stripe when you confirm.",
     };
   }
 
-  if (action === "CANCELLATION_ALLOWED_NO_REFUND") {
+  if (preview?.action === "CANCELLATION_ALLOWED_NO_REFUND") {
     return {
       title: "Cancellation allowed with no refund",
       text:
@@ -184,9 +292,35 @@ function getActionCopy(action?: string) {
   };
 }
 
-function getRefundExecutionCopy(value?: string) {
+function getRefundExecutionCopy(
+  preview: CancellationPreviewResponse | null | undefined,
+  currency: string
+) {
+  const value = getEffectiveRefundExecution(preview);
+  const amount = formatMoney(getDisplayedRefundAmount(preview), currency);
+
+  if (value === "FULL_REFUND_EXECUTED") {
+    return `Your eligible refund of ${amount} was submitted through Stripe.`;
+  }
+
+  if (value === "PARTIAL_REFUND_EXECUTED") {
+    return `Your eligible partial refund of ${amount} was submitted through Stripe. Any non-refundable charges remain subject to the cancellation terms accepted at booking.`;
+  }
+
+  if (value === "REFUND_PENDING_PROPERTY_WORKFLOW") {
+    return "Your cancellation was recorded. The eligible refund is pending the property refund workflow.";
+  }
+
+  if (value === "NOT_EXECUTED_HOST_APPROVAL_REQUIRED") {
+    return "This cancellation requires host approval before any refund can be processed.";
+  }
+
+  if (value === "GUEST_AUTO_REFUND_FAILED") {
+    return "Pin&Go could not complete the automatic refund. The cancellation request was recorded for review.";
+  }
+
   if (value === "REFUND_NOT_EXECUTED_IN_V1") {
-    return "Refund not sent automatically in this version. Pin&Go records the cancellation and refund eligibility for the property workflow.";
+    return "Refund has not been processed yet. Pin&Go will follow the property cancellation workflow.";
   }
 
   if (value === "NO_REFUND_DUE") {
@@ -194,6 +328,51 @@ function getRefundExecutionCopy(value?: string) {
   }
 
   return "Refund execution will follow the property cancellation workflow.";
+}
+
+function getCancellationSubmitMessage(preview: CancellationPreviewResponse) {
+  const refundExecution = getEffectiveRefundExecution(preview);
+
+  if (preview.alreadyCancelled) {
+    return "This reservation was already cancelled.";
+  }
+
+  if (refundExecution === "FULL_REFUND_EXECUTED") {
+    return "Your reservation was cancelled and your eligible refund was submitted through Stripe.";
+  }
+
+  if (refundExecution === "PARTIAL_REFUND_EXECUTED") {
+    return "Your reservation was cancelled and your eligible partial refund was submitted through Stripe.";
+  }
+
+  if (refundExecution === "NO_REFUND_DUE") {
+    return "Your reservation was cancelled. No refund is due according to the policy.";
+  }
+
+  if (refundExecution === "REFUND_PENDING_PROPERTY_WORKFLOW") {
+    return "Your reservation was cancelled. The refund remains pending in the property workflow.";
+  }
+
+  return "Your reservation cancellation was recorded by Pin&Go.";
+}
+
+function getConfirmationCopy(preview: CancellationPreviewResponse | null) {
+  if (preview?.evaluation?.requiresHostApproval) {
+    return "I understand that this action will request cancellation review from the host and may not cancel my reservation immediately.";
+  }
+
+  if (
+    preview?.evaluation?.eligibleForAutoRefund &&
+    Number(preview.evaluation.refundAmountCents ?? 0) > 0
+  ) {
+    return "I understand that this action may cancel my reservation and Pin&Go may submit any eligible refund through Stripe according to the cancellation terms accepted at booking.";
+  }
+
+  if (Number(preview?.evaluation?.refundAmountCents ?? 0) <= 0) {
+    return "I understand that this action may cancel my reservation and no refund is currently estimated under the accepted cancellation terms.";
+  }
+
+  return "I understand that this action may cancel my reservation and that any eligible refund will follow the property cancellation workflow.";
 }
 
 function getErrorMessage(payload: CancellationPreviewResponse) {
@@ -267,10 +446,11 @@ export default function GuestCancellationPage() {
     preview?.reservation?.status === "CANCELLED" ||
     Boolean(preview?.reservation?.cancelledAt);
 
-  const actionCopy = useMemo(
-    () => getActionCopy(preview?.action),
-    [preview?.action]
-  );
+  const actionCopy = useMemo(() => getActionCopy(preview), [preview]);
+
+  const displayedRefundAmount = getDisplayedRefundAmount(preview);
+  const refundAmountLabel = getRefundAmountLabel(preview);
+  const confirmationCopy = getConfirmationCopy(preview);
 
   const canSubmit = Boolean(preview && !isCancelled && accepted && !submitting);
 
@@ -325,11 +505,7 @@ export default function GuestCancellationPage() {
       }
 
       setPreview(nextPreview);
-      setSubmitMessage(
-        nextPreview.alreadyCancelled
-          ? "This reservation was already cancelled."
-          : "Your reservation cancellation was recorded by Pin&Go."
-      );
+      setSubmitMessage(getCancellationSubmitMessage(nextPreview));
       setAccepted(false);
     } catch (err: any) {
       setPageError(err?.message || "Unable to submit cancellation request.");
@@ -548,9 +724,9 @@ export default function GuestCancellationPage() {
                   <p style={styles.summaryText}>{actionCopy.text}</p>
 
                   <div style={styles.refundAmountBox}>
-                    <span>Estimated refund</span>
+                    <span>{refundAmountLabel}</span>
                     <strong>
-                      {formatMoney(preview.evaluation.refundAmount, currency)}
+                      {formatMoney(displayedRefundAmount, currency)}
                     </strong>
                   </div>
 
@@ -603,6 +779,30 @@ export default function GuestCancellationPage() {
                     </div>
                   </div>
 
+                  {preview.refund ? (
+                    <div style={styles.refundProcessedBox}>
+                      <strong>
+                        {preview.refund.isFullRefund
+                          ? "Stripe refund processed"
+                          : "Stripe partial refund processed"}
+                      </strong>
+
+                      {preview.refund.status ? (
+                        <span>Status: {preview.refund.status}</span>
+                      ) : null}
+
+                      {preview.refund.refundedAt ? (
+                        <span>
+                          Submitted on {formatDateTime(preview.refund.refundedAt)}
+                        </span>
+                      ) : null}
+
+                      {preview.refund.stripeRefundId ? (
+                        <span>Refund ID: {preview.refund.stripeRefundId}</span>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   {preview.evaluation.matchedRefundRule ? (
                     <div style={styles.matchedRuleBox}>
                       <strong>Matched rule</strong>
@@ -614,7 +814,7 @@ export default function GuestCancellationPage() {
                   ) : null}
 
                   <div style={styles.refundNotice}>
-                    {getRefundExecutionCopy(preview.refundExecution)}
+                    {getRefundExecutionCopy(preview, currency)}
                   </div>
 
                   {submitMessage ? (
@@ -645,11 +845,7 @@ export default function GuestCancellationPage() {
                           style={styles.checkbox}
                         />
 
-                        <span>
-                          I understand that this action may cancel my reservation
-                          and that any eligible refund is only an estimate until
-                          processed by the property workflow.
-                        </span>
+                        <span>{confirmationCopy}</span>
                       </label>
 
                       <button
@@ -1036,6 +1232,20 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.5,
     fontWeight: 750,
+  },
+  refundProcessedBox: {
+    marginTop: 16,
+    border: "1px solid #bbf7d0",
+    background: "#f0fdf4",
+    color: "#14532d",
+    borderRadius: 18,
+    padding: 15,
+    display: "grid",
+    gap: 5,
+    fontSize: 13,
+    lineHeight: 1.5,
+    fontWeight: 800,
+    wordBreak: "break-word",
   },
   refundNotice: {
     marginTop: 16,
