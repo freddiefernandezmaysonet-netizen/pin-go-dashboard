@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "https://api.pin-ngo.com";
 
 type Passcode = {
   id: string;
@@ -110,14 +113,43 @@ function money(value?: number | null, currency = "usd") {
 }
 
 function sourceLabel(value?: string | null) {
-  const v = String(value ?? "").trim();
+  const v = String(value ?? "").trim().toUpperCase();
 
   if (!v) return "—";
 
   if (v === "DIRECT_BOOKING") return "Direct Booking";
   if (v === "PIN_GO_DIRECT") return "Pin&Go Direct";
+  if (v === "MANUAL") return "Manual Reservation";
+  if (v === "PIN_GO_MANUAL") return "Pin&Go Manual";
 
-  return v.replaceAll("_", " ");
+  return v
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getReservationTotalAmount(reservation: Reservation) {
+  const totalAmount = Number(reservation.totalAmount);
+
+  if (Number.isFinite(totalAmount) && totalAmount > 0) {
+    return totalAmount;
+  }
+
+  const pricingTotalAmount = Number(reservation.pricingBreakdown?.totalAmount);
+
+  if (Number.isFinite(pricingTotalAmount) && pricingTotalAmount > 0) {
+    return pricingTotalAmount;
+  }
+
+  return null;
+}
+
+function getReservationCurrency(reservation: Reservation) {
+  return (
+    reservation.currency ||
+    reservation.pricingBreakdown?.currency ||
+    "usd"
+  );
 }
 
 function labelizeStatus(value?: string | null) {
@@ -262,6 +294,15 @@ export function ReservationDetailPage() {
   const passcodes = useMemo(() => data?.passcodes ?? [], [data]);
   const nfcCards = useMemo(() => data?.nfc ?? [], [data]);
 
+  const reservationTotalPaid = data ? getReservationTotalAmount(data) : null;
+  const reservationCurrency = data ? getReservationCurrency(data) : "usd";
+  const reservationSource = data
+    ? sourceLabel(data.source ?? data.externalProvider)
+    : "—";
+  const reservationProvider = data
+    ? sourceLabel(data.externalProvider ?? "PIN_GO")
+    : "—";
+  
   if (loading) {
     return (
       <div style={{ display: "grid", gap: 16 }}>
@@ -430,8 +471,8 @@ export function ReservationDetailPage() {
         </div>
       </div>
 
-               <div style={cardStyle()}>
-  <h3 style={sectionTitleStyle()}>Direct Booking Details</h3>
+             <div style={cardStyle()}>
+  <h3 style={sectionTitleStyle()}>Reservation Payment Details</h3>
 
   <div
     style={{
@@ -444,28 +485,21 @@ export function ReservationDetailPage() {
     <Stat
       title="Total Paid"
       value={
-        data.totalAmount != null
-          ? `$${Number(data.totalAmount).toFixed(2)}`
+        reservationTotalPaid !== null
+          ? money(reservationTotalPaid, reservationCurrency)
           : "—"
       }
     />
 
-    <Stat
-      title="Source"
-      value={data.source ?? "—"}
-    />
+    <Stat title="Payment State" value={statusPill(data.paymentState)} />
 
-   <Stat
-  title="Provider"
-  value="Pin&Go"
-/>
-    <Stat
-      title="Currency"
-      value={(data.currency ?? "usd").toUpperCase()}
-    />
+    <Stat title="Source" value={reservationSource} />
+
+    <Stat title="Provider" value={reservationProvider} />
+
+    <Stat title="Currency" value={reservationCurrency.toUpperCase()} />
   </div>
-</div>
- 
+</div> 
         {data.pricingBreakdown ? (
   <div style={cardStyle()}>
     <h3 style={sectionTitleStyle()}>Pricing Breakdown</h3>
@@ -499,9 +533,12 @@ export function ReservationDetailPage() {
       />
 
       <Stat
-        title="Total Paid"
-        value={`$${Number(data.pricingBreakdown.totalAmount ?? 0).toFixed(2)}`}
-      />
+  title="Total Paid"
+  value={money(
+    data.pricingBreakdown.totalAmount ?? 0,
+    data.pricingBreakdown.currency ?? reservationCurrency
+  )}
+/>
     </div>
   </div>
 ) : null}
