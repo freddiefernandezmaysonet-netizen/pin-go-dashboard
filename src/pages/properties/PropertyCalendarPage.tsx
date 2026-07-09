@@ -37,8 +37,14 @@ export function PropertyCalendarPage() {
   const [manualGuestEmail, setManualGuestEmail] = useState("");
   const [manualGuestPhone, setManualGuestPhone] = useState("");
   const [manualPaymentState, setManualPaymentState] = useState("NONE");
+  const [manualReservationQuote, setManualReservationQuote] =
+    useState<any | null>(null);
+  const [loadingManualReservationQuote, setLoadingManualReservationQuote] =
+    useState(false);
+  const [manualReservationQuoteError, setManualReservationQuoteError] =
+    useState<string | null>(null);
   const [savingManualReservation, setSavingManualReservation] = useState(false);
-
+  
   const [selectedRange, setSelectedRange] = useState<{
     start: Date | null;
     end: Date | null;
@@ -218,6 +224,75 @@ export function PropertyCalendarPage() {
         )}`
       : `${format(selectedRange.start, "MMM d, yyyy")}`
     : "";
+
+const manualReservationDateKeys = useMemo(() => {
+  if (!selectedRange.start) return null;
+
+  const checkOutDate = addDays(
+    selectedRange.end ?? selectedRange.start,
+    1
+  );
+
+  return {
+    checkIn: format(selectedRange.start, "yyyy-MM-dd"),
+    checkOut: format(checkOutDate, "yyyy-MM-dd"),
+  };
+}, [selectedRange.start, selectedRange.end]);
+  
+useEffect(() => {
+  if (!id || !showCreateReservationForm || !manualReservationDateKeys) {
+    setManualReservationQuote(null);
+    setManualReservationQuoteError(null);
+    setLoadingManualReservationQuote(false);
+    return;
+  }
+
+  let active = true;
+
+  async function loadManualReservationQuote() {
+    try {
+      setLoadingManualReservationQuote(true);
+      setManualReservationQuoteError(null);
+
+      const quoteRes = await fetch(
+        `${API_BASE}/api/dashboard/properties/${id}/manual-reservations/quote?checkIn=${manualReservationDateKeys.checkIn}&checkOut=${manualReservationDateKeys.checkOut}`,
+        { credentials: "include" }
+      );
+
+      const quoteData = await quoteRes.json().catch(() => ({}));
+
+      if (!quoteRes.ok) {
+        throw new Error(
+          quoteData?.error || "Failed to calculate reservation total"
+        );
+      }
+
+      if (!active) return;
+
+      setManualReservationQuote(quoteData.item ?? null);
+    } catch (error: any) {
+      if (!active) return;
+
+      setManualReservationQuote(null);
+      setManualReservationQuoteError(String(error?.message || error));
+    } finally {
+      if (active) {
+        setLoadingManualReservationQuote(false);
+      }
+    }
+  }
+
+  loadManualReservationQuote();
+
+  return () => {
+    active = false;
+  };
+}, [
+  id,
+  showCreateReservationForm,
+  manualReservationDateKeys?.checkIn,
+  manualReservationDateKeys?.checkOut,
+]);
 
   const baseNightlyRate = Number(property?.baseNightlyRate ?? 0);
   const minimumNightlyRate = Number(property?.minimumNightlyRate ?? 0);
@@ -1319,6 +1394,21 @@ const occupancySummary = useMemo(() => {
       return;
     }
 
+if (!manualReservationDateKeys) {
+  alert("Select valid reservation dates.");
+  return;
+}
+
+if (manualPaymentState === "PAID" && loadingManualReservationQuote) {
+  alert("Pin&Go is still calculating the reservation total.");
+  return;
+}
+
+if (manualPaymentState === "PAID" && !manualReservationQuote) {
+  alert("Pin&Go must calculate the reservation total before marking it as paid.");
+  return;
+}
+
     try {
       setSavingManualReservation(true);
 
@@ -1328,14 +1418,14 @@ const occupancySummary = useMemo(() => {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({
+        body: JSON.stringify({
   guestName: manualGuestName.trim(),
   guestEmail: manualGuestEmail.trim() || null,
   guestPhone: manualGuestPhone.trim() || null,
-  checkIn: getDateKey(selectedRange.start),
-  checkOut: getDateKey(selectedRange.end ?? selectedRange.start),
-  paymentState: manualPaymentState,
- }),
+ checkIn: manualReservationDateKeys.checkIn,
+checkOut: manualReservationDateKeys.checkOut,
+paymentState: manualPaymentState,
+}),
         }
       );
 
@@ -1351,7 +1441,6 @@ const occupancySummary = useMemo(() => {
       setManualGuestEmail("");
       setManualGuestPhone("");
       setManualPaymentState("NONE");
-      setManualTotalPaid("");
       setShowCreateReservationForm(false);
       setSelectedRange({ start: null, end: null });
     } catch (error: any) {
@@ -2220,6 +2309,64 @@ const occupancySummary = useMemo(() => {
   <option value="PAID">Payment collected manually</option>
 </select>
           
+<div style={styles.manualQuoteCard}>
+  <div style={styles.manualQuoteHeader}>
+    <div>
+      <div style={styles.manualQuoteLabel}>
+        Pin&Go calculated total
+      </div>
+
+      <div style={styles.manualQuoteHint}>
+        Based on selected dates, pricing rules, fees, amenities, and taxes.
+      </div>
+    </div>
+
+    <div style={styles.manualQuoteBadge}>Pricing Engine</div>
+  </div>
+
+  {loadingManualReservationQuote ? (
+    <div style={styles.manualQuoteMuted}>
+      Calculating reservation total...
+    </div>
+  ) : manualReservationQuoteError ? (
+    <div style={styles.manualQuoteError}>
+      {manualReservationQuoteError}
+    </div>
+  ) : manualReservationQuote ? (
+    <>
+      <div style={styles.manualQuoteTotal}>
+        {formatMoney(manualReservationQuote.totalAmount)}
+      </div>
+
+      <div style={styles.manualQuoteBreakdown}>
+        <span>{manualReservationQuote.nights ?? 0} night(s)</span>
+        <span>
+          Nightly: {formatMoney(manualReservationQuote.nightlySubtotal)}
+        </span>
+        <span>
+          Cleaning: {formatMoney(manualReservationQuote.cleaningFee)}
+        </span>
+        <span>
+          Amenities: {formatMoney(manualReservationQuote.amenitiesTotal)}
+        </span>
+        <span>
+          Taxes: {formatMoney(manualReservationQuote.taxesTotal)}
+        </span>
+      </div>
+
+      <div style={styles.manualQuoteMuted}>
+        {manualPaymentState === "PAID"
+          ? "Host should collect this calculated amount from the guest."
+          : "This amount is calculated, but payment is not marked as collected."}
+      </div>
+    </>
+  ) : (
+    <div style={styles.manualQuoteMuted}>
+      Select dates to calculate the reservation total.
+    </div>
+  )}
+</div>
+
               <button
                 type="button"
                 onClick={handleCreateManualReservation}
@@ -3635,7 +3782,83 @@ autoResolutionFooter: {
     fontWeight: 800,
     outline: "none",
   },
-  selectedDayPanel: {
+  manualQuoteCard: {
+  width: "100%",
+  marginTop: 4,
+  padding: 14,
+  borderRadius: 16,
+  border: "1px solid #bfdbfe",
+  background: "#ffffff",
+  display: "grid",
+  gap: 10,
+},
+
+manualQuoteHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 12,
+},
+
+manualQuoteLabel: {
+  fontSize: 12,
+  fontWeight: 950,
+  color: "#1e3a8a",
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+},
+
+manualQuoteHint: {
+  marginTop: 4,
+  fontSize: 12,
+  fontWeight: 750,
+  color: "#475569",
+},
+
+manualQuoteBadge: {
+  padding: "5px 9px",
+  borderRadius: 999,
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  border: "1px solid #bfdbfe",
+  fontSize: 10,
+  fontWeight: 950,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+},
+
+manualQuoteTotal: {
+  fontSize: 30,
+  lineHeight: 1,
+  fontWeight: 950,
+  color: "#0f172a",
+},
+
+manualQuoteBreakdown: {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+  fontSize: 12,
+  fontWeight: 850,
+  color: "#334155",
+},
+
+manualQuoteMuted: {
+  fontSize: 12,
+  fontWeight: 800,
+  color: "#64748b",
+},
+
+manualQuoteError: {
+  padding: 10,
+  borderRadius: 12,
+  background: "#fef2f2",
+  border: "1px solid #fecaca",
+  color: "#991b1b",
+  fontSize: 12,
+  fontWeight: 850,
+},
+ selectedDayPanel: {
     marginTop: 24,
     padding: 20,
     border: "1px solid #e5e7eb",
