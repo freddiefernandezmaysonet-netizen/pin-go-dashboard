@@ -37,7 +37,6 @@ export function PropertyCalendarPage() {
   const [manualGuestEmail, setManualGuestEmail] = useState("");
   const [manualGuestPhone, setManualGuestPhone] = useState("");
   const [manualPaymentState, setManualPaymentState] = useState("NONE");
-  const [manualTotalPaid, setManualTotalPaid] = useState("");
   const [savingManualReservation, setSavingManualReservation] = useState(false);
 
   const [selectedRange, setSelectedRange] = useState<{
@@ -1320,20 +1319,6 @@ const occupancySummary = useMemo(() => {
       return;
     }
 
-const manualTotalPaidNumber = Number(manualTotalPaid);
-
-if (
-  manualPaymentState === "PAID" &&
-  (
-    !manualTotalPaid.trim() ||
-    !Number.isFinite(manualTotalPaidNumber) ||
-    manualTotalPaidNumber <= 0
-  )
-) {
-  alert("Total paid is required when the reservation is marked as paid.");
-  return;
-}
-
     try {
       setSavingManualReservation(true);
 
@@ -1350,12 +1335,7 @@ if (
   checkIn: getDateKey(selectedRange.start),
   checkOut: getDateKey(selectedRange.end ?? selectedRange.start),
   paymentState: manualPaymentState,
-  totalAmount:
-    manualPaymentState === "PAID"
-      ? Number(manualTotalPaid)
-      : null,
-  currency: "usd",
-}),
+ }),
         }
       );
 
@@ -2231,34 +2211,15 @@ if (
                 style={styles.inlineActionInput}
               />
 
-              <select
+             <select
   value={manualPaymentState}
-  onChange={(e) => {
-    const nextPaymentState = e.target.value;
-
-    setManualPaymentState(nextPaymentState);
-
-    if (nextPaymentState !== "PAID") {
-      setManualTotalPaid("");
-    }
-  }}
+  onChange={(e) => setManualPaymentState(e.target.value)}
   style={styles.inlineActionInput}
 >
   <option value="NONE">Payment not recorded</option>
-  <option value="PAID">Paid manually</option>
+  <option value="PAID">Payment collected manually</option>
 </select>
-          {manualPaymentState === "PAID" ? (
-  <input
-    type="number"
-    min="0.01"
-    step="0.01"
-    value={manualTotalPaid}
-    onChange={(e) => setManualTotalPaid(e.target.value)}
-    placeholder="Total paid"
-    style={styles.inlineActionInput}
-  />
-) : null}    
-
+          
               <button
                 type="button"
                 onClick={handleCreateManualReservation}
