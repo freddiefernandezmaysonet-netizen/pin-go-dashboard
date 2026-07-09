@@ -37,6 +37,7 @@ export function PropertyCalendarPage() {
   const [manualGuestEmail, setManualGuestEmail] = useState("");
   const [manualGuestPhone, setManualGuestPhone] = useState("");
   const [manualPaymentState, setManualPaymentState] = useState("NONE");
+  const [manualTotalPaid, setManualTotalPaid] = useState("");
   const [savingManualReservation, setSavingManualReservation] = useState(false);
 
   const [selectedRange, setSelectedRange] = useState<{
@@ -1319,6 +1320,20 @@ const occupancySummary = useMemo(() => {
       return;
     }
 
+const manualTotalPaidNumber = Number(manualTotalPaid);
+
+if (
+  manualPaymentState === "PAID" &&
+  (
+    !manualTotalPaid.trim() ||
+    !Number.isFinite(manualTotalPaidNumber) ||
+    manualTotalPaidNumber <= 0
+  )
+) {
+  alert("Total paid is required when the reservation is marked as paid.");
+  return;
+}
+
     try {
       setSavingManualReservation(true);
 
@@ -1328,14 +1343,19 @@ const occupancySummary = useMemo(() => {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            guestName: manualGuestName.trim(),
-            guestEmail: manualGuestEmail.trim() || null,
-            guestPhone: manualGuestPhone.trim() || null,
-            checkIn: getDateKey(selectedRange.start),
-            checkOut: getDateKey(selectedRange.end ?? selectedRange.start),
-            paymentState: manualPaymentState,
-          }),
+         body: JSON.stringify({
+  guestName: manualGuestName.trim(),
+  guestEmail: manualGuestEmail.trim() || null,
+  guestPhone: manualGuestPhone.trim() || null,
+  checkIn: getDateKey(selectedRange.start),
+  checkOut: getDateKey(selectedRange.end ?? selectedRange.start),
+  paymentState: manualPaymentState,
+  totalAmount:
+    manualPaymentState === "PAID"
+      ? Number(manualTotalPaid)
+      : null,
+  currency: "usd",
+}),
         }
       );
 
@@ -1351,6 +1371,7 @@ const occupancySummary = useMemo(() => {
       setManualGuestEmail("");
       setManualGuestPhone("");
       setManualPaymentState("NONE");
+      setManualTotalPaid("");
       setShowCreateReservationForm(false);
       setSelectedRange({ start: null, end: null });
     } catch (error: any) {
@@ -2211,14 +2232,32 @@ const occupancySummary = useMemo(() => {
               />
 
               <select
-                value={manualPaymentState}
-                onChange={(e) => setManualPaymentState(e.target.value)}
-                style={styles.inlineActionInput}
-              >
-                <option value="NONE">Payment pending</option>
-                <option value="PAID">Paid manually</option>
-                <option value="PENDING">Pending</option>
-              </select>
+  value={manualPaymentState}
+  onChange={(e) => {
+    const nextPaymentState = e.target.value;
+
+    setManualPaymentState(nextPaymentState);
+
+    if (nextPaymentState !== "PAID") {
+      setManualTotalPaid("");
+    }
+  }}
+  style={styles.inlineActionInput}
+>
+  <option value="NONE">Payment not recorded</option>
+  <option value="PAID">Paid manually</option>
+</select>
+          {manualPaymentState === "PAID" ? (
+  <input
+    type="number"
+    min="0.01"
+    step="0.01"
+    value={manualTotalPaid}
+    onChange={(e) => setManualTotalPaid(e.target.value)}
+    placeholder="Total paid"
+    style={styles.inlineActionInput}
+  />
+) : null}    
 
               <button
                 type="button"
