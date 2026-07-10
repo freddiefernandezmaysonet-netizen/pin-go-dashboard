@@ -7,6 +7,7 @@ type PaymentState = "NONE" | "PAID" | "FAILED" | "PENDING";
 
 type ReservationRow = {
   id: string;
+  reservationNumber?: string | null;
   guestName: string;
   guestEmail?: string | null;
   roomName?: string | null;
@@ -146,6 +147,8 @@ export function ReservationsPage() {
   const [properties, setProperties] = useState<PropertiesResp["items"]>([]);
   const [propertyId, setPropertyId] = useState<string>("ALL");
   const [status, setStatus] = useState<string>("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(10);
 
@@ -159,14 +162,35 @@ export function ReservationsPage() {
       .catch(() => setProperties([]));
   }, []);
 
-  const qs = useMemo(() => {
-    const q = new URLSearchParams();
-    q.set("page", String(page));
-    q.set("pageSize", String(pageSize));
-    if (propertyId !== "ALL") q.set("propertyId", propertyId);
-    return q.toString();
-  }, [page, pageSize, propertyId]);
+useEffect(() => {
+  const timer = window.setTimeout(() => {
+    const normalizedSearch = searchInput.trim().replace(/^#/, "");
 
+    setPage(1);
+    setSearch(normalizedSearch);
+  }, 350);
+
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [searchInput]);
+
+ const qs = useMemo(() => {
+  const q = new URLSearchParams();
+
+  q.set("page", String(page));
+  q.set("pageSize", String(pageSize));
+
+  if (propertyId !== "ALL") {
+    q.set("propertyId", propertyId);
+  }
+
+  if (search) {
+    q.set("search", search);
+  }
+
+  return q.toString();
+}, [page, pageSize, propertyId, search]);
   useEffect(() => {
     setLoading(true);
     setErr(null);
@@ -246,6 +270,73 @@ export function ReservationsPage() {
           </select>
         </div>
 
+       <div
+  style={{
+    display: "grid",
+    gap: 6,
+    flex: "1 1 300px",
+    minWidth: 260,
+  }}
+>
+  <div
+    style={{
+      fontSize: 12,
+      color: "#666",
+      fontWeight: 600,
+    }}
+  >
+    Search Reservations
+  </div>
+
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+    }}
+  >
+    <input
+      type="search"
+      value={searchInput}
+      onChange={(e) => setSearchInput(e.target.value)}
+      placeholder="Reservation #, guest, email or room"
+      aria-label="Search reservations"
+      style={{
+        width: "100%",
+        padding: "8px 10px",
+        borderRadius: 10,
+        border: "1px solid #e5e7eb",
+        background: "#fff",
+        color: "#111827",
+        outline: "none",
+      }}
+    />
+
+    {searchInput ? (
+      <button
+        type="button"
+        onClick={() => {
+          setSearchInput("");
+          setSearch("");
+          setPage(1);
+        }}
+        style={{
+          padding: "8px 10px",
+          borderRadius: 10,
+          border: "1px solid #e5e7eb",
+          background: "#fff",
+          color: "#374151",
+          cursor: "pointer",
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+        }}
+      >
+        Clear
+      </button>
+    ) : null}
+  </div>
+</div>
+
         <div style={{ marginLeft: "auto", color: "#666", fontSize: 13 }}>
           {loading ? "Loading…" : data ? `${filteredItems.length} shown / ${data.total} total` : "—"}
         </div>
@@ -289,7 +380,7 @@ export function ReservationsPage() {
 >
             <thead style={{ background: "#f9fafb" }}>
               <tr>
-                {["Guest", "Property", "Check-in", "Check-out", "Operational", "Payment", "Total Paid", "Source"].map(
+                {[ "Reservation #","Guest", "Property", "Check-in", "Check-out", "Operational", "Payment", "Total Paid", "Source"].map(
                   (h) => (
                     <th
                       key={h}
@@ -314,13 +405,13 @@ export function ReservationsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: 16, color: "#666" }}>
+                  <td colSpan={9} style={{ padding: 16, color: "#666" }}>
                     Loading…
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: 16, color: "#666" }}>
+                  <td colSpan={9} style={{ padding: 16, color: "#666" }}>
                     No reservations found for this filter.
                   </td>
                 </tr>
@@ -344,6 +435,25 @@ export function ReservationsPage() {
                         e.currentTarget.style.background = "#fff";
                       }}
                     >
+                      
+<td
+  style={{
+    padding: 12,
+    whiteSpace: "nowrap",
+  }}
+>
+  <div
+    style={{
+      fontWeight: 800,
+      color: "#2563eb",
+      fontSize: 13,
+    }}
+  >
+    {r.reservationNumber
+  ? `#${r.reservationNumber}`
+  : "Pending"}
+  </div>
+</td>
                       <td style={{ padding: 12 }}>
                         <div style={{ fontWeight: 700, color: "#111827" }}>{r.guestName}</div>
                         <div style={{ color: "#666", fontSize: 12, marginTop: 4 }}>

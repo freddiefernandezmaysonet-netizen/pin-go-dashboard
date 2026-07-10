@@ -70,6 +70,7 @@ type PricingBreakdown = {
 
 type Reservation = {
   id: string;
+  reservationNumber?: string | null;
   guestName: string;
   guestEmail?: string | null;
   guestPhone?: string | null;
@@ -387,23 +388,63 @@ export function ReservationDetailPage() {
           borderRadius: 20,
         }}
       >
-        <h1
-          style={{
-            fontSize: 30,
-            fontWeight: 800,
-            margin: 0,
-            color: "#111827",
-          }}
-        >
-          {data.guestName}
-        </h1>
-        {/* ✅ PAYMENT BADGE */}
-{data.paymentState && (
-  <div style={{ marginTop: 10 }}>
-    {statusPill(data.paymentState)}
-  </div>
-)}
+     <div
+  style={{
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 16,
+    flexWrap: "wrap",
+  }}
+>
+  <div>
+    <div
+      style={{
+        fontSize: 13,
+        fontWeight: 700,
+        color: "#6b7280",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        marginBottom: 6,
+      }}
+    >
+      Reservation
+    </div>
 
+    <h1
+      style={{
+        fontSize: 30,
+        fontWeight: 800,
+        margin: 0,
+        color: "#111827",
+      }}
+    >
+      {data.guestName}
+    </h1>
+
+    <div
+      style={{
+        marginTop: 8,
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "6px 10px",
+        borderRadius: 999,
+        background: "#eff6ff",
+        border: "1px solid #bfdbfe",
+        color: "#1d4ed8",
+        fontSize: 14,
+        fontWeight: 800,
+        letterSpacing: "0.01em",
+      }}
+    >
+      Reservation #{data.reservationNumber ?? "Pending Reference"}
+    </div>
+  </div>
+
+  {data.paymentState ? (
+    <div>{statusPill(data.paymentState)}</div>
+  ) : null}
+</div>
 {/* ✅ ALERTA */}
 {data.paymentState !== "PAID" && (
   <div

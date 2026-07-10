@@ -563,6 +563,10 @@ function getMissionActionFooterLabel(action: any) {
     return "Pin&Go handled this automatically.";
   }
 
+  if (action?.canAutoResolve) {
+    return "Auto-repair available.";
+  }
+
   return "Host attention required.";
 }
 
@@ -620,6 +624,166 @@ function getMissionActionEngineDisplayLabel(engine: unknown) {
   return getMissionActivityEngineLabel(engineName);
 }
 
+function getMissionActionReservationLabel(action: any) {
+  const reservationNumber = String(
+    action?.reservationNumber ?? ""
+  ).trim();
+
+  if (reservationNumber) {
+    return `#${reservationNumber}`;
+  }
+
+  if (action?.reservationId) {
+    return "Pending Reference";
+  }
+
+  return null;
+}
+
+function renderMissionActionDetails(action: any) {
+  const hasReservationContext = Boolean(
+    action?.reservationId || action?.reservationNumber
+  );
+
+  if (!hasReservationContext) {
+    return (
+      <div style={getMissionActionMetaStyle(action)}>
+        {action?.issue ??
+          action?.description ??
+          getMissionActionFooterLabel(action)}
+      </div>
+    );
+  }
+
+  const reservationLabel =
+    getMissionActionReservationLabel(action) ?? "Pending Reference";
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 14,
+        marginTop: 14,
+        padding: 16,
+        borderRadius: 14,
+        border: "1px solid #e2e8f0",
+        background: "rgba(255, 255, 255, 0.82)",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "120px minmax(0, 1fr)",
+          gap: "9px 14px",
+          alignItems: "start",
+          fontSize: 13,
+        }}
+      >
+        <div style={{ color: "#64748b", fontWeight: 800 }}>
+          Reservation
+        </div>
+
+        <div
+          style={{
+            color: "#1d4ed8",
+            fontWeight: 900,
+            wordBreak: "break-word",
+          }}
+        >
+          {reservationLabel}
+        </div>
+
+        <div style={{ color: "#64748b", fontWeight: 800 }}>
+          Guest
+        </div>
+
+        <div style={{ color: "#0f172a", fontWeight: 800 }}>
+          {action?.guestName || "Guest"}
+        </div>
+
+        <div style={{ color: "#64748b", fontWeight: 800 }}>
+          Issue
+        </div>
+
+        <div
+          style={{
+            color: "#334155",
+            fontWeight: 700,
+            lineHeight: 1.5,
+          }}
+        >
+          {action?.issue ??
+            action?.description ??
+            "Pin&Go detected an operational issue that needs review."}
+        </div>
+
+        <div style={{ color: "#64748b", fontWeight: 800 }}>
+          Engine
+        </div>
+
+        <div style={{ color: "#0f172a", fontWeight: 800 }}>
+          {getMissionActionEngineDisplayLabel(action?.engine)}
+        </div>
+
+        <div style={{ color: "#64748b", fontWeight: 800 }}>
+          Last Signal
+        </div>
+
+        <div style={{ color: "#475569", fontWeight: 700 }}>
+          {getMissionActionLastSignalLabel(action)}
+        </div>
+
+        <div style={{ color: "#64748b", fontWeight: 800 }}>
+          Resolution
+        </div>
+
+        <div
+          style={{
+            color: action?.canAutoResolve ? "#166534" : "#92400e",
+            fontWeight: 900,
+          }}
+        >
+          {action?.canAutoResolve
+            ? "Auto-repair available"
+            : "Host review required"}
+        </div>
+      </div>
+
+      {action?.reservationId ? (
+        <button
+          type="button"
+          onClick={() => {
+            const reservationId = String(
+              action.reservationId ?? ""
+            ).trim();
+
+            if (!reservationId) return;
+
+            navigate(`/reservations/${reservationId}`);
+          }}
+          style={{
+            justifySelf: "start",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 38,
+            padding: "0 14px",
+            borderRadius: 10,
+            border: "1px solid #bfdbfe",
+            background: "#eff6ff",
+            color: "#1d4ed8",
+            fontSize: 13,
+            fontWeight: 900,
+            cursor: "pointer",
+          }}
+        >
+          Open Reservation
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function getMissionActionLastSignalLabel(action: any) {
   const engineName = String(action?.engine ?? "");
   const matchingEngineHealth = missionControlEngineHealth.find(
@@ -627,9 +791,10 @@ function getMissionActionLastSignalLabel(action: any) {
   );
 
   const rawDate =
-    matchingEngineHealth?.lastExecutionAt ??
-    missionControlSnapshot?.generatedAt;
-
+  action?.lastSignalAt ??
+  matchingEngineHealth?.lastExecutionAt ??
+  missionControlSnapshot?.generatedAt;
+  
   const date = rawDate ? new Date(rawDate) : null;
 
   if (!date || Number.isNaN(date.getTime())) {
@@ -1724,11 +1889,8 @@ paymentState: manualPaymentState,
       </div>
     </div>
 
-    <div style={getMissionActionMetaStyle(primaryMissionControlAction)}>
-      {primaryMissionControlAction.description ??
-        getMissionActionFooterLabel(primaryMissionControlAction)}
-    </div>
-
+    {renderMissionActionDetails(primaryMissionControlAction)}
+    
     <div style={styles.missionActionFooterRow}>
       <div style={getMissionActionFooterStyle(primaryMissionControlAction)}>
         {getMissionActionFooterLabel(primaryMissionControlAction)}
@@ -1745,7 +1907,11 @@ paymentState: manualPaymentState,
       <div style={styles.missionActionList}>
         {secondaryMissionControlActions.map((action: any, index: number) => (
           <div
-            key={`${action.engine}-${action.title}-${index}`}
+            key={`${
+  action.reservationNumber ??
+  action.reservationId ??
+  "property"
+}-${action.engine}-${action.title}-${index}`}
             style={styles.missionActionItem}
           >
             <div style={styles.missionActionItemTopRow}>
@@ -1775,9 +1941,7 @@ paymentState: manualPaymentState,
               </div>
             </div>
 
-            <div style={getMissionActionMetaStyle(action)}>
-              {action.description ?? getMissionActionFooterLabel(action)}
-            </div>
+           {renderMissionActionDetails(action)}
           </div>
         ))}
 
@@ -2160,12 +2324,16 @@ paymentState: manualPaymentState,
               )}
 
               {reservation ? (
-                <div style={styles.dayMetaMuted}>
-                  {reservation.source ||
-                    reservation.externalProvider ||
-                    "Direct Booking"}
-                </div>
-              ) : null}
+  <div style={styles.dayMetaMuted}>
+    {reservation.reservationNumber
+      ? `#${reservation.reservationNumber}`
+      : "Pending Reference"}
+    {" · "}
+    {reservation.source ||
+      reservation.externalProvider ||
+      "Direct Booking"}
+  </div>
+) : null}
             </div>
           );
         })}
@@ -2578,13 +2746,20 @@ paymentState: manualPaymentState,
             </div>
           ) : null}
 
-          {getReservationForDay(selectedDay) && (
-            <>
-              <div style={styles.detailLine}>
-                Guest: {getReservationForDay(selectedDay)?.guestName || "Guest"}
-              </div>
+         {getReservationForDay(selectedDay) && (
+  <>
+    <div style={styles.detailLine}>
+      Reservation:{" "}
+      {getReservationForDay(selectedDay)?.reservationNumber
+        ? `#${getReservationForDay(selectedDay)?.reservationNumber}`
+        : "Pending Reference"}
+    </div>
 
-              <button
+    <div style={styles.detailLine}>
+      Guest: {getReservationForDay(selectedDay)?.guestName || "Guest"}
+    </div>
+
+    <button
                 type="button"
                 style={styles.primaryActionButton}
                 onClick={() => {
