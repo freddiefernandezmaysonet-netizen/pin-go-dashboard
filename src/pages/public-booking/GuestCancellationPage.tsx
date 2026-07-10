@@ -18,7 +18,7 @@ type CancellationPreviewResponse = {
   ok?: boolean;
   alreadyCancelled?: boolean;
   reservation?: {
-    id: string;
+    reservationNumber?: string | null;
     propertyName?: string | null;
     guestName?: string | null;
     guestEmail?: string | null;
@@ -568,13 +568,43 @@ export default function GuestCancellationPage() {
               <div style={styles.grid}>
                 <div style={styles.leftColumn}>
                   <div style={styles.card}>
-                    <div style={styles.sectionEyebrow}>Reservation</div>
-                    <h2 style={styles.cardTitle}>
-                      {preview.reservation.propertyName || "Your stay"}
-                    </h2>
+                   <div style={styles.sectionEyebrow}>Reservation</div>
 
-                    <div style={styles.infoGrid}>
+<h2 style={styles.cardTitle}>
+  {preview.reservation.propertyName || "Your stay"}
+</h2>
+
+<div
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    width: "fit-content",
+    marginTop: 10,
+    padding: "7px 11px",
+    borderRadius: 999,
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: 14,
+    fontWeight: 900,
+    letterSpacing: "0.01em",
+  }}
+>
+  {preview.reservation.reservationNumber
+    ? `Reservation #${preview.reservation.reservationNumber}`
+    : "Reservation reference pending"}
+</div>
+
+<div style={styles.infoGrid}>
                       <div style={styles.infoItem}>
+  <span>Reservation Number</span>
+  <strong>
+    {preview.reservation.reservationNumber
+      ? `#${preview.reservation.reservationNumber}`
+      : "Pending Reference"}
+  </strong>
+</div>
+                     <div style={styles.infoItem}>
                         <span>Guest</span>
                         <strong>{preview.reservation.guestName || "Guest"}</strong>
                       </div>
