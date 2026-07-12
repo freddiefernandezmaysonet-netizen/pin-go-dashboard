@@ -535,6 +535,27 @@ const missionControlRecommendedActions = Array.isArray(
 
 const primaryMissionControlAction =
   missionControlRecommendedActions[0] ?? null;
+
+const hasOperationalHostAction =
+  missionControlOperationalItems.some(
+    (item) =>
+      item.workflowState === "ACTION_REQUIRED" &&
+      item.actionRequired === true &&
+      item.responsibleActor === "HOST"
+  );
+
+const primaryLegacyPriority = String(
+  primaryMissionControlAction?.priority ?? ""
+).toUpperCase();
+
+const shouldShowLegacyCriticalFallback =
+  !hasOperationalHostAction &&
+  primaryMissionControlAction?.requiresHumanAction === true &&
+  (
+    primaryLegacyPriority === "CRITICAL" ||
+    primaryLegacyPriority === "HIGH"
+  );
+
 const secondaryMissionControlActions =
   missionControlRecommendedActions.slice(1, 3);
 
@@ -1875,7 +1896,10 @@ paymentState: manualPaymentState,
     </div>
    ) : null}
 
-  {!hasOperationalIntelligenceContract && primaryMissionControlAction ? (
+  {(
+  !hasOperationalIntelligenceContract ||
+  shouldShowLegacyCriticalFallback
+) && primaryMissionControlAction ? (
   <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
     <div style={styles.missionActionHeader}>
       <div>
