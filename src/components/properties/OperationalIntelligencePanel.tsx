@@ -281,9 +281,19 @@ export function OperationalIntelligencePanel({
   items,
   onOpenReservation,
 }: OperationalIntelligencePanelProps) {
-  const hostItems = Array.isArray(items)
-    ? items.filter((item) => item.visibility === "HOST")
+   const hostItems = Array.isArray(items)
+    ? items.filter(
+        (item) =>
+          item.visibility === "HOST" &&
+          item.workflowState === "ACTION_REQUIRED" &&
+          item.actionRequired === true &&
+          item.responsibleActor === "HOST"
+      )
     : [];
+
+  if (hostItems.length === 0) {
+    return null;
+  }
 
   const sortedItems = [...hostItems].sort((left, right) => {
     const stateDifference =
@@ -318,46 +328,38 @@ export function OperationalIntelligencePanel({
           </div>
         </div>
 
-        <div style={styles.stats}>
-          {stateOrder.map((state) => {
-            const presentation = statePresentation[state];
-            return (
-              <div key={state} style={styles.statCard}>
-                <div
-                  style={{
-                    ...styles.statValue,
-                    color: counts[state] > 0 ? presentation.eyebrowColor : "#ffffff",
-                  }}
-                >
-                  {counts[state]}
-                </div>
-                <div style={styles.statLabel}>{presentation.metricLabel}</div>
-              </div>
-            );
-          })}
-        </div>
+               <div style={styles.stats}>
+          <div style={styles.statCard}>
+            <div
+              style={{
+                ...styles.statValue,
+                color: "#fca5a5",
+              }}
+            >
+              {counts.ACTION_REQUIRED}
+            </div>
+            <div style={styles.statLabel}>
+              Host actions required
+            </div>
+          </div>
+        </div> 
       </div>
 
-      <div
+           <div
         style={{
           ...styles.trustBanner,
-          color: needsAttention > 0 ? "#991b1b" : "#166534",
-          background: needsAttention > 0 ? "#fef2f2" : "#f0fdf4",
-          borderColor: needsAttention > 0 ? "#fecaca" : "#bbf7d0",
+          color: "#991b1b",
+          background: "#fef2f2",
+          borderColor: "#fecaca",
         }}
       >
         <strong>
-          {needsAttention > 0
-            ? `${needsAttention} issue${needsAttention === 1 ? "" : "s"} require host attention.`
-            : "No host action is required right now."}
+          {needsAttention} issue{needsAttention === 1 ? "" : "s"} require host attention.
         </strong>
         <span>
-          {needsAttention > 0
-            ? "Pin&Go identified the exact operational next step below."
-            : "Pin&Go is monitoring active workflows and will continue automatically."}
+          Pin&Go identified the exact operational impact and required next step below.
         </span>
       </div>
-
             <div style={styles.timeline}>
         {sortedItems.length > 0 ? (
           sortedItems.map((item, index) => (
