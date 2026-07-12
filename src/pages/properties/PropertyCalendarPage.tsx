@@ -12,6 +12,10 @@ import {
   isSameMonth,
 } from "date-fns";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  OperationalIntelligencePanel,
+  type OperationalIntelligenceItem,
+} from "../../components/properties/OperationalIntelligencePanel";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -513,6 +517,11 @@ const missionControlEngineCards =
           message: "Waiting for reservation autopilot activity.",
         },
       ];
+const missionControlOperationalItems: OperationalIntelligenceItem[] =
+  Array.isArray(missionControlSnapshot?.operationalItems)
+    ? missionControlSnapshot.operationalItems
+    : [];
+
 const missionControlRecommendedActions = Array.isArray(
   missionControlSnapshot?.recommendedActions
 )
@@ -521,7 +530,6 @@ const missionControlRecommendedActions = Array.isArray(
 
 const primaryMissionControlAction =
   missionControlRecommendedActions[0] ?? null;
-
 const secondaryMissionControlActions =
   missionControlRecommendedActions.slice(1, 3);
 
@@ -1850,7 +1858,14 @@ paymentState: manualPaymentState,
         ))}
       </div>
     </div>
-  ) : null}
+   ) : null}
+
+  <OperationalIntelligencePanel
+    items={missionControlOperationalItems}
+    onOpenReservation={(reservationId) => {
+      navigate(`/reservations/${reservationId}`);
+    }}
+  />
 
   {primaryMissionControlAction ? (
   <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
