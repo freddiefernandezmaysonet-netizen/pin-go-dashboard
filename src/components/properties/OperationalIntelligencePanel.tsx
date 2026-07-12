@@ -285,8 +285,6 @@ export function OperationalIntelligencePanel({
     ? items.filter((item) => item.visibility === "HOST")
     : [];
 
-  if (hostItems.length === 0) return null;
-
   const sortedItems = [...hostItems].sort((left, right) => {
     const stateDifference =
       stateOrder.indexOf(left.workflowState) -
@@ -360,15 +358,24 @@ export function OperationalIntelligencePanel({
         </span>
       </div>
 
-      <div style={styles.timeline}>
-        {sortedItems.map((item, index) => (
-          <OperationalTimelineItem
-            key={`${item.issueCode}-${item.reservationNumber ?? "property"}-${index}`}
-            item={item}
-            isLast={index === sortedItems.length - 1}
-            onOpenReservation={onOpenReservation}
-          />
-        ))}
+            <div style={styles.timeline}>
+        {sortedItems.length > 0 ? (
+          sortedItems.map((item, index) => (
+            <OperationalTimelineItem
+              key={`${item.issueCode}-${item.reservationNumber ?? "property"}-${index}`}
+              item={item}
+              isLast={index === sortedItems.length - 1}
+              onOpenReservation={onOpenReservation}
+            />
+          ))
+        ) : (
+          <div style={styles.emptyState}>
+            <strong>All operational workflows are clear.</strong>
+            <span>
+              Pin&Go has not detected any host-facing issue that requires action.
+            </span>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -461,6 +468,17 @@ const styles: Record<string, CSSProperties> = {
     padding: 18,
     display: "grid",
     gap: 0,
+  },
+ emptyState: {
+    display: "grid",
+    gap: 5,
+    padding: 18,
+    borderRadius: 16,
+    border: "1px solid #bbf7d0",
+    background: "#f0fdf4",
+    color: "#166534",
+    fontSize: 12,
+    lineHeight: 1.4,
   },
   timelineRow: {
     display: "grid",
