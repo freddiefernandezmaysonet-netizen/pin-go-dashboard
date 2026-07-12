@@ -518,8 +518,12 @@ const missionControlEngineCards =
         },
       ];
 
+const hasOperationalIntelligenceContract = Array.isArray(
+  missionControlSnapshot?.operationalItems
+);
+
 const missionControlOperationalItems: OperationalIntelligenceItem[] =
-  Array.isArray(missionControlSnapshot?.operationalItems)
+  hasOperationalIntelligenceContract
     ? missionControlSnapshot.operationalItems
     : [];
 
@@ -1756,7 +1760,17 @@ paymentState: manualPaymentState,
         Active APMS engines reporting health
       </div>
     </div>
-  </div>
+ 
+         </div>
+
+  {hasOperationalIntelligenceContract ? (
+    <OperationalIntelligencePanel
+      items={missionControlOperationalItems}
+      onOpenReservation={(reservationId) => {
+        navigate(`/reservations/${reservationId}`);
+      }}
+    />
+  ) : null}
 
   <div style={styles.missionPanel}>
     <div style={styles.missionPanelHeader}>
@@ -1861,14 +1875,7 @@ paymentState: manualPaymentState,
     </div>
    ) : null}
 
-  <OperationalIntelligencePanel
-    items={missionControlOperationalItems}
-    onOpenReservation={(reservationId) => {
-      navigate(`/reservations/${reservationId}`);
-    }}
-  />
-
-  {primaryMissionControlAction ? (
+  {!hasOperationalIntelligenceContract && primaryMissionControlAction ? (
   <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
     <div style={styles.missionActionHeader}>
       <div>
@@ -1971,7 +1978,7 @@ paymentState: manualPaymentState,
     ) : null}
   </div>
 ) : null}
-     {autoResolutionLogItems.length > 0 ? (
+     {!hasOperationalIntelligenceContract && autoResolutionLogItems.length > 0 ? (
   <div style={styles.autoResolutionPanel}>
     <div style={styles.autoResolutionHeader}>
       <div>
