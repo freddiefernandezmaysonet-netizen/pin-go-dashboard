@@ -517,12 +517,9 @@ const missionControlEngineCards =
           message: "Waiting for reservation autopilot activity.",
         },
       ];
-const hasOperationalIntelligenceContract = Array.isArray(
-  missionControlSnapshot?.operationalItems
-);
 
 const missionControlOperationalItems: OperationalIntelligenceItem[] =
-  hasOperationalIntelligenceContract
+  Array.isArray(missionControlSnapshot?.operationalItems)
     ? missionControlSnapshot.operationalItems
     : [];
 
@@ -1871,7 +1868,7 @@ paymentState: manualPaymentState,
     }}
   />
 
-  {!hasOperationalIntelligenceContract && primaryMissionControlAction ? (
+  {primaryMissionControlAction ? (
   <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
     <div style={styles.missionActionHeader}>
       <div>
@@ -1974,7 +1971,7 @@ paymentState: manualPaymentState,
     ) : null}
   </div>
 ) : null}
-     {!hasOperationalIntelligenceContract && autoResolutionLogItems.length > 0 ? (
+     {autoResolutionLogItems.length > 0 ? (
   <div style={styles.autoResolutionPanel}>
     <div style={styles.autoResolutionHeader}>
       <div>
