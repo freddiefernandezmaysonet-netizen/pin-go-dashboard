@@ -54,40 +54,70 @@ type OperationalIntelligencePanelProps = {
 
 type StatePresentation = {
   label: string;
-  summaryLabel: string;
-  color: string;
-  background: string;
-  border: string;
+  metricLabel: string;
+  eyebrowColor: string;
+  dot: string;
+  dotBackground: string;
+  dotRing: string;
+  pillColor: string;
+  pillBackground: string;
+  pillBorder: string;
+  cardBackground: string;
+  nextStepLabel: string;
 };
 
 const statePresentation: Record<OperationalWorkflowState, StatePresentation> = {
   ACTION_REQUIRED: {
     label: "Needs attention",
-    summaryLabel: "Attention",
-    color: "#b91c1c",
-    background: "#fff7f7",
-    border: "#fecaca",
-  },
-  WAITING: {
-    label: "Waiting",
-    summaryLabel: "Waiting",
-    color: "#1d4ed8",
-    background: "#f8fbff",
-    border: "#bfdbfe",
+    metricLabel: "Needs attention",
+    eyebrowColor: "#fca5a5",
+    dot: "!",
+    dotBackground: "#fee2e2",
+    dotRing: "#fef2f2",
+    pillColor: "#991b1b",
+    pillBackground: "#fee2e2",
+    pillBorder: "#fecaca",
+    cardBackground: "linear-gradient(135deg, #fff7f7 0%, #ffffff 100%)",
+    nextStepLabel: "Host action",
   },
   AUTO_RESOLVING: {
     label: "Pin&Go working",
-    summaryLabel: "Working",
-    color: "#6d28d9",
-    background: "#faf8ff",
-    border: "#ddd6fe",
+    metricLabel: "Pin&Go working",
+    eyebrowColor: "#c4b5fd",
+    dot: "↻",
+    dotBackground: "#ede9fe",
+    dotRing: "#faf5ff",
+    pillColor: "#6d28d9",
+    pillBackground: "#ede9fe",
+    pillBorder: "#ddd6fe",
+    cardBackground: "linear-gradient(135deg, #faf8ff 0%, #ffffff 100%)",
+    nextStepLabel: "Automatic next step",
+  },
+  WAITING: {
+    label: "Waiting",
+    metricLabel: "Waiting",
+    eyebrowColor: "#93c5fd",
+    dot: "…",
+    dotBackground: "#dbeafe",
+    dotRing: "#eff6ff",
+    pillColor: "#1d4ed8",
+    pillBackground: "#dbeafe",
+    pillBorder: "#bfdbfe",
+    cardBackground: "linear-gradient(135deg, #f8fbff 0%, #ffffff 100%)",
+    nextStepLabel: "Automatic next step",
   },
   RESOLVED: {
     label: "Resolved",
-    summaryLabel: "Resolved",
-    color: "#047857",
-    background: "#f7fdf9",
-    border: "#bbf7d0",
+    metricLabel: "Recently resolved",
+    eyebrowColor: "#86efac",
+    dot: "✓",
+    dotBackground: "#dcfce7",
+    dotRing: "#f0fdf4",
+    pillColor: "#166534",
+    pillBackground: "#dcfce7",
+    pillBorder: "#bbf7d0",
+    cardBackground: "#ffffff",
+    nextStepLabel: "Outcome",
   },
 };
 
@@ -109,7 +139,7 @@ function getTimestamp(item: OperationalIntelligenceItem) {
 
 function formatTimestamp(item: OperationalIntelligenceItem) {
   const timestamp = getTimestamp(item);
-  if (!timestamp) return "Live signal";
+  if (!timestamp) return "Live operational signal";
 
   return new Date(timestamp).toLocaleString(undefined, {
     month: "short",
@@ -131,21 +161,25 @@ function formatActor(value: unknown) {
   return "None";
 }
 
-function getPrimaryDetail(item: OperationalIntelligenceItem) {
+function getNextStep(item: OperationalIntelligenceItem) {
   if (item.workflowState === "ACTION_REQUIRED") {
     return item.recommendedAction ?? item.operationalImpact ?? item.issue;
   }
+
   if (item.workflowState === "WAITING" || item.workflowState === "AUTO_RESOLVING") {
-    return item.nextAutomaticStep ?? item.issue;
+    return item.nextAutomaticStep ?? item.recommendedAction ?? item.issue;
   }
-  return item.resolutionSummary ?? item.issue;
+
+  return item.resolutionSummary ?? item.operationalImpact ?? item.issue;
 }
 
-function OperationalRow({
+function OperationalTimelineItem({
   item,
+  isLast,
   onOpenReservation,
 }: {
   item: OperationalIntelligenceItem;
+  isLast: boolean;
   onOpenReservation?: (reservationId: string) => void;
 }) {
   const presentation = statePresentation[item.workflowState];
@@ -153,82 +187,93 @@ function OperationalRow({
   const canOpenReservation = Boolean(item.reservationId && onOpenReservation);
 
   return (
-    <article
-      style={{
-        ...styles.row,
-        borderLeftColor: presentation.color,
-        background: presentation.background,
-      }}
-    >
-      <div style={styles.rowMain}>
-        <div style={styles.rowHeading}>
-          <div style={styles.identity}>
-            <span
-              style={{
-                ...styles.stateDot,
-                background: presentation.color,
-              }}
-            />
-            <div>
-              <div style={styles.metaLine}>
-                <span>{item.engine} Engine</span>
-                {reservationNumber ? (
-                  <>
-                    <span aria-hidden="true">•</span>
-                    <span style={styles.reservationNumber}>#{reservationNumber}</span>
-                  </>
-                ) : null}
-                {item.guestName ? (
-                  <>
-                    <span aria-hidden="true">•</span>
-                    <span>{item.guestName}</span>
-                  </>
-                ) : null}
-              </div>
-              <h4 style={styles.rowTitle}>{item.title}</h4>
+    <div style={styles.timelineRow}>
+      <div style={styles.timelineRail}>
+        <div
+          style={{
+            ...styles.timelineDot,
+            color: presentation.pillColor,
+            background: presentation.dotBackground,
+            borderColor: presentation.pillBorder,
+            boxShadow: `0 0 0 5px ${presentation.dotRing}`,
+          }}
+        >
+          {presentation.dot}
+        </div>
+        {!isLast ? <div style={styles.timelineLine} /> : null}
+      </div>
+
+      <article
+        style={{
+          ...styles.enterpriseCard,
+          background: presentation.cardBackground,
+        }}
+      >
+        <div style={styles.cardTopRow}>
+          <div>
+            <div style={styles.contextRow}>
+              <span style={styles.engineBadge}>{item.engine} Engine</span>
+              {reservationNumber ? (
+                <span style={styles.reservationNumber}>#{reservationNumber}</span>
+              ) : null}
+              {item.guestName ? <span style={styles.contextText}>{item.guestName}</span> : null}
             </div>
+            <h4 style={styles.itemTitle}>{item.title}</h4>
           </div>
 
-          <span
+          <div
             style={{
-              ...styles.stateBadge,
-              color: presentation.color,
-              borderColor: presentation.border,
+              ...styles.statePill,
+              color: presentation.pillColor,
+              background: presentation.pillBackground,
+              borderColor: presentation.pillBorder,
             }}
           >
             {presentation.label}
-          </span>
+          </div>
         </div>
 
-        <p style={styles.issueText}>{item.issue}</p>
-        <div style={styles.nextStep}>
-          <strong>
-            {item.workflowState === "ACTION_REQUIRED"
-              ? "Next action: "
-              : item.workflowState === "RESOLVED"
-                ? "Outcome: "
-                : "Next step: "}
-          </strong>
-          {getPrimaryDetail(item)}
+        <div style={styles.issue}>{item.issue}</div>
+
+        {item.operationalImpact ? (
+          <div style={styles.impactBox}>
+            <span style={styles.detailLabel}>Operational impact</span>
+            <span>{item.operationalImpact}</span>
+          </div>
+        ) : null}
+
+        <div style={styles.nextStepBox}>
+          <span style={styles.detailLabel}>{presentation.nextStepLabel}</span>
+          <span>{getNextStep(item)}</span>
         </div>
 
-        <div style={styles.footer}>
-          <span>Responsible: {formatActor(item.responsibleActor)}</span>
-          <span aria-hidden="true">•</span>
-          <span>{formatTimestamp(item)}</span>
-        </div>
-      </div>
+        <div style={styles.cardFooter}>
+          <div style={styles.footerMeta}>
+            <span>
+              Responsible: <strong>{formatActor(item.responsibleActor)}</strong>
+            </span>
+            <span aria-hidden="true">•</span>
+            <span>{formatTimestamp(item)}</span>
+            {item.workflowState === "WAITING" ? (
+              <>
+                <span aria-hidden="true">•</span>
+                <strong style={{ color: "#166534" }}>No host action required</strong>
+              </>
+            ) : null}
+          </div>
 
-      {canOpenReservation ? (
-        <button
-          type="button"
-          onClick={() => onOpenReservation?.(String(item.reservationId))}
-          style={styles.openButton}
-        >
-          Open Reservation
-        </button>
-      ) : null}
-    </article>
+          {canOpenReservation ? (
+            <button
+              type="button"
+              onClick={() => onOpenReservation?.(String(item.reservationId))}
+              style={styles.openButton}
+            >
+              Open Reservation
+            </button>
+          ) : null}
+        </div>
+      </article>
+    </div>
   );
 }
 
@@ -249,33 +294,46 @@ export function OperationalIntelligencePanel({
     return stateDifference || getTimestamp(right) - getTimestamp(left);
   });
 
-  const counts = stateOrder.map((state) => ({
-    state,
-    count: hostItems.filter((item) => item.workflowState === state).length,
-  }));
+  const counts = stateOrder.reduce<Record<OperationalWorkflowState, number>>(
+    (result, state) => {
+      result[state] = hostItems.filter((item) => item.workflowState === state).length;
+      return result;
+    },
+    {
+      ACTION_REQUIRED: 0,
+      WAITING: 0,
+      AUTO_RESOLVING: 0,
+      RESOLVED: 0,
+    }
+  );
 
-  const needsAttention = counts.find(
-    (item) => item.state === "ACTION_REQUIRED"
-  )?.count;
+  const needsAttention = counts.ACTION_REQUIRED;
 
   return (
     <section style={styles.panel}>
       <div style={styles.header}>
         <div>
-          <div style={styles.eyebrow}>OPERATIONAL INTELLIGENCE</div>
-          <h3 style={styles.title}>Current Operational State</h3>
-          <p style={styles.description}>
-            What needs attention, what Pin&Go is handling and what was resolved.
-          </p>
+          <div style={styles.eyebrow}>Operational Command Center</div>
+          <div style={styles.heading}>What needs attention right now</div>
+          <div style={styles.subheading}>
+            Pin&Go classifies every workflow by who must act and what happens next.
+          </div>
         </div>
 
-        <div style={styles.summary}>
-          {counts.map(({ state, count }) => {
+        <div style={styles.stats}>
+          {stateOrder.map((state) => {
             const presentation = statePresentation[state];
             return (
-              <div key={state} style={styles.summaryItem}>
-                <span style={{ color: presentation.color }}>{count}</span>
-                <small>{presentation.summaryLabel}</small>
+              <div key={state} style={styles.statCard}>
+                <div
+                  style={{
+                    ...styles.statValue,
+                    color: counts[state] > 0 ? presentation.eyebrowColor : "#ffffff",
+                  }}
+                >
+                  {counts[state]}
+                </div>
+                <div style={styles.statLabel}>{presentation.metricLabel}</div>
               </div>
             );
           })}
@@ -284,21 +342,30 @@ export function OperationalIntelligencePanel({
 
       <div
         style={{
-          ...styles.overallStatus,
-          color: needsAttention ? "#991b1b" : "#065f46",
-          background: needsAttention ? "#fef2f2" : "#ecfdf5",
+          ...styles.trustBanner,
+          color: needsAttention > 0 ? "#991b1b" : "#166534",
+          background: needsAttention > 0 ? "#fef2f2" : "#f0fdf4",
+          borderColor: needsAttention > 0 ? "#fecaca" : "#bbf7d0",
         }}
       >
-        {needsAttention
-          ? `${needsAttention} issue${needsAttention === 1 ? "" : "s"} require host attention.`
-          : "No host action is required right now."}
+        <strong>
+          {needsAttention > 0
+            ? `${needsAttention} issue${needsAttention === 1 ? "" : "s"} require host attention.`
+            : "No host action is required right now."}
+        </strong>
+        <span>
+          {needsAttention > 0
+            ? "Pin&Go identified the exact operational next step below."
+            : "Pin&Go is monitoring active workflows and will continue automatically."}
+        </span>
       </div>
 
-      <div style={styles.list}>
+      <div style={styles.timeline}>
         {sortedItems.map((item, index) => (
-          <OperationalRow
+          <OperationalTimelineItem
             key={`${item.issueCode}-${item.reservationNumber ?? "property"}-${index}`}
             item={item}
+            isLast={index === sortedItems.length - 1}
             onOpenReservation={onOpenReservation}
           />
         ))}
@@ -309,152 +376,246 @@ export function OperationalIntelligencePanel({
 
 const styles: Record<string, CSSProperties> = {
   panel: {
+    margin: 18,
+    marginTop: 0,
+    padding: 0,
+    borderRadius: 22,
+    border: "1px solid #cbd5e1",
+    background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+    boxShadow: "0 18px 44px rgba(15,23,42,0.08)",
     overflow: "hidden",
-    border: "1px solid #dbe4ee",
-    borderRadius: 14,
-    background: "#ffffff",
-    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
   },
   header: {
+    padding: 18,
+    background: "linear-gradient(135deg, #020617 0%, #0f172a 58%, #1e293b 100%)",
+    color: "#ffffff",
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 18,
-    padding: "16px 18px",
-    borderBottom: "1px solid #e2e8f0",
-    background: "#0f172a",
     flexWrap: "wrap",
   },
   eyebrow: {
-    marginBottom: 3,
-    color: "#93c5fd",
-    fontSize: 10,
-    fontWeight: 900,
+    fontSize: 11,
+    fontWeight: 950,
+    textTransform: "uppercase",
     letterSpacing: "0.12em",
+    color: "#93c5fd",
   },
-  title: {
-    margin: 0,
+  heading: {
+    marginTop: 7,
+    fontSize: 20,
+    lineHeight: 1.1,
+    fontWeight: 950,
     color: "#ffffff",
-    fontSize: 18,
-    lineHeight: 1.25,
   },
-  description: {
-    margin: "4px 0 0",
+  subheading: {
+    marginTop: 7,
+    maxWidth: 590,
+    fontSize: 12,
+    lineHeight: 1.45,
+    fontWeight: 750,
     color: "#cbd5e1",
-    fontSize: 12,
   },
-  summary: {
-    display: "flex",
-    alignItems: "stretch",
-    gap: 6,
-    flexWrap: "wrap",
-  },
-  summaryItem: {
+  stats: {
     display: "grid",
-    minWidth: 66,
-    padding: "6px 9px",
-    border: "1px solid #334155",
-    borderRadius: 8,
-    background: "#111c30",
-    textAlign: "center",
+    gridTemplateColumns: "repeat(4, minmax(96px, 1fr))",
+    gap: 8,
+    minWidth: 430,
   },
-  overallStatus: {
-    padding: "8px 18px",
-    fontSize: 12,
-    fontWeight: 800,
-    borderBottom: "1px solid #e2e8f0",
+  statCard: {
+    padding: 10,
+    borderRadius: 14,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.08)",
+    backdropFilter: "blur(10px)",
   },
-  list: {
-    display: "grid",
+  statValue: {
+    fontSize: 21,
+    lineHeight: 1,
+    fontWeight: 950,
   },
-  row: {
+  statLabel: {
+    marginTop: 6,
+    fontSize: 9,
+    lineHeight: 1.2,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    color: "#cbd5e1",
+  },
+  trustBanner: {
+    margin: 18,
+    marginBottom: 0,
+    padding: "11px 13px",
+    border: "1px solid",
+    borderRadius: 14,
     display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 18,
-    padding: "14px 16px",
-    borderBottom: "1px solid #e2e8f0",
-    borderLeft: "4px solid",
-  },
-  rowMain: {
-    minWidth: 0,
-    flex: 1,
-  },
-  rowHeading: {
-    display: "flex",
-    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
+    flexWrap: "wrap",
+    fontSize: 12,
+    lineHeight: 1.4,
   },
-  identity: {
+  timeline: {
+    padding: 18,
+    display: "grid",
+    gap: 0,
+  },
+  timelineRow: {
+    display: "grid",
+    gridTemplateColumns: "34px minmax(0, 1fr)",
+    gap: 12,
+  },
+  timelineRail: {
+    display: "grid",
+    justifyItems: "center",
+    gridTemplateRows: "28px 1fr",
+  },
+  timelineDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    border: "1px solid",
+    display: "grid",
+    placeItems: "center",
+    fontSize: 13,
+    fontWeight: 950,
+  },
+  timelineLine: {
+    width: 2,
+    minHeight: 18,
+    background: "#e2e8f0",
+  },
+  enterpriseCard: {
+    marginBottom: 14,
+    padding: 16,
+    borderRadius: 18,
+    border: "1px solid #e2e8f0",
+    boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
+  },
+  cardTopRow: {
     display: "flex",
     alignItems: "flex-start",
-    gap: 9,
+    justifyContent: "space-between",
+    gap: 14,
   },
-  stateDot: {
-    flex: "0 0 auto",
-    width: 8,
-    height: 8,
-    marginTop: 5,
-    borderRadius: 999,
-  },
-  metaLine: {
+  contextRow: {
     display: "flex",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     flexWrap: "wrap",
-    color: "#64748b",
+  },
+  engineBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    width: "fit-content",
+    padding: "5px 9px",
+    borderRadius: 999,
+    border: "1px solid #dbeafe",
+    background: "#eff6ff",
+    color: "#1d4ed8",
     fontSize: 10,
-    fontWeight: 800,
+    fontWeight: 950,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
   },
   reservationNumber: {
     color: "#1d4ed8",
-  },
-  rowTitle: {
-    margin: "3px 0 0",
-    color: "#0f172a",
-    fontSize: 14,
-    lineHeight: 1.3,
-  },
-  stateBadge: {
-    flex: "0 0 auto",
-    padding: "4px 8px",
-    border: "1px solid",
-    borderRadius: 999,
-    background: "#ffffff",
-    fontSize: 10,
-    fontWeight: 900,
-  },
-  issueText: {
-    margin: "7px 0 0 17px",
-    color: "#334155",
-    fontSize: 12,
-    lineHeight: 1.45,
-  },
-  nextStep: {
-    margin: "4px 0 0 17px",
-    color: "#475569",
     fontSize: 11,
-    lineHeight: 1.45,
+    fontWeight: 950,
   },
-  footer: {
-    display: "flex",
+  contextText: {
+    color: "#64748b",
+    fontSize: 11,
+    fontWeight: 850,
+  },
+  statePill: {
+    display: "inline-flex",
     alignItems: "center",
-    gap: 6,
-    margin: "7px 0 0 17px",
+    justifyContent: "center",
+    padding: "6px 9px",
+    borderRadius: 999,
+    border: "1px solid",
+    fontSize: 10,
+    fontWeight: 950,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    whiteSpace: "nowrap",
+  },
+  itemTitle: {
+    margin: "9px 0 0",
+    color: "#0f172a",
+    fontSize: 15,
+    lineHeight: 1.25,
+    fontWeight: 950,
+  },
+  issue: {
+    marginTop: 9,
+    color: "#475569",
+    fontSize: 13,
+    lineHeight: 1.45,
+    fontWeight: 780,
+  },
+  impactBox: {
+    marginTop: 11,
+    padding: "10px 12px",
+    border: "1px solid #e2e8f0",
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.82)",
+    color: "#475569",
+    display: "grid",
+    gap: 4,
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
+  nextStepBox: {
+    marginTop: 10,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    color: "#334155",
+    display: "grid",
+    gap: 4,
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
+  detailLabel: {
     color: "#64748b",
     fontSize: 10,
+    fontWeight: 950,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  cardFooter: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTop: "1px solid #e2e8f0",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  footerMeta: {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    flexWrap: "wrap",
+    color: "#64748b",
+    fontSize: 11,
+    fontWeight: 800,
   },
   openButton: {
-    flex: "0 0 auto",
-    minHeight: 32,
-    padding: "0 11px",
+    minHeight: 36,
+    padding: "0 13px",
+    borderRadius: 10,
     border: "1px solid #bfdbfe",
-    borderRadius: 8,
     background: "#eff6ff",
     color: "#1d4ed8",
-    fontSize: 11,
-    fontWeight: 900,
+    fontSize: 12,
+    fontWeight: 950,
     cursor: "pointer",
   },
 };
