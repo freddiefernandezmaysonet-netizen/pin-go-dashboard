@@ -8,19 +8,16 @@ export type OperationalWorkflowState =
 
 export type OperationalIntelligenceItem = {
   issueCode: string;
-
   title: string;
   issue: string;
   operationalImpact?: string | null;
   recommendedAction?: string | null;
   nextAutomaticStep?: string | null;
-
   engine: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
   workflowState: OperationalWorkflowState;
   visibility: "HOST";
   responsibleActor: string;
-
   actionRequired: boolean;
   canAutoResolve: boolean;
   autoResolveStatus:
@@ -29,16 +26,13 @@ export type OperationalIntelligenceItem = {
     | "SUCCEEDED"
     | "FAILED"
     | "NOT_SUPPORTED";
-
   reservationId?: string | null;
   reservationNumber?: string | null;
   guestName?: string | null;
   cleanerName?: string | null;
-
   firstDetectedAt: string | Date;
   lastSignalAt: string | Date;
   resolvedAt?: string | Date | null;
-
   resolutionCode?: string | null;
   resolutionSummary?: string | null;
   resolutionType?:
@@ -48,86 +42,60 @@ export type OperationalIntelligenceItem = {
     | "SUPERSEDED"
     | null;
   resolvedBy?: string | null;
-
   actionTarget: string;
-
   openUrl?: string | null;
   secondaryActionUrl?: string | null;
 };
 
 type OperationalIntelligencePanelProps = {
   items: OperationalIntelligenceItem[];
-  onOpenReservation?: (
-    reservationId: string
-  ) => void;
+  onOpenReservation?: (reservationId: string) => void;
 };
 
-type SectionDefinition = {
-  state: OperationalWorkflowState;
-  eyebrow: string;
-  title: string;
-  description: string;
-  emptyLabel: string;
-  accent: string;
-  softBackground: string;
-  borderColor: string;
-  badgeBackground: string;
-  badgeColor: string;
+type StatePresentation = {
+  label: string;
+  summaryLabel: string;
+  color: string;
+  background: string;
+  border: string;
 };
 
-const sectionDefinitions: SectionDefinition[] = [
-  {
-    state: "ACTION_REQUIRED",
-    eyebrow: "NEEDS YOUR ATTENTION",
-    title: "Human action required",
-    description:
-      "Pin&Go found an operational issue that cannot continue safely without intervention.",
-    emptyLabel: "No host actions required",
-    accent: "#dc2626",
-    softBackground: "#fff7f7",
-    borderColor: "#fecaca",
-    badgeBackground: "#fee2e2",
-    badgeColor: "#991b1b",
+const statePresentation: Record<OperationalWorkflowState, StatePresentation> = {
+  ACTION_REQUIRED: {
+    label: "Needs attention",
+    summaryLabel: "Attention",
+    color: "#b91c1c",
+    background: "#fff7f7",
+    border: "#fecaca",
   },
-  {
-    state: "WAITING",
-    eyebrow: "WAITING",
-    title: "Monitoring expected responses",
-    description:
-      "Pin&Go is waiting for a normal workflow signal and will continue automatically.",
-    emptyLabel: "No workflows waiting",
-    accent: "#2563eb",
-    softBackground: "#f8fbff",
-    borderColor: "#bfdbfe",
-    badgeBackground: "#dbeafe",
-    badgeColor: "#1d4ed8",
+  WAITING: {
+    label: "Waiting",
+    summaryLabel: "Waiting",
+    color: "#1d4ed8",
+    background: "#f8fbff",
+    border: "#bfdbfe",
   },
-  {
-    state: "AUTO_RESOLVING",
-    eyebrow: "PIN&GO WORKING",
-    title: "Automatic resolution in progress",
-    description:
-      "Pin&Go is actively repairing or completing these operational workflows.",
-    emptyLabel: "No repairs currently running",
-    accent: "#7c3aed",
-    softBackground: "#faf8ff",
-    borderColor: "#ddd6fe",
-    badgeBackground: "#ede9fe",
-    badgeColor: "#6d28d9",
+  AUTO_RESOLVING: {
+    label: "Pin&Go working",
+    summaryLabel: "Working",
+    color: "#6d28d9",
+    background: "#faf8ff",
+    border: "#ddd6fe",
   },
-  {
-    state: "RESOLVED",
-    eyebrow: "RECENTLY RESOLVED",
-    title: "Completed without disruption",
-    description:
-      "These operational workflows were completed or safely closed recently.",
-    emptyLabel: "No recent resolutions",
-    accent: "#059669",
-    softBackground: "#f7fdf9",
-    borderColor: "#bbf7d0",
-    badgeBackground: "#dcfce7",
-    badgeColor: "#047857",
+  RESOLVED: {
+    label: "Resolved",
+    summaryLabel: "Resolved",
+    color: "#047857",
+    background: "#f7fdf9",
+    border: "#bbf7d0",
   },
+};
+
+const stateOrder: OperationalWorkflowState[] = [
+  "ACTION_REQUIRED",
+  "AUTO_RESOLVING",
+  "WAITING",
+  "RESOLVED",
 ];
 
 function getTimestamp(item: OperationalIntelligenceItem) {
@@ -135,41 +103,24 @@ function getTimestamp(item: OperationalIntelligenceItem) {
     item.workflowState === "RESOLVED"
       ? item.resolvedAt ?? item.lastSignalAt
       : item.lastSignalAt;
-
-  const date = rawValue
-    ? new Date(rawValue)
-    : null;
-
-  return date && !Number.isNaN(date.getTime())
-    ? date.getTime()
-    : 0;
+  const date = rawValue ? new Date(rawValue) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
 }
 
-function formatTimestamp(
-  item: OperationalIntelligenceItem
-) {
+function formatTimestamp(item: OperationalIntelligenceItem) {
   const timestamp = getTimestamp(item);
+  if (!timestamp) return "Live signal";
 
-  if (!timestamp) {
-    return "Live operational signal";
-  }
-
-  return new Date(timestamp).toLocaleString(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }
-  );
+  return new Date(timestamp).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function formatActor(value: unknown) {
-  const actor = String(value ?? "")
-    .trim()
-    .toUpperCase();
-
+  const actor = String(value ?? "").trim().toUpperCase();
   if (actor === "PIN_GO") return "Pin&Go";
   if (actor === "PIN_AI") return "Pin AI";
   if (actor === "HOST") return "Host";
@@ -177,205 +128,106 @@ function formatActor(value: unknown) {
   if (actor === "CLEANER") return "Cleaner";
   if (actor === "STAFF") return "Staff";
   if (actor === "SYSTEM") return "System";
-
-  return "No action owner";
+  return "None";
 }
 
-function getStatusLabel(
-  item: OperationalIntelligenceItem
-) {
+function getPrimaryDetail(item: OperationalIntelligenceItem) {
   if (item.workflowState === "ACTION_REQUIRED") {
-    return item.severity === "CRITICAL"
-      ? "Review now"
-      : "Action required";
+    return item.recommendedAction ?? item.operationalImpact ?? item.issue;
   }
-
-  if (item.workflowState === "WAITING") {
-    return "No host action";
+  if (item.workflowState === "WAITING" || item.workflowState === "AUTO_RESOLVING") {
+    return item.nextAutomaticStep ?? item.issue;
   }
-
-  if (item.workflowState === "AUTO_RESOLVING") {
-    return "Working";
-  }
-
-  return item.resolutionType === "SUPERSEDED"
-    ? "Safely closed"
-    : "Resolved";
+  return item.resolutionSummary ?? item.issue;
 }
 
-function getReservationLabel(
-  item: OperationalIntelligenceItem
-) {
-  const reservationNumber = String(
-    item.reservationNumber ?? ""
-  ).trim();
-
-  return reservationNumber
-    ? `#${reservationNumber}`
-    : null;
-}
-
-function OperationalItemCard({
+function OperationalRow({
   item,
-  section,
   onOpenReservation,
 }: {
   item: OperationalIntelligenceItem;
-  section: SectionDefinition;
-  onOpenReservation?: (
-    reservationId: string
-  ) => void;
+  onOpenReservation?: (reservationId: string) => void;
 }) {
-  const reservationLabel =
-    getReservationLabel(item);
-
-  const showOpenReservation = Boolean(
-    item.reservationId &&
-      onOpenReservation
-  );
+  const presentation = statePresentation[item.workflowState];
+  const reservationNumber = String(item.reservationNumber ?? "").trim();
+  const canOpenReservation = Boolean(item.reservationId && onOpenReservation);
 
   return (
     <article
       style={{
-        ...styles.itemCard,
-        borderColor: section.borderColor,
-        background: section.softBackground,
+        ...styles.row,
+        borderLeftColor: presentation.color,
+        background: presentation.background,
       }}
     >
-      <div style={styles.itemHeader}>
-        <div style={styles.itemIdentity}>
-          <div
+      <div style={styles.rowMain}>
+        <div style={styles.rowHeading}>
+          <div style={styles.identity}>
+            <span
+              style={{
+                ...styles.stateDot,
+                background: presentation.color,
+              }}
+            />
+            <div>
+              <div style={styles.metaLine}>
+                <span>{item.engine} Engine</span>
+                {reservationNumber ? (
+                  <>
+                    <span aria-hidden="true">•</span>
+                    <span style={styles.reservationNumber}>#{reservationNumber}</span>
+                  </>
+                ) : null}
+                {item.guestName ? (
+                  <>
+                    <span aria-hidden="true">•</span>
+                    <span>{item.guestName}</span>
+                  </>
+                ) : null}
+              </div>
+              <h4 style={styles.rowTitle}>{item.title}</h4>
+            </div>
+          </div>
+
+          <span
             style={{
-              ...styles.engineDot,
-              background: section.accent,
+              ...styles.stateBadge,
+              color: presentation.color,
+              borderColor: presentation.border,
             }}
-          />
-
-          <div>
-            <div style={styles.itemMeta}>
-              <span>{item.engine} Engine</span>
-
-              {reservationLabel ? (
-                <>
-                  <span aria-hidden="true">•</span>
-                  <span style={styles.reservationNumber}>
-                    {reservationLabel}
-                  </span>
-                </>
-              ) : null}
-
-              {item.guestName ? (
-                <>
-                  <span aria-hidden="true">•</span>
-                  <span>{item.guestName}</span>
-                </>
-              ) : null}
-            </div>
-
-            <h4 style={styles.itemTitle}>
-              {item.title}
-            </h4>
-          </div>
-        </div>
-
-        <div
-          style={{
-            ...styles.statusBadge,
-            background:
-              section.badgeBackground,
-            color: section.badgeColor,
-          }}
-        >
-          {getStatusLabel(item)}
-        </div>
-      </div>
-
-      <div style={styles.contentGrid}>
-        <div>
-          <div style={styles.detailLabel}>
-            What happened
-          </div>
-          <div style={styles.detailText}>
-            {item.issue}
-          </div>
-        </div>
-
-        {item.operationalImpact ? (
-          <div>
-            <div style={styles.detailLabel}>
-              Operational impact
-            </div>
-            <div style={styles.detailText}>
-              {item.operationalImpact}
-            </div>
-          </div>
-        ) : null}
-
-        {item.nextAutomaticStep ? (
-          <div>
-            <div style={styles.detailLabel}>
-              What Pin&Go will do next
-            </div>
-            <div style={styles.detailText}>
-              {item.nextAutomaticStep}
-            </div>
-          </div>
-        ) : null}
-
-        {item.recommendedAction ? (
-          <div>
-            <div style={styles.detailLabel}>
-              Recommended action
-            </div>
-            <div style={styles.detailText}>
-              {item.recommendedAction}
-            </div>
-          </div>
-        ) : null}
-
-        {item.workflowState === "RESOLVED" &&
-        item.resolutionSummary ? (
-          <div>
-            <div style={styles.detailLabel}>
-              Resolution
-            </div>
-            <div style={styles.detailText}>
-              {item.resolutionSummary}
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      <div style={styles.itemFooter}>
-        <div style={styles.footerMeta}>
-          <span>
-            Responsible:{" "}
-            <strong>
-              {formatActor(
-                item.responsibleActor
-              )}
-            </strong>
+          >
+            {presentation.label}
           </span>
+        </div>
 
+        <p style={styles.issueText}>{item.issue}</p>
+        <div style={styles.nextStep}>
+          <strong>
+            {item.workflowState === "ACTION_REQUIRED"
+              ? "Next action: "
+              : item.workflowState === "RESOLVED"
+                ? "Outcome: "
+                : "Next step: "}
+          </strong>
+          {getPrimaryDetail(item)}
+        </div>
+
+        <div style={styles.footer}>
+          <span>Responsible: {formatActor(item.responsibleActor)}</span>
           <span aria-hidden="true">•</span>
-
           <span>{formatTimestamp(item)}</span>
         </div>
-
-        {showOpenReservation ? (
-          <button
-            type="button"
-            onClick={() =>
-              onOpenReservation?.(
-                String(item.reservationId)
-              )
-            }
-            style={styles.openButton}
-          >
-            Open Reservation
-          </button>
-        ) : null}
       </div>
+
+      {canOpenReservation ? (
+        <button
+          type="button"
+          onClick={() => onOpenReservation?.(String(item.reservationId))}
+          style={styles.openButton}
+        >
+          Open Reservation
+        </button>
+      ) : null}
     </article>
   );
 }
@@ -385,156 +237,71 @@ export function OperationalIntelligencePanel({
   onOpenReservation,
 }: OperationalIntelligencePanelProps) {
   const hostItems = Array.isArray(items)
-    ? items.filter(
-        (item) => item.visibility === "HOST"
-      )
+    ? items.filter((item) => item.visibility === "HOST")
     : [];
 
-  if (hostItems.length === 0) {
-    return null;
-  }
+  if (hostItems.length === 0) return null;
 
-  const counts = {
-    actionRequired: hostItems.filter(
-      (item) =>
-        item.workflowState ===
-        "ACTION_REQUIRED"
-    ).length,
-    waiting: hostItems.filter(
-      (item) =>
-        item.workflowState === "WAITING"
-    ).length,
-    working: hostItems.filter(
-      (item) =>
-        item.workflowState ===
-        "AUTO_RESOLVING"
-    ).length,
-    resolved: hostItems.filter(
-      (item) =>
-        item.workflowState === "RESOLVED"
-    ).length,
-  };
+  const sortedItems = [...hostItems].sort((left, right) => {
+    const stateDifference =
+      stateOrder.indexOf(left.workflowState) -
+      stateOrder.indexOf(right.workflowState);
+    return stateDifference || getTimestamp(right) - getTimestamp(left);
+  });
+
+  const counts = stateOrder.map((state) => ({
+    state,
+    count: hostItems.filter((item) => item.workflowState === state).length,
+  }));
+
+  const needsAttention = counts.find(
+    (item) => item.state === "ACTION_REQUIRED"
+  )?.count;
 
   return (
     <section style={styles.panel}>
-      <div style={styles.panelHeader}>
+      <div style={styles.header}>
         <div>
-          <div style={styles.eyebrow}>
-            OPERATIONAL INTELLIGENCE
-          </div>
-
-          <h3 style={styles.panelTitle}>
-            Pin&Go Operational State
-          </h3>
-
-          <p style={styles.panelDescription}>
-            Live workflows classified by what
-            requires attention, what is waiting,
-            what Pin&Go is resolving and what was
-            completed.
+          <div style={styles.eyebrow}>OPERATIONAL INTELLIGENCE</div>
+          <h3 style={styles.title}>Current Operational State</h3>
+          <p style={styles.description}>
+            What needs attention, what Pin&Go is handling and what was resolved.
           </p>
         </div>
 
-        <div style={styles.summaryGrid}>
-          <div style={styles.summaryItem}>
-            <strong>
-              {counts.actionRequired}
-            </strong>
-            <span>Needs attention</span>
-          </div>
-
-          <div style={styles.summaryItem}>
-            <strong>{counts.waiting}</strong>
-            <span>Waiting</span>
-          </div>
-
-          <div style={styles.summaryItem}>
-            <strong>{counts.working}</strong>
-            <span>Working</span>
-          </div>
-
-          <div style={styles.summaryItem}>
-            <strong>{counts.resolved}</strong>
-            <span>Resolved</span>
-          </div>
+        <div style={styles.summary}>
+          {counts.map(({ state, count }) => {
+            const presentation = statePresentation[state];
+            return (
+              <div key={state} style={styles.summaryItem}>
+                <span style={{ color: presentation.color }}>{count}</span>
+                <small>{presentation.summaryLabel}</small>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div style={styles.sections}>
-        {sectionDefinitions.map((section) => {
-          const sectionItems = hostItems
-            .filter(
-              (item) =>
-                item.workflowState ===
-                section.state
-            )
-            .sort(
-              (left, right) =>
-                getTimestamp(right) -
-                getTimestamp(left)
-            );
+      <div
+        style={{
+          ...styles.overallStatus,
+          color: needsAttention ? "#991b1b" : "#065f46",
+          background: needsAttention ? "#fef2f2" : "#ecfdf5",
+        }}
+      >
+        {needsAttention
+          ? `${needsAttention} issue${needsAttention === 1 ? "" : "s"} require host attention.`
+          : "No host action is required right now."}
+      </div>
 
-          if (sectionItems.length === 0) {
-            return null;
-          }
-
-          return (
-            <div
-              key={section.state}
-              style={styles.section}
-            >
-              <div style={styles.sectionHeader}>
-                <div>
-                  <div
-                    style={{
-                      ...styles.sectionEyebrow,
-                      color: section.accent,
-                    }}
-                  >
-                    {section.eyebrow}
-                  </div>
-
-                  <div style={styles.sectionTitleRow}>
-                    <h4 style={styles.sectionTitle}>
-                      {section.title}
-                    </h4>
-
-                    <span
-                      style={{
-                        ...styles.sectionCount,
-                        background:
-                          section.badgeBackground,
-                        color:
-                          section.badgeColor,
-                      }}
-                    >
-                      {sectionItems.length}
-                    </span>
-                  </div>
-
-                  <p style={styles.sectionDescription}>
-                    {section.description}
-                  </p>
-                </div>
-              </div>
-
-              <div style={styles.itemList}>
-                {sectionItems.map(
-                  (item, index) => (
-                    <OperationalItemCard
-                      key={`${item.issueCode}-${item.reservationNumber ?? "property"}-${index}`}
-                      item={item}
-                      section={section}
-                      onOpenReservation={
-                        onOpenReservation
-                      }
-                    />
-                  )
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div style={styles.list}>
+        {sortedItems.map((item, index) => (
+          <OperationalRow
+            key={`${item.issueCode}-${item.reservationNumber ?? "property"}-${index}`}
+            item={item}
+            onOpenReservation={onOpenReservation}
+          />
+        ))}
       </div>
     </section>
   );
@@ -542,226 +309,151 @@ export function OperationalIntelligencePanel({
 
 const styles: Record<string, CSSProperties> = {
   panel: {
-    display: "grid",
-    gap: 22,
-    padding: 24,
-    borderRadius: 22,
+    overflow: "hidden",
     border: "1px solid #dbe4ee",
-    background:
-      "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)",
-    boxShadow:
-      "0 18px 45px rgba(15, 23, 42, 0.08)",
+    borderRadius: 14,
+    background: "#ffffff",
+    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
   },
-
-  panelHeader: {
+  header: {
     display: "flex",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    gap: 24,
+    gap: 18,
+    padding: "16px 18px",
+    borderBottom: "1px solid #e2e8f0",
+    background: "#0f172a",
     flexWrap: "wrap",
   },
-
   eyebrow: {
-    marginBottom: 7,
-    color: "#2563eb",
-    fontSize: 11,
-    fontWeight: 900,
-    letterSpacing: "0.13em",
-  },
-
-  panelTitle: {
-    margin: 0,
-    color: "#0f172a",
-    fontSize: 24,
-    lineHeight: 1.2,
-  },
-
-  panelDescription: {
-    maxWidth: 650,
-    margin: "8px 0 0",
-    color: "#64748b",
-    fontSize: 14,
-    lineHeight: 1.6,
-  },
-
-  summaryGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(4, minmax(82px, 1fr))",
-    gap: 8,
-  },
-
-  summaryItem: {
-    display: "grid",
-    gap: 3,
-    minWidth: 82,
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid #e2e8f0",
-    background: "#ffffff",
-    textAlign: "center",
-  },
-
-  sections: {
-    display: "grid",
-    gap: 18,
-  },
-
-  section: {
-    display: "grid",
-    gap: 12,
-  },
-
-  sectionHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 18,
-  },
-
-  sectionEyebrow: {
-    marginBottom: 4,
+    marginBottom: 3,
+    color: "#93c5fd",
     fontSize: 10,
     fontWeight: 900,
     letterSpacing: "0.12em",
   },
-
-  sectionTitleRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 9,
-  },
-
-  sectionTitle: {
+  title: {
     margin: 0,
-    color: "#0f172a",
-    fontSize: 17,
+    color: "#ffffff",
+    fontSize: 18,
+    lineHeight: 1.25,
   },
-
-  sectionCount: {
-    minWidth: 26,
-    padding: "3px 8px",
-    borderRadius: 999,
+  description: {
+    margin: "4px 0 0",
+    color: "#cbd5e1",
     fontSize: 12,
-    fontWeight: 900,
+  },
+  summary: {
+    display: "flex",
+    alignItems: "stretch",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  summaryItem: {
+    display: "grid",
+    minWidth: 66,
+    padding: "6px 9px",
+    border: "1px solid #334155",
+    borderRadius: 8,
+    background: "#111c30",
     textAlign: "center",
   },
-
-  sectionDescription: {
-    margin: "5px 0 0",
-    color: "#64748b",
-    fontSize: 13,
+  overallStatus: {
+    padding: "8px 18px",
+    fontSize: 12,
+    fontWeight: 800,
+    borderBottom: "1px solid #e2e8f0",
   },
-
-  itemList: {
+  list: {
     display: "grid",
-    gap: 12,
   },
-
-  itemCard: {
-    display: "grid",
-    gap: 16,
-    padding: 18,
-    border: "1px solid",
-    borderRadius: 16,
+  row: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 18,
+    padding: "14px 16px",
+    borderBottom: "1px solid #e2e8f0",
+    borderLeft: "4px solid",
   },
-
-  itemHeader: {
+  rowMain: {
+    minWidth: 0,
+    flex: 1,
+  },
+  rowHeading: {
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 16,
+    gap: 12,
   },
-
-  itemIdentity: {
+  identity: {
     display: "flex",
     alignItems: "flex-start",
-    gap: 11,
+    gap: 9,
   },
-
-  engineDot: {
+  stateDot: {
     flex: "0 0 auto",
-    width: 9,
-    height: 9,
-    marginTop: 6,
+    width: 8,
+    height: 8,
+    marginTop: 5,
     borderRadius: 999,
   },
-
-  itemMeta: {
+  metaLine: {
     display: "flex",
     alignItems: "center",
-    gap: 7,
+    gap: 6,
     flexWrap: "wrap",
     color: "#64748b",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 800,
   },
-
   reservationNumber: {
     color: "#1d4ed8",
   },
-
-  itemTitle: {
-    margin: "5px 0 0",
+  rowTitle: {
+    margin: "3px 0 0",
     color: "#0f172a",
-    fontSize: 16,
-    lineHeight: 1.35,
+    fontSize: 14,
+    lineHeight: 1.3,
   },
-
-  statusBadge: {
+  stateBadge: {
     flex: "0 0 auto",
-    padding: "6px 10px",
+    padding: "4px 8px",
+    border: "1px solid",
     borderRadius: 999,
-    fontSize: 11,
+    background: "#ffffff",
+    fontSize: 10,
     fontWeight: 900,
   },
-
-  contentGrid: {
-    display: "grid",
-    gap: 12,
+  issueText: {
+    margin: "7px 0 0 17px",
+    color: "#334155",
+    fontSize: 12,
+    lineHeight: 1.45,
   },
-
-  detailLabel: {
-    marginBottom: 3,
+  nextStep: {
+    margin: "4px 0 0 17px",
     color: "#475569",
     fontSize: 11,
-    fontWeight: 900,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
+    lineHeight: 1.45,
   },
-
-  detailText: {
-    color: "#334155",
-    fontSize: 13,
-    lineHeight: 1.55,
-  },
-
-  itemFooter: {
+  footer: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 14,
-    flexWrap: "wrap",
-    paddingTop: 13,
-    borderTop: "1px solid rgba(148, 163, 184, 0.28)",
-  },
-
-  footerMeta: {
-    display: "flex",
-    alignItems: "center",
-    gap: 7,
-    flexWrap: "wrap",
+    gap: 6,
+    margin: "7px 0 0 17px",
     color: "#64748b",
-    fontSize: 11,
+    fontSize: 10,
   },
-
   openButton: {
-    minHeight: 36,
-    padding: "0 13px",
-    borderRadius: 9,
+    flex: "0 0 auto",
+    minHeight: 32,
+    padding: "0 11px",
     border: "1px solid #bfdbfe",
+    borderRadius: 8,
     background: "#eff6ff",
     color: "#1d4ed8",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 900,
     cursor: "pointer",
   },
