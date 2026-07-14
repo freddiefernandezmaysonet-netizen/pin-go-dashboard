@@ -1255,12 +1255,6 @@ useEffect(() => {
         throw new Error("Check-out must be after check-in.");
       }
 
-      if (!stayNotificationsConsent) {
-  throw new Error(
-    "Please enable Stay Notifications to continue with your reservation."
-  );
-}
-
       if (
         requiresCancellationTermsAcceptance &&
         !cancellationTermsAccepted
@@ -1742,7 +1736,7 @@ useEffect(() => {
                       />
                     </label>
 
-                    <div style={styles.stayNotificationsCard}>
+                <div style={styles.stayNotificationsCard}>
   <label style={styles.stayNotificationsLabel}>
     <input
       type="checkbox"
@@ -1752,10 +1746,11 @@ useEffect(() => {
     />
 
     <div>
-    <div style={styles.stayNotificationsTitle}>
-  <SmartStayIcon />
-  <span>Pin&Go Smart Stay</span>
-</div>
+      <div style={styles.stayNotificationsTitle}>
+        <SmartStayIcon />
+        <span>Pin&Go Smart Stay SMS Updates (Optional)</span>
+      </div>
+
       <div style={styles.stayNotificationsText}>
         Receive important updates about your stay, including your booking
         confirmation, smart lock access code, check-in instructions,
@@ -1766,10 +1761,16 @@ useEffect(() => {
         Message frequency varies. Message &amp; data rates may apply.
         Reply STOP to opt out and HELP for assistance.
       </div>
+
+      {/* NUEVO BLOQUE */}
+      <div style={styles.stayNotificationsLegal}>
+        SMS consent is optional and is not required to complete this reservation.
+        Reservation confirmation and check-in instructions will also be delivered by email.
+      </div>
+
     </div>
   </label>
 </div>
-
                     {optionalAmenities.length > 0 ? (
                       <div style={styles.addOnsBox}>
                         <div style={styles.addOnsTitle}>Optional add-ons</div>
