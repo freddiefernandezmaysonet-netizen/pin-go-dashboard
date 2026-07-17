@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CancellationPolicyCard } from "../../components/properties/CancellationPolicyCard";
+import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
@@ -1862,6 +1863,8 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 </div>
 
 {id ? <CancellationPolicyCard propertyId={id} /> : null}
+
+{id ? <GuestAccessSettingsCard propertyId={id} /> : null}
 
 <div
   style={{
