@@ -1481,10 +1481,9 @@ useEffect(() => {
     </div>
 
     <div>
-      <div style={styles.securePreCheckinDisclosureEyebrow}>
-        Required before access is released
-      </div>
-
+    <div style={styles.securePreCheckinDisclosureEyebrow}>
+      Secure arrival process / Proceso de llegada segura
+    </div>
       <h3 style={styles.securePreCheckinDisclosureTitle}>
         Secure Pre-check-in Required
       </h3>
@@ -1525,18 +1524,28 @@ useEffect(() => {
     </div>
 
     <div style={styles.securePreCheckinStep}>
-      <span style={styles.securePreCheckinStepNumber}>4</span>
-      <span>Access released / Acceso liberado</span>
-    </div>
+  <span style={styles.securePreCheckinStepNumber}>4</span>
+  <span>
+    Access automatically released / Acceso liberado automáticamente
+  </span>
+</div>
   </div>
 
-  <div style={styles.securePreCheckinDisclosureNotice}>
-    Your reservation is confirmed after payment, but access remains pending
-    until Secure Pre-check-in is completed.
-    <br />
-    Su reservación queda confirmada después del pago, pero el acceso permanece
-    pendiente hasta completar el Registro Seguro.
-  </div>
+  <div style={styles.securePreCheckinCompletionNote}>
+  Usually completed in just a few minutes.
+  <br />
+  Normalmente se completa en solo unos minutos.
+</div> 
+
+ <div style={styles.securePreCheckinDisclosureNotice}>
+  Your reservation is confirmed immediately after payment. Pin&amp;Go will
+  automatically deliver your access credentials once Secure Pre-check-in has
+  been completed.
+  <br />
+  Su reservación queda confirmada inmediatamente después del pago. Pin&amp;Go
+  entregará automáticamente sus credenciales de acceso una vez completado el
+  Registro Seguro.
+</div>
 </div>
 
   <div style={styles.trustSection}>
@@ -2706,6 +2715,14 @@ securePreCheckinDisclosureNotice: {
   fontSize: 13,
   lineHeight: 1.6,
   fontWeight: 800,
+},
+
+securePreCheckinCompletionNote: {
+  marginTop: 14,
+  color: "#475569",
+  fontSize: 12,
+  lineHeight: 1.55,
+  fontWeight: 750,
 },
 
  bookingCard: {
