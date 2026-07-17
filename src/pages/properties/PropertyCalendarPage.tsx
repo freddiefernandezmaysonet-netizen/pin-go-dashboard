@@ -470,9 +470,45 @@ const missionControlEngineHealth = Array.isArray(
   ? missionControlSnapshot.engineHealth
   : [];
 
+const guestJourneyMetrics =
+  missionControlSnapshot?.guestJourneyMetrics ?? null;
+
+const guestJourneyActiveReservations = Number(
+  guestJourneyMetrics?.activeReservations ?? 0
+);
+
+const guestJourneyReservationConfirmed = Number(
+  guestJourneyMetrics?.reservationConfirmed ?? 0
+);
+
+const guestJourneyVerificationPending = Number(
+  guestJourneyMetrics?.verificationPending ?? 0
+);
+
+const guestJourneyVerificationCompleted = Number(
+  guestJourneyMetrics?.verificationCompleted ?? 0
+);
+
+const guestJourneyAccessScheduled = Number(
+  guestJourneyMetrics?.accessScheduled ?? 0
+);
+
+const guestJourneyReadyForArrival = Number(
+  guestJourneyMetrics?.readyForArrival ?? 0
+);
+
+const guestJourneyCompletionRate = Number(
+  guestJourneyMetrics?.completionRate ?? 100
+);
+
+const guestJourneyHostInterventionRequired = Number(
+  guestJourneyMetrics?.hostInterventionRequired ?? 0
+);
+
 const missionEngineDisplayOrder = [
   "Revenue",
   "Reservation",
+  "Guest Journey",
   "Access",
   "Cleaning",
   "Messaging",
@@ -489,6 +525,8 @@ function getMissionEngineFallbackMessage(engine: string) {
   if (engine === "Revenue") return "Waiting for revenue engine activity.";
   if (engine === "Reservation")
     return "Waiting for reservation autopilot activity.";
+  if (engine === "Guest Journey")
+    return "Waiting for guest journey engine activity.";
   if (engine === "Access") return "Waiting for access engine activity.";
   if (engine === "Cleaning") return "Waiting for cleaning engine activity.";
   if (engine === "Messaging") return "Waiting for messaging engine activity.";
@@ -1781,8 +1819,109 @@ paymentState: manualPaymentState,
         Active APMS engines reporting health
       </div>
     </div>
- 
-         </div>
+  </div>
+    
+     {guestJourneyMetrics ? (
+    <div style={styles.guestJourneyPanel}>
+      <div style={styles.guestJourneyHeader}>
+        <div>
+          <div style={styles.guestJourneyEyebrow}>
+            Guest Journey Engine
+          </div>
+
+          <div style={styles.guestJourneyTitle}>
+            Arrival readiness pipeline
+          </div>
+
+          <div style={styles.guestJourneySubtitle}>
+            Live progress from reservation confirmation through secure
+            verification and digital access readiness.
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyCompletion}>
+          <div style={styles.guestJourneyCompletionValue}>
+            {guestJourneyCompletionRate}%
+          </div>
+          <div style={styles.guestJourneyCompletionLabel}>
+            Completion rate
+          </div>
+        </div>
+      </div>
+
+      <div style={styles.guestJourneyMetricGrid}>
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyActiveReservations}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Active reservations
+          </div>
+        </div>
+       
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyReservationConfirmed}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Reservation confirmed
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyVerificationPending}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Verification pending
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyVerificationCompleted}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Verification completed
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyAccessScheduled}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Access scheduled
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyReadyForArrival}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Ready for arrival
+          </div>
+        </div>
+
+        <div
+          style={{
+            ...styles.guestJourneyMetricCard,
+            ...(guestJourneyHostInterventionRequired > 0
+              ? styles.guestJourneyAttentionCard
+              : styles.guestJourneyClearCard),
+          }}
+        >
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyHostInterventionRequired}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Host intervention required
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null}         
 
   {hasOperationalIntelligenceContract ? (
     <OperationalIntelligencePanel
@@ -2950,6 +3089,114 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 950,
   },
   
+    guestJourneyPanel: {
+    margin: 18,
+    marginTop: 0,
+    padding: 18,
+    borderRadius: 20,
+    border: "1px solid #cbd5e1",
+    background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)",
+    boxShadow: "0 14px 36px rgba(15,23,42,0.06)",
+  },
+
+  guestJourneyHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 18,
+    flexWrap: "wrap",
+  },
+
+  guestJourneyEyebrow: {
+    color: "#2563eb",
+    fontSize: 11,
+    fontWeight: 950,
+    textTransform: "uppercase",
+    letterSpacing: "0.1em",
+  },
+
+  guestJourneyTitle: {
+    marginTop: 6,
+    color: "#0f172a",
+    fontSize: 20,
+    fontWeight: 950,
+  },
+
+  guestJourneySubtitle: {
+    marginTop: 6,
+    maxWidth: 620,
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 1.5,
+    fontWeight: 750,
+  },
+
+  guestJourneyCompletion: {
+    minWidth: 132,
+    padding: 14,
+    borderRadius: 16,
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    textAlign: "right",
+  },
+
+  guestJourneyCompletionValue: {
+    color: "#1d4ed8",
+    fontSize: 28,
+    lineHeight: 1,
+    fontWeight: 950,
+  },
+
+  guestJourneyCompletionLabel: {
+    marginTop: 6,
+    color: "#475569",
+    fontSize: 10,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  },
+
+  guestJourneyMetricGrid: {
+    marginTop: 16,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+    gap: 10,
+  },
+
+  guestJourneyMetricCard: {
+    padding: 14,
+    borderRadius: 16,
+    border: "1px solid #e2e8f0",
+    background: "#ffffff",
+  },
+
+  guestJourneyMetricValue: {
+    color: "#0f172a",
+    fontSize: 24,
+    lineHeight: 1,
+    fontWeight: 950,
+  },
+
+  guestJourneyMetricLabel: {
+    marginTop: 7,
+    color: "#64748b",
+    fontSize: 10,
+    lineHeight: 1.3,
+    fontWeight: 900,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+  },
+
+  guestJourneyAttentionCard: {
+    border: "1px solid #fecaca",
+    background: "#fef2f2",
+  },
+
+  guestJourneyClearCard: {
+    border: "1px solid #bbf7d0",
+    background: "#f0fdf4",
+  },
+
   missionControlCard: {
   marginTop: 24,
   borderRadius: 24,
