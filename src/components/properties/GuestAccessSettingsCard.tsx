@@ -343,7 +343,7 @@ export function GuestAccessSettingsCard({
         <div style={summaryItemStyle}>
           <span style={summaryLabelStyle}>Access mode</span>
           <strong style={summaryValueStyle}>
-            {modeLabel(form.guestAccessMode)}
+            {scenarioLabel(selectedScenario)}
           </strong>
         </div>
 
