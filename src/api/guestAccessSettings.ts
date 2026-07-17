@@ -26,12 +26,14 @@ export type GuestAccessSettings = {
   propertyName: string;
   maxGuests: number | null;
   guestAccessMode: GuestAccessMode;
+  cleaningNfcEnabled: boolean;
   configured: boolean;
   activeAgreement: PropertyGuestAgreement | null;
 };
 
 export type SaveGuestAccessSettingsInput = {
   guestAccessMode: GuestAccessMode;
+  cleaningNfcEnabled: boolean;
   title: string;
   agreementText: string;
   guestFacingSummary: string;

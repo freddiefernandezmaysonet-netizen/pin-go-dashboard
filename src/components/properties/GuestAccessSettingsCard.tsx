@@ -19,14 +19,21 @@ type GuestAccessSettingsCardProps = {
 
 type GuestAccessForm = {
   guestAccessMode: GuestAccessMode;
+  cleaningNfcEnabled: boolean;
   title: string;
   guestFacingSummary: string;
   agreementText: string;
   rules: string[];
 };
 
+type AccessScenario =
+  | "PASSWORD_ONLY"
+  | "PASSWORD_PLUS_GUEST_NFC"
+  | "PASSWORD_PLUS_GUEST_AND_CLEANING_NFC";
+
 const EMPTY_FORM: GuestAccessForm = {
   guestAccessMode: "PASSCODE_ONLY",
+  cleaningNfcEnabled: false,
   title: "Guest Agreement",
   guestFacingSummary:
     "Complete secure pre-check-in before access can be released.",
@@ -39,18 +46,21 @@ function settingsToForm(
 ): GuestAccessForm {
   const agreement = settings?.activeAgreement;
 
-  if (!agreement) {
+   if (!agreement) {
     return {
       ...EMPTY_FORM,
       guestAccessMode:
         settings?.guestAccessMode ?? "PASSCODE_ONLY",
+      cleaningNfcEnabled:
+        settings?.cleaningNfcEnabled === true,
       rules: [""],
     };
   }
-
   return {
     guestAccessMode:
       settings?.guestAccessMode ?? "PASSCODE_ONLY",
+    cleaningNfcEnabled:
+      settings?.cleaningNfcEnabled === true,
     title: agreement.title ?? "",
     guestFacingSummary: agreement.guestFacingSummary ?? "",
     agreementText: agreement.agreementText ?? "",
@@ -79,12 +89,38 @@ function formatDate(value?: string | null) {
   return date.toLocaleString();
 }
 
-function modeLabel(mode: GuestAccessMode) {
-  return mode === "PASSCODE_PLUS_NFC"
-    ? "Passcode + NFC"
-    : "Passcode only";
+function getAccessScenario(
+  guestAccessMode: GuestAccessMode,
+  cleaningNfcEnabled: boolean
+): AccessScenario {
+  if (
+    guestAccessMode === "PASSCODE_PLUS_NFC" &&
+    cleaningNfcEnabled
+  ) {
+    return "PASSWORD_PLUS_GUEST_AND_CLEANING_NFC";
+  }
+
+  if (guestAccessMode === "PASSCODE_PLUS_NFC") {
+    return "PASSWORD_PLUS_GUEST_NFC";
+  }
+
+  return "PASSWORD_ONLY";
 }
 
+function scenarioLabel(scenario: AccessScenario) {
+  if (
+    scenario ===
+    "PASSWORD_PLUS_GUEST_AND_CLEANING_NFC"
+  ) {
+    return "Password + Guest NFC + Cleaning NFC";
+  }
+
+  if (scenario === "PASSWORD_PLUS_GUEST_NFC") {
+    return "Password + Guest NFC";
+  }
+
+  return "Password only";
+}
 function getErrorMessage(error: unknown) {
   if (error instanceof GuestAccessApiError) {
     if (error.code === "VALIDATION_ERROR") {
@@ -127,6 +163,11 @@ export function GuestAccessSettingsCard({
 
   const isBusy =
     loadState === "loading" || loadState === "saving";
+
+  const selectedScenario = getAccessScenario(
+    form.guestAccessMode,
+    form.cleaningNfcEnabled
+  );
 
   const normalizedRules = useMemo(
     () => normalizeRules(form.rules),
@@ -205,12 +246,12 @@ export function GuestAccessSettingsCard({
 
     const payload: SaveGuestAccessSettingsInput = {
       guestAccessMode: form.guestAccessMode,
+      cleaningNfcEnabled: form.cleaningNfcEnabled,
       title: form.title.trim(),
       guestFacingSummary: form.guestFacingSummary.trim(),
       agreementText: form.agreementText.trim(),
       rules: normalizedRules,
     };
-
     try {
       setLoadState("saving");
       setError(null);
@@ -286,13 +327,12 @@ export function GuestAccessSettingsCard({
       ) : null}
 
       <div style={summaryGridStyle}>
-        <div style={summaryItemStyle}>
-          <span style={summaryLabelStyle}>Property</span>
+      <div style={summaryItemStyle}>
+          <span style={summaryLabelStyle}>Access scenario</span>
           <strong style={summaryValueStyle}>
-            {settings?.propertyName ?? "Property"}
+            {scenarioLabel(selectedScenario)}
           </strong>
         </div>
-
         <div style={summaryItemStyle}>
           <span style={summaryLabelStyle}>Maximum guests</span>
           <strong style={summaryValueStyle}>
@@ -343,16 +383,17 @@ export function GuestAccessSettingsCard({
         <div>
           <div style={sectionTitleStyle}>Access delivery mode</div>
           <div style={sectionDescriptionStyle}>
-            A temporary time-bound passcode is always required. NFC is
-            optional and complementary.
+            A temporary time-bound guest password is always required.
+            Guest NFC and Cleaning NFC are complementary access methods
+            controlled by the selected property scenario.
           </div>
         </div>
 
-        <div style={modeGridStyle}>
+               <div style={modeGridStyle}>
           <label
             style={{
               ...modeOptionStyle,
-              ...(form.guestAccessMode === "PASSCODE_ONLY"
+              ...(selectedScenario === "PASSWORD_ONLY"
                 ? selectedModeOptionStyle
                 : {}),
               opacity: isBusy ? 0.65 : 1,
@@ -360,25 +401,24 @@ export function GuestAccessSettingsCard({
           >
             <input
               type="radio"
-              name={`guest-access-mode-${propertyId}`}
-              value="PASSCODE_ONLY"
-              checked={
-                form.guestAccessMode === "PASSCODE_ONLY"
-              }
+              name={`guest-access-scenario-${propertyId}`}
+              value="PASSWORD_ONLY"
+              checked={selectedScenario === "PASSWORD_ONLY"}
               disabled={isBusy}
               onChange={() =>
                 setForm((current) => ({
                   ...current,
                   guestAccessMode: "PASSCODE_ONLY",
+                  cleaningNfcEnabled: false,
                 }))
               }
             />
 
             <div>
-              <strong>Passcode only</strong>
+              <strong>Password only</strong>
               <p>
-                Pin&Go schedules a time-bound guest passcode two hours
-                before check-in.
+                Pin&Go schedules a time-bound guest password two hours
+                before check-in. Guest and cleaning NFC remain disabled.
               </p>
             </div>
           </label>
@@ -386,7 +426,8 @@ export function GuestAccessSettingsCard({
           <label
             style={{
               ...modeOptionStyle,
-              ...(form.guestAccessMode === "PASSCODE_PLUS_NFC"
+              ...(selectedScenario ===
+              "PASSWORD_PLUS_GUEST_NFC"
                 ? selectedModeOptionStyle
                 : {}),
               opacity: isBusy ? 0.65 : 1,
@@ -394,25 +435,67 @@ export function GuestAccessSettingsCard({
           >
             <input
               type="radio"
-              name={`guest-access-mode-${propertyId}`}
-              value="PASSCODE_PLUS_NFC"
+              name={`guest-access-scenario-${propertyId}`}
+              value="PASSWORD_PLUS_GUEST_NFC"
               checked={
-                form.guestAccessMode === "PASSCODE_PLUS_NFC"
+                selectedScenario ===
+                "PASSWORD_PLUS_GUEST_NFC"
               }
               disabled={isBusy}
               onChange={() =>
                 setForm((current) => ({
                   ...current,
                   guestAccessMode: "PASSCODE_PLUS_NFC",
+                  cleaningNfcEnabled: false,
                 }))
               }
             />
 
             <div>
-              <strong>Passcode + NFC</strong>
+              <strong>Password + Guest NFC</strong>
               <p>
-                The passcode remains mandatory. Guest NFC is prepared
-                as an additional access method.
+                The time-bound password remains mandatory. Pin&Go also
+                prepares Guest NFC, while Cleaning NFC remains disabled.
+              </p>
+            </div>
+          </label>
+
+          <label
+            style={{
+              ...modeOptionStyle,
+              ...(selectedScenario ===
+              "PASSWORD_PLUS_GUEST_AND_CLEANING_NFC"
+                ? selectedModeOptionStyle
+                : {}),
+              opacity: isBusy ? 0.65 : 1,
+            }}
+          >
+            <input
+              type="radio"
+              name={`guest-access-scenario-${propertyId}`}
+              value="PASSWORD_PLUS_GUEST_AND_CLEANING_NFC"
+              checked={
+                selectedScenario ===
+                "PASSWORD_PLUS_GUEST_AND_CLEANING_NFC"
+              }
+              disabled={isBusy}
+              onChange={() =>
+                setForm((current) => ({
+                  ...current,
+                  guestAccessMode: "PASSCODE_PLUS_NFC",
+                  cleaningNfcEnabled: true,
+                }))
+              }
+            />
+
+            <div>
+              <strong>
+                Password + Guest NFC + Cleaning NFC
+              </strong>
+              <p>
+                Pin&Go prepares the mandatory guest password, Guest NFC,
+                and time-bound Cleaning NFC after the assigned cleaner
+                confirms availability.
               </p>
             </div>
           </label>
