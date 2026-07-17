@@ -1473,8 +1473,74 @@ useEffect(() => {
       </div>
     </div>
   </div>
-                    <div style={styles.trustSection}>
-  <div style={styles.sectionEyebrow}>Property Highlights</div>
+                  
+<div style={styles.securePreCheckinDisclosure}>
+  <div style={styles.securePreCheckinDisclosureHeader}>
+    <div style={styles.securePreCheckinDisclosureIcon} aria-hidden="true">
+      🛡️
+    </div>
+
+    <div>
+      <div style={styles.securePreCheckinDisclosureEyebrow}>
+        Required before access is released
+      </div>
+
+      <h3 style={styles.securePreCheckinDisclosureTitle}>
+        Secure Pre-check-in Required
+      </h3>
+
+      <div style={styles.securePreCheckinDisclosureSpanishTitle}>
+        Registro seguro requerido
+      </div>
+    </div>
+  </div>
+
+  <div style={styles.securePreCheckinDisclosureText}>
+    <p style={styles.securePreCheckinDisclosureParagraph}>
+      After booking, the primary guest must complete Identity Check and accept
+      the Guest Agreement before Pin&amp;Go releases access credentials.
+    </p>
+
+    <p style={styles.securePreCheckinDisclosureParagraph}>
+      Después de reservar, el huésped principal deberá completar la
+      Verificación de Identidad y aceptar el Acuerdo del Huésped antes de que
+      Pin&amp;Go libere las credenciales de acceso.
+    </p>
+  </div>
+
+  <div style={styles.securePreCheckinSteps}>
+    <div style={styles.securePreCheckinStep}>
+      <span style={styles.securePreCheckinStepNumber}>1</span>
+      <span>Reservation confirmed / Reservación confirmada</span>
+    </div>
+
+    <div style={styles.securePreCheckinStep}>
+      <span style={styles.securePreCheckinStepNumber}>2</span>
+      <span>Identity Check / Verificación de identidad</span>
+    </div>
+
+    <div style={styles.securePreCheckinStep}>
+      <span style={styles.securePreCheckinStepNumber}>3</span>
+      <span>Guest Agreement / Acuerdo del huésped</span>
+    </div>
+
+    <div style={styles.securePreCheckinStep}>
+      <span style={styles.securePreCheckinStepNumber}>4</span>
+      <span>Access released / Acceso liberado</span>
+    </div>
+  </div>
+
+  <div style={styles.securePreCheckinDisclosureNotice}>
+    Your reservation is confirmed after payment, but access remains pending
+    until Secure Pre-check-in is completed.
+    <br />
+    Su reservación queda confirmada después del pago, pero el acceso permanece
+    pendiente hasta completar el Registro Seguro.
+  </div>
+</div>
+
+  <div style={styles.trustSection}>
+    <div style={styles.sectionEyebrow}>Property Highlights</div>
 
   <h3 style={styles.trustTitle}>Designed for a smoother stay</h3>
 
@@ -2539,7 +2605,110 @@ pinGoFeatureIcon: {
   color: "#ffffff",
   flexShrink: 0,
 },
-  bookingCard: {
+ 
+  securePreCheckinDisclosure: {
+  marginTop: 24,
+  padding: 24,
+  borderRadius: 22,
+  border: "1px solid #bfdbfe",
+  background:
+    "linear-gradient(135deg, rgba(239,246,255,0.96), rgba(248,250,252,0.98))",
+  boxShadow: "0 14px 36px rgba(15, 23, 42, 0.07)",
+},
+
+securePreCheckinDisclosureHeader: {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 14,
+},
+
+securePreCheckinDisclosureIcon: {
+  width: 46,
+  height: 46,
+  borderRadius: 15,
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  background: "#dbeafe",
+  border: "1px solid #bfdbfe",
+  fontSize: 22,
+},
+
+securePreCheckinDisclosureEyebrow: {
+  color: "#1d4ed8",
+  fontSize: 12,
+  fontWeight: 900,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+},
+
+securePreCheckinDisclosureTitle: {
+  margin: "5px 0 0",
+  color: "#0f172a",
+  fontSize: 22,
+  lineHeight: 1.2,
+  fontWeight: 950,
+  letterSpacing: "-0.025em",
+},
+
+securePreCheckinDisclosureSpanishTitle: {
+  marginTop: 4,
+  color: "#334155",
+  fontSize: 16,
+  fontWeight: 850,
+},
+
+securePreCheckinDisclosureText: {
+  marginTop: 18,
+  color: "#334155",
+  fontSize: 14,
+  lineHeight: 1.65,
+},
+
+securePreCheckinDisclosureParagraph: {
+  margin: "0 0 10px",
+},
+
+securePreCheckinSteps: {
+  marginTop: 18,
+  display: "grid",
+  gap: 10,
+},
+
+securePreCheckinStep: {
+  display: "flex",
+  alignItems: "center",
+  gap: 11,
+  color: "#0f172a",
+  fontSize: 13,
+  fontWeight: 800,
+},
+
+securePreCheckinStepNumber: {
+  width: 28,
+  height: 28,
+  borderRadius: 999,
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  background: "#ffffff",
+  border: "1px solid #93c5fd",
+  color: "#1d4ed8",
+  fontSize: 12,
+  fontWeight: 950,
+},
+
+securePreCheckinDisclosureNotice: {
+  marginTop: 18,
+  paddingTop: 16,
+  borderTop: "1px solid #bfdbfe",
+  color: "#1e3a8a",
+  fontSize: 13,
+  lineHeight: 1.6,
+  fontWeight: 800,
+},
+
+ bookingCard: {
     background: "#fff",
     border: "1px solid #e2e8f0",
     borderRadius: 28,
