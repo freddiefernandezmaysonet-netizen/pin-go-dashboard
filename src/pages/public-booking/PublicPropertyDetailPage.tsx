@@ -25,6 +25,9 @@ type PublicProperty = {
   checkOutTime?: string | null;
   timezone?: string | null;
   cancellationPolicy?: PublicCancellationPolicy | null;
+  cancellationPolicyPresentation?:
+  | PublicCancellationPolicyPresentation
+  | null;
   amenities?: Array<{
   id: string;
   name: string;
@@ -92,6 +95,269 @@ type PublicCancellationPolicy = {
   snapshotAt: string;
 };
 
+type GuestLanguage = "en" | "es";
+
+type PublicCancellationPolicyPresentation = {
+  language: GuestLanguage;
+  title: string;
+  headline: string;
+  summary: string;
+
+  timeline: Array<{
+    minHoursBeforeCheckIn: number;
+    maxHoursBeforeCheckIn: number | null;
+    refundPercent: number;
+    title: string;
+    description: string;
+  }>;
+
+  rules: Array<{
+    minHoursBeforeCheckIn: number;
+    refundPercent: number;
+    label: string;
+    windowLabel: string;
+    description: string;
+  }>;
+
+  nonRefundableScenarios: Array<{
+    code: PublicNonRefundableScenario;
+    label: string;
+    description: string;
+  }>;
+
+  nonRefundableScenarioDisclosure: string | null;
+  refundBasisDisclosure: string;
+  approvalNote: string | null;
+  automationNote: string | null;
+  selfCancellationNote: string | null;
+  feeDisclosure: string;
+  acceptanceText: string;
+  checkIn: string | null;
+};
+
+
+const GUEST_LANGUAGE_STORAGE_KEY =
+  "pingo_guest_preferred_language";
+
+const PUBLIC_PROPERTY_COPY = {
+ en: {
+  directBooking: "Direct Booking",
+  guestLanguage: "Guest language",
+  loadingProperty: "Loading property...",
+  propertyNotFound: "Property not found",
+  failedToLoadProperty: "Failed to load property",
+  upToGuests: "Up to",
+  guests: "guests",
+  minimum: "Minimum",
+  nights: "night(s)",
+  propertyOverview: "Property Overview",
+  defaultPropertyDescription:
+    "This property offers a modern and comfortable stay powered by Pin&Go.",
+  stayDetails: "Stay Details",
+  checkIn: "Check-In",
+  checkOut: "Check-Out",
+  configuredByHost: "Configured by host",
+  startingAt: "Starting at",
+  perNight: "/ night",
+  bookYourStaySecurely: "Book your stay securely",
+  direct: "Direct",
+  checkInDate: "Check-in",
+  checkOutDate: "Check-out",
+  addDate: "Add date",
+  adults: "Adults",
+  adultsHint: "Ages 13 or above",
+  children: "Children",
+  childrenHint: "Ages 2–12",
+  fullName: "Full name",
+  guestNamePlaceholder: "Guest name",
+  email: "Email",
+  phone: "Phone",
+  completeRequiredFields:
+    "Please complete check-in, check-out, name and email.",
+  checkOutAfterCheckIn:
+    "Check-out must be after check-in.",
+  securePreCheckinRequiredError:
+    "Please confirm that you understand the Secure Pre-check-in requirement before continuing.",
+  cancellationTermsRequiredError:
+    "Please review and accept the cancellation terms to continue.",
+  minimumStayPrefix: "Minimum stay is",
+  maximumStayPrefix: "Maximum stay is",
+  nightCountSuffix: "night(s).",
+  propertyNotLoaded: "Property not loaded",
+  unableToCreateCheckout: "Unable to create checkout.",
+  unableToReserveProperty:
+    "Unable to reserve this property.",
+  smsUpdatesTitle:
+    "Pin&Go Smart Stay SMS Updates (Optional)",
+  smsUpdatesDescription:
+    "Receive important updates about your stay, including your booking confirmation, smart lock access code, check- in instructions, check-out reminders, and important property alerts.",
+  smsUpdatesLegal:
+    "Message frequency varies. Message & data rates may apply. Reply STOP to opt out and HELP for assistance.",
+  smsUpdatesOptionalNotice:
+    "SMS consent is optional and is not required to complete this reservation. Reservation confirmation and check-i  in instructions will also be delivered by email.",
+  securePaymentsPoweredBy:
+    "Secure payments powered by",
+  redirectToStripe:
+    "You will be redirected to Stripe Checkout to complete your payment.",
+  legalAgreementPrefix:
+    "By completing your reservation, you agree to Pin&Go's",
+  termsOfService: "Terms of Service",
+  privacyPolicy: "Privacy Policy",
+  legalAnd: "and",
+  preparingCheckout: "Preparing checkout...",
+  reserveNow: "Reserve now",
+  optionalAddOns: "Optional add-ons",
+  perNightFee: "Per night",
+  perStayFee: "Per stay",
+  priceDetails: "Price details",
+  guestCountLabel: "Guests",
+  nightlyRates: "Nightly rates",
+  cleaningFeeLabel: "Cleaning fee",
+  totalLabel: "Total",
+  includedWithStay: "Included with your stay",
+  secureArrivalProcess:
+    "Secure arrival process",
+  securePreCheckinTitle:
+    "Secure Pre-check-in Required",
+  securePreCheckinIntro:
+    "After booking, the primary guest must complete Identity Check and accept the Guest Agreement before Pin&Go  releases access credentials.",
+  reservationConfirmedStep:
+    "Reservation confirmed",
+  identityCheckStep:
+    "Identity Check",
+  guestAgreementStep:
+    "Guest Agreement",
+  accessReleasedStep:
+    "Access automatically released",
+  usuallyCompletedQuickly:
+    "Usually completed in just a few minutes.",
+  reservationConfirmedNotice:
+    "Your reservation is confirmed immediately after payment. Pin&Go will automatically deliver your access   credentials once Secure Pre-check-in has been completed.",
+  securePreCheckinAcceptanceTitle:
+    "I understand that Secure Pre-check-in is required before I receive access.",
+  securePreCheckinAcceptanceText:
+    "The primary guest must complete Identity Check and accept the Guest Agreement. Payment confirms the  reservation, but does not complete these requirements or release access credentials.",
+cancellationPolicyLabel: "Cancellation policy",
+importantNonRefundableCases:
+  "Important non-refundable cases",
+cancellationTermsAgreement:
+  "I have reviewed and agree to the cancellation terms.",
+eligibleRefundNotice:
+  "I understand that any eligible refund will be calculated according to the policy shown above.",
+refundCalculation:
+  "Refund calculation",
+},
+  es: {
+  directBooking: "Reservación directa",
+  guestLanguage: "Idioma del huésped",
+  loadingProperty: "Cargando propiedad...",
+  propertyNotFound: "Propiedad no encontrada",
+  failedToLoadProperty: "No se pudo cargar la propiedad",
+  upToGuests: "Hasta",
+  guests: "huéspedes",
+  minimum: "Mínimo",
+  nights: "noche(s)",
+  propertyOverview: "Descripción de la propiedad",
+  defaultPropertyDescription:
+    "Esta propiedad ofrece una estadía moderna y cómoda, gestionada por Pin&Go.",
+  stayDetails: "Detalles de la estadía",
+  checkIn: "Entrada",
+  checkOut: "Salida",
+  configuredByHost: "Configurado por el anfitrión",
+  startingAt: "Desde",
+  perNight: "/ noche",
+  bookYourStaySecurely: "Reserve su estadía de forma segura",
+  direct: "Directa",
+  checkInDate: "Entrada",
+  checkOutDate: "Salida",
+  addDate: "Agregar fecha",
+  adults: "Adultos",
+  adultsHint: "13 años o más",
+  children: "Niños",
+  childrenHint: "De 2 a 12 años",
+  fullName: "Nombre completo",
+  guestNamePlaceholder: "Nombre del huésped",
+  email: "Correo electrónico",
+  phone: "Teléfono",
+  completeRequiredFields:
+    "Complete las fechas de entrada y salida, el nombre y el correo electrónico.",
+  checkOutAfterCheckIn:
+    "La fecha de salida debe ser posterior a la fecha de entrada.",
+  securePreCheckinRequiredError:
+    "Confirme que entiende el requisito de Registro Seguro antes de continuar.",
+  cancellationTermsRequiredError:
+    "Revise y acepte los términos de cancelación para continuar.",
+  minimumStayPrefix: "La estadía mínima es de",
+  maximumStayPrefix: "La estadía máxima es de",
+  nightCountSuffix: "noche(s).",
+  propertyNotLoaded: "La propiedad no está disponible",
+  unableToCreateCheckout:
+    "No se pudo preparar el pago.",
+  unableToReserveProperty:
+    "No se pudo reservar esta propiedad.",
+  smsUpdatesTitle:
+  "Actualizaciones SMS de Pin&Go Smart Stay (Opcional)",
+  smsUpdatesDescription:
+    "Reciba actualizaciones importantes sobre su estadía, incluyendo la confirmación de la reservación, el código  de acceso de la cerradura inteligente, instrucciones de entrada, recordatorios de salida y alertas importantes de  la propiedad.",
+  smsUpdatesLegal:
+    "La frecuencia de mensajes puede variar. Pueden aplicar tarifas de mensajes y datos. Responda STOP para  cancelar y HELP para recibir ayuda.",
+  smsUpdatesOptionalNotice:
+    "El consentimiento para recibir SMS es opcional y no es obligatorio para completar esta reservación. La   confirmación de la reservación y las instrucciones de entrada también se enviarán por correo electrónico.",
+  securePaymentsPoweredBy:
+    "Pagos seguros procesados por",
+  redirectToStripe:
+    "Será redirigido a Stripe Checkout para completar su pago.",
+  legalAgreementPrefix:
+    "Al completar su reservación, acepta los",
+  termsOfService: "Términos de Servicio",
+  privacyPolicy: "Política de Privacidad",
+  legalAnd: "y",
+  preparingCheckout: "Preparando el pago...",
+  reserveNow: "Reservar ahora",
+  optionalAddOns: "Cargos adicionales opcionales",
+  perNightFee: "Por noche",
+  perStayFee: "Por estadía",
+  priceDetails: "Detalles del precio",
+  guestCountLabel: "Huéspedes",
+  nightlyRates: "Tarifas por noche",
+  cleaningFeeLabel: "Cargo de limpieza",
+  totalLabel: "Total",
+  includedWithStay: "Incluido con su estadía",
+  secureArrivalProcess:
+    "Proceso de llegada segura",
+  securePreCheckinTitle:
+    "Registro Seguro Requerido",
+  securePreCheckinIntro:
+    "Después de reservar, el huésped principal deberá completar la Verificación de Identidad y aceptar el Acuerdo  del Huésped antes de que Pin&Go libere las credenciales de acceso.",
+  reservationConfirmedStep:
+    "Reservación confirmada",
+  identityCheckStep:
+    "Verificación de identidad",
+  guestAgreementStep:
+    "Acuerdo del huésped",
+  accessReleasedStep:
+    "Acceso liberado automáticamente",
+  usuallyCompletedQuickly:
+    "Normalmente se completa en solo unos minutos.",
+  reservationConfirmedNotice:
+    "Su reservación queda confirmada inmediatamente después del pago. Pin&Go entregará automáticamente sus   credenciales de acceso una vez completado el Registro Seguro.",
+  securePreCheckinAcceptanceTitle:
+    "Entiendo que el Registro Seguro es obligatorio antes de recibir acceso.",
+  securePreCheckinAcceptanceText:
+    "El huésped principal debe completar la Verificación de Identidad y aceptar el Acuerdo del Huésped. El pago   confirma la reservación, pero no completa estos requisitos ni libera las credenciales de acceso.",
+cancellationPolicyLabel: "Política de cancelación",
+importantNonRefundableCases:
+  "Casos importantes no reembolsables",
+cancellationTermsAgreement:
+  "He revisado y acepto los términos de cancelación.",
+eligibleRefundNotice:
+  "Entiendo que cualquier reembolso elegible se calculará de acuerdo con la política mostrada anteriormente.",
+refundCalculation:
+  "Cálculo del reembolso",
+},
+
+} as const;
+
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_BASE ||
@@ -131,15 +397,28 @@ function formatNightlyDisplayMoney(value: string | number | null | undefined) {
   }).format(Math.round(n));
 }
 
-function formatCancellationWindow(hours: number) {
+function formatCancellationWindow(
+  hours: number,
+  language: GuestLanguage
+) {
   if (!Number.isFinite(hours) || hours <= 0) {
-    return "after the last refund window";
+    return language === "es"
+      ? "después del último periodo de reembolso"
+      : "after the last refund window";
   }
 
   const days = hours / 24;
 
   if (Number.isInteger(days) && days >= 1) {
+    if (language === "es") {
+      return `${days} día${days === 1 ? "" : "s"}`;
+    }
+
     return `${days} day${days === 1 ? "" : "s"}`;
+  }
+
+  if (language === "es") {
+    return `${hours} hora${hours === 1 ? "" : "s"}`;
   }
 
   return `${hours} hour${hours === 1 ? "" : "s"}`;
@@ -169,32 +448,84 @@ function getCancellationDeadlineDate(checkIn: string, hours: number) {
   return format(date, "MMM d, yyyy");
 }
 
-function getScenarioLabel(scenario: PublicNonRefundableScenario) {
-  if (scenario === "EARLY_DEPARTURE") return "Early departures";
-  if (scenario === "DELAYED_ARRIVAL") return "Delayed arrivals";
-  if (scenario === "REDUCED_NIGHTS") return "Reducing reserved nights";
-  if (scenario === "WEATHER_RE_SCHEDULE") return "Weather-related reschedules";
+function getScenarioLabel(
+  scenario: PublicNonRefundableScenario,
+  language: GuestLanguage
+) {
+  if (language === "es") {
+    if (scenario === "EARLY_DEPARTURE") {
+      return "Salidas anticipadas";
+    }
+
+    if (scenario === "DELAYED_ARRIVAL") {
+      return "Llegadas retrasadas";
+    }
+
+    if (scenario === "REDUCED_NIGHTS") {
+      return "Reducción de noches reservadas";
+    }
+
+    if (scenario === "WEATHER_RE_SCHEDULE") {
+      return "Cambios de fecha relacionados con el clima";
+    }
+
+    return "Otros cambios posteriores a la reservación";
+  }
+
+  if (scenario === "EARLY_DEPARTURE") {
+    return "Early departures";
+  }
+
+  if (scenario === "DELAYED_ARRIVAL") {
+    return "Delayed arrivals";
+  }
+
+  if (scenario === "REDUCED_NIGHTS") {
+    return "Reducing reserved nights";
+  }
+
+  if (scenario === "WEATHER_RE_SCHEDULE") {
+    return "Weather-related reschedules";
+  }
+
   return "Other post-booking changes";
 }
 
 function normalizeCancellationRefundRules(
-  policy: PublicCancellationPolicy
+  policy: PublicCancellationPolicy,
+  language: GuestLanguage
 ): PublicCancellationRefundRule[] {
-  if (Array.isArray(policy.refundRules) && policy.refundRules.length > 0) {
+  if (
+    Array.isArray(policy.refundRules) &&
+    policy.refundRules.length > 0
+  ) {
     return policy.refundRules
       .map((rule) => ({
         minHoursBeforeCheckIn: Math.max(
           0,
-          Math.round(Number(rule.minHoursBeforeCheckIn ?? 0))
+          Math.round(
+            Number(rule.minHoursBeforeCheckIn ?? 0)
+          )
         ),
         refundPercent: Math.max(
           0,
-          Math.min(100, Number(rule.refundPercent ?? 0))
+          Math.min(
+            100,
+            Number(rule.refundPercent ?? 0)
+          )
         ),
-        label: rule.label || `${rule.refundPercent}% refund`,
+        label:
+          rule.label ||
+          (language === "es"
+            ? `${rule.refundPercent}% de reembolso`
+            : `${rule.refundPercent}% refund`),
         description: rule.description ?? null,
       }))
-      .sort((a, b) => b.minHoursBeforeCheckIn - a.minHoursBeforeCheckIn);
+      .sort(
+        (a, b) =>
+          b.minHoursBeforeCheckIn -
+          a.minHoursBeforeCheckIn
+      );
   }
 
   if (policy.type === "NON_REFUNDABLE") {
@@ -202,66 +533,128 @@ function normalizeCancellationRefundRules(
       {
         minHoursBeforeCheckIn: 0,
         refundPercent: 0,
-        label: "No refund",
-        description: "This reservation is non-refundable after booking.",
+        label:
+          language === "es"
+            ? "Sin reembolso"
+            : "No refund",
+        description:
+          language === "es"
+            ? "Esta reservación no es reembolsable después de confirmarse."
+            : "This reservation is non-refundable after booking.",
       },
     ];
   }
 
   return [
     {
-      minHoursBeforeCheckIn: policy.freeCancellationHoursBeforeCheckIn,
-      refundPercent: policy.refundPercentBeforeDeadline,
+      minHoursBeforeCheckIn:
+        policy.freeCancellationHoursBeforeCheckIn,
+      refundPercent:
+        policy.refundPercentBeforeDeadline,
       label:
         policy.refundPercentBeforeDeadline >= 100
-          ? "Full refund"
+          ? language === "es"
+            ? "Reembolso completo"
+            : "Full refund"
+          : language === "es"
+          ? "Reembolso antes de la fecha límite"
           : "Refund before deadline",
-      description: `${formatRefundPercent(
-        policy.refundPercentBeforeDeadline
-      )} refund before the cancellation deadline.`,
+      description:
+        language === "es"
+          ? `${formatRefundPercent(
+              policy.refundPercentBeforeDeadline
+            )} de reembolso antes de la fecha límite de cancelación.`
+          : `${formatRefundPercent(
+              policy.refundPercentBeforeDeadline
+            )} refund before the cancellation deadline.`,
     },
     {
       minHoursBeforeCheckIn: 0,
-      refundPercent: policy.refundPercentAfterDeadline,
+      refundPercent:
+        policy.refundPercentAfterDeadline,
       label:
         policy.refundPercentAfterDeadline > 0
-          ? "Partial refund"
+          ? language === "es"
+            ? "Reembolso parcial"
+            : "Partial refund"
+          : language === "es"
+          ? "Sin reembolso"
           : "No refund",
-      description: `${formatRefundPercent(
-        policy.refundPercentAfterDeadline
-      )} refund after the cancellation deadline.`,
+      description:
+        language === "es"
+          ? `${formatRefundPercent(
+              policy.refundPercentAfterDeadline
+            )} de reembolso después de la fecha límite de cancelación.`
+          : `${formatRefundPercent(
+              policy.refundPercentAfterDeadline
+            )} refund after the cancellation deadline.`,
     },
-  ].sort((a, b) => b.minHoursBeforeCheckIn - a.minHoursBeforeCheckIn);
+  ].sort(
+    (a, b) =>
+      b.minHoursBeforeCheckIn -
+      a.minHoursBeforeCheckIn
+  );
 }
 
 function getRuleWindowLabel(
   rule: PublicCancellationRefundRule,
   index: number,
-  rules: PublicCancellationRefundRule[]
+  rules: PublicCancellationRefundRule[],
+  language: GuestLanguage
 ) {
-  const previousRule = index > 0 ? rules[index - 1] : null;
+  const previousRule =
+    index > 0 ? rules[index - 1] : null;
 
-  if (index === 0 && rule.minHoursBeforeCheckIn > 0) {
-    return `${formatCancellationWindow(
-      rule.minHoursBeforeCheckIn
-    )}+ before check-in`;
+  if (
+    index === 0 &&
+    rule.minHoursBeforeCheckIn > 0
+  ) {
+    const window = formatCancellationWindow(
+      rule.minHoursBeforeCheckIn,
+      language
+    );
+
+    return language === "es"
+      ? `${window} o más antes de la entrada`
+      : `${window}+ before check-in`;
   }
 
-  if (rule.minHoursBeforeCheckIn > 0 && previousRule) {
-    return `${formatCancellationWindow(
-      rule.minHoursBeforeCheckIn
-    )} to ${formatCancellationWindow(
-      previousRule.minHoursBeforeCheckIn
-    )} before check-in`;
+  if (
+    rule.minHoursBeforeCheckIn > 0 &&
+    previousRule
+  ) {
+    const currentWindow =
+      formatCancellationWindow(
+        rule.minHoursBeforeCheckIn,
+        language
+      );
+
+    const previousWindow =
+      formatCancellationWindow(
+        previousRule.minHoursBeforeCheckIn,
+        language
+      );
+
+    return language === "es"
+      ? `De ${currentWindow} a ${previousWindow} antes de la entrada`
+      : `${currentWindow} to ${previousWindow} before check-in`;
   }
 
   if (previousRule) {
-    return `Less than ${formatCancellationWindow(
-      previousRule.minHoursBeforeCheckIn
-    )} before check-in`;
+    const previousWindow =
+      formatCancellationWindow(
+        previousRule.minHoursBeforeCheckIn,
+        language
+      );
+
+    return language === "es"
+      ? `Menos de ${previousWindow} antes de la entrada`
+      : `Less than ${previousWindow} before check-in`;
   }
 
-  return "After booking confirmation";
+  return language === "es"
+    ? "Después de confirmar la reservación"
+    : "After booking confirmation";
 }
 
 function getRuleDateLabel({
@@ -269,15 +662,18 @@ function getRuleDateLabel({
   index,
   rules,
   checkIn,
+  language,
 }: {
   rule: PublicCancellationRefundRule;
   index: number;
   rules: PublicCancellationRefundRule[];
   checkIn: string;
+  language: GuestLanguage;
 }) {
   if (!checkIn) return null;
 
-  const previousRule = index > 0 ? rules[index - 1] : null;
+  const previousRule =
+    index > 0 ? rules[index - 1] : null;
 
   if (rule.minHoursBeforeCheckIn > 0) {
     const dateLabel = getCancellationDeadlineDate(
@@ -285,7 +681,13 @@ function getRuleDateLabel({
       rule.minHoursBeforeCheckIn
     );
 
-    return dateLabel ? `Until ${dateLabel}` : null;
+    if (!dateLabel) {
+      return null;
+    }
+
+    return language === "es"
+      ? `Hasta ${dateLabel}`
+      : `Until ${dateLabel}`;
   }
 
   if (previousRule) {
@@ -294,22 +696,44 @@ function getRuleDateLabel({
       previousRule.minHoursBeforeCheckIn
     );
 
-    return dateLabel ? `After ${dateLabel}` : null;
+    if (!dateLabel) {
+      return null;
+    }
+
+    return language === "es"
+      ? `Después de ${dateLabel}`
+      : `After ${dateLabel}`;
   }
 
   return null;
 }
 
-function getPolicyTypeLabel(type: PublicCancellationPolicy["type"]) {
+function getPolicyTypeLabel(
+  type: PublicCancellationPolicy["type"],
+  language: GuestLanguage
+) {
   if (type === "NON_REFUNDABLE") {
-    return "Non-refundable reservation";
+    return language === "es"
+      ? "Reservación no reembolsable"
+      : "Non-refundable reservation";
   }
 
-  return "Refund terms for this stay";
+  return language === "es"
+    ? "Términos de reembolso para esta estadía"
+    : "Refund terms for this stay";
 }
 
-function formatDateLabelForSentence(label?: string | null) {
+function formatDateLabelForSentence(
+  label: string | null | undefined,
+  language: GuestLanguage
+) {
   if (!label) return "";
+
+  if (language === "es") {
+    return label
+      .replace(/^Hasta\s+/i, "hasta ")
+      .replace(/^Después de\s+/i, "después de ");
+  }
 
   return label
     .replace(/^Until\s+/i, "until ")
@@ -318,23 +742,36 @@ function formatDateLabelForSentence(label?: string | null) {
 
 function getCancellationPolicySummary(
   policy: PublicCancellationPolicy | null | undefined,
-  checkIn: string
+  checkIn: string,
+  language: GuestLanguage
 ) {
   if (!policy) return null;
 
-  const rules = normalizeCancellationRefundRules(policy);
-  const scenarios = Array.isArray(policy.nonRefundableScenarios)
+  const rules = normalizeCancellationRefundRules(
+    policy,
+    language
+  );
+
+  const scenarios = Array.isArray(
+    policy.nonRefundableScenarios
+  )
     ? policy.nonRefundableScenarios
     : [];
 
   const displayRules = rules.map((rule, index) => ({
     ...rule,
-    windowLabel: getRuleWindowLabel(rule, index, rules),
+    windowLabel: getRuleWindowLabel(
+      rule,
+      index,
+      rules,
+      language
+    ),
     dateLabel: getRuleDateLabel({
       rule,
       index,
       rules,
       checkIn,
+      language,
     }),
     tone:
       rule.refundPercent >= 100
@@ -344,78 +781,156 @@ function getCancellationPolicySummary(
         : "danger",
   }));
 
-  const firstRefundRule = displayRules.find((rule) => rule.refundPercent > 0);
-  const firstNoRefundRule = displayRules.find((rule) => rule.refundPercent <= 0);
+  const firstRefundRule = displayRules.find(
+    (rule) => rule.refundPercent > 0
+  );
+
+  const firstNoRefundRule = displayRules.find(
+    (rule) => rule.refundPercent <= 0
+  );
 
   const headline =
     policy.type === "NON_REFUNDABLE"
-      ? "This reservation is non-refundable."
+      ? language === "es"
+        ? "Esta reservación no es reembolsable."
+        : "This reservation is non-refundable."
       : firstRefundRule?.dateLabel
-      ? `${formatRefundPercent(
-          firstRefundRule.refundPercent
-        )} refund ${formatDateLabelForSentence(firstRefundRule.dateLabel)}.`
+      ? language === "es"
+        ? `${formatRefundPercent(
+            firstRefundRule.refundPercent
+          )} de reembolso ${formatDateLabelForSentence(
+            firstRefundRule.dateLabel,
+            language
+          )}.`
+        : `${formatRefundPercent(
+            firstRefundRule.refundPercent
+          )} refund ${formatDateLabelForSentence(
+            firstRefundRule.dateLabel,
+            language
+          )}.`
       : firstRefundRule
-      ? `${formatRefundPercent(firstRefundRule.refundPercent)} refund ${
-          firstRefundRule.windowLabel
-        }.`
+      ? language === "es"
+        ? `${formatRefundPercent(
+            firstRefundRule.refundPercent
+          )} de reembolso: ${
+            firstRefundRule.windowLabel
+          }.`
+        : `${formatRefundPercent(
+            firstRefundRule.refundPercent
+          )} refund ${
+            firstRefundRule.windowLabel
+          }.`
+      : language === "es"
+      ? "Los términos de cancelación aplican a esta reservación."
       : "Cancellation terms apply to this reservation.";
 
   const selectedDateSummary =
-    checkIn && displayRules.some((rule) => rule.dateLabel)
-      ? `For your selected dates: ${displayRules
-          .filter((rule) => rule.dateLabel)
-          .map((rule) => {
-            const dateLabel = formatDateLabelForSentence(rule.dateLabel);
+    checkIn &&
+    displayRules.some((rule) => rule.dateLabel)
+      ? language === "es"
+        ? `Para las fechas seleccionadas: ${displayRules
+            .filter((rule) => rule.dateLabel)
+            .map((rule) => {
+              const dateLabel =
+                formatDateLabelForSentence(
+                  rule.dateLabel,
+                  language
+                );
 
-            if (rule.refundPercent >= 100) {
-              return `full refund ${dateLabel}`;
-            }
+              if (rule.refundPercent >= 100) {
+                return `reembolso completo ${dateLabel}`;
+              }
 
-            if (rule.refundPercent > 0) {
-              return `${formatRefundPercent(rule.refundPercent)} refund ${dateLabel}`;
-            }
+              if (rule.refundPercent > 0) {
+                return `${formatRefundPercent(
+                  rule.refundPercent
+                )} de reembolso ${dateLabel}`;
+              }
 
-            return `no refund ${dateLabel}`;
-          })
-          .join("; ")}.`
+              return `sin reembolso ${dateLabel}`;
+            })
+            .join("; ")}.`
+        : `For your selected dates: ${displayRules
+            .filter((rule) => rule.dateLabel)
+            .map((rule) => {
+              const dateLabel =
+                formatDateLabelForSentence(
+                  rule.dateLabel,
+                  language
+                );
+
+              if (rule.refundPercent >= 100) {
+                return `full refund ${dateLabel}`;
+              }
+
+              if (rule.refundPercent > 0) {
+                return `${formatRefundPercent(
+                  rule.refundPercent
+                )} refund ${dateLabel}`;
+              }
+
+              return `no refund ${dateLabel}`;
+            })
+            .join("; ")}.`
       : "";
 
   return {
-    title: getPolicyTypeLabel(policy.type),
+    title: getPolicyTypeLabel(
+      policy.type,
+      language
+    ),
     headline,
     summaryText:
       selectedDateSummary ||
       policy.guestFacingSummary?.trim() ||
       policy.description ||
-      "Review the refund windows below before completing your reservation.",
+      (language === "es"
+        ? "Revise los periodos de reembolso antes de completar su reservación."
+        : "Review the refund windows below before completing your reservation."),
     rules: displayRules,
     scenarios,
-    approvalNote: policy.requireHostApprovalOutsidePolicy
-      ? "Cancellations outside the refund policy may require host approval."
-      : "Eligible cancellations can be processed automatically by Pin&Go.",
-    noRefundLabel: firstNoRefundRule ? firstNoRefundRule.windowLabel : null,
+    approvalNote:
+      policy.requireHostApprovalOutsidePolicy
+        ? language === "es"
+          ? "Las cancelaciones fuera de la política de reembolso pueden requerir aprobación del anfitrión."
+          : "Cancellations outside the refund policy may require host approval."
+        : language === "es"
+        ? "Pin&Go puede procesar automáticamente las cancelaciones elegibles."
+        : "Eligible cancellations can be processed automatically by Pin&Go.",
+    noRefundLabel: firstNoRefundRule
+      ? firstNoRefundRule.windowLabel
+      : null,
   };
 }
 
 function getRefundBasisDisclosure(
-  policy: PublicCancellationPolicy | null | undefined
+  policy: PublicCancellationPolicy | null | undefined,
+  language: GuestLanguage
 ) {
   if (!policy) return null;
 
   if (policy.refundBasis === "NIGHTLY_SUBTOTAL") {
-    return "Refund percentages apply to the nightly subtotal only. Other charges such as cleaning fees, service fees, taxes, add-ons, or other non-nightly charges may not be refundable unless required by law or specifically stated in this policy.";
+    return language === "es"
+      ? "Los porcentajes de reembolso aplican únicamente al subtotal de las noches. Otros cargos, como limpieza, servicio, impuestos, complementos u otros cargos no nocturnos, podrían no ser reembolsables salvo que la ley o esta política indiquen lo contrario."
+      : "Refund percentages apply to the nightly subtotal only. Other charges such as cleaning fees, service fees, taxes, add-ons, or other non-nightly charges may not be refundable unless required by law or specifically stated in this policy.";
   }
 
   if (policy.refundBasis === "NIGHTLY_PLUS_CLEANING") {
-    return "Refund percentages apply to the nightly subtotal plus cleaning fee. Taxes, add-ons, service fees, or other non-nightly charges may not be refundable unless required by law or specifically stated in this policy.";
+    return language === "es"
+      ? "Los porcentajes de reembolso aplican al subtotal de las noches más el cargo de limpieza. Los impuestos, complementos, cargos de servicio u otros cargos no nocturnos podrían no ser reembolsables salvo que la ley o esta política indiquen lo contrario."
+      : "Refund percentages apply to the nightly subtotal plus cleaning fee. Taxes, add-ons, service fees, or other non-nightly charges may not be refundable unless required by law or specifically stated in this policy.";
   }
 
   if (policy.refundBasis === "TOTAL_AMOUNT") {
-    return "Refund percentages apply to the eligible reservation amount according to the cancellation policy shown for this stay.";
+    return language === "es"
+      ? "Los porcentajes de reembolso aplican al importe elegible de la reservación, de acuerdo con la política de cancelación mostrada para esta estadía."
+      : "Refund percentages apply to the eligible reservation amount according to the cancellation policy shown for this stay.";
   }
 
   if (policy.refundBasis === "CUSTOM") {
-    return "Refund eligibility is calculated using the custom refund basis configured for this property and shown in this policy.";
+    return language === "es"
+      ? "La elegibilidad del reembolso se calcula utilizando la base personalizada configurada para esta propiedad y mostrada en esta política."
+      : "Refund eligibility is calculated using the custom refund basis configured for this property and shown in this policy.";
   }
 
   return null;
@@ -939,7 +1454,20 @@ export default function PublicPropertyDetailPage() {
   const [property, setProperty] = useState<PublicProperty | null>(null);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
+   const [preferredLanguage, setPreferredLanguage] =
+  useState<GuestLanguage>(() => {
+    try {
+      const storedLanguage = window.localStorage
+        .getItem(GUEST_LANGUAGE_STORAGE_KEY)
+        ?.trim()
+        .toLowerCase();
 
+      return storedLanguage === "es" ? "es" : "en";
+    } catch {
+      return "en";
+    }
+  }); 
+  
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -963,26 +1491,121 @@ export default function PublicPropertyDetailPage() {
   const [children, setChildren] = useState(0);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   
+  function handlePreferredLanguageChange(
+  language: GuestLanguage
+) {
+  setPreferredLanguage(language);
+
+  try {
+    window.localStorage.setItem(
+      GUEST_LANGUAGE_STORAGE_KEY,
+      language
+    );
+  } catch {
+    // The guest experience can continue without browser persistence.
+  }
+}
+
+  const copy = PUBLIC_PROPERTY_COPY[preferredLanguage];
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
-const cancellationPolicySummary = useMemo(
-  () => getCancellationPolicySummary(property?.cancellationPolicy, checkIn),
-  [property?.cancellationPolicy, checkIn]
+const localCancellationPolicySummary = useMemo(
+  () =>
+    getCancellationPolicySummary(
+      property?.cancellationPolicy,
+      checkIn,
+      preferredLanguage
+    ),
+  [
+    property?.cancellationPolicy,
+    checkIn,
+    preferredLanguage,
+  ]
 );
 
+const cancellationPolicySummary = useMemo(() => {
+  const presentation =
+    property?.cancellationPolicyPresentation;
+
+  if (!presentation) {
+    return localCancellationPolicySummary;
+  }
+
+  const localRules =
+    localCancellationPolicySummary?.rules ?? [];
+
+  return {
+    title: presentation.title,
+    headline: presentation.headline,
+    summaryText: presentation.summary,
+
+    rules: presentation.rules.map((rule, index) => {
+      const localRule = localRules[index];
+
+      return {
+        minHoursBeforeCheckIn:
+          rule.minHoursBeforeCheckIn,
+        refundPercent: rule.refundPercent,
+        label: rule.label,
+        description: rule.description,
+        windowLabel: rule.windowLabel,
+        dateLabel: localRule?.dateLabel ?? null,
+        tone:
+          rule.refundPercent >= 100
+            ? "success"
+            : rule.refundPercent > 0
+            ? "warning"
+            : "danger",
+      };
+    }),
+
+    scenarios: presentation.nonRefundableScenarios.map(
+      (scenario) => scenario.code
+    ),
+
+    approvalNote:
+      presentation.approvalNote ??
+      presentation.automationNote ??
+      "",
+
+    noRefundLabel:
+      presentation.rules.find(
+        (rule) => rule.refundPercent <= 0
+      )?.windowLabel ?? null,
+  };
+}, [
+  property?.cancellationPolicyPresentation,
+  localCancellationPolicySummary,
+]);
 const cancellationRefundBasisDisclosure = useMemo(
-  () => getRefundBasisDisclosure(property?.cancellationPolicy),
-  [property?.cancellationPolicy]
+  () =>
+    property?.cancellationPolicyPresentation
+      ?.refundBasisDisclosure ??
+    getRefundBasisDisclosure(
+      property?.cancellationPolicy,
+      preferredLanguage
+    ),
+  [
+    property?.cancellationPolicyPresentation,
+    property?.cancellationPolicy,
+    preferredLanguage,
+  ]
 );
 
 const cancellationTermsAcceptanceText = useMemo(
   () =>
+    property?.cancellationPolicyPresentation
+      ?.acceptanceText ??
     buildCancellationTermsAcceptanceText(
       property?.cancellationPolicy,
       cancellationPolicySummary
     ),
-  [property?.cancellationPolicy, cancellationPolicySummary]
+  [
+    property?.cancellationPolicyPresentation,
+    property?.cancellationPolicy,
+    cancellationPolicySummary,
+  ]
 );
 
 const requiresCancellationTermsAcceptance = Boolean(cancellationPolicySummary);
@@ -1103,9 +1726,9 @@ function formatDisplayTime(time?: string | null) {
         setLoading(true);
         setPageError(null);
 
-        const res = await fetch(
-          `${API_BASE}/api/public-booking/${organizationSlug}/${propertySlug}`
-        );
+       const res = await fetch(
+         `${API_BASE}/api/public-booking/${organizationSlug}/${propertySlug}?lang=${preferredLanguage}`
+       );
 
         const data = await res.json();
 
@@ -1118,7 +1741,9 @@ function formatDisplayTime(time?: string | null) {
         }
       } catch (err: any) {
         if (active) {
-          setPageError(err?.message || "Failed to load property");
+          setPageError(
+            err?.message || copy.failedToLoadProperty
+          );
         }
       } finally {
         if (active) {
@@ -1134,7 +1759,12 @@ function formatDisplayTime(time?: string | null) {
     return () => {
       active = false;
     };
-  }, [organizationSlug, propertySlug]);
+  }, [
+  organizationSlug,
+  propertySlug,
+  copy.failedToLoadProperty,
+  preferredLanguage,
+]);
 
 useEffect(() => {
   if (!property?.id) return;
@@ -1262,42 +1892,49 @@ useEffect(() => {
       setBookingError(null);
 
       if (!property) {
-        throw new Error("Property not loaded");
+        throw new Error(copy.propertyNotLoaded);
       }
-
-      if (!checkIn || !checkOut || !guestName.trim() || !guestEmail.trim()) {
-        throw new Error("Please complete check-in, check-out, name and email.");
-      }
-
+      if (
+     !checkIn ||
+     !checkOut ||
+     !guestName.trim() ||
+     !guestEmail.trim()
+   ) {
+     throw new Error(copy.completeRequiredFields);
+   }
       if (nights <= 0) {
-        throw new Error("Check-out must be after check-in.");
-      }
-
-      if (!securePreCheckinRequirementAccepted) {
-  throw new Error(
-    "Please confirm that you understand the Secure Pre-check-in requirement before continuing."
-  );
+  throw new Error(copy.checkOutAfterCheckIn);
 }
-
+      if (!securePreCheckinRequirementAccepted) {
+        throw new Error(
+          copy.securePreCheckinRequiredError
+       );
+     }
       if (
         requiresCancellationTermsAcceptance &&
         !cancellationTermsAccepted
       ) {
         throw new Error(
-          "Please review and accept the cancellation terms to continue."
+          copy.cancellationTermsRequiredError
         );
       }
-
       if (nights < (property.minimumNights ?? 1)) {
         throw new Error(
-          `Minimum stay is ${property.minimumNights ?? 1} night(s).`
+          `${copy.minimumStayPrefix} ${
+            property.minimumNights ?? 1
+          } ${copy.nightCountSuffix}`
         );
       }
-
-      if (property.maximumNights && nights > property.maximumNights) {
-        throw new Error(`Maximum stay is ${property.maximumNights} night(s).`);
+      if (
+        property.maximumNights &&
+        nights > property.maximumNights
+      ) {
+        throw new Error(
+          `${copy.maximumStayPrefix} ${
+            property.maximumNights
+          } ${copy.nightCountSuffix}`
+        );
       }
-
       const res = await fetch(`${API_BASE}/api/public-booking/create-checkout`, {
         method: "POST",
         headers: {
@@ -1312,6 +1949,7 @@ useEffect(() => {
   children,
   guestEmail: guestEmail.trim(),
   guestPhone: guestPhone.trim(),
+  preferredLanguage,
   stayNotificationsConsent,
   guestAcceptedSecurePreCheckinRequirement:
   securePreCheckinRequirementAccepted,
@@ -1342,49 +1980,103 @@ guestAcceptedSecurePreCheckinRequirementSource:
       const data = await res.json();
 
       if (!res.ok || !data.ok || !data.checkoutUrl) {
-        throw new Error(data.error || "Unable to create checkout.");
+        throw new Error(
+          data.error || copy.unableToCreateCheckout
+        );
       }
-
       window.location.href = data.checkoutUrl;
-    } catch (err: any) {
-      setBookingError(err?.message || "Unable to reserve this property.");
-    } finally {
+      } catch (err: any) {
+        setBookingError(err?.message || "Unable to reserve this property.");
+      } finally {
       setSubmitting(false);
     }
   }
 
-  return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <div style={styles.headerInner}>
-          <Link to={`/book/${organizationSlug}`} style={styles.brandWrap}>
-            <img
-              src="/pin-go-logo.png"
-              alt="Pin&Go logo"
-              style={styles.logo}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <div>
-              <div style={styles.brandName}>Pin&Go</div>
-              <div style={styles.slogan}>Direct Booking</div>
-            </div>
-          </Link>
-        </div>
-      </header>
+return (
+  <div style={styles.page}>
+    <header style={styles.header}>
+      <div style={styles.headerInner}>
+        <Link
+          to={`/book/${organizationSlug}`}
+          style={styles.brandWrap}
+        >
+          <img
+            src="/pin-go-logo.png"
+            alt="Pin&Go logo"
+            style={styles.logo}
+            onError={(e) => {
+              (
+                e.currentTarget as HTMLImageElement
+              ).style.display = "none";
+            }}
+          />
 
+          <div>
+            <div style={styles.brandName}>Pin&Go</div>
+            <div style={styles.slogan}>
+              {copy.directBooking}
+            </div>
+          </div>
+        </Link>
+
+        <div
+          role="group"
+          aria-label={copy.guestLanguage}
+          style={styles.languageSelector}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              handlePreferredLanguageChange("en")
+            }
+            aria-pressed={
+              preferredLanguage === "en"
+            }
+            style={{
+              ...styles.languageButton,
+              ...(preferredLanguage === "en"
+                ? styles.languageButtonActive
+                : {}),
+            }}
+          >
+            English
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handlePreferredLanguageChange("es")
+            }
+            aria-pressed={
+              preferredLanguage === "es"
+            }
+            style={{
+              ...styles.languageButton,
+              ...(preferredLanguage === "es"
+                ? styles.languageButtonActive
+                : {}),
+            }}
+          >
+            Español
+          </button>
+        </div>
+      </div>
+    </header>
       <main>
         {loading ? (
           <section style={styles.heroSection}>
             <div style={styles.heroContainer}>
-              <h1 style={styles.heroTitle}>Loading property...</h1>
+              <h1 style={styles.heroTitle}>
+                {copy.loadingProperty}
+              </h1>
             </div>
           </section>
         ) : pageError || !property ? (
           <section style={styles.sectionAlt}>
             <div style={styles.container}>
-              <div style={styles.errorBox}>{pageError || "Property not found"}</div>
+              <div style={styles.errorBox}>
+                {pageError || copy.propertyNotFound}
+              </div>
             </div>
           </section>
         ) : (
@@ -1401,10 +2093,14 @@ guestAcceptedSecurePreCheckinRequirementSource:
                   {location ? <span>📍 {location}</span> : null}
 
                   {property.maxGuests ? (
-                    <span>👥 Up to {property.maxGuests} guests</span>
+                    <span>
+                      👥 {copy.upToGuests} {property.maxGuests} {copy.guests}
+                    </span>
                   ) : null}
-
-                  <span>🌙 Minimum {property.minimumNights ?? 1} night(s)</span>
+                  <span>
+                    🌙 {copy.minimum} {property.minimumNights ?? 1}{" "}
+                    {copy.nights}
+                  </span>
                 </div>
 
                              </div>
@@ -1474,42 +2170,47 @@ guestAcceptedSecurePreCheckinRequirementSource:
                 <div style={styles.detailGrid}>
                      <div style={styles.leftColumn}>
   <div style={styles.infoCard}>
-    <div style={styles.sectionEyebrow}>Property Overview</div>
+    <div style={styles.sectionEyebrow}>
+      {copy.propertyOverview}
+    </div>
 
     <h2 style={styles.sectionTitle}>
       {property.publicTitle || property.name}
     </h2>
 
     <p style={styles.overviewText}>
-      {property.publicDescription ||
-        "This property offers a modern and comfortable stay powered by Pin&Go."}
-    </p>
+  {property.publicDescription ||
+    copy.defaultPropertyDescription}
+</p>
   </div>
 
   <div style={styles.infoCard}>
-    <div style={styles.sectionEyebrow}>Stay Details</div>
+    <div style={styles.sectionEyebrow}>
+  {copy.stayDetails}
+</div>
 
     <div style={styles.stayDetailsGrid}>
       <div style={styles.stayDetailItem}>
         <StayDetailIcon type="checkIn" />
 
         <div>
-          <strong>Check-In</strong>
-          <div>
-            {formatDisplayTime(property.checkInTime) || "Configured by host"}
-          </div>
-        </div>
+  <strong>{copy.checkIn}</strong>
+  <div>
+    {formatDisplayTime(property.checkInTime) ||
+      copy.configuredByHost}
+  </div>
+</div>
       </div>
 
       <div style={styles.stayDetailItem}>
         <StayDetailIcon type="checkOut" />
 
-        <div>
-          <strong>Check-Out</strong>
-          <div>
-            {formatDisplayTime(property.checkOutTime) || "11:00 AM"}
-          </div>
-        </div>
+       <div>
+  <strong>{copy.checkOut}</strong>
+  <div>
+    {formatDisplayTime(property.checkOutTime) || "11:00 AM"}
+  </div>
+</div>
       </div>
     </div>
   </div>
@@ -1522,69 +2223,49 @@ guestAcceptedSecurePreCheckinRequirementSource:
 
     <div>
     <div style={styles.securePreCheckinDisclosureEyebrow}>
-      Secure arrival process / Proceso de llegada segura
-    </div>
-      <h3 style={styles.securePreCheckinDisclosureTitle}>
-        Secure Pre-check-in Required
-      </h3>
+  {copy.secureArrivalProcess}
+</div>
 
-      <div style={styles.securePreCheckinDisclosureSpanishTitle}>
-        Registro seguro requerido
-      </div>
+<h3 style={styles.securePreCheckinDisclosureTitle}>
+  {copy.securePreCheckinTitle}
+</h3>
     </div>
   </div>
 
   <div style={styles.securePreCheckinDisclosureText}>
-    <p style={styles.securePreCheckinDisclosureParagraph}>
-      After booking, the primary guest must complete Identity Check and accept
-      the Guest Agreement before Pin&amp;Go releases access credentials.
-    </p>
-
-    <p style={styles.securePreCheckinDisclosureParagraph}>
-      Después de reservar, el huésped principal deberá completar la
-      Verificación de Identidad y aceptar el Acuerdo del Huésped antes de que
-      Pin&amp;Go libere las credenciales de acceso.
-    </p>
-  </div>
-
+  <p style={styles.securePreCheckinDisclosureParagraph}>
+    {copy.securePreCheckinIntro}
+  </p>
+</div>
   <div style={styles.securePreCheckinSteps}>
     <div style={styles.securePreCheckinStep}>
       <span style={styles.securePreCheckinStepNumber}>1</span>
-      <span>Reservation confirmed / Reservación confirmada</span>
+      <span>{copy.reservationConfirmedStep}</span>
     </div>
 
     <div style={styles.securePreCheckinStep}>
       <span style={styles.securePreCheckinStepNumber}>2</span>
-      <span>Identity Check / Verificación de identidad</span>
+      <span>{copy.identityCheckStep}</span>
     </div>
 
     <div style={styles.securePreCheckinStep}>
       <span style={styles.securePreCheckinStepNumber}>3</span>
-      <span>Guest Agreement / Acuerdo del huésped</span>
+      <span>{copy.guestAgreementStep}</span>
     </div>
 
     <div style={styles.securePreCheckinStep}>
   <span style={styles.securePreCheckinStepNumber}>4</span>
-  <span>
-    Access automatically released / Acceso liberado automáticamente
-  </span>
+ <span>
+  {copy.accessReleasedStep}
+</span>
 </div>
   </div>
 
   <div style={styles.securePreCheckinCompletionNote}>
-  Usually completed in just a few minutes.
-  <br />
-  Normalmente se completa en solo unos minutos.
-</div> 
-
+  {copy.usuallyCompletedQuickly}
+</div>
  <div style={styles.securePreCheckinDisclosureNotice}>
-  Your reservation is confirmed immediately after payment. Pin&amp;Go will
-  automatically deliver your access credentials once Secure Pre-check-in has
-  been completed.
-  <br />
-  Su reservación queda confirmada inmediatamente después del pago. Pin&amp;Go
-  entregará automáticamente sus credenciales de acceso una vez completado el
-  Registro Seguro.
+  {copy.reservationConfirmedNotice}
 </div>
 </div>
 
@@ -1620,7 +2301,9 @@ guestAcceptedSecurePreCheckinRequirementSource:
 </div>
  {includedAmenities.length > 0 ? (
     <div style={styles.includedAmenitiesBox}>
-      <div style={styles.includedAmenitiesTitle}>Included with your stay</div>
+      <div style={styles.includedAmenitiesTitle}>
+  {copy.includedWithStay}
+</div>
 
       <div style={styles.includedAmenitiesGrid}>
         {includedAmenities.map((amenity) => (
@@ -1679,38 +2362,49 @@ guestAcceptedSecurePreCheckinRequirementSource:
                       <div>
                         <div style={styles.bookingPrice}>
   <div style={styles.bookingPricePrefix}>
-    Starting at
-  </div>
-
+  {copy.startingAt}
+</div>
   {formatNightlyDisplayMoney(property.baseNightlyRate)}
 
-  <span style={styles.bookingPriceUnit}>
-    / night
-  </span>
+ <span style={styles.bookingPriceUnit}>
+  {copy.perNight}
+</span>
 </div>
+                        
                         <div style={styles.bookingSubtitle}>
-                          Book your stay securely
+                          {copy.bookYourStaySecurely}
                         </div>
                       </div>
 
-                      <div style={styles.bookingBadge}>Direct</div>
+                      <div style={styles.bookingBadge}>
+                        {copy.direct}
+                      </div>
                     </div>
 
                   <div style={styles.calendarBox}>
   <div style={styles.calendarHeader}>
     <div style={styles.calendarDatePanel}>
-      <div style={styles.calendarLabel}>Check-in</div>
-      <div style={styles.calendarValue}>
-        {checkIn ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy") : "Add date"}
-      </div>
-    </div>
+  <div style={styles.calendarLabel}>
+    {copy.checkInDate}
+  </div>
 
-    <div style={styles.calendarDatePanel}>
-      <div style={styles.calendarLabel}>Check-out</div>
-      <div style={styles.calendarValue}>
-        {checkOut ? format(fromDateInputValue(checkOut)!, "MMM d, yyyy") : "Add date"}
-      </div>
-    </div>
+  <div style={styles.calendarValue}>
+    {checkIn
+      ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy")
+      : copy.addDate}
+  </div>
+</div>
+   <div style={styles.calendarDatePanel}>
+  <div style={styles.calendarLabel}>
+    {copy.checkOutDate}
+  </div>
+
+  <div style={styles.calendarValue}>
+    {checkOut
+      ? format(fromDateInputValue(checkOut)!, "MMM d, yyyy")
+      : copy.addDate}
+  </div>
+</div>
   </div>
 
  <div style={styles.calendarShell}>
@@ -1736,10 +2430,14 @@ guestAcceptedSecurePreCheckinRequirementSource:
                         <div style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
-                          <div style={styles.guestLabel}>Adults</div>
-                          <div style={styles.guestHint}>Ages 13 or above</div>
-                        </div>
+  <div style={styles.guestLabel}>
+    {copy.adults}
+  </div>
 
+  <div style={styles.guestHint}>
+    {copy.adultsHint}
+  </div>
+</div>
                         <div style={styles.stepper}>
                           <button
                             type="button"
@@ -1778,10 +2476,14 @@ guestAcceptedSecurePreCheckinRequirementSource:
 
                       <div style={styles.guestRowLast}>
                         <div>
-                          <div style={styles.guestLabel}>Children</div>
-                          <div style={styles.guestHint}>Ages 2–12</div>
-                        </div>
+  <div style={styles.guestLabel}>
+    {copy.children}
+  </div>
 
+  <div style={styles.guestHint}>
+    {copy.childrenHint}
+  </div>
+</div>
                         <div style={styles.stepper}>
                           <button
                             type="button"
@@ -1821,17 +2523,18 @@ guestAcceptedSecurePreCheckinRequirementSource:
 
                   
                     <label style={styles.field}>
-                      <span>Full name</span>
+                      <span>{copy.fullName}</span>
+
                       <input
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="Guest name"
+                        placeholder={copy.guestNamePlaceholder}
                         style={styles.input}
                       />
                     </label>
-
                     <label style={styles.field}>
-                      <span>Email</span>
+                      <span>{copy.email}</span>
+
                       <input
                         type="email"
                         value={guestEmail}
@@ -1840,17 +2543,16 @@ guestAcceptedSecurePreCheckinRequirementSource:
                         style={styles.input}
                       />
                     </label>
+                     <label style={styles.field}>
+                       <span>{copy.phone}</span>
 
-                    <label style={styles.field}>
-                      <span>Phone</span>
-                      <input
-                        value={guestPhone}
-                        onChange={(e) => setGuestPhone(e.target.value)}
-                        placeholder="+1..."
-                        style={styles.input}
-                      />
-                    </label>
-
+                       <input
+                         value={guestPhone}
+                         onChange={(e) => setGuestPhone(e.target.value)}
+                         placeholder="+1..."
+                         style={styles.input}
+                       />
+                     </label>
                 <div style={styles.stayNotificationsCard}>
   <label style={styles.stayNotificationsLabel}>
     <input
@@ -1863,32 +2565,27 @@ guestAcceptedSecurePreCheckinRequirementSource:
     <div>
       <div style={styles.stayNotificationsTitle}>
         <SmartStayIcon />
-        <span>Pin&Go Smart Stay SMS Updates (Optional)</span>
+        <span>{copy.smsUpdatesTitle}</span>
       </div>
 
       <div style={styles.stayNotificationsText}>
-        Receive important updates about your stay, including your booking
-        confirmation, smart lock access code, check-in instructions,
-        check-out reminders, and important property alerts.
+        {copy.smsUpdatesDescription}
       </div>
-
       <div style={styles.stayNotificationsLegal}>
-        Message frequency varies. Message &amp; data rates may apply.
-        Reply STOP to opt out and HELP for assistance.
+        {copy.smsUpdatesLegal}
       </div>
-
-      {/* NUEVO BLOQUE */}
+      
       <div style={styles.stayNotificationsLegal}>
-        SMS consent is optional and is not required to complete this reservation.
-        Reservation confirmation and check-in instructions will also be delivered by email.
+        {copy.smsUpdatesOptionalNotice}
       </div>
-
     </div>
   </label>
 </div>
                     {optionalAmenities.length > 0 ? (
                       <div style={styles.addOnsBox}>
-                        <div style={styles.addOnsTitle}>Optional add-ons</div>
+                        <div style={styles.addOnsTitle}>
+                          {copy.optionalAddOns}
+                        </div>
 
                         {optionalAmenities.map((amenity) => {
                           const amenityAmount = calculateAmenityAmount(amenity, nights);
@@ -1927,50 +2624,69 @@ guestAcceptedSecurePreCheckinRequirementSource:
                                   </div>
                                 ) : null}
 
-                                <div style={styles.addOnMeta}>
-                                  {amenity.feeType === "PER_NIGHT"
-                                    ? "Per night"
-                                    : "Per stay"}
-                                </div>
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-
-                    <div style={styles.priceBox}>
-                      <div style={styles.priceBoxTitle}>Price details</div>
-
-                      <div style={styles.priceRow}>
-                        <span>Guests</span>
-                        <strong>{totalGuests}</strong>
-                      </div>
-
-                      <div style={styles.priceRow}>
-                        <span>
-  {pricing?.nightlyRates?.length
-    ? "Nightly rates"
-    : `${formatMoney(property.baseNightlyRate)} × ${nights || 0} nights`}
-</span>
-  <strong>{formatNightlyDisplayMoney(displayNightlySubtotal)}</strong>
-                      </div>
-{pricing?.nightlyRates?.length ? (
-  <div style={styles.nightlyRatesBreakdown}>
-    {pricing.nightlyRates.map((item: any) => (
-      <div key={item.date} style={styles.nightlyRateItem}>
-        <span>{format(fromDateInputValue(item.date)!, "MMM d, yyyy")}</span>
-        <strong>{formatNightlyDisplayMoney(item.rate)}</strong>
-      </div>
-    ))}
-  </div>
+                               <div style={styles.addOnMeta}>
+  {amenity.feeType === "PER_NIGHT"
+    ? copy.perNightFee
+    : copy.perStayFee}
+</div>
+</div>
+</label>
+);
+})}
+</div>
 ) : null}
 
-                      <div style={styles.priceRow}>
-                        <span>Cleaning fee</span>
-                        <strong>{formatMoney(displayCleaningFee)}</strong>
-                      </div>
+<div style={styles.priceBox}>
+  <div style={styles.priceBoxTitle}>
+    {copy.priceDetails}
+  </div>
 
+  <div style={styles.priceRow}>
+    <span>{copy.guestCountLabel}</span>
+    <strong>{totalGuests}</strong>
+  </div>
+
+  <div style={styles.priceRow}>
+    <span>
+      {pricing?.nightlyRates?.length
+        ? copy.nightlyRates
+        : `${formatMoney(property.baseNightlyRate)} × ${
+            nights || 0
+          } ${copy.nights}`}
+    </span>
+
+    <strong>
+      {formatNightlyDisplayMoney(
+        displayNightlySubtotal
+      )}
+    </strong>
+  </div>
+
+  {pricing?.nightlyRates?.length ? (
+    <div style={styles.nightlyRatesBreakdown}>
+      {pricing.nightlyRates.map((item: any) => (
+        <div
+          key={item.date}
+          style={styles.nightlyRateItem}
+        >
+          <span>
+            {format(
+              fromDateInputValue(item.date)!,
+              "MMM d, yyyy"
+            )}
+          </span>
+
+          <strong>
+            {formatNightlyDisplayMoney(item.rate)}
+          </strong>
+        </div>
+      ))}
+    </div>
+  ) : null}
+                       <div style={styles.priceRow}>
+                         <span>{copy.cleaningFeeLabel}</span>
+                         <strong>{formatMoney(displayCleaningFee)}</strong>
+                       </div>
                       {requiredAmenities.map((amenity) => (
                         <div key={amenity.id} style={styles.priceRow}>
                           <span>{amenity.name}</span>
@@ -2007,10 +2723,10 @@ guestAcceptedSecurePreCheckinRequirementSource:
   );
 })}
 
-                      <div style={styles.totalRow}>
-                        <span>Total</span>
-                        <strong>{formatMoney(displayTotal)}</strong>
-                      </div>
+                     <div style={styles.totalRow}>
+  <span>{copy.totalLabel}</span>
+  <strong>{formatMoney(displayTotal)}</strong>
+</div>
                     </div>
 
      <div style={styles.securePreCheckinAcceptanceCard}>
@@ -2025,39 +2741,29 @@ guestAcceptedSecurePreCheckinRequirementSource:
     />
 
     <div>
-      <div style={styles.securePreCheckinAcceptanceTitle}>
-        I understand that Secure Pre-check-in is required before I receive
-        access.
-      </div>
+     <div style={styles.securePreCheckinAcceptanceTitle}>
+  {copy.securePreCheckinAcceptanceTitle}
+</div>
 
-      <div style={styles.securePreCheckinAcceptanceSpanishTitle}>
-        Entiendo que el Registro Seguro es obligatorio antes de recibir acceso.
-      </div>
-
-      <div style={styles.securePreCheckinAcceptanceText}>
-        The primary guest must complete Identity Check and accept the Guest
-        Agreement. Payment confirms the reservation, but does not complete
-        these requirements or release access credentials.
-      </div>
-
-      <div style={styles.securePreCheckinAcceptanceText}>
-        El huésped principal debe completar la Verificación de Identidad y
-        aceptar el Acuerdo del Huésped. El pago confirma la reservación, pero
-        no completa estos requisitos ni libera las credenciales de acceso.
-      </div>
+<div style={styles.securePreCheckinAcceptanceText}>
+  {copy.securePreCheckinAcceptanceText}
+</div>
     </div>
   </label>
 </div>
 
-                  {cancellationPolicySummary ? (
+            {cancellationPolicySummary ? (
   <div style={styles.cancellationPolicyBox}>
     <div style={styles.cancellationPolicyHeader}>
-      <span style={styles.cancellationPolicyIcon}>↩</span>
+      <span style={styles.cancellationPolicyIcon}>
+        ↩
+      </span>
 
       <div>
         <div style={styles.cancellationPolicyEyebrow}>
-          Cancellation policy
+          {copy.cancellationPolicyLabel}
         </div>
+
         <div style={styles.cancellationPolicyTitle}>
           {cancellationPolicySummary.title}
         </div>
@@ -2073,78 +2779,117 @@ guestAcceptedSecurePreCheckinRequirementSource:
     </p>
 
     <div style={styles.cancellationTimeline}>
-      {cancellationPolicySummary.rules.map((rule, index) => (
-        <div
-          key={`${rule.label}-${rule.minHoursBeforeCheckIn}-${index}`}
-          style={styles.cancellationTimelineItem}
-        >
+      {cancellationPolicySummary.rules.map(
+        (rule, index) => (
           <div
-            style={{
-              ...styles.cancellationTimelineMarker,
-              ...(rule.tone === "success"
-                ? styles.cancellationTimelineMarkerSuccess
-                : rule.tone === "warning"
-                ? styles.cancellationTimelineMarkerWarning
-                : styles.cancellationTimelineMarkerDanger),
-            }}
+            key={`${rule.label}-${rule.minHoursBeforeCheckIn}-${index}`}
+            style={styles.cancellationTimelineItem}
           >
-            {rule.refundPercent >= 100
-              ? "✓"
-              : rule.refundPercent > 0
-              ? "%"
-              : "×"}
-          </div>
+            <div
+              style={{
+                ...styles.cancellationTimelineMarker,
+                ...(rule.tone === "success"
+                  ? styles.cancellationTimelineMarkerSuccess
+                  : rule.tone === "warning"
+                  ? styles.cancellationTimelineMarkerWarning
+                  : styles.cancellationTimelineMarkerDanger),
+              }}
+            >
+              {rule.refundPercent >= 100
+                ? "✓"
+                : rule.refundPercent > 0
+                ? "%"
+                : "×"}
+            </div>
 
-          <div style={styles.cancellationTimelineContent}>
-            <div style={styles.cancellationTimelineTopRow}>
-              <strong>{rule.label}</strong>
-
-              <span
-                style={{
-                  ...styles.cancellationRefundBadge,
-                  ...(rule.tone === "success"
-                    ? styles.cancellationRefundBadgeSuccess
-                    : rule.tone === "warning"
-                    ? styles.cancellationRefundBadgeWarning
-                    : styles.cancellationRefundBadgeDanger),
-                }}
+            <div
+              style={
+                styles.cancellationTimelineContent
+              }
+            >
+              <div
+                style={
+                  styles.cancellationTimelineTopRow
+                }
               >
-                {formatRefundPercent(rule.refundPercent)}
-              </span>
-            </div>
+                <strong>{rule.label}</strong>
 
-            <div style={styles.cancellationTimelineWindow}>
-              {rule.windowLabel}
-            </div>
-
-            {rule.dateLabel ? (
-              <div style={styles.cancellationTimelineDate}>
-                {rule.dateLabel}
+                <span
+                  style={{
+                    ...styles.cancellationRefundBadge,
+                    ...(rule.tone === "success"
+                      ? styles.cancellationRefundBadgeSuccess
+                      : rule.tone === "warning"
+                      ? styles.cancellationRefundBadgeWarning
+                      : styles.cancellationRefundBadgeDanger),
+                  }}
+                >
+                  {formatRefundPercent(
+                    rule.refundPercent
+                  )}
+                </span>
               </div>
-            ) : null}
 
-            {rule.description ? (
-              <div style={styles.cancellationTimelineDescription}>
-                {rule.description}
+              <div
+                style={
+                  styles.cancellationTimelineWindow
+                }
+              >
+                {rule.windowLabel}
               </div>
-            ) : null}
+
+              {rule.dateLabel ? (
+                <div
+                  style={
+                    styles.cancellationTimelineDate
+                  }
+                >
+                  {rule.dateLabel}
+                </div>
+              ) : null}
+
+              {rule.description ? (
+                <div
+                  style={
+                    styles.cancellationTimelineDescription
+                  }
+                >
+                  {rule.description}
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      )}
     </div>
 
-    {cancellationPolicySummary.scenarios.length > 0 ? (
+    {cancellationPolicySummary.scenarios.length >
+    0 ? (
       <div style={styles.cancellationExceptionsBox}>
-        <div style={styles.cancellationExceptionsTitle}>
-          Important non-refundable cases
+        <div
+          style={styles.cancellationExceptionsTitle}
+        >
+          {copy.importantNonRefundableCases}
         </div>
 
-        <div style={styles.cancellationScenarioGrid}>
-          {cancellationPolicySummary.scenarios.map((scenario) => (
-            <span key={scenario} style={styles.cancellationScenarioPill}>
-              {getScenarioLabel(scenario)}
-            </span>
-          ))}
+        <div
+          style={styles.cancellationScenarioGrid}
+        >
+          {cancellationPolicySummary.scenarios.map(
+            (scenario) => (
+              <span
+                key={scenario}
+                style={
+                  styles.cancellationScenarioPill
+                }
+              >
+                {getScenarioLabel(
+                  scenario,
+                  preferredLanguage
+                )}
+              </span>
+            )
+          )}
         </div>
       </div>
     ) : null}
@@ -2153,46 +2898,62 @@ guestAcceptedSecurePreCheckinRequirementSource:
       {cancellationPolicySummary.approvalNote}
     </div>
   </div>
+) : null}     
+            
+                   {cancellationPolicySummary ? (
+  <div
+    style={
+      styles.cancellationTermsAcknowledgmentCard
+    }
+  >
+    <label
+      style={
+        styles.cancellationTermsAcknowledgmentLabel
+      }
+    >
+      <input
+        type="checkbox"
+        checked={cancellationTermsAccepted}
+        onChange={(e) =>
+          setCancellationTermsAccepted(
+            e.target.checked
+          )
+        }
+        style={styles.cancellationTermsCheckbox}
+      />
+
+      <div>
+        <div style={styles.cancellationTermsTitle}>
+          {copy.cancellationTermsAgreement}
+        </div>
+
+        <div style={styles.cancellationTermsText}>
+          {copy.eligibleRefundNotice}
+        </div>
+
+        {cancellationRefundBasisDisclosure ? (
+          <div style={styles.refundBasisDisclosure}>
+            <strong
+              style={
+                styles.refundBasisDisclosureTitle
+              }
+            >
+              {copy.refundCalculation}
+            </strong>
+
+            <span
+              style={
+                styles.refundBasisDisclosureText
+              }
+            >
+              {cancellationRefundBasisDisclosure}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </label>
+  </div>
 ) : null}
-
-                    {cancellationPolicySummary ? (
-                      <div style={styles.cancellationTermsAcknowledgmentCard}>
-                        <label style={styles.cancellationTermsAcknowledgmentLabel}>
-                          <input
-                            type="checkbox"
-                            checked={cancellationTermsAccepted}
-                            onChange={(e) =>
-                              setCancellationTermsAccepted(e.target.checked)
-                            }
-                            style={styles.cancellationTermsCheckbox}
-                          />
-
-                          <div>
-                            <div style={styles.cancellationTermsTitle}>
-                              I have reviewed and agree to the cancellation terms.
-                            </div>
-
-                            <div style={styles.cancellationTermsText}>
-                              I understand that any eligible refund will be
-                              calculated according to the policy shown above.
-                            </div>
-
-                            {cancellationRefundBasisDisclosure ? (
-                              <div style={styles.refundBasisDisclosure}>
-                                <strong style={styles.refundBasisDisclosureTitle}>
-                                  Refund calculation
-                                </strong>
-
-                                <span style={styles.refundBasisDisclosureText}>
-                                  {cancellationRefundBasisDisclosure}
-                                </span>
-                              </div>
-                            ) : null}
-                          </div>
-                        </label>
-                      </div>
-                    ) : null}
-
                     {bookingError ? (
                       <div style={styles.inlineError}>{bookingError}</div>
                     ) : null}
@@ -2208,16 +2969,18 @@ guestAcceptedSecurePreCheckinRequirementSource:
 
                       }}
                     >
-                      {submitting ? "Preparing checkout..." : "Reserve now"}
+                      {submitting
+                        ? copy.preparingCheckout
+                        : copy.reserveNow}
                     </button>
 
                  <div style={styles.paymentMethods}>
   <div style={styles.paymentTrustRow}>
     <span style={styles.paymentTrustIcon}>🔒</span>
     <span>
-      Secure payments powered by{" "}
-      <strong style={styles.stripeText}>Stripe</strong>
-    </span>
+  {copy.securePaymentsPoweredBy}{" "}
+  <strong style={styles.stripeText}>Stripe</strong>
+</span>
   </div>
 <div style={styles.paymentLogosRow}>
   <img src="/payments/visa.svg" alt="Visa" style={styles.paymentLogo} />
@@ -2230,24 +2993,22 @@ guestAcceptedSecurePreCheckinRequirementSource:
 </div>
 </div>
 
-
-                    <p style={styles.disclaimer}>
-                      You will be redirected to Stripe Checkout to complete your
-                      payment.
-                    </p>
-                 <div style={styles.legalLinks}>
-  <span>
-    By completing your reservation, you agree to Pin&amp;Go&apos;s{" "}
-    <Link to="/legal/terms" style={styles.legalLink}>
-      Terms of Service
-    </Link>{" "}
-    and{" "}
-    <Link to="/legal/privacy" style={styles.legalLink}>
-      Privacy Policy
-    </Link>
-    .
-  </span>
-</div>
+                   <p style={styles.disclaimer}>
+                    {copy.redirectToStripe}
+                  </p>
+                <div style={styles.legalLinks}>
+                  <span>
+                    {copy.legalAgreementPrefix}{" "}
+                    <Link to="/legal/terms" style={styles.legalLink}>
+                      {copy.termsOfService}
+                    </Link>{" "}
+                    {copy.legalAnd}{" "}
+                    <Link to="/legal/privacy" style={styles.legalLink}>
+                      {copy.privacyPolicy}
+                    </Link>
+                    .
+                  </span>
+                </div>
                  </form>
                 </div>
               </div>
@@ -2339,10 +3100,41 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: "1px solid #e2e8f0",
   },
   headerInner: {
-    maxWidth: 1180,
-    margin: "0 auto",
-    padding: "14px 20px",
-  },
+  maxWidth: 1180,
+  margin: "0 auto",
+  padding: "14px 20px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+}, 
+languageSelector: {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  padding: 4,
+  border: "1px solid #dbe3ee",
+  borderRadius: 12,
+  background: "#ffffff",
+  flexShrink: 0,
+},
+
+languageButton: {
+  appearance: "none",
+  border: "none",
+  borderRadius: 8,
+  padding: "8px 12px",
+  background: "transparent",
+  color: "#475569",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+},
+
+languageButtonActive: {
+  background: "#0f172a",
+  color: "#ffffff",
+},
   brandWrap: {
     display: "flex",
     alignItems: "center",
