@@ -246,6 +246,27 @@ eligibleRefundNotice:
   "I understand that any eligible refund will be calculated according to the policy shown above.",
 refundCalculation:
   "Refund calculation",
+  propertyHighlights: {
+    eyebrow: "Property Highlights",
+    title: "Designed for a smoother stay",
+    items: [
+      { icon: "access", title: "Smart access", description: "Digital access prepared for your stay." },
+      { icon: "confirmation", title: "Instant confirmation", description: "Booking details delivered after payment." },
+      { icon: "checkout", title: "Secure checkout", description: "Protected payment through Stripe." },
+      { icon: "communication", title: "Direct communication", description: "Stay connected with the host." },
+    ],
+  },
+  pinGoPanel: {
+    eyebrow: "Powered by Pin&Go",
+    title: "Smart hospitality behind every stay",
+    description: "This reservation experience is powered by Pin&Go, connecting secure payments, smart access, guest messaging, and property automation into one seamless stay.",
+    features: [
+      { icon: "access", label: "Smart access" },
+      { icon: "updates", label: "Guest updates" },
+      { icon: "flow", label: "Contactless flow" },
+      { icon: "property", label: "Smart property" },
+    ],
+  },
 },
   es: {
   directBooking: "Reservación directa",
@@ -354,6 +375,27 @@ eligibleRefundNotice:
   "Entiendo que cualquier reembolso elegible se calculará de acuerdo con la política mostrada anteriormente.",
 refundCalculation:
   "Cálculo del reembolso",
+  propertyHighlights: {
+    eyebrow: "Aspectos destacados de la propiedad",
+    title: "Diseñada para una estadía más sencilla",
+    items: [
+      { icon: "access", title: "Acceso inteligente", description: "Acceso digital preparado para su estadía." },
+      { icon: "confirmation", title: "Confirmación inmediata", description: "Detalles de la reservación enviados después del pago." },
+      { icon: "checkout", title: "Pago seguro", description: "Pago protegido a través de Stripe." },
+      { icon: "communication", title: "Comunicación directa", description: "Manténgase en contacto con el anfitrión." },
+    ],
+  },
+  pinGoPanel: {
+    eyebrow: "Impulsado por Pin&Go",
+    title: "Hospitalidad inteligente detrás de cada estadía",
+    description: "Esta experiencia de reservación es impulsada por Pin&Go, conectando pagos seguros, acceso inteligente, comunicación con el huésped y automatización de la propiedad en una sola estadía fluida.",
+    features: [
+      { icon: "access", label: "Acceso inteligente" },
+      { icon: "updates", label: "Actualizaciones al huésped" },
+      { icon: "flow", label: "Proceso sin contacto" },
+      { icon: "property", label: "Propiedad inteligente" },
+    ],
+  },
 },
 
 } as const;
@@ -2270,35 +2312,23 @@ return (
 </div>
 
   <div style={styles.trustSection}>
-    <div style={styles.sectionEyebrow}>Property Highlights</div>
+    <div style={styles.sectionEyebrow}>
+      {copy.propertyHighlights.eyebrow}
+    </div>
 
-  <h3 style={styles.trustTitle}>Designed for a smoother stay</h3>
+    <h3 style={styles.trustTitle}>
+      {copy.propertyHighlights.title}
+    </h3>
 
- <div style={styles.trustGrid}>
-  <div style={styles.trustCard}>
-    <PublicFeatureIcon type="access" />
-    <strong>Smart access</strong>
-    <span>Digital access prepared for your stay.</span>
-  </div>
-
-  <div style={styles.trustCard}>
-    <PublicFeatureIcon type="confirmation" />
-    <strong>Instant confirmation</strong>
-    <span>Booking details delivered after payment.</span>
-  </div>
-
-  <div style={styles.trustCard}>
-    <PublicFeatureIcon type="checkout" />
-    <strong>Secure checkout</strong>
-    <span>Protected payment through Stripe.</span>
-  </div>
-
-  <div style={styles.trustCard}>
-    <PublicFeatureIcon type="communication" />
-    <strong>Direct communication</strong>
-    <span>Stay connected with the host.</span>
-  </div>
-</div>
+    <div style={styles.trustGrid}>
+      {copy.propertyHighlights.items.map((item) => (
+        <div key={item.icon} style={styles.trustCard}>
+          <PublicFeatureIcon type={item.icon} />
+          <strong>{item.title}</strong>
+          <span>{item.description}</span>
+        </div>
+      ))}
+    </div>
  {includedAmenities.length > 0 ? (
     <div style={styles.includedAmenitiesBox}>
       <div style={styles.includedAmenitiesTitle}>
@@ -2321,39 +2351,27 @@ return (
                     
                     <div style={styles.pinGoPanel}>
                       <div>
-                        <div style={styles.sectionEyebrow}>Powered by Pin&Go</div>
+                        <div style={styles.sectionEyebrow}>
+                          {copy.pinGoPanel.eyebrow}
+                        </div>
+
                         <h3 style={styles.pinGoTitle}>
-                          Smart hospitality behind every stay
+                          {copy.pinGoPanel.title}
                         </h3>
+
                         <p style={styles.pinGoText}>
-                          This reservation experience is powered by Pin&Go,
-                          connecting secure payments, smart access, guest
-                          messaging, and property automation into one seamless
-                          stay.
+                          {copy.pinGoPanel.description}
                         </p>
                       </div>
-                       <div style={styles.pinGoFeatureGrid}>
-  <div style={styles.pinGoFeature}>
-    <PinGoPanelIcon type="access" />
-    <span>Smart access</span>
-  </div>
 
-  <div style={styles.pinGoFeature}>
-    <PinGoPanelIcon type="updates" />
-    <span>Guest updates</span>
-  </div>
-
-  <div style={styles.pinGoFeature}>
-    <PinGoPanelIcon type="flow" />
-    <span>Contactless flow</span>
-  </div>
-
-  <div style={styles.pinGoFeature}>
-    <PinGoPanelIcon type="property" />
-    <span>Smart property</span>
-  </div>
-</div>
-                     
+                      <div style={styles.pinGoFeatureGrid}>
+                        {copy.pinGoPanel.features.map((feature) => (
+                          <div key={feature.icon} style={styles.pinGoFeature}>
+                            <PinGoPanelIcon type={feature.icon} />
+                            <span>{feature.label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
