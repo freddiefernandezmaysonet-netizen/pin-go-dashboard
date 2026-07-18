@@ -923,6 +923,16 @@ function SmartStayIcon() {
   );
 }
 
+const SECURE_PRE_CHECKIN_DISCLOSURE_VERSION = "SECURE_PRECHECKIN_DISCLOSURE_V1";
+
+const SECURE_PRE_CHECKIN_DISCLOSURE_TEXT =
+  "Secure Pre-check-in is required before access credentials are released. " +
+  "The primary guest must complete Identity Check and accept the Guest Agreement. " +
+  "The reservation may be confirmed after payment, but access remains pending until all required steps are completed. " +
+  "El Registro Seguro es obligatorio antes de que se liberen las credenciales de acceso. " +
+  "El huésped principal debe completar la Verificación de Identidad y aceptar el Acuerdo del Huésped. " +
+  "La reservación puede quedar confirmada después del pago, pero el acceso permanece pendiente hasta completar todos los requisitos.";
+
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
 
@@ -937,6 +947,10 @@ export default function PublicPropertyDetailPage() {
   const [guestPhone, setGuestPhone] = useState("");
   const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);  
   const [cancellationTermsAccepted, setCancellationTermsAccepted] = useState(false);
+  const [
+  securePreCheckinRequirementAccepted,
+  setSecurePreCheckinRequirementAccepted,
+] = useState(false);
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
   const [pricing, setPricing] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -977,8 +991,8 @@ const reserveButtonDisabled =
   submitting ||
   !checkIn ||
   !checkOut ||
+  !securePreCheckinRequirementAccepted ||
   (requiresCancellationTermsAcceptance && !cancellationTermsAccepted);
-
   const blockedDateObjects = useMemo(
     () =>
       blockedDates
@@ -1236,6 +1250,10 @@ useEffect(() => {
   property?.cancellationPolicy?.refundBasis,
 ]); 
  
+useEffect(() => {
+  setSecurePreCheckinRequirementAccepted(false);
+}, [checkIn, checkOut, property?.id]);
+
   async function handleReserve(e: React.FormEvent) {
     e.preventDefault();
 
@@ -1254,6 +1272,12 @@ useEffect(() => {
       if (nights <= 0) {
         throw new Error("Check-out must be after check-in.");
       }
+
+      if (!securePreCheckinRequirementAccepted) {
+  throw new Error(
+    "Please confirm that you understand the Secure Pre-check-in requirement before continuing."
+  );
+}
 
       if (
         requiresCancellationTermsAcceptance &&
@@ -1289,6 +1313,22 @@ useEffect(() => {
   guestEmail: guestEmail.trim(),
   guestPhone: guestPhone.trim(),
   stayNotificationsConsent,
+  guestAcceptedSecurePreCheckinRequirement:
+  securePreCheckinRequirementAccepted,
+
+guestAcceptedSecurePreCheckinRequirementAt:
+  securePreCheckinRequirementAccepted
+    ? new Date().toISOString()
+    : null,
+
+guestAcceptedSecurePreCheckinRequirementText:
+  SECURE_PRE_CHECKIN_DISCLOSURE_TEXT,
+
+guestAcceptedSecurePreCheckinRequirementVersion:
+  SECURE_PRE_CHECKIN_DISCLOSURE_VERSION,
+
+guestAcceptedSecurePreCheckinRequirementSource:
+  "DIRECT_BOOKING_CHECKOUT",
   guestAcceptedCancellationTerms: cancellationTermsAccepted,
   guestAcceptedCancellationTermsAt: cancellationTermsAccepted
     ? new Date().toISOString()
@@ -1972,6 +2012,42 @@ useEffect(() => {
                         <strong>{formatMoney(displayTotal)}</strong>
                       </div>
                     </div>
+
+     <div style={styles.securePreCheckinAcceptanceCard}>
+  <label style={styles.securePreCheckinAcceptanceLabel}>
+    <input
+      type="checkbox"
+      checked={securePreCheckinRequirementAccepted}
+      onChange={(e) =>
+        setSecurePreCheckinRequirementAccepted(e.target.checked)
+      }
+      style={styles.securePreCheckinAcceptanceCheckbox}
+    />
+
+    <div>
+      <div style={styles.securePreCheckinAcceptanceTitle}>
+        I understand that Secure Pre-check-in is required before I receive
+        access.
+      </div>
+
+      <div style={styles.securePreCheckinAcceptanceSpanishTitle}>
+        Entiendo que el Registro Seguro es obligatorio antes de recibir acceso.
+      </div>
+
+      <div style={styles.securePreCheckinAcceptanceText}>
+        The primary guest must complete Identity Check and accept the Guest
+        Agreement. Payment confirms the reservation, but does not complete
+        these requirements or release access credentials.
+      </div>
+
+      <div style={styles.securePreCheckinAcceptanceText}>
+        El huésped principal debe completar la Verificación de Identidad y
+        aceptar el Acuerdo del Huésped. El pago confirma la reservación, pero
+        no completa estos requisitos ni libera las credenciales de acceso.
+      </div>
+    </div>
+  </label>
+</div>
 
                   {cancellationPolicySummary ? (
   <div style={styles.cancellationPolicyBox}>
@@ -3160,6 +3236,52 @@ showAllPhotosButton: {
   fontSize: 14,
   cursor: "pointer",
   boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
+},
+
+securePreCheckinAcceptanceCard: {
+  marginTop: 18,
+  padding: 18,
+  borderRadius: 18,
+  border: "1px solid #93c5fd",
+  background: "#eff6ff",
+},
+
+securePreCheckinAcceptanceLabel: {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  cursor: "pointer",
+},
+
+securePreCheckinAcceptanceCheckbox: {
+  width: 18,
+  height: 18,
+  marginTop: 3,
+  flexShrink: 0,
+  accentColor: "#1d4ed8",
+},
+
+securePreCheckinAcceptanceTitle: {
+  color: "#0f172a",
+  fontSize: 14,
+  lineHeight: 1.45,
+  fontWeight: 900,
+},
+
+securePreCheckinAcceptanceSpanishTitle: {
+  marginTop: 4,
+  color: "#1e3a8a",
+  fontSize: 13,
+  lineHeight: 1.45,
+  fontWeight: 850,
+},
+
+securePreCheckinAcceptanceText: {
+  marginTop: 8,
+  color: "#475569",
+  fontSize: 12,
+  lineHeight: 1.55,
+  fontWeight: 650,
 },
 
 cancellationTermsAcknowledgmentCard: {

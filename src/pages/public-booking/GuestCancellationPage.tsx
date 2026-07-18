@@ -30,6 +30,16 @@ type CancellationPreviewResponse = {
     currency?: string | null;
     cancelledAt?: string | null;
   };
+
+  securePreCheckin?: {
+    url?: string | null;
+    verificationStatus?: string | null;
+    identityVerificationStatus?: string | null;
+    guestAgreementSignedAt?: string | null;
+    accessReleaseStatus?: string | null;
+    completed?: boolean;
+  };
+
   policy?: {
     name: string;
     type: string;
@@ -651,6 +661,42 @@ export default function GuestCancellationPage() {
                     ) : null}
                   </div>
 
+                  {preview.securePreCheckin ? (
+  <div style={styles.securePreCheckinCard}>
+    <div style={styles.sectionEyebrow}>
+      Secure Pre-check-in
+    </div>
+
+    <h2 style={styles.cardTitle}>
+      {preview.securePreCheckin.completed
+        ? "Secure Pre-check-in completed"
+        : "Secure Pre-check-in required"}
+    </h2>
+
+    <p style={styles.securePreCheckinText}>
+      {preview.securePreCheckin.completed
+        ? "Your required pre-arrival steps are complete."
+        : "Complete the required pre-arrival process before access credentials can be released."}
+    </p>
+
+    <p style={styles.securePreCheckinText}>
+      {preview.securePreCheckin.completed
+        ? "Sus pasos requeridos antes de la llegada están completados."
+        : "Complete el proceso requerido antes de la llegada para que se puedan liberar las credenciales de acceso."}
+    </p>
+
+    {!preview.securePreCheckin.completed &&
+    preview.securePreCheckin.url ? (
+      <a
+        href={preview.securePreCheckin.url}
+        style={styles.securePreCheckinButton}
+      >
+        Continue Secure Pre-check-in / Continuar registro seguro
+      </a>
+    ) : null}
+  </div>
+) : null}
+
                   <div style={styles.card}>
                     <div style={styles.sectionEyebrow}>Cancellation policy</div>
                     <h2 style={styles.cardTitle}>{preview.policy.name}</h2>
@@ -1024,6 +1070,32 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 22,
   },
+  securePreCheckinCard: {
+  background: "#eff6ff",
+  border: "1px solid #93c5fd",
+  borderRadius: 20,
+  padding: 22,
+},
+
+securePreCheckinText: {
+  margin: "12px 0 0",
+  color: "#334155",
+  fontSize: 13,
+  lineHeight: 1.6,
+},
+
+securePreCheckinButton: {
+  display: "inline-block",
+  marginTop: 18,
+  background: "#1d4ed8",
+  color: "#ffffff",
+  textDecoration: "none",
+  padding: "13px 17px",
+  borderRadius: 12,
+  fontWeight: 850,
+  fontSize: 13,
+},
+
   card: {
     background: "#ffffff",
     border: "1px solid #e2e8f0",
