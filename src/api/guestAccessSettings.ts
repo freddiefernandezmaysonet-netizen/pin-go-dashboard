@@ -34,6 +34,7 @@ export type GuestAccessSettings = {
 export type SaveGuestAccessSettingsInput = {
   guestAccessMode: GuestAccessMode;
   cleaningNfcEnabled: boolean;
+  requiresIdentityVerification: boolean;
   title: string;
   agreementText: string;
   guestFacingSummary: string;
