@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { addDays, format } from "date-fns";
+import { enUS, es } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
 import "./PublicBookingExperience.css";
@@ -475,7 +476,11 @@ function formatRefundPercent(value: number) {
   return `${Math.max(0, Math.min(100, n))}%`;
 }
 
-function getCancellationDeadlineDate(checkIn: string, hours: number) {
+function getCancellationDeadlineDate(
+  checkIn: string,
+  hours: number,
+  language: GuestLanguage
+) {
   if (!checkIn || !Number.isFinite(hours) || hours <= 0) {
     return null;
   }
@@ -488,7 +493,9 @@ function getCancellationDeadlineDate(checkIn: string, hours: number) {
 
   date.setHours(date.getHours() - hours);
 
-  return format(date, "MMM d, yyyy");
+  return format(date, "MMM d, yyyy", {
+    locale: language === "es" ? es : enUS,
+  });
 }
 
 function getScenarioLabel(
@@ -721,7 +728,8 @@ function getRuleDateLabel({
   if (rule.minHoursBeforeCheckIn > 0) {
     const dateLabel = getCancellationDeadlineDate(
       checkIn,
-      rule.minHoursBeforeCheckIn
+      rule.minHoursBeforeCheckIn,
+      language
     );
 
     if (!dateLabel) {
@@ -736,7 +744,8 @@ function getRuleDateLabel({
   if (previousRule) {
     const dateLabel = getCancellationDeadlineDate(
       checkIn,
-      previousRule.minHoursBeforeCheckIn
+      previousRule.minHoursBeforeCheckIn,
+      language
     );
 
     if (!dateLabel) {
@@ -2695,7 +2704,9 @@ return (
 
   <div style={styles.calendarValue}>
     {checkIn
-      ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy")
+      ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy", {
+          locale: preferredLanguage === "es" ? es : enUS,
+        })
       : copy.addDate}
   </div>
 </div>
@@ -2706,7 +2717,9 @@ return (
 
   <div style={styles.calendarValue}>
     {checkOut
-      ? format(fromDateInputValue(checkOut)!, "MMM d, yyyy")
+      ? format(fromDateInputValue(checkOut)!, "MMM d, yyyy", {
+          locale: preferredLanguage === "es" ? es : enUS,
+        })
       : copy.addDate}
   </div>
 </div>
@@ -2716,6 +2729,7 @@ return (
     <DayPicker     
       mode="range"
       numberOfMonths={2}
+      locale={preferredLanguage === "es" ? es : enUS}
       selected={{
         from: fromDateInputValue(checkIn),
         to: fromDateInputValue(checkOut),
@@ -3054,7 +3068,8 @@ return (
           <span>
             {format(
               fromDateInputValue(item.date)!,
-              "MMM d, yyyy"
+              "MMM d, yyyy",
+              { locale: preferredLanguage === "es" ? es : enUS }
             )}
           </span>
 
