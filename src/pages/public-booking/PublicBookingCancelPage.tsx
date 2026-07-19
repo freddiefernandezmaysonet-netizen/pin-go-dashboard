@@ -1,80 +1,95 @@
-import React from "react";
 import { Link } from "react-router-dom";
+import "./PublicBookingExperience.css";
 
 export default function PublicBookingCancelPage() {
-  return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.icon}>⚠️</div>
+  const organizationSlug =
+    new URLSearchParams(window.location.search).get("organization") || "";
+  const isSpanish = (() => {
+    try {
+      return window.localStorage.getItem("pingo_guest_preferred_language") === "es";
+    } catch {
+      return false;
+    }
+  })();
 
-        <h1 style={styles.title}>
-          Reservation Not Completed
+  return (
+    <main className="pbe-cancel-page">
+      <section className="pbe-cancel-card" aria-labelledby="booking-cancel-title">
+        <div className="pbe-cancel-mark" aria-hidden="true">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          >
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </div>
+
+        <div className="pbe-cancel-eyebrow">
+          {isSpanish ? "PAGO NO COMPLETADO" : "PAYMENT NOT COMPLETED"}
+        </div>
+
+        <h1 id="booking-cancel-title">
+          {isSpanish ? "Tu estadía todavía puede estar disponible." : "Your stay may still be available."}
         </h1>
 
-        <p style={styles.text}>
-          Your payment was cancelled before completion.
+        <p className="pbe-cancel-intro">
+          {isSpanish
+            ? "Saliste del pago seguro antes de finalizar. No se confirmó ninguna reservación y no se realizó ningún cargo."
+            : "You left secure checkout before finishing. No reservation was confirmed and no charge was made."}
         </p>
 
-        <p style={styles.text}>
-          No charges were made.
-        </p>
+        <div className="pbe-cancel-assurance">
+          <div>
+            <span aria-hidden="true">✓</span>
+            <p>
+              <strong>{isSpanish ? "Sin cargos" : "No charges"}</strong>
+              <small>
+                {isSpanish
+                  ? "Stripe no completó el pago."
+                  : "Stripe did not complete the payment."}
+              </small>
+            </p>
+          </div>
+          <div>
+            <span aria-hidden="true">↻</span>
+            <p>
+              <strong>{isSpanish ? "Puedes intentarlo nuevamente" : "You can try again"}</strong>
+              <small>
+                {isSpanish
+                  ? "Confirmaremos la disponibilidad y el precio actualizados."
+                  : "We will recheck current availability and pricing."}
+              </small>
+            </p>
+          </div>
+          <div>
+            <span aria-hidden="true">⌁</span>
+            <p>
+              <strong>{isSpanish ? "Pago protegido" : "Protected payment"}</strong>
+              <small>
+                {isSpanish
+                  ? "El pago seguro continuará procesado por Stripe."
+                  : "Secure payment will continue to be processed by Stripe."}
+              </small>
+            </p>
+          </div>
+        </div>
 
-        <p style={styles.text}>
-          The property may still be available if you wish to complete your booking.
-        </p>
+        <Link className="pbe-cancel-action" to={`/book/${organizationSlug}`}>
+          {isSpanish ? "Volver y completar mi reservación" : "Return and complete my booking"}
+          <span aria-hidden="true">→</span>
+        </Link>
 
-        <Link
-  to={`/book/${new URLSearchParams(window.location.search).get("organization") || ""}`}
-  style={styles.button}
->
-      Return to booking page
-    </Link>    
-      </div>
-    </div>
+        <p className="pbe-cancel-note">
+          {isSpanish
+            ? "La disponibilidad no queda retenida hasta confirmar el pago."
+            : "Availability is not held until payment is confirmed."}
+        </p>
+      </section>
+    </main>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    padding: 24,
-    background: "#f8fafc",
-    fontFamily:
-      'Inter, ui-sans-serif, system-ui, sans-serif',
-  },
-  card: {
-    background: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: 20,
-    padding: 40,
-    maxWidth: 700,
-    width: "100%",
-    textAlign: "center",
-  },
-  icon: {
-    fontSize: 64,
-  },
-  title: {
-    marginTop: 20,
-    marginBottom: 16,
-    fontSize: 36,
-    fontWeight: 800,
-  },
-  text: {
-    color: "#475569",
-    lineHeight: 1.8,
-    fontSize: 16,
-  },
-  button: {
-    display: "inline-block",
-    marginTop: 24,
-    background: "#0f172a",
-    color: "#fff",
-    textDecoration: "none",
-    padding: "14px 22px",
-    borderRadius: 12,
-    fontWeight: 700,
-  },
-};
