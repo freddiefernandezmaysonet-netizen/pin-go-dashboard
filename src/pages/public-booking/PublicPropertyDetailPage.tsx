@@ -2366,6 +2366,42 @@ return (
                   </section>
                 ) : null}
 
+                {cancellationPolicySummary ? (
+                  <section className="pbe-section pbe-policies" id="booking-policies" aria-labelledby="pbe-policies-title">
+                    <div className="pbe-section-heading">
+                      <p className="pbe-kicker">{preferredLanguage === "es" ? "ANTES DE RESERVAR" : "BEFORE YOU BOOK"}</p>
+                      <h2 id="pbe-policies-title">
+                        {preferredLanguage === "es" ? "Claridad antes de decidir." : "Clarity before you decide."}
+                      </h2>
+                      <p className="pbe-lead">{cancellationPolicySummary.summaryText}</p>
+                    </div>
+                    <div className="pbe-policy-list">
+                      <details>
+                        <summary>
+                          <strong>{cancellationPolicySummary.title}</strong>
+                          <span>{preferredLanguage === "es" ? "Leer política completa" : "Read full policy"} ＋</span>
+                        </summary>
+                        <p>{cancellationPolicySummary.headline}</p>
+                        {cancellationPolicySummary.rules.map((rule, index) => (
+                          <p key={`${rule.label}-${index}`}>
+                            <strong>{rule.label} · {formatRefundPercent(rule.refundPercent)}</strong><br />
+                            {rule.windowLabel}{rule.description ? ` — ${rule.description}` : ""}
+                          </p>
+                        ))}
+                        <p>{cancellationPolicySummary.approvalNote}</p>
+                      </details>
+                      <details id="identity-check-policy">
+                        <summary>
+                          <strong>{copy.identityCheckStep}</strong>
+                          <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
+                        </summary>
+                        <p>{copy.securePreCheckinIntro}</p>
+                        <p>{copy.securePreCheckinAcceptanceText}</p>
+                      </details>
+                    </div>
+                  </section>
+                ) : null}
+
                 <section className="pbe-section pbe-booking-section" aria-labelledby="pbe-booking-title">
                   <div className="pbe-booking-intro">
                     <p className="pbe-kicker">{preferredLanguage === "es" ? "TU ESTADÍA" : "YOUR STAY"}</p>
@@ -2592,7 +2628,7 @@ return (
                     </div>
                   </div>
 
-                  <form className="pbe-legacy-booking" onSubmit={handleReserve} style={styles.bookingCard}>
+                  <form className="pbe-legacy-booking pbe-reservation-flow" onSubmit={handleReserve} style={styles.bookingCard}>
                     <div style={styles.bookingHeader}>
                       <div>
                         <div style={styles.bookingPrice}>
@@ -2616,9 +2652,9 @@ return (
                       </div>
                     </div>
 
-                  <div className="pbe-legacy-calendar" style={styles.calendarBox}>
-  <div style={styles.calendarHeader}>
-    <div style={styles.calendarDatePanel}>
+                  <div className="pbe-legacy-calendar pbe-calendar-stage" style={styles.calendarBox}>
+  <div className="pbe-date-summary" style={styles.calendarHeader}>
+    <div className="pbe-date-summary-card" style={styles.calendarDatePanel}>
   <div style={styles.calendarLabel}>
     {copy.checkInDate}
   </div>
@@ -2629,7 +2665,7 @@ return (
       : copy.addDate}
   </div>
 </div>
-   <div style={styles.calendarDatePanel}>
+   <div className="pbe-date-summary-card" style={styles.calendarDatePanel}>
   <div style={styles.calendarLabel}>
     {copy.checkOutDate}
   </div>
@@ -2662,7 +2698,7 @@ return (
      />
   </div>
 </div>
-                        <div className="pbe-legacy-guests" style={styles.guestSelector}>
+                        <div className="pbe-legacy-guests pbe-guest-stage" style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
   <div style={styles.guestLabel}>
@@ -2776,7 +2812,7 @@ return (
                         </p>
                       </>
                     ) : (
-                      <div className="pbe-checkout-stage">
+                      <div className="pbe-checkout-stage pbe-client-stage">
                         <div className="pbe-checkout-stage-heading">
                           <div>
                             <span>
@@ -2801,7 +2837,8 @@ return (
                           </button>
                         </div>
 
-                    <label style={styles.field}>
+                    <div className="pbe-client-fields">
+                    <label className="pbe-client-field" style={styles.field}>
                       <span>{copy.fullName}</span>
 
                       <input
@@ -2811,7 +2848,7 @@ return (
                         style={styles.input}
                       />
                     </label>
-                    <label style={styles.field}>
+                    <label className="pbe-client-field" style={styles.field}>
                       <span>{copy.email}</span>
 
                       <input
@@ -2822,7 +2859,7 @@ return (
                         style={styles.input}
                       />
                     </label>
-                     <label style={styles.field}>
+                     <label className="pbe-client-field" style={styles.field}>
                        <span>{copy.phone}</span>
 
                        <input
@@ -2832,7 +2869,8 @@ return (
                          style={styles.input}
                        />
                      </label>
-                <div style={styles.stayNotificationsCard}>
+                    </div>
+                <div className="pbe-notification-option" style={styles.stayNotificationsCard}>
   <label style={styles.stayNotificationsLabel}>
     <input
       type="checkbox"
@@ -2861,7 +2899,7 @@ return (
   </label>
 </div>
                     {optionalAmenities.length > 0 ? (
-                      <div style={styles.addOnsBox}>
+                      <div className="pbe-addons" style={styles.addOnsBox}>
                         <div style={styles.addOnsTitle}>
                           {copy.optionalAddOns}
                         </div>
@@ -2915,7 +2953,7 @@ return (
 </div>
 ) : null}
 
-<div className="pbe-legacy-price" style={styles.priceBox}>
+<div className="pbe-legacy-price pbe-price-summary" style={styles.priceBox}>
   <div style={styles.priceBoxTitle}>
     {copy.priceDetails}
   </div>
@@ -3008,7 +3046,7 @@ return (
 </div>
                     </div>
 
-     <div style={styles.securePreCheckinAcceptanceCard}>
+     <div className="pbe-agreement-card pbe-agreement-card--identity" style={styles.securePreCheckinAcceptanceCard}>
   <label style={styles.securePreCheckinAcceptanceLabel}>
     <input
       type="checkbox"
@@ -3026,6 +3064,9 @@ return (
 
 <div style={styles.securePreCheckinAcceptanceText}>
   {copy.securePreCheckinAcceptanceText}
+  <a className="pbe-inline-document" href="#identity-check-policy">
+    {preferredLanguage === "es" ? "Leer requisitos completos" : "Read full requirements"}
+  </a>
 </div>
     </div>
   </label>
@@ -3181,6 +3222,7 @@ return (
             
                    {cancellationPolicySummary ? (
   <div
+    className="pbe-agreement-card"
     style={
       styles.cancellationTermsAcknowledgmentCard
     }
@@ -3208,6 +3250,9 @@ return (
 
         <div style={styles.cancellationTermsText}>
           {copy.eligibleRefundNotice}
+          <a className="pbe-inline-document" href="#booking-policies">
+            {preferredLanguage === "es" ? "Leer política completa" : "Read full policy"}
+          </a>
         </div>
 
         {cancellationRefundBasisDisclosure ? (
@@ -3254,7 +3299,7 @@ return (
                         : copy.reserveNow}
                     </button>
 
-                 <div style={styles.paymentMethods}>
+                 <div className="pbe-secure-payment" style={styles.paymentMethods}>
   <div style={styles.paymentTrustRow}>
     <span style={styles.paymentTrustIcon}>🔒</span>
     <span>

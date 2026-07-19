@@ -142,6 +142,82 @@
   justify-content: center;
 }
 .pbe-booking-layout .pbe-legacy-booking { width: 100%; }
+.pbe-reservation-flow {
+  padding: 42px !important;
+  border: 1px solid var(--pbe-line) !important;
+  border-radius: 24px !important;
+  background: var(--pbe-paper) !important;
+  box-shadow: 0 28px 80px rgba(17,48,35,.1) !important;
+}
+.pbe-calendar-stage {
+  margin-top: 30px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--pbe-line) !important;
+  background: white !important;
+}
+.pbe-date-summary {
+  gap: 0 !important;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--pbe-line);
+  background: #edf2ed;
+}
+.pbe-date-summary-card {
+  min-height: 102px;
+  padding: 24px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+.pbe-date-summary-card + .pbe-date-summary-card { border-left: 1px solid var(--pbe-line) !important; }
+.pbe-calendar-stage > div:last-child { padding: 25px 18px 18px; }
+.pbe-calendar-stage .rdp-root { --rdp-accent-color: var(--pbe-forest); --rdp-accent-background-color: #dce7df; }
+.pbe-calendar-stage .rdp-day_button { border-radius: 50%; }
+.pbe-guest-stage {
+  margin-top: 17px !important;
+  padding: 4px 24px !important;
+  border: 1px solid var(--pbe-line) !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+}
+.pbe-guest-stage > div { min-height: 82px; }
+.pbe-client-stage { margin-top: 36px; }
+.pbe-client-stage > .pbe-checkout-stage-heading { margin-bottom: 30px; padding-bottom: 25px; border-bottom: 1px solid var(--pbe-line); }
+.pbe-client-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.pbe-client-field { margin: 0 !important; }
+.pbe-client-field:first-child { grid-column: 1 / -1; }
+.pbe-client-field input {
+  min-height: 57px !important;
+  border: 1px solid rgba(23,61,49,.2) !important;
+  border-radius: 10px !important;
+  background: white !important;
+  color: var(--pbe-ink) !important;
+}
+.pbe-notification-option, .pbe-addons, .pbe-price-summary {
+  margin-top: 20px !important;
+  border: 1px solid var(--pbe-line) !important;
+  border-radius: 14px !important;
+  background: #f3f5f1 !important;
+}
+.pbe-price-summary { padding: 25px !important; background: #edf2ed !important; }
+.pbe-agreement-card {
+  margin-top: 14px !important;
+  padding: 20px !important;
+  border: 1px solid var(--pbe-line) !important;
+  border-radius: 14px !important;
+  background: white !important;
+}
+.pbe-agreement-card--identity { border-color: rgba(23,61,49,.25) !important; background: #edf2ed !important; }
+.pbe-agreement-card input[type="checkbox"] { accent-color: var(--pbe-forest); }
+.pbe-inline-document { display: block; width: fit-content; margin-top: 8px; color: var(--pbe-forest) !important; font-weight: 750; text-decoration: underline !important; text-underline-offset: 3px; }
+.pbe-secure-payment {
+  margin-top: 18px !important;
+  padding: 20px !important;
+  border: 1px solid var(--pbe-line) !important;
+  border-radius: 14px !important;
+  background: #f7f8f5 !important;
+}
+.pbe-reservation-flow .pbe-primary { min-height: 64px !important; margin-top: 22px !important; border-radius: 10px !important; }
 
 .pbe-policies { background: var(--pbe-ivory); }
 .pbe-policy-list { margin-top: 54px; border-top: 1px solid var(--pbe-line); }
@@ -213,6 +289,12 @@
   .pbe-amenity-grid { grid-template-columns: 1fr 1fr; margin-top: 42px; }
   .pbe-amenity-card { min-height: 215px; padding: 21px; }
   .pbe-map { min-height: 410px; }
+  .pbe-booking-intro { margin-bottom: 36px; text-align: left; }
+  .pbe-reservation-flow { padding: 23px 18px !important; border-radius: 16px !important; }
+  .pbe-client-fields { grid-template-columns: 1fr; }
+  .pbe-client-field:first-child { grid-column: auto; }
+  .pbe-date-summary-card { min-height: 88px; padding: 18px 14px !important; }
+  .pbe-calendar-stage > div:last-child { overflow-x: auto; padding: 18px 8px 12px; }
   .pbe-checkout-shell { width: 100%; padding: 0 20px 45px; }
   .pbe-checkout-header { position: relative; min-height: 68px; grid-template-columns: 1fr auto; }
   .pbe-checkout-header .pbe-brand { justify-self: start; margin-left: 52px; }
