@@ -1,17 +1,28 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "./PublicBookingExperience.css";
 
 export default function PublicBookingSuccessPage() {
   const organizationSlug =
     new URLSearchParams(window.location.search).get("organization") || "";
+  const language = (() => {
+    try {
+      return window.localStorage.getItem("pingo_guest_preferred_language") === "es"
+        ? "es"
+        : "en";
+    } catch {
+      return "en";
+    }
+  })();
+  const isSpanish = language === "es";
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.confirmationIcon} aria-hidden="true">
+    <main className="pbe-success-page">
+      <section className="pbe-success-card" aria-labelledby="booking-success-title">
+        <div className="pbe-success-mark" aria-hidden="true">
           <svg
-            width="34"
-            height="34"
+            width="31"
+            height="31"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -23,34 +34,26 @@ export default function PublicBookingSuccessPage() {
           </svg>
         </div>
 
-        <div style={styles.eyebrow}>
-          Payment received / Pago recibido
+        <div className="pbe-success-eyebrow">
+          {isSpanish ? "PAGO RECIBIDO" : "PAYMENT RECEIVED"}
         </div>
 
-        <h1 style={styles.title}>
-          Reservation Confirmed
+        <h1 id="booking-success-title">
+          {isSpanish ? "Tu estadía está confirmada." : "Your stay is confirmed."}
         </h1>
 
-        <div style={styles.spanishTitle}>
-          Reservación confirmada
-        </div>
-
-        <p style={styles.introText}>
-          Your payment was received successfully and Pin&amp;Go is now
-          preparing your stay.
+        <p className="pbe-success-intro">
+          {isSpanish
+            ? "Todo está en orden. Pin&Go está preparando una llegada segura y sin llaves."
+            : "Everything is in order. Pin&Go is preparing your secure, keyless arrival."}
         </p>
 
-        <p style={styles.introText}>
-          Su pago fue recibido correctamente y Pin&amp;Go está preparando su
-          estadía.
-        </p>
-
-        <div style={styles.accessStatusCard}>
-          <div style={styles.accessStatusHeader}>
-            <div style={styles.lockIcon} aria-hidden="true">
+        <div className="pbe-success-journey">
+          <div className="pbe-success-journey-heading">
+            <div className="pbe-success-lock" aria-hidden="true">
               <svg
-                width="22"
-                height="22"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -64,104 +67,74 @@ export default function PublicBookingSuccessPage() {
             </div>
 
             <div>
-              <div style={styles.accessStatusEyebrow}>
-                Access status / Estado del acceso
-              </div>
-
-              <h2 style={styles.accessStatusTitle}>
-                Secure Pre-check-in Required
+              <span>{isSpanish ? "PRÓXIMOS PASOS" : "WHAT HAPPENS NEXT"}</span>
+              <h2>
+                {isSpanish ? "Pre-check-in seguro" : "Secure pre-check-in"}
               </h2>
+            </div>
+          </div>
 
-              <div style={styles.accessStatusSpanishTitle}>
-                Registro seguro requerido
+          <div className="pbe-success-steps">
+            <div className="pbe-success-step is-complete">
+              <span>✓</span>
+              <div>
+                <strong>{isSpanish ? "Reservación confirmada" : "Reservation confirmed"}</strong>
+                <small>{isSpanish ? "El pago fue recibido correctamente." : "Your payment was received successfully."}</small>
+              </div>
+            </div>
+            <div className="pbe-success-step">
+              <span>2</span>
+              <div>
+                <strong>{isSpanish ? "Identity Check" : "Identity Check"}</strong>
+                <small>{isSpanish ? "Completa la verificación desde el enlace seguro." : "Complete verification from your secure link."}</small>
+              </div>
+            </div>
+            <div className="pbe-success-step">
+              <span>3</span>
+              <div>
+                <strong>{isSpanish ? "Acuerdo del huésped" : "Guest agreement"}</strong>
+                <small>{isSpanish ? "Revisa y firma los requisitos de la estadía." : "Review and sign your stay requirements."}</small>
+              </div>
+            </div>
+            <div className="pbe-success-step">
+              <span>4</span>
+              <div>
+                <strong>{isSpanish ? "Acceso automático" : "Automatic access"}</strong>
+                <small>{isSpanish ? "Las credenciales se liberarán cuando corresponda." : "Credentials will be released when the access window opens."}</small>
               </div>
             </div>
           </div>
 
-          <p style={styles.accessStatusText}>
-            Your reservation is confirmed, but access credentials remain
-            pending until the primary guest completes Secure Pre-check-in.
-          </p>
-
-          <p style={styles.accessStatusText}>
-            Su reservación está confirmada, pero las credenciales de acceso
-            permanecerán pendientes hasta que el huésped principal complete el
-            Registro Seguro.
-          </p>
-
-          <div style={styles.requirements}>
-            <div style={styles.requirement}>
-              <span style={styles.requirementNumber}>1</span>
-
-              <div>
-                <strong style={styles.requirementTitle}>
-                  Identity Check
-                </strong>
-
-                <span style={styles.requirementText}>
-                  Verificación de identidad
-                </span>
-              </div>
-            </div>
-
-            <div style={styles.requirement}>
-              <span style={styles.requirementNumber}>2</span>
-
-              <div>
-                <strong style={styles.requirementTitle}>
-                  Guest Agreement
-                </strong>
-
-                <span style={styles.requirementText}>
-                  Acuerdo del huésped
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.automationNotice}>
-            Pin&amp;Go will automatically deliver access credentials after all
-            required steps are completed and the access window becomes
-            available.
-            <br />
-            Pin&amp;Go entregará automáticamente las credenciales de acceso
-            después de completar todos los requisitos y cuando la ventana de
-            acceso esté disponible.
+          <div className="pbe-success-automation">
+            {isSpanish
+              ? "Tu reservación ya está confirmada. El acceso permanecerá protegido hasta completar los pasos requeridos."
+              : "Your reservation is confirmed. Access remains protected until the required steps are complete."}
           </div>
         </div>
 
-        <div style={styles.nextStepCard}>
-          <strong style={styles.nextStepTitle}>
-            Check your email to continue
-          </strong>
-
-          <span style={styles.nextStepSpanishTitle}>
-            Revise su correo electrónico para continuar
-          </span>
-
-          <p style={styles.nextStepText}>
-            Your confirmation email includes the secure link to Manage
-            Reservation and complete Secure Pre-check-in.
-          </p>
-
-          <p style={styles.nextStepText}>
-            Su correo de confirmación incluye el enlace seguro para administrar
-            la reservación y completar el Registro Seguro.
-          </p>
+        <div className="pbe-success-email">
+          <span aria-hidden="true">✉</span>
+          <div>
+            <strong>{isSpanish ? "Revisa tu correo electrónico" : "Check your email"}</strong>
+            <p>
+              {isSpanish
+                ? "Allí encontrarás el enlace seguro para administrar la reservación y completar el pre-check-in."
+                : "It contains your secure link to manage the reservation and complete pre-check-in."}
+            </p>
+          </div>
         </div>
 
         <Link
           to={`/book/${organizationSlug}`}
-          style={styles.button}
+          className="pbe-success-action"
         >
-          Return to booking page / Volver a reservaciones
+          {isSpanish ? "Volver a la página de reservaciones" : "Return to booking page"}
+          <span aria-hidden="true">→</span>
         </Link>
 
-        <p style={styles.footerNote}>
-          Pin&amp;Go Guest Services
-        </p>
-      </div>
-    </div>
+        <p className="pbe-success-signature">Pin&amp;Go Guest Services</p>
+      </section>
+    </main>
   );
 }
 
@@ -395,3 +368,7 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "0.03em",
   },
 };
+
+// Kept temporarily for a file-by-file migration audit; the premium experience
+// now consumes the shared public-booking stylesheet.
+void styles;

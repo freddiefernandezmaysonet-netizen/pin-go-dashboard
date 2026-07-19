@@ -3,6 +3,7 @@ import { DayPicker, type DateRange } from "react-day-picker";
 import { addDays, format } from "date-fns";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
+import "./PublicBookingExperience.css";
 
 type PublicProperty = {
   id: string;
@@ -1532,6 +1533,8 @@ export default function PublicPropertyDetailPage() {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   
   function handlePreferredLanguageChange(
   language: GuestLanguage
@@ -2035,11 +2038,12 @@ guestAcceptedSecurePreCheckinRequirementSource:
   }
 
 return (
-  <div style={styles.page}>
-    <header style={styles.header}>
-      <div style={styles.headerInner}>
+  <div className="pbe-page" style={styles.page}>
+    <header className="pbe-header" style={styles.header}>
+      <div className="pbe-header-inner" style={styles.headerInner}>
         <Link
           to={`/book/${organizationSlug}`}
+          className="pbe-brand"
           style={styles.brandWrap}
         >
           <img
@@ -2064,6 +2068,7 @@ return (
         <div
           role="group"
           aria-label={copy.guestLanguage}
+          className="pbe-language"
           style={styles.languageSelector}
         >
           <button
@@ -2123,15 +2128,28 @@ return (
           </section>
         ) : (
           <>
-            <section style={styles.heroSection}>
-              <div style={styles.heroContainer}>
-                <div style={styles.badge}>{property.organization.name}</div>
+            <section className="pbe-rescue-hero" style={styles.heroSection}>
+              {photos[0] ? (
+                <img
+                  className="pbe-rescue-hero-image"
+                  src={photos[0]}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
+              <div className="pbe-rescue-hero-shade" aria-hidden="true" />
+              <div className="pbe-rescue-hero-content" style={styles.heroContainer}>
+                <div className="pbe-rescue-eyebrow" style={styles.badge}>
+                  {property.organization.name}
+                </div>
 
-                <h1 style={styles.heroTitle}>
+                <h1 className="pbe-rescue-title" style={styles.heroTitle}>
                   {property.publicTitle || property.name}
                 </h1>
 
-                <div style={styles.heroMeta}>
+                <div className="pbe-rescue-accent" aria-hidden="true" />
+
+                <div className="pbe-rescue-meta" style={styles.heroMeta}>
                   {location ? <span>📍 {location}</span> : null}
 
                   {property.maxGuests ? (
@@ -2145,13 +2163,25 @@ return (
                   </span>
                 </div>
 
-                             </div>
+                {photos.length > 1 ? (
+                  <button
+                    className="pbe-rescue-gallery-action"
+                    type="button"
+                    onClick={() => setSelectedPhotoIndex(0)}
+                  >
+                    {preferredLanguage === "es"
+                      ? `Ver las ${photos.length} fotos`
+                      : `View all ${photos.length} photos`}
+                    <span aria-hidden="true">↗</span>
+                  </button>
+                ) : null}
+              </div>
             </section>
 <section style={styles.sectionAlt}>
   <div style={styles.container}>
     <div style={styles.topBookingGrid}>
       <div style={styles.topBookingLeft}>
-        <div style={styles.enterpriseGallery}>
+        <div className="pbe-legacy-gallery" style={styles.enterpriseGallery}>
           {photos.length > 1 ? (
             <button
               type="button"
@@ -2211,7 +2241,7 @@ return (
 
                 <div style={styles.detailGrid}>
                      <div style={styles.leftColumn}>
-  <div style={styles.infoCard}>
+  <div className="pbe-legacy-overview" style={styles.infoCard}>
     <div style={styles.sectionEyebrow}>
       {copy.propertyOverview}
     </div>
@@ -2220,10 +2250,25 @@ return (
       {property.publicTitle || property.name}
     </h2>
 
-    <p style={styles.overviewText}>
-  {property.publicDescription ||
-    copy.defaultPropertyDescription}
-</p>
+    <div
+      className={`pbe-long-description${descriptionExpanded ? " is-expanded" : ""}`}
+      style={styles.overviewText}
+    >
+      {property.publicDescription || copy.defaultPropertyDescription}
+    </div>
+    {(property.publicDescription?.length ?? 0) > 520 ? (
+      <button
+        className="pbe-description-toggle"
+        type="button"
+        onClick={() => setDescriptionExpanded((current) => !current)}
+        aria-expanded={descriptionExpanded}
+      >
+        {descriptionExpanded
+          ? preferredLanguage === "es" ? "Mostrar menos" : "Show less"
+          : preferredLanguage === "es" ? "Leer la historia completa" : "Read the full story"}
+        <span aria-hidden="true">{descriptionExpanded ? "↑" : "↓"}</span>
+      </button>
+    ) : null}
   </div>
 
   <div style={styles.infoCard}>
@@ -2257,7 +2302,7 @@ return (
     </div>
   </div>
                   
-<div style={styles.securePreCheckinDisclosure}>
+<div className="pbe-legacy-arrival" style={styles.securePreCheckinDisclosure}>
   <div style={styles.securePreCheckinDisclosureHeader}>
     <div style={styles.securePreCheckinDisclosureIcon} aria-hidden="true">
       🛡️
@@ -2311,7 +2356,7 @@ return (
 </div>
 </div>
 
-  <div style={styles.trustSection}>
+  <div className="pbe-legacy-amenities" style={styles.trustSection}>
     <div style={styles.sectionEyebrow}>
       {copy.propertyHighlights.eyebrow}
     </div>
@@ -2322,7 +2367,7 @@ return (
 
     <div style={styles.trustGrid}>
       {copy.propertyHighlights.items.map((item) => (
-        <div key={item.icon} style={styles.trustCard}>
+        <div className="pbe-rescue-highlight" key={item.icon} style={styles.trustCard}>
           <PublicFeatureIcon type={item.icon} />
           <strong>{item.title}</strong>
           <span>{item.description}</span>
@@ -2337,7 +2382,7 @@ return (
 
       <div style={styles.includedAmenitiesGrid}>
         {includedAmenities.map((amenity) => (
-         <div key={amenity.id} style={styles.includedAmenityPill}>
+         <div className="pbe-rescue-amenity" key={amenity.id} style={styles.includedAmenityPill}>
   <AmenityIcon name={amenity.name} />
   <span>{amenity.name}</span>
 </div>
@@ -2348,8 +2393,41 @@ return (
   ) : null}
 </div>
 
-                    
-                    <div style={styles.pinGoPanel}>
+                    {location ? (
+                      <section className="pbe-rescue-location" aria-labelledby="pbe-location-title">
+                        <div className="pbe-rescue-location-copy">
+                          <span>
+                            {preferredLanguage === "es" ? "LOCALIZACIÓN" : "LOCATION"}
+                          </span>
+                          <h3 id="pbe-location-title">
+                            {preferredLanguage === "es"
+                              ? "Cerca de todo. Lejos de lo ordinario."
+                              : "Close to everything. Far from ordinary."}
+                          </h3>
+                          <p>{location}</p>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {preferredLanguage === "es" ? "Explorar ubicación" : "Explore location"}
+                            <span aria-hidden="true">↗</span>
+                          </a>
+                        </div>
+                        <div className="pbe-rescue-map" aria-hidden="true">
+                          <div className="pbe-rescue-map-water" />
+                          <div className="pbe-rescue-map-road pbe-rescue-map-road-one" />
+                          <div className="pbe-rescue-map-road pbe-rescue-map-road-two" />
+                          <div className="pbe-rescue-map-marker">
+                            <span>●</span>
+                            <strong>{property.publicTitle || property.name}</strong>
+                            <small>{property.city || property.region || property.country}</small>
+                          </div>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    <div className="pbe-legacy-pingo" style={styles.pinGoPanel}>
                       <div>
                         <div style={styles.sectionEyebrow}>
                           {copy.pinGoPanel.eyebrow}
@@ -2375,7 +2453,7 @@ return (
                     </div>
                   </div>
 
-                  <form onSubmit={handleReserve} style={styles.bookingCard}>
+                  <form className="pbe-legacy-booking" onSubmit={handleReserve} style={styles.bookingCard}>
                     <div style={styles.bookingHeader}>
                       <div>
                         <div style={styles.bookingPrice}>
@@ -2399,7 +2477,7 @@ return (
                       </div>
                     </div>
 
-                  <div style={styles.calendarBox}>
+                  <div className="pbe-legacy-calendar" style={styles.calendarBox}>
   <div style={styles.calendarHeader}>
     <div style={styles.calendarDatePanel}>
   <div style={styles.calendarLabel}>
@@ -2445,7 +2523,7 @@ return (
      />
   </div>
 </div>
-                        <div style={styles.guestSelector}>
+                        <div className="pbe-legacy-guests" style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
   <div style={styles.guestLabel}>
@@ -2539,7 +2617,51 @@ return (
                       </div>
                     </div>
 
-                  
+                    {!checkoutStarted ? (
+                      <>
+                        <button
+                          className="pbe-primary pbe-continue-action"
+                          type="button"
+                          disabled={!checkIn || !checkOut}
+                          onClick={() => setCheckoutStarted(true)}
+                        >
+                          {preferredLanguage === "es"
+                            ? "Confirmar fechas y continuar"
+                            : "Confirm dates and continue"}
+                          <span aria-hidden="true">→</span>
+                        </button>
+                        <p className="pbe-secure-note">
+                          {preferredLanguage === "es"
+                            ? "Todavía no se realizará ningún cargo."
+                            : "You will not be charged yet."}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="pbe-checkout-stage">
+                        <div className="pbe-checkout-stage-heading">
+                          <div>
+                            <span>
+                              {preferredLanguage === "es" ? "PASO FINAL" : "FINAL STEP"}
+                            </span>
+                            <h2>
+                              {preferredLanguage === "es"
+                                ? "Confirma tu estadía"
+                                : "Confirm your stay"}
+                            </h2>
+                            <p>
+                              {preferredLanguage === "es"
+                                ? "Primero tu información; luego continuarás al pago seguro con Stripe."
+                                : "Your information comes first; secure payment with Stripe follows."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setCheckoutStarted(false)}
+                          >
+                            {preferredLanguage === "es" ? "Editar fechas" : "Edit dates"}
+                          </button>
+                        </div>
+
                     <label style={styles.field}>
                       <span>{copy.fullName}</span>
 
@@ -2654,7 +2776,7 @@ return (
 </div>
 ) : null}
 
-<div style={styles.priceBox}>
+<div className="pbe-legacy-price" style={styles.priceBox}>
   <div style={styles.priceBoxTitle}>
     {copy.priceDetails}
   </div>
@@ -2771,7 +2893,7 @@ return (
 </div>
 
             {cancellationPolicySummary ? (
-  <div style={styles.cancellationPolicyBox}>
+  <div className="pbe-legacy-policy" style={styles.cancellationPolicyBox}>
     <div style={styles.cancellationPolicyHeader}>
       <span style={styles.cancellationPolicyIcon}>
         ↩
@@ -2977,6 +3099,7 @@ return (
                     ) : null}
 
                     <button
+                      className="pbe-primary"
                       type="submit"
                       disabled={reserveButtonDisabled}
                       style={{
@@ -3027,6 +3150,8 @@ return (
                     .
                   </span>
                 </div>
+                      </div>
+                    )}
                  </form>
                 </div>
               </div>
@@ -3092,7 +3217,7 @@ return (
   </div>
 )}
 
-      <footer style={styles.footer}>
+      <footer className="pbe-footer" style={styles.footer}>
         <div style={styles.container}>
           © Pin&Go. Direct booking powered by autonomous property operations.
         </div>

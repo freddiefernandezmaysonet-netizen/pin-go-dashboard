@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import "./PublicBookingExperience.css";
 
 type PublicProperty = {
   id: string;
@@ -59,11 +60,32 @@ export default function PublicBookingSitePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState<"en" | "es">(() => {
+    try {
+      return window.localStorage.getItem("pingo_guest_preferred_language") === "es"
+        ? "es"
+        : "en";
+    } catch {
+      return "en";
+    }
+  });
+  const isSpanish = preferredLanguage === "es";
 
   const title = useMemo(() => {
-    if (!organization) return "Book your stay";
-    return `Book your stay with ${organization.name}`;
-  }, [organization]);
+    if (!organization) return isSpanish ? "Reserva tu estadía" : "Book your stay";
+    return isSpanish
+      ? `Descubre ${organization.name}`
+      : `Discover ${organization.name}`;
+  }, [isSpanish, organization]);
+
+  function changeLanguage(language: "en" | "es") {
+    setPreferredLanguage(language);
+    try {
+      window.localStorage.setItem("pingo_guest_preferred_language", language);
+    } catch {
+      // The booking experience remains usable without browser persistence.
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -107,10 +129,10 @@ export default function PublicBookingSitePage() {
   }, [organizationSlug]);
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <div style={styles.headerInner}>
-          <Link to="/home" style={styles.brandWrap}>
+    <div className="pbe-collection-page" style={styles.page}>
+      <header className="pbe-collection-header" style={styles.header}>
+        <div className="pbe-collection-header-inner" style={styles.headerInner}>
+          <Link className="pbe-collection-brand" to="/home" style={styles.brandWrap}>
             <img
               src="/pin-go-logo.png"
               alt="Pin&Go logo"
@@ -124,26 +146,39 @@ export default function PublicBookingSitePage() {
               <div style={styles.slogan}>Direct Booking</div>
             </div>
           </Link>
+          <div className="pbe-collection-language" role="group" aria-label="Guest language">
+            <button type="button" aria-pressed={!isSpanish} onClick={() => changeLanguage("en")}>EN</button>
+            <button type="button" aria-pressed={isSpanish} onClick={() => changeLanguage("es")}>ES</button>
+          </div>
         </div>
       </header>
 
       <main>
-        <section style={styles.heroSection}>
-          <div style={styles.heroContainer}>
-            <div style={styles.badge}>Direct booking</div>
+        <section className="pbe-collection-hero" style={styles.heroSection}>
+          {getPhotoUrl(organization?.properties?.[0]?.publicPhotos) ? (
+            <img
+              src={getPhotoUrl(organization?.properties?.[0]?.publicPhotos) || ""}
+              alt=""
+              aria-hidden="true"
+            />
+          ) : null}
+          <div className="pbe-collection-hero-shade" aria-hidden="true" />
+          <div className="pbe-collection-hero-copy" style={styles.heroContainer}>
+            <div style={styles.badge}>{isSpanish ? "RESERVA DIRECTA" : "DIRECT BOOKING"}</div>
 
             <h1 style={styles.heroTitle}>
-              {loading ? "Loading booking site..." : title}
+              {loading ? (isSpanish ? "Preparando la colección..." : "Preparing the collection...") : title}
             </h1>
 
             <p style={styles.heroSubtitle}>
-              Reserve directly and enjoy a smooth check-in experience powered by
-              Pin&Go.
+              {isSpanish
+                ? "Estadías excepcionales con una llegada segura, fluida y sin llaves, impulsada por Pin&Go."
+                : "Exceptional stays with a secure, seamless and keyless arrival, powered by Pin&Go."}
             </p>
           </div>
         </section>
 
-        <section style={styles.sectionAlt}>
+        <section className="pbe-collection-section" style={styles.sectionAlt}>
           <div style={styles.container}>
             {loading ? (
               <div style={styles.stateBox}>Loading properties...</div>
@@ -155,9 +190,14 @@ export default function PublicBookingSitePage() {
               </div>
             ) : (
               <>
-                <h2 style={styles.sectionTitle}>Available properties</h2>
+                <div className="pbe-collection-heading">
+                  <span>{isSpanish ? "LA COLECCIÓN" : "THE COLLECTION"}</span>
+                  <h2 style={styles.sectionTitle}>
+                    {isSpanish ? "Elige tu próxima estadía" : "Choose your next stay"}
+                  </h2>
+                </div>
 
-                <div style={styles.propertyGrid}>
+                <div className="pbe-collection-grid" style={styles.propertyGrid}>
                   {organization.properties.map((property) => {
                     const photoUrl = getPhotoUrl(property.publicPhotos);
                     const nightlyRate = formatMoney(property.baseNightlyRate);
@@ -171,6 +211,7 @@ export default function PublicBookingSitePage() {
 
                     return (
                       <Link
+                        className="pbe-collection-card"
                         key={property.id}
                         to={propertyUrl}
                         style={{
@@ -178,7 +219,7 @@ export default function PublicBookingSitePage() {
                           ...(property.slug ? {} : styles.disabledCard),
                         }}
                       >
-                        <div style={styles.photoWrap}>
+                        <div className="pbe-collection-photo" style={styles.photoWrap}>
                           {photoUrl ? (
                             <img
                               src={photoUrl}
@@ -195,7 +236,7 @@ export default function PublicBookingSitePage() {
                           )}
                         </div>
 
-                        <div style={styles.cardBody}>
+                        <div className="pbe-collection-card-body" style={styles.cardBody}>
                           <div style={styles.cardMeta}>
                             {location || "Direct booking property"}
                           </div>
@@ -219,7 +260,7 @@ export default function PublicBookingSitePage() {
                               {nightlyRate ? (
                                 <>
                                   <strong>{nightlyRate}</strong>{" "}
-                                  <span style={styles.muted}>/ night</span>
+                                  <span style={styles.muted}>{isSpanish ? "/ noche" : "/ night"}</span>
                                 </>
                               ) : (
                                 <span style={styles.muted}>Rate available soon</span>
@@ -228,7 +269,7 @@ export default function PublicBookingSitePage() {
                            
                               {property.maxGuests ? (
                               <div style={styles.muted}>
-                                Up to {property.maxGuests} guests
+                                {isSpanish ? "Hasta" : "Up to"} {property.maxGuests} {isSpanish ? "huéspedes" : "guests"}
                               </div>
                             ) : null}
                           </div>
@@ -243,7 +284,7 @@ export default function PublicBookingSitePage() {
         </section>
       </main>
 
-      <footer style={styles.footer}>
+      <footer className="pbe-collection-footer" style={styles.footer}>
         <div style={styles.container}>
           © Pin&Go. Direct booking powered by autonomous property operations.
         </div>
