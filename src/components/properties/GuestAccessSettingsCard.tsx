@@ -20,6 +20,7 @@ type GuestAccessSettingsCardProps = {
 type GuestAccessForm = {
   guestAccessMode: GuestAccessMode;
   cleaningNfcEnabled: boolean;
+  requiresIdentityVerification: boolean;
   title: string;
   guestFacingSummary: string;
   agreementText: string;
@@ -34,6 +35,7 @@ type AccessScenario =
 const EMPTY_FORM: GuestAccessForm = {
   guestAccessMode: "PASSCODE_ONLY",
   cleaningNfcEnabled: false,
+  requiresIdentityVerification: true,
   title: "Guest Agreement",
   guestFacingSummary:
     "Complete secure pre-check-in before access can be released.",
@@ -53,6 +55,7 @@ function settingsToForm(
         settings?.guestAccessMode ?? "PASSCODE_ONLY",
       cleaningNfcEnabled:
         settings?.cleaningNfcEnabled === true,
+      requiresIdentityVerification: true,
       rules: [""],
     };
   }
@@ -61,6 +64,8 @@ function settingsToForm(
       settings?.guestAccessMode ?? "PASSCODE_ONLY",
     cleaningNfcEnabled:
       settings?.cleaningNfcEnabled === true,
+    requiresIdentityVerification:
+      agreement.requiresIdentityVerification !== false,
     title: agreement.title ?? "",
     guestFacingSummary: agreement.guestFacingSummary ?? "",
     agreementText: agreement.agreementText ?? "",
@@ -247,6 +252,8 @@ export function GuestAccessSettingsCard({
     const payload: SaveGuestAccessSettingsInput = {
       guestAccessMode: form.guestAccessMode,
       cleaningNfcEnabled: form.cleaningNfcEnabled,
+      requiresIdentityVerification:
+        form.requiresIdentityVerification,
       title: form.title.trim(),
       guestFacingSummary: form.guestFacingSummary.trim(),
       agreementText: form.agreementText.trim(),
@@ -353,19 +360,66 @@ export function GuestAccessSettingsCard({
             {settings?.activeAgreement?.version ?? "Not created"}
           </strong>
         </div>
+
+        <div style={summaryItemStyle}>
+          <span style={summaryLabelStyle}>Identity Check</span>
+          <strong style={summaryValueStyle}>
+            {form.requiresIdentityVerification
+              ? "Required"
+              : "Not required"}
+          </strong>
+        </div>
       </div>
 
       <div style={requirementsGridStyle}>
-        <div style={requirementStyle}>
-          <span style={requirementDotStyle} />
+        <label
+          style={{
+            ...identityControlStyle,
+            ...(form.requiresIdentityVerification
+              ? identityControlEnabledStyle
+              : identityControlDisabledStyle),
+            opacity: isBusy ? 0.65 : 1,
+            cursor: isBusy ? "not-allowed" : "pointer",
+          }}
+        >
           <div>
-            <strong>Identity verification required</strong>
+            <div style={identityControlHeaderStyle}>
+              <strong>Stripe Identity Check</strong>
+              <span
+                style={{
+                  ...identityStatusStyle,
+                  ...(form.requiresIdentityVerification
+                    ? identityStatusEnabledStyle
+                    : identityStatusDisabledStyle),
+                }}
+              >
+                {form.requiresIdentityVerification
+                  ? "Required"
+                  : "Off"}
+              </span>
+            </div>
             <p>
-              Guests must complete the Stripe Identity flow before
-              access becomes eligible.
+              {form.requiresIdentityVerification
+                ? "The primary guest must verify an official document and selfie before access becomes eligible. Pin&Go retains the $2.50 Identity Check service fee from the host payout in the same booking transaction."
+                : "Guests accept the Guest Agreement without document or selfie verification. No Identity Check service fee is retained."}
             </p>
           </div>
-        </div>
+
+          <input
+            type="checkbox"
+            checked={form.requiresIdentityVerification}
+            disabled={isBusy}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                requiresIdentityVerification:
+                  event.target.checked,
+              }))
+            }
+            aria-label="Require Stripe Identity Check for this property"
+            style={identityCheckboxStyle}
+          />
+        </label>
 
         <div style={requirementStyle}>
           <span style={requirementDotStyle} />
@@ -822,6 +876,61 @@ const requirementDotStyle: CSSProperties = {
   flex: "0 0 auto",
   borderRadius: 999,
   background: "#2563eb",
+};
+
+const identityControlStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 18,
+  borderRadius: 14,
+  padding: 14,
+  fontSize: 13,
+  lineHeight: 1.45,
+  transition: "border-color 160ms ease, background 160ms ease",
+};
+
+const identityControlEnabledStyle: CSSProperties = {
+  background: "#ecfdf5",
+  border: "1px solid #a7f3d0",
+  color: "#065f46",
+};
+
+const identityControlDisabledStyle: CSSProperties = {
+  background: "#f8fafc",
+  border: "1px solid rgba(148, 163, 184, 0.34)",
+  color: "#475569",
+};
+
+const identityControlHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const identityStatusStyle: CSSProperties = {
+  borderRadius: 999,
+  padding: "3px 8px",
+  fontSize: 11,
+  fontWeight: 900,
+};
+
+const identityStatusEnabledStyle: CSSProperties = {
+  background: "#d1fae5",
+  color: "#065f46",
+};
+
+const identityStatusDisabledStyle: CSSProperties = {
+  background: "#e2e8f0",
+  color: "#475569",
+};
+
+const identityCheckboxStyle: CSSProperties = {
+  width: 22,
+  height: 22,
+  flex: "0 0 auto",
+  accentColor: "#059669",
 };
 
 const sectionStyle: CSSProperties = {
