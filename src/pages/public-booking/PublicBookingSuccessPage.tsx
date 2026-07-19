@@ -3,8 +3,13 @@ import { Link } from "react-router-dom";
 import "./PublicBookingExperience.css";
 
 export default function PublicBookingSuccessPage() {
+  const query = new URLSearchParams(
+    window.location.search
+  );
   const organizationSlug =
-    new URLSearchParams(window.location.search).get("organization") || "";
+    query.get("organization") || "";
+  const identityVerificationRequired =
+    query.get("identityCheck") !== "optional";
   const language = (() => {
     try {
       return window.localStorage.getItem("pingo_guest_preferred_language") === "es"
@@ -82,22 +87,24 @@ export default function PublicBookingSuccessPage() {
                 <small>{isSpanish ? "El pago fue recibido correctamente." : "Your payment was received successfully."}</small>
               </div>
             </div>
-            <div className="pbe-success-step">
-              <span>2</span>
-              <div>
-                <strong>{isSpanish ? "Identity Check" : "Identity Check"}</strong>
-                <small>{isSpanish ? "Completa la verificación desde el enlace seguro." : "Complete verification from your secure link."}</small>
+            {identityVerificationRequired ? (
+              <div className="pbe-success-step">
+                <span>2</span>
+                <div>
+                  <strong>Identity Check</strong>
+                  <small>{isSpanish ? "Completa la verificación desde el enlace seguro." : "Complete verification from your secure link."}</small>
+                </div>
               </div>
-            </div>
+            ) : null}
             <div className="pbe-success-step">
-              <span>3</span>
+              <span>{identityVerificationRequired ? "3" : "2"}</span>
               <div>
                 <strong>{isSpanish ? "Acuerdo del huésped" : "Guest agreement"}</strong>
                 <small>{isSpanish ? "Revisa y firma los requisitos de la estadía." : "Review and sign your stay requirements."}</small>
               </div>
             </div>
             <div className="pbe-success-step">
-              <span>4</span>
+              <span>{identityVerificationRequired ? "4" : "3"}</span>
               <div>
                 <strong>{isSpanish ? "Acceso automático" : "Automatic access"}</strong>
                 <small>{isSpanish ? "Las credenciales se liberarán cuando corresponda." : "Credentials will be released when the access window opens."}</small>
