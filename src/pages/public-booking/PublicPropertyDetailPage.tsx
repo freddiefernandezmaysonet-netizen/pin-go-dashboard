@@ -2179,7 +2179,7 @@ return (
             </section>
 <section style={styles.sectionAlt}>
   <div style={styles.container}>
-    <div style={styles.topBookingGrid}>
+    <div className="pbe-retired-experience" aria-hidden="true" style={styles.topBookingGrid}>
       <div style={styles.topBookingLeft}>
         <div className="pbe-legacy-gallery" style={styles.enterpriseGallery}>
           {photos.length > 1 ? (
@@ -2239,8 +2239,147 @@ return (
       {/* aquí va el form bookingCard movido */}
     </div>
 
-                <div style={styles.detailGrid}>
-                     <div style={styles.leftColumn}>
+                <section className="pbe-section pbe-story" aria-labelledby="pbe-story-title">
+                  <div className="pbe-story-copy">
+                    <p className="pbe-kicker">
+                      {preferredLanguage === "es" ? "LA EXPERIENCIA" : "THE EXPERIENCE"}
+                    </p>
+                    <h2 id="pbe-story-title">
+                      {preferredLanguage === "es"
+                        ? "Un lugar que se siente especial antes de llegar."
+                        : "A place that feels special before you arrive."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {property.publicDescription || copy.defaultPropertyDescription}
+                    </p>
+                    <div className="pbe-trust-list">
+                      <span>{preferredLanguage === "es" ? "Reserva directa y segura" : "Secure direct booking"}</span>
+                      <span>{preferredLanguage === "es" ? "Llegada autónoma y protegida" : "Protected, autonomous arrival"}</span>
+                      <span>{preferredLanguage === "es" ? "Experiencia operada por Pin&Go" : "Experience operated by Pin&Go"}</span>
+                    </div>
+                  </div>
+                  {photos[1] || photos[0] ? (
+                    <button
+                      className="pbe-editorial-photo"
+                      type="button"
+                      onClick={() => setSelectedPhotoIndex(photos[1] ? 1 : 0)}
+                      aria-label={preferredLanguage === "es" ? "Abrir fotografía de la propiedad" : "Open property photo"}
+                    >
+                      <img src={photos[1] || photos[0]} alt={property.publicTitle || property.name} />
+                    </button>
+                  ) : null}
+                </section>
+
+                <section className="pbe-section pbe-description" aria-labelledby="pbe-description-title">
+                  <div className="pbe-description-intro">
+                    <p className="pbe-kicker">
+                      {preferredLanguage === "es" ? "CONOCE LA PROPIEDAD" : "DISCOVER THE PROPERTY"}
+                    </p>
+                    <h2 id="pbe-description-title">
+                      {preferredLanguage === "es" ? "Cada detalle tiene una intención." : "Every detail has a purpose."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Explora la historia completa cuando quieras; la decisión de reservar permanece simple."
+                        : "Explore the full story when you want; the decision to book stays simple."}
+                    </p>
+                  </div>
+                  <div className="pbe-description-list">
+                    <details open>
+                      <summary>
+                        <span>01</span>
+                        <strong>{preferredLanguage === "es" ? "La propiedad" : "The property"}</strong>
+                        <i aria-hidden="true">+</i>
+                      </summary>
+                      <p>{property.publicDescription || copy.defaultPropertyDescription}</p>
+                    </details>
+                    <details>
+                      <summary>
+                        <span>02</span>
+                        <strong>{preferredLanguage === "es" ? "Llegada y salida" : "Arrival and departure"}</strong>
+                        <i aria-hidden="true">+</i>
+                      </summary>
+                      <p>
+                        {preferredLanguage === "es"
+                          ? `Check-in ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. Check-out ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`
+                          : `Check-in ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. Check-out ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`}
+                      </p>
+                    </details>
+                    <details>
+                      <summary>
+                        <span>03</span>
+                        <strong>{preferredLanguage === "es" ? "Llegada segura" : "Secure arrival"}</strong>
+                        <i aria-hidden="true">+</i>
+                      </summary>
+                      <p>{copy.securePreCheckinIntro}</p>
+                    </details>
+                  </div>
+                </section>
+
+                <section className="pbe-section pbe-amenities" aria-labelledby="pbe-amenities-title">
+                  <div className="pbe-section-heading">
+                    <p className="pbe-kicker">{preferredLanguage === "es" ? "AMENIDADES" : "AMENITIES"}</p>
+                    <h2 id="pbe-amenities-title">
+                      {preferredLanguage === "es" ? "Todo lo esencial. Y algo más." : "Everything essential. And more."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Comodidades seleccionadas para que la estadía se sienta natural desde el primer momento."
+                        : "Thoughtful comforts that make the stay feel effortless from the first moment."}
+                    </p>
+                  </div>
+                  <div className="pbe-amenity-grid">
+                    {(includedAmenities.length ? includedAmenities : copy.propertyHighlights.items).slice(0, 8).map((item: any) => (
+                      <article className="pbe-amenity-card" key={item.id || item.icon || item.title}>
+                        <div className="pbe-amenity-icon" aria-hidden="true">◇</div>
+                        <h3>{item.name || item.title}</h3>
+                        <p>{item.description || (preferredLanguage === "es" ? "Incluido con tu estadía." : "Included with your stay.")}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                {location ? (
+                  <section className="pbe-section pbe-location" aria-labelledby="pbe-new-location-title">
+                    <div>
+                      <p className="pbe-kicker">{preferredLanguage === "es" ? "LOCALIZACIÓN" : "LOCATION"}</p>
+                      <h2 id="pbe-new-location-title">
+                        {preferredLanguage === "es" ? "Cerca de todo. Lejos de lo ordinario." : "Close to everything. Far from ordinary."}
+                      </h2>
+                      <p className="pbe-lead">{location}</p>
+                      <a
+                        className="pbe-outline-action"
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {preferredLanguage === "es" ? "Explorar ubicación" : "Explore location"}
+                        <span aria-hidden="true">↗</span>
+                      </a>
+                    </div>
+                    <div className="pbe-map" aria-hidden="true">
+                      <div className="pbe-map-pin">
+                        <strong>{property.publicTitle || property.name}</strong>
+                        <small>{property.city || property.region || property.country}</small>
+                      </div>
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="pbe-section pbe-booking-section" aria-labelledby="pbe-booking-title">
+                  <div className="pbe-booking-intro">
+                    <p className="pbe-kicker">{preferredLanguage === "es" ? "TU ESTADÍA" : "YOUR STAY"}</p>
+                    <h2 id="pbe-booking-title">
+                      {preferredLanguage === "es" ? "Elige cuándo quieres escapar." : "Choose when you want to get away."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Solo se muestran fechas disponibles. Confirmaremos el precio antes del pago."
+                        : "Only available dates are shown. We will confirm the price before payment."}
+                    </p>
+                  </div>
+                  <div className="pbe-booking-layout" style={styles.detailGrid}>
+                     <div className="pbe-retired-experience" aria-hidden="true" style={styles.leftColumn}>
   <div className="pbe-legacy-overview" style={styles.infoCard}>
     <div style={styles.sectionEyebrow}>
       {copy.propertyOverview}
@@ -3152,8 +3291,9 @@ return (
                 </div>
                       </div>
                     )}
-                 </form>
-                </div>
+                  </form>
+                  </div>
+                </section>
               </div>
             </section>
           </>

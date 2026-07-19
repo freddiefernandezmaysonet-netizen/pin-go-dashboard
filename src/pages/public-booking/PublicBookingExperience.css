@@ -89,6 +89,7 @@
 .pbe-section { padding: 112px 6vw; }
 .pbe-section h2 { margin: 0; font-size: clamp(41px,5vw,74px); line-height: 1.04; font-weight: 400; letter-spacing: -.055em; }
 .pbe-lead { color: var(--pbe-muted); font-size: 17px; line-height: 1.8; }
+.pbe-retired-experience { display: none !important; }
 .pbe-story { display: grid; grid-template-columns: .92fr 1.08fr; gap: 9vw; align-items: center; }
 .pbe-story-copy .pbe-lead { max-width: 620px; margin: 28px 0; white-space: pre-line; }
 .pbe-trust-list { display: grid; margin-top: 37px; border-top: 1px solid var(--pbe-line); }
@@ -132,6 +133,15 @@
 .pbe-map-pin { position: absolute; z-index: 2; top: 42%; left: 39%; width: 190px; padding: 14px; border-radius: 12px; background: var(--pbe-paper); color: var(--pbe-ink); box-shadow: 0 15px 35px rgba(20,45,34,.24); }
 .pbe-map-pin strong, .pbe-map-pin small { display: block; }
 .pbe-map-pin small { margin-top: 4px; color: var(--pbe-muted); font-size: 9px; }
+
+.pbe-booking-section { background: var(--pbe-ivory); }
+.pbe-booking-intro { max-width: 790px; margin: 0 auto 52px; text-align: center; }
+.pbe-booking-intro .pbe-lead { max-width: 610px; margin: 24px auto 0; }
+.pbe-booking-layout {
+  grid-template-columns: minmax(0, 720px) !important;
+  justify-content: center;
+}
+.pbe-booking-layout .pbe-legacy-booking { width: 100%; }
 
 .pbe-policies { background: var(--pbe-ivory); }
 .pbe-policy-list { margin-top: 54px; border-top: 1px solid var(--pbe-line); }
