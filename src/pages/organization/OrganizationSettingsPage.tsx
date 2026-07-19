@@ -29,8 +29,6 @@ export default function OrganizationSettingsPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [publicBookingEnabled, setPublicBookingEnabled] = useState(false);
-  const [guestCommunicationEmail, setGuestCommunicationEmail] =
-    useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,9 +62,6 @@ export default function OrganizationSettingsPage() {
         setName(item.name ?? "");
         setSlug(item.slug ?? "");
         setPublicBookingEnabled(Boolean(item.publicBookingEnabled));
-        setGuestCommunicationEmail(
-          item.guestCommunicationEmail ?? ""
-        );
         setChannelDistribution(distribution);
       } catch (e) {
         console.error("[OrganizationSettingsPage] load failed", e);
@@ -115,35 +110,16 @@ export default function OrganizationSettingsPage() {
         return;
       }
 
-      const cleanGuestCommunicationEmail =
-        guestCommunicationEmail.trim().toLowerCase();
-
-      if (
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-          cleanGuestCommunicationEmail
-        )
-      ) {
-        setError(
-          "Enter a valid guest communications email."
-        );
-        return;
-      }
-
       const updated = await updateDashboardOrganization({
         name: cleanName,
         slug: cleanSlug,
         publicBookingEnabled,
-        guestCommunicationEmail:
-          cleanGuestCommunicationEmail,
       });
 
       setOrganization(updated);
       setName(updated.name ?? "");
       setSlug(updated.slug ?? "");
       setPublicBookingEnabled(Boolean(updated.publicBookingEnabled));
-      setGuestCommunicationEmail(
-        updated.guestCommunicationEmail ?? ""
-      );
 
       await refresh();
 
@@ -266,84 +242,6 @@ async function handleValidateDistribution() {
               <div style={urlPreviewStyle}>
                 {directBookingUrl || "Set a slug to generate your public URL"}
               </div>
-            </div>
-          </section>
-
-          <section style={cardStyle}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div style={sectionTitleStyle}>
-                  Guest Communications
-                </div>
-                <div style={sectionDescriptionStyle}>
-                  Choose where guest replies are delivered for this
-                  organization.
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...statusBadgeStyle,
-                  background: organization
-                    ?.guestCommunicationEmailConfigured
-                    ? "#f0fdf4"
-                    : "#eff6ff",
-                  borderColor: organization
-                    ?.guestCommunicationEmailConfigured
-                    ? "#bbf7d0"
-                    : "#bfdbfe",
-                  color: organization
-                    ?.guestCommunicationEmailConfigured
-                    ? "#166534"
-                    : "#1d4ed8",
-                }}
-              >
-                {organization
-                  ?.guestCommunicationEmailConfigured
-                  ? "Configured"
-                  : "Using account email"}
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gap: 6 }}>
-              <div style={labelStyle}>
-                Guest Communications Email
-              </div>
-              <input
-                type="email"
-                value={guestCommunicationEmail}
-                onChange={(event) =>
-                  setGuestCommunicationEmail(
-                    event.target.value
-                  )
-                }
-                placeholder="reservations@example.com"
-                autoComplete="email"
-                style={inputStyle}
-                required
-              />
-              <div style={helperTextStyle}>
-                Guests continue to see Pin&amp;Go &lt;support@pin-ngo.com&gt;
-                as the sender. When they press Reply, their message is
-                addressed to this email.
-              </div>
-            </div>
-
-            <div style={replyRoutingNoticeStyle}>
-              <strong>Reply routing</strong>
-              <span>
-                This setting applies to booking confirmations,
-                pre-check-in reminders, access delivery, cancellations,
-                and refunds. It does not change your login email.
-              </span>
             </div>
           </section>
 
@@ -642,18 +540,6 @@ const previewBoxStyle: React.CSSProperties = {
   borderRadius: 14,
   border: "1px solid #dbeafe",
   background: "#eff6ff",
-};
-
-const replyRoutingNoticeStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 5,
-  padding: 14,
-  borderRadius: 14,
-  border: "1px solid #dbeafe",
-  background: "#eff6ff",
-  color: "#1e3a8a",
-  fontSize: 13,
-  lineHeight: 1.5,
 };
 
 const urlPreviewStyle: React.CSSProperties = {
