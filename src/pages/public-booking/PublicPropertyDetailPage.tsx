@@ -1091,32 +1091,32 @@ type AmenityIconKey =
 
 const AMENITY_ICONS: Array<[string[], AmenityIconKey]> = [
   [["wifi", "wi-fi", "internet"], "wifi"],
-  [["parking", "garage"], "parking"],
-  [["pool", "swimming"], "pool"],
-  [["beach", "beachfront", "ocean"], "beach"],
-  [["bath", "bathroom", "shower", "tub"], "bath"],
-  [["hot tub", "jacuzzi", "spa"], "hotTub"],
-  [["bbq", "grill", "barbecue"], "grill"],
-  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden"], "outdoor"],
-  [["kitchen", "cook"], "kitchen"],
-  [["coffee", "espresso"], "coffee"],
-  [["gym", "fitness"], "gym"],
-  [["smart tv", "tv", "television"], "tv"],
-  [["air conditioning", "a/c", "air conditioner"], "ac"],
-  [["washer", "dryer", "laundry", "washing machine"], "laundry"],
-  [["pet", "dog", "cat"], "pet"],
-  [["workspace", "desk", "office"], "workspace"],
-  [["fireplace"], "fireplace"],
-  [["bike", "bicycle"], "bike"],
-  [["dock", "marina", "boat"], "boat"],
-  [["game room", "games", "arcade", "pool table", "billiard"], "games"],
-  [["elevator", "lift"], "elevator"],
-  [["smart lock", "self check-in", "keyless", "safe"], "lock"],
-  [["crib", "baby", "infant"], "baby"],
-  [["king bed", "queen bed", "bed"], "bed"],
-  [["breakfast"], "breakfast"],
-  [["security camera", "camera"], "camera"],
-  [["ev charger", "electric vehicle"], "ev"],
+  [["parking", "garage", "estacionamiento", "garaje"], "parking"],
+  [["pool", "swimming", "piscina", "alberca"], "pool"],
+  [["beach", "beachfront", "ocean", "playa", "océano", "oceano"], "beach"],
+  [["bath", "bathroom", "shower", "tub", "baño", "ducha", "bañera"], "bath"],
+  [["hot tub", "jacuzzi", "spa", "hidromasaje"], "hotTub"],
+  [["bbq", "grill", "barbecue", "parrilla", "barbacoa"], "grill"],
+  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden", "terraza", "balcón", "balcon", "jardín", "jardin", "exterior"], "outdoor"],
+  [["kitchen", "cook", "cocina", "kitchenette"], "kitchen"],
+  [["coffee", "espresso", "café", "cafe", "cafetera"], "coffee"],
+  [["gym", "fitness", "gimnasio"], "gym"],
+  [["smart tv", "tv", "television", "televisión", "cinema", "cine"], "tv"],
+  [["air conditioning", "a/c", "air conditioner", "aire acondicionado", "climatizado"], "ac"],
+  [["washer", "dryer", "laundry", "washing machine", "lavadora", "secadora", "lavandería", "lavanderia"], "laundry"],
+  [["pet", "dog", "cat", "mascota", "perro", "gato"], "pet"],
+  [["workspace", "desk", "office", "espacio de trabajo", "escritorio", "oficina"], "workspace"],
+  [["fireplace", "chimenea"], "fireplace"],
+  [["bike", "bicycle", "bicicleta"], "bike"],
+  [["dock", "marina", "boat", "muelle", "bote", "barco"], "boat"],
+  [["game room", "games", "arcade", "pool table", "billiard", "juegos", "billar"], "games"],
+  [["elevator", "lift", "ascensor"], "elevator"],
+  [["smart lock", "self check-in", "keyless", "safe", "cerradura inteligente", "sin llave", "caja fuerte"], "lock"],
+  [["crib", "baby", "infant", "cuna", "bebé", "bebe"], "baby"],
+  [["king bed", "queen bed", "bed", "cama"], "bed"],
+  [["breakfast", "desayuno"], "breakfast"],
+  [["security camera", "camera", "cámara", "camara", "seguridad"], "camera"],
+  [["ev charger", "electric vehicle", "cargador eléctrico", "cargador electrico", "vehículo eléctrico", "vehiculo electrico"], "ev"],
 ];
 
 function getAmenityIconKey(name: string): AmenityIconKey {
@@ -2363,7 +2363,9 @@ return (
                   <div className="pbe-amenity-grid">
                     {[...includedAmenities, ...copy.propertyHighlights.items].slice(0, 8).map((item: any) => (
                       <article className="pbe-amenity-card" key={item.id || item.icon || item.title}>
-                        <div className="pbe-amenity-icon" aria-hidden="true">◇</div>
+                        <div className="pbe-amenity-icon">
+                          <AmenityIcon name={item.name || item.title} />
+                        </div>
                         <h3>{item.name || item.title}</h3>
                         <p>{item.description || (preferredLanguage === "es" ? "Incluido con tu estadía." : "Included with your stay.")}</p>
                       </article>
