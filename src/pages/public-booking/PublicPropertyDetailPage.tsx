@@ -3,6 +3,7 @@ import { DayPicker, type DateRange } from "react-day-picker";
 import { addDays, format } from "date-fns";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
+import "./PublicBookingExperience.css";
 
 type PublicProperty = {
   id: string;
@@ -1090,32 +1091,32 @@ type AmenityIconKey =
 
 const AMENITY_ICONS: Array<[string[], AmenityIconKey]> = [
   [["wifi", "wi-fi", "internet"], "wifi"],
-  [["parking", "garage"], "parking"],
-  [["pool", "swimming"], "pool"],
-  [["beach", "beachfront", "ocean"], "beach"],
-  [["bath", "bathroom", "shower", "tub"], "bath"],
-  [["hot tub", "jacuzzi", "spa"], "hotTub"],
-  [["bbq", "grill", "barbecue"], "grill"],
-  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden"], "outdoor"],
-  [["kitchen", "cook"], "kitchen"],
-  [["coffee", "espresso"], "coffee"],
-  [["gym", "fitness"], "gym"],
-  [["smart tv", "tv", "television"], "tv"],
-  [["air conditioning", "a/c", "air conditioner"], "ac"],
-  [["washer", "dryer", "laundry", "washing machine"], "laundry"],
-  [["pet", "dog", "cat"], "pet"],
-  [["workspace", "desk", "office"], "workspace"],
-  [["fireplace"], "fireplace"],
-  [["bike", "bicycle"], "bike"],
-  [["dock", "marina", "boat"], "boat"],
-  [["game room", "games", "arcade", "pool table", "billiard"], "games"],
-  [["elevator", "lift"], "elevator"],
-  [["smart lock", "self check-in", "keyless", "safe"], "lock"],
-  [["crib", "baby", "infant"], "baby"],
-  [["king bed", "queen bed", "bed"], "bed"],
-  [["breakfast"], "breakfast"],
-  [["security camera", "camera"], "camera"],
-  [["ev charger", "electric vehicle"], "ev"],
+  [["parking", "garage", "estacionamiento", "garaje"], "parking"],
+  [["pool", "swimming", "piscina", "alberca"], "pool"],
+  [["beach", "beachfront", "ocean", "playa", "océano", "oceano"], "beach"],
+  [["bath", "bathroom", "shower", "tub", "baño", "ducha", "bañera"], "bath"],
+  [["hot tub", "jacuzzi", "spa", "hidromasaje"], "hotTub"],
+  [["bbq", "grill", "barbecue", "parrilla", "barbacoa"], "grill"],
+  [["outdoor", "patio", "terrace", "deck", "balcony", "yard", "garden", "terraza", "balcón", "balcon", "jardín", "jardin", "exterior"], "outdoor"],
+  [["kitchen", "cook", "cocina", "kitchenette"], "kitchen"],
+  [["coffee", "espresso", "café", "cafe", "cafetera"], "coffee"],
+  [["gym", "fitness", "gimnasio"], "gym"],
+  [["smart tv", "tv", "television", "televisión", "cinema", "cine"], "tv"],
+  [["air conditioning", "a/c", "air conditioner", "aire acondicionado", "climatizado"], "ac"],
+  [["washer", "dryer", "laundry", "washing machine", "lavadora", "secadora", "lavandería", "lavanderia"], "laundry"],
+  [["pet", "dog", "cat", "mascota", "perro", "gato"], "pet"],
+  [["workspace", "desk", "office", "espacio de trabajo", "escritorio", "oficina"], "workspace"],
+  [["fireplace", "chimenea"], "fireplace"],
+  [["bike", "bicycle", "bicicleta"], "bike"],
+  [["dock", "marina", "boat", "muelle", "bote", "barco"], "boat"],
+  [["game room", "games", "arcade", "pool table", "billiard", "juegos", "billar"], "games"],
+  [["elevator", "lift", "ascensor"], "elevator"],
+  [["smart lock", "self check-in", "keyless", "safe", "cerradura inteligente", "sin llave", "caja fuerte"], "lock"],
+  [["crib", "baby", "infant", "cuna", "bebé", "bebe"], "baby"],
+  [["king bed", "queen bed", "bed", "cama"], "bed"],
+  [["breakfast", "desayuno"], "breakfast"],
+  [["security camera", "camera", "cámara", "camara", "seguridad"], "camera"],
+  [["ev charger", "electric vehicle", "cargador eléctrico", "cargador electrico", "vehículo eléctrico", "vehiculo electrico"], "ev"],
 ];
 
 function getAmenityIconKey(name: string): AmenityIconKey {
@@ -1532,6 +1533,9 @@ export default function PublicPropertyDetailPage() {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [confirmationStarted, setConfirmationStarted] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   
   function handlePreferredLanguageChange(
   language: GuestLanguage
@@ -1914,6 +1918,7 @@ useEffect(() => {
 
 useEffect(() => {
   setCancellationTermsAccepted(false);
+  setConfirmationStarted(false);
 }, [
   checkIn,
   checkOut,
@@ -2035,11 +2040,12 @@ guestAcceptedSecurePreCheckinRequirementSource:
   }
 
 return (
-  <div style={styles.page}>
-    <header style={styles.header}>
-      <div style={styles.headerInner}>
+  <div className="pbe-page" style={styles.page}>
+    <header className="pbe-header" style={styles.header}>
+      <div className="pbe-header-inner" style={styles.headerInner}>
         <Link
           to={`/book/${organizationSlug}`}
+          className="pbe-brand"
           style={styles.brandWrap}
         >
           <img
@@ -2064,6 +2070,7 @@ return (
         <div
           role="group"
           aria-label={copy.guestLanguage}
+          className="pbe-language"
           style={styles.languageSelector}
         >
           <button
@@ -2123,15 +2130,28 @@ return (
           </section>
         ) : (
           <>
-            <section style={styles.heroSection}>
-              <div style={styles.heroContainer}>
-                <div style={styles.badge}>{property.organization.name}</div>
+            <section className="pbe-rescue-hero" style={styles.heroSection}>
+              {photos[0] ? (
+                <img
+                  className="pbe-rescue-hero-image"
+                  src={photos[0]}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
+              <div className="pbe-rescue-hero-shade" aria-hidden="true" />
+              <div className="pbe-rescue-hero-content" style={styles.heroContainer}>
+                <div className="pbe-rescue-eyebrow" style={styles.badge}>
+                  {property.organization.name}
+                </div>
 
-                <h1 style={styles.heroTitle}>
+                <h1 className="pbe-rescue-title" style={styles.heroTitle}>
                   {property.publicTitle || property.name}
                 </h1>
 
-                <div style={styles.heroMeta}>
+                <div className="pbe-rescue-accent" aria-hidden="true" />
+
+                <div className="pbe-rescue-meta" style={styles.heroMeta}>
                   {location ? <span>📍 {location}</span> : null}
 
                   {property.maxGuests ? (
@@ -2145,13 +2165,25 @@ return (
                   </span>
                 </div>
 
-                             </div>
+                {photos.length > 1 ? (
+                  <button
+                    className="pbe-rescue-gallery-action"
+                    type="button"
+                    onClick={() => setSelectedPhotoIndex(0)}
+                  >
+                    {preferredLanguage === "es"
+                      ? `Ver las ${photos.length} fotos`
+                      : `View all ${photos.length} photos`}
+                    <span aria-hidden="true">↗</span>
+                  </button>
+                ) : null}
+              </div>
             </section>
 <section style={styles.sectionAlt}>
   <div style={styles.container}>
-    <div style={styles.topBookingGrid}>
+    <div className="pbe-retired-experience" aria-hidden="true" style={styles.topBookingGrid}>
       <div style={styles.topBookingLeft}>
-        <div style={styles.enterpriseGallery}>
+        <div className="pbe-legacy-gallery" style={styles.enterpriseGallery}>
           {photos.length > 1 ? (
             <button
               type="button"
@@ -2209,9 +2241,216 @@ return (
       {/* aquí va el form bookingCard movido */}
     </div>
 
-                <div style={styles.detailGrid}>
-                     <div style={styles.leftColumn}>
-  <div style={styles.infoCard}>
+                <section className="pbe-section pbe-story" aria-labelledby="pbe-story-title">
+                  <div className="pbe-story-copy">
+                    <p className="pbe-kicker">
+                      {preferredLanguage === "es" ? "LA EXPERIENCIA" : "THE EXPERIENCE"}
+                    </p>
+                    <h2 id="pbe-story-title">
+                      {preferredLanguage === "es"
+                        ? "Un lugar que se siente especial antes de llegar."
+                        : "A place that feels special before you arrive."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {property.publicDescription || copy.defaultPropertyDescription}
+                    </p>
+                    <div className="pbe-trust-list">
+                      <span>{preferredLanguage === "es" ? "Reserva directa y segura" : "Secure direct booking"}</span>
+                      <span>{preferredLanguage === "es" ? "Llegada autónoma y protegida" : "Protected, autonomous arrival"}</span>
+                      <span>{preferredLanguage === "es" ? "Experiencia operada por Pin&Go" : "Experience operated by Pin&Go"}</span>
+                    </div>
+                  </div>
+                  {photos[1] || photos[0] ? (
+                    <button
+                      className="pbe-editorial-photo"
+                      type="button"
+                      onClick={() => setSelectedPhotoIndex(photos[1] ? 1 : 0)}
+                      aria-label={preferredLanguage === "es" ? "Abrir fotografía de la propiedad" : "Open property photo"}
+                    >
+                      <img src={photos[1] || photos[0]} alt={property.publicTitle || property.name} />
+                    </button>
+                  ) : null}
+                </section>
+
+                {photos.length > 1 ? (
+                  <section className="pbe-section pbe-gallery" aria-labelledby="pbe-gallery-title">
+                    <div className="pbe-gallery-heading">
+                      <div>
+                        <p className="pbe-kicker">{preferredLanguage === "es" ? "DESCUBRE EL ESPACIO" : "DISCOVER THE SPACE"}</p>
+                        <h2 id="pbe-gallery-title">
+                          {preferredLanguage === "es" ? "Una estadía que comienza con la vista." : "A stay that begins with the view."}
+                        </h2>
+                      </div>
+                      <p className="pbe-lead">
+                        {preferredLanguage === "es"
+                          ? "Recorre cada detalle antes de elegir tus fechas."
+                          : "Explore every detail before choosing your dates."}
+                      </p>
+                    </div>
+                    <div className={`pbe-gallery-grid pbe-gallery-grid--${Math.min(photos.length, 5)}`}>
+                      {photos.slice(0, 5).map((photo, index) => (
+                        <button
+                          key={`${photo}-${index}`}
+                          type="button"
+                          onClick={() => setSelectedPhotoIndex(index)}
+                          aria-label={`${preferredLanguage === "es" ? "Abrir fotografía" : "Open photo"} ${index + 1}`}
+                        >
+                          <img src={photo} alt={`${property.publicTitle || property.name} ${index + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="pbe-section pbe-description" aria-labelledby="pbe-description-title">
+                  <div className="pbe-description-intro">
+                    <p className="pbe-kicker">
+                      {preferredLanguage === "es" ? "CONOCE LA PROPIEDAD" : "DISCOVER THE PROPERTY"}
+                    </p>
+                    <h2 id="pbe-description-title">
+                      {preferredLanguage === "es" ? "Cada detalle tiene una intención." : "Every detail has a purpose."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Explora la historia completa cuando quieras; la decisión de reservar permanece simple."
+                        : "Explore the full story when you want; the decision to book stays simple."}
+                    </p>
+                  </div>
+                  <div className="pbe-description-list">
+                    <details open>
+                      <summary>
+                        <span>01</span>
+                        <strong>{preferredLanguage === "es" ? "La propiedad" : "The property"}</strong>
+                        <i aria-hidden="true">+</i>
+                      </summary>
+                      <p>{property.publicDescription || copy.defaultPropertyDescription}</p>
+                    </details>
+                    <details>
+                      <summary>
+                        <span>02</span>
+                        <strong>{preferredLanguage === "es" ? "Llegada y salida" : "Arrival and departure"}</strong>
+                        <i aria-hidden="true">+</i>
+                      </summary>
+                      <p>
+                        {preferredLanguage === "es"
+                          ? `Check-in ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. Check-out ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`
+                          : `Check-in ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. Check-out ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`}
+                      </p>
+                    </details>
+                    <details>
+                      <summary>
+                        <span>03</span>
+                        <strong>{preferredLanguage === "es" ? "Llegada segura" : "Secure arrival"}</strong>
+                        <i aria-hidden="true">+</i>
+                      </summary>
+                      <p>{copy.securePreCheckinIntro}</p>
+                    </details>
+                  </div>
+                </section>
+
+                <section className="pbe-section pbe-amenities" aria-labelledby="pbe-amenities-title">
+                  <div className="pbe-section-heading">
+                    <p className="pbe-kicker">{preferredLanguage === "es" ? "AMENIDADES" : "AMENITIES"}</p>
+                    <h2 id="pbe-amenities-title">
+                      {preferredLanguage === "es" ? "Todo lo esencial. Y algo más." : "Everything essential. And more."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Comodidades seleccionadas para que la estadía se sienta natural desde el primer momento."
+                        : "Thoughtful comforts that make the stay feel effortless from the first moment."}
+                    </p>
+                  </div>
+                  <div className="pbe-amenity-grid">
+                    {[...includedAmenities, ...copy.propertyHighlights.items].slice(0, 8).map((item: any) => (
+                      <article className="pbe-amenity-card" key={item.id || item.icon || item.title}>
+                        <div className="pbe-amenity-icon">
+                          <AmenityIcon name={item.name || item.title} />
+                        </div>
+                        <h3>{item.name || item.title}</h3>
+                        <p>{item.description || (preferredLanguage === "es" ? "Incluido con tu estadía." : "Included with your stay.")}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                {location ? (
+                  <section className="pbe-section pbe-location" aria-labelledby="pbe-new-location-title">
+                    <div>
+                      <p className="pbe-kicker">{preferredLanguage === "es" ? "LOCALIZACIÓN" : "LOCATION"}</p>
+                      <h2 id="pbe-new-location-title">
+                        {preferredLanguage === "es" ? "Cerca de todo. Lejos de lo ordinario." : "Close to everything. Far from ordinary."}
+                      </h2>
+                      <p className="pbe-lead">{location}</p>
+                      <a
+                        className="pbe-outline-action"
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {preferredLanguage === "es" ? "Explorar ubicación" : "Explore location"}
+                        <span aria-hidden="true">↗</span>
+                      </a>
+                    </div>
+                    <div className="pbe-map" aria-hidden="true">
+                      <div className="pbe-map-pin">
+                        <strong>{property.publicTitle || property.name}</strong>
+                        <small>{property.city || property.region || property.country}</small>
+                      </div>
+                    </div>
+                  </section>
+                ) : null}
+
+                {cancellationPolicySummary ? (
+                  <section className="pbe-section pbe-policies" id="booking-policies" aria-labelledby="pbe-policies-title">
+                    <div className="pbe-section-heading">
+                      <p className="pbe-kicker">{preferredLanguage === "es" ? "ANTES DE RESERVAR" : "BEFORE YOU BOOK"}</p>
+                      <h2 id="pbe-policies-title">
+                        {preferredLanguage === "es" ? "Claridad antes de decidir." : "Clarity before you decide."}
+                      </h2>
+                      <p className="pbe-lead">{cancellationPolicySummary.summaryText}</p>
+                    </div>
+                    <div className="pbe-policy-list">
+                      <details>
+                        <summary>
+                          <strong>{cancellationPolicySummary.title}</strong>
+                          <span>{preferredLanguage === "es" ? "Leer política completa" : "Read full policy"} ＋</span>
+                        </summary>
+                        <p>{cancellationPolicySummary.headline}</p>
+                        {cancellationPolicySummary.rules.map((rule, index) => (
+                          <p key={`${rule.label}-${index}`}>
+                            <strong>{rule.label} · {formatRefundPercent(rule.refundPercent)}</strong><br />
+                            {rule.windowLabel}{rule.description ? ` — ${rule.description}` : ""}
+                          </p>
+                        ))}
+                        <p>{cancellationPolicySummary.approvalNote}</p>
+                      </details>
+                      <details id="identity-check-policy">
+                        <summary>
+                          <strong>{copy.identityCheckStep}</strong>
+                          <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
+                        </summary>
+                        <p>{copy.securePreCheckinIntro}</p>
+                        <p>{copy.securePreCheckinAcceptanceText}</p>
+                      </details>
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="pbe-section pbe-booking-section" aria-labelledby="pbe-booking-title">
+                  <div className="pbe-booking-intro">
+                    <p className="pbe-kicker">{preferredLanguage === "es" ? "TU ESTADÍA" : "YOUR STAY"}</p>
+                    <h2 id="pbe-booking-title">
+                      {preferredLanguage === "es" ? "Elige cuándo quieres escapar." : "Choose when you want to get away."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Solo se muestran fechas disponibles. Confirmaremos el precio antes del pago."
+                        : "Only available dates are shown. We will confirm the price before payment."}
+                    </p>
+                  </div>
+                  <div className="pbe-booking-layout" style={styles.detailGrid}>
+                     <div className="pbe-retired-experience" aria-hidden="true" style={styles.leftColumn}>
+  <div className="pbe-legacy-overview" style={styles.infoCard}>
     <div style={styles.sectionEyebrow}>
       {copy.propertyOverview}
     </div>
@@ -2220,10 +2459,25 @@ return (
       {property.publicTitle || property.name}
     </h2>
 
-    <p style={styles.overviewText}>
-  {property.publicDescription ||
-    copy.defaultPropertyDescription}
-</p>
+    <div
+      className={`pbe-long-description${descriptionExpanded ? " is-expanded" : ""}`}
+      style={styles.overviewText}
+    >
+      {property.publicDescription || copy.defaultPropertyDescription}
+    </div>
+    {(property.publicDescription?.length ?? 0) > 520 ? (
+      <button
+        className="pbe-description-toggle"
+        type="button"
+        onClick={() => setDescriptionExpanded((current) => !current)}
+        aria-expanded={descriptionExpanded}
+      >
+        {descriptionExpanded
+          ? preferredLanguage === "es" ? "Mostrar menos" : "Show less"
+          : preferredLanguage === "es" ? "Leer la historia completa" : "Read the full story"}
+        <span aria-hidden="true">{descriptionExpanded ? "↑" : "↓"}</span>
+      </button>
+    ) : null}
   </div>
 
   <div style={styles.infoCard}>
@@ -2257,7 +2511,7 @@ return (
     </div>
   </div>
                   
-<div style={styles.securePreCheckinDisclosure}>
+<div className="pbe-legacy-arrival" style={styles.securePreCheckinDisclosure}>
   <div style={styles.securePreCheckinDisclosureHeader}>
     <div style={styles.securePreCheckinDisclosureIcon} aria-hidden="true">
       🛡️
@@ -2311,7 +2565,7 @@ return (
 </div>
 </div>
 
-  <div style={styles.trustSection}>
+  <div className="pbe-legacy-amenities" style={styles.trustSection}>
     <div style={styles.sectionEyebrow}>
       {copy.propertyHighlights.eyebrow}
     </div>
@@ -2322,7 +2576,7 @@ return (
 
     <div style={styles.trustGrid}>
       {copy.propertyHighlights.items.map((item) => (
-        <div key={item.icon} style={styles.trustCard}>
+        <div className="pbe-rescue-highlight" key={item.icon} style={styles.trustCard}>
           <PublicFeatureIcon type={item.icon} />
           <strong>{item.title}</strong>
           <span>{item.description}</span>
@@ -2337,7 +2591,7 @@ return (
 
       <div style={styles.includedAmenitiesGrid}>
         {includedAmenities.map((amenity) => (
-         <div key={amenity.id} style={styles.includedAmenityPill}>
+         <div className="pbe-rescue-amenity" key={amenity.id} style={styles.includedAmenityPill}>
   <AmenityIcon name={amenity.name} />
   <span>{amenity.name}</span>
 </div>
@@ -2348,8 +2602,41 @@ return (
   ) : null}
 </div>
 
-                    
-                    <div style={styles.pinGoPanel}>
+                    {location ? (
+                      <section className="pbe-rescue-location" aria-labelledby="pbe-location-title">
+                        <div className="pbe-rescue-location-copy">
+                          <span>
+                            {preferredLanguage === "es" ? "LOCALIZACIÓN" : "LOCATION"}
+                          </span>
+                          <h3 id="pbe-location-title">
+                            {preferredLanguage === "es"
+                              ? "Cerca de todo. Lejos de lo ordinario."
+                              : "Close to everything. Far from ordinary."}
+                          </h3>
+                          <p>{location}</p>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {preferredLanguage === "es" ? "Explorar ubicación" : "Explore location"}
+                            <span aria-hidden="true">↗</span>
+                          </a>
+                        </div>
+                        <div className="pbe-rescue-map" aria-hidden="true">
+                          <div className="pbe-rescue-map-water" />
+                          <div className="pbe-rescue-map-road pbe-rescue-map-road-one" />
+                          <div className="pbe-rescue-map-road pbe-rescue-map-road-two" />
+                          <div className="pbe-rescue-map-marker">
+                            <span>●</span>
+                            <strong>{property.publicTitle || property.name}</strong>
+                            <small>{property.city || property.region || property.country}</small>
+                          </div>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    <div className="pbe-legacy-pingo" style={styles.pinGoPanel}>
                       <div>
                         <div style={styles.sectionEyebrow}>
                           {copy.pinGoPanel.eyebrow}
@@ -2375,7 +2662,7 @@ return (
                     </div>
                   </div>
 
-                  <form onSubmit={handleReserve} style={styles.bookingCard}>
+                  <form className="pbe-legacy-booking pbe-reservation-flow" onSubmit={handleReserve} style={styles.bookingCard}>
                     <div style={styles.bookingHeader}>
                       <div>
                         <div style={styles.bookingPrice}>
@@ -2399,9 +2686,9 @@ return (
                       </div>
                     </div>
 
-                  <div style={styles.calendarBox}>
-  <div style={styles.calendarHeader}>
-    <div style={styles.calendarDatePanel}>
+                  <div className="pbe-legacy-calendar pbe-calendar-stage" style={styles.calendarBox}>
+  <div className="pbe-date-summary" style={styles.calendarHeader}>
+    <div className="pbe-date-summary-card" style={styles.calendarDatePanel}>
   <div style={styles.calendarLabel}>
     {copy.checkInDate}
   </div>
@@ -2412,7 +2699,7 @@ return (
       : copy.addDate}
   </div>
 </div>
-   <div style={styles.calendarDatePanel}>
+   <div className="pbe-date-summary-card" style={styles.calendarDatePanel}>
   <div style={styles.calendarLabel}>
     {copy.checkOutDate}
   </div>
@@ -2445,7 +2732,7 @@ return (
      />
   </div>
 </div>
-                        <div style={styles.guestSelector}>
+                        <div className="pbe-legacy-guests pbe-guest-stage" style={styles.guestSelector}>
                       <div style={styles.guestRow}>
                         <div>
   <div style={styles.guestLabel}>
@@ -2539,8 +2826,58 @@ return (
                       </div>
                     </div>
 
-                  
-                    <label style={styles.field}>
+                    {!checkoutStarted ? (
+                      <>
+                        <button
+                          className="pbe-primary pbe-continue-action"
+                          type="button"
+                          disabled={!checkIn || !checkOut}
+                          onClick={() => setCheckoutStarted(true)}
+                        >
+                          {preferredLanguage === "es"
+                            ? "Confirmar fechas y continuar"
+                            : "Confirm dates and continue"}
+                          <span aria-hidden="true">→</span>
+                        </button>
+                        <p className="pbe-secure-note">
+                          {preferredLanguage === "es"
+                            ? "Todavía no se realizará ningún cargo."
+                            : "You will not be charged yet."}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="pbe-checkout-stage pbe-client-stage">
+                        <div className="pbe-checkout-stage-heading">
+                          <div>
+                            <span>
+                              {preferredLanguage === "es" ? "PASO FINAL" : "FINAL STEP"}
+                            </span>
+                            <h2>
+                              {preferredLanguage === "es"
+                                ? "Confirma tu estadía"
+                                : "Confirm your stay"}
+                            </h2>
+                            <p>
+                              {preferredLanguage === "es"
+                                ? "Primero tu información; luego continuarás al pago seguro con Stripe."
+                                : "Your information comes first; secure payment with Stripe follows."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCheckoutStarted(false);
+                              setConfirmationStarted(false);
+                            }}
+                          >
+                            {preferredLanguage === "es" ? "Editar fechas" : "Edit dates"}
+                          </button>
+                        </div>
+
+                    {!confirmationStarted ? (
+                      <>
+                    <div className="pbe-client-fields">
+                    <label className="pbe-client-field" style={styles.field}>
                       <span>{copy.fullName}</span>
 
                       <input
@@ -2550,7 +2887,7 @@ return (
                         style={styles.input}
                       />
                     </label>
-                    <label style={styles.field}>
+                    <label className="pbe-client-field" style={styles.field}>
                       <span>{copy.email}</span>
 
                       <input
@@ -2561,7 +2898,7 @@ return (
                         style={styles.input}
                       />
                     </label>
-                     <label style={styles.field}>
+                     <label className="pbe-client-field" style={styles.field}>
                        <span>{copy.phone}</span>
 
                        <input
@@ -2571,7 +2908,8 @@ return (
                          style={styles.input}
                        />
                      </label>
-                <div style={styles.stayNotificationsCard}>
+                    </div>
+                <div className="pbe-notification-option" style={styles.stayNotificationsCard}>
   <label style={styles.stayNotificationsLabel}>
     <input
       type="checkbox"
@@ -2600,7 +2938,7 @@ return (
   </label>
 </div>
                     {optionalAmenities.length > 0 ? (
-                      <div style={styles.addOnsBox}>
+                      <div className="pbe-addons" style={styles.addOnsBox}>
                         <div style={styles.addOnsTitle}>
                           {copy.optionalAddOns}
                         </div>
@@ -2654,7 +2992,33 @@ return (
 </div>
 ) : null}
 
-<div style={styles.priceBox}>
+                        <button
+                          className="pbe-primary pbe-review-action"
+                          type="button"
+                          disabled={!guestName.trim() || !guestEmail.trim()}
+                          onClick={() => setConfirmationStarted(true)}
+                        >
+                          {preferredLanguage === "es" ? "Revisar estadía y acuerdos" : "Review stay and agreements"}
+                          <span aria-hidden="true">→</span>
+                        </button>
+                        <p className="pbe-secure-note">
+                          {preferredLanguage === "es"
+                            ? "El pago seguro con Stripe será el próximo paso."
+                            : "Secure payment with Stripe will be the next step."}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="pbe-confirmation-stage">
+                        <div className="pbe-confirmation-heading">
+                          <div>
+                            <span>{preferredLanguage === "es" ? "REVISIÓN FINAL" : "FINAL REVIEW"}</span>
+                            <h3>{preferredLanguage === "es" ? "Resumen y acuerdos" : "Summary and agreements"}</h3>
+                          </div>
+                          <button type="button" onClick={() => setConfirmationStarted(false)}>
+                            {preferredLanguage === "es" ? "Editar información" : "Edit information"}
+                          </button>
+                        </div>
+<div className="pbe-legacy-price pbe-price-summary" style={styles.priceBox}>
   <div style={styles.priceBoxTitle}>
     {copy.priceDetails}
   </div>
@@ -2747,7 +3111,7 @@ return (
 </div>
                     </div>
 
-     <div style={styles.securePreCheckinAcceptanceCard}>
+     <div className="pbe-agreement-card pbe-agreement-card--identity" style={styles.securePreCheckinAcceptanceCard}>
   <label style={styles.securePreCheckinAcceptanceLabel}>
     <input
       type="checkbox"
@@ -2765,13 +3129,16 @@ return (
 
 <div style={styles.securePreCheckinAcceptanceText}>
   {copy.securePreCheckinAcceptanceText}
+  <a className="pbe-inline-document" href="#identity-check-policy">
+    {preferredLanguage === "es" ? "Leer requisitos completos" : "Read full requirements"}
+  </a>
 </div>
     </div>
   </label>
 </div>
 
             {cancellationPolicySummary ? (
-  <div style={styles.cancellationPolicyBox}>
+  <div className="pbe-legacy-policy" style={styles.cancellationPolicyBox}>
     <div style={styles.cancellationPolicyHeader}>
       <span style={styles.cancellationPolicyIcon}>
         ↩
@@ -2920,6 +3287,7 @@ return (
             
                    {cancellationPolicySummary ? (
   <div
+    className="pbe-agreement-card"
     style={
       styles.cancellationTermsAcknowledgmentCard
     }
@@ -2947,6 +3315,9 @@ return (
 
         <div style={styles.cancellationTermsText}>
           {copy.eligibleRefundNotice}
+          <a className="pbe-inline-document" href="#booking-policies">
+            {preferredLanguage === "es" ? "Leer política completa" : "Read full policy"}
+          </a>
         </div>
 
         {cancellationRefundBasisDisclosure ? (
@@ -2977,6 +3348,7 @@ return (
                     ) : null}
 
                     <button
+                      className="pbe-primary"
                       type="submit"
                       disabled={reserveButtonDisabled}
                       style={{
@@ -2992,7 +3364,7 @@ return (
                         : copy.reserveNow}
                     </button>
 
-                 <div style={styles.paymentMethods}>
+                 <div className="pbe-secure-payment" style={styles.paymentMethods}>
   <div style={styles.paymentTrustRow}>
     <span style={styles.paymentTrustIcon}>🔒</span>
     <span>
@@ -3027,9 +3399,57 @@ return (
                     .
                   </span>
                 </div>
-                 </form>
-                </div>
+                      </div>
+                    )}
+                      </div>
+                    )}
+                  </form>
+                  </div>
+                </section>
               </div>
+            </section>
+
+            <section className="pbe-section pbe-guest-services" aria-labelledby="pbe-guest-services-title">
+              <div className="pbe-guest-services-copy">
+                <p className="pbe-kicker">PIN&amp;GO GUEST SERVICES</p>
+                <h2 id="pbe-guest-services-title">
+                  {preferredLanguage === "es" ? "Estamos aquí antes de tu llegada." : "We are here before you arrive."}
+                </h2>
+                <p className="pbe-lead">
+                  {preferredLanguage === "es"
+                    ? "¿Tienes preguntas sobre la propiedad, sus amenidades, la ubicación o el proceso de reserva? Nuestro equipo puede orientarte sin necesidad de contactar directamente al anfitrión."
+                    : "Questions about the property, amenities, location, or booking process? Our team can guide you without requiring direct host contact."}
+                </p>
+              </div>
+              <div className="pbe-guest-services-actions">
+                <a
+                  className="pbe-service-card"
+                  href={`mailto:support@pin-ngo.com?subject=${encodeURIComponent(`Direct Booking · ${property.publicTitle || property.name}`)}`}
+                >
+                  <span aria-hidden="true">✉</span>
+                  <div>
+                    <small>{preferredLanguage === "es" ? "CONTACTAR" : "CONTACT"}</small>
+                    <strong>support@pin-ngo.com</strong>
+                    <p>{preferredLanguage === "es" ? "Ayuda antes y después de reservar" : "Help before and after booking"}</p>
+                  </div>
+                  <b aria-hidden="true">↗</b>
+                </a>
+                <Link className="pbe-service-card" to="/legal/support-policy">
+                  <span aria-hidden="true">◎</span>
+                  <div>
+                    <small>{preferredLanguage === "es" ? "SERVICIO" : "SERVICE"}</small>
+                    <strong>{preferredLanguage === "es" ? "Cómo podemos ayudarte" : "How we can help"}</strong>
+                    <p>{preferredLanguage === "es" ? "Consulta nuestra política de soporte" : "Read our support policy"}</p>
+                  </div>
+                  <b aria-hidden="true">→</b>
+                </Link>
+              </div>
+              <p className="pbe-pin-ai-note">
+                <span aria-hidden="true">✦</span>
+                {preferredLanguage === "es"
+                  ? "Preparado para asistencia conversacional de Pin AI."
+                  : "Ready for conversational assistance from Pin AI."}
+              </p>
             </section>
           </>
         )}
@@ -3092,7 +3512,7 @@ return (
   </div>
 )}
 
-      <footer style={styles.footer}>
+      <footer className="pbe-footer" style={styles.footer}>
         <div style={styles.container}>
           © Pin&Go. Direct booking powered by autonomous property operations.
         </div>
