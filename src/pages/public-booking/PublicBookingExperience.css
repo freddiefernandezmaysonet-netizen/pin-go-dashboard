@@ -193,7 +193,11 @@
   background: transparent !important;
 }
 .pbe-date-summary-card + .pbe-date-summary-card { border-left: 1px solid var(--pbe-line) !important; }
-.pbe-calendar-stage > div:last-child { overflow-x: hidden !important; padding: 25px 18px 18px; }
+.pbe-calendar-stage > div:last-child {
+  overflow-x: hidden !important;
+  padding: 25px 18px 18px;
+}
+
 .pbe-calendar-stage .rdp-root {
   width: 100%;
   --rdp-accent-color: var(--pbe-forest);
@@ -204,7 +208,14 @@
   --rdp-day_button-height: 38px;
   --rdp-months-gap: 20px;
 }
-.pbe-calendar-stage .rdp-months { width: 100%; max-width: none; flex-wrap: nowrap; justify-content: space-evenly; margin: 0 auto; }
+
+.pbe-calendar-stage .rdp-months {
+  width: 100%;
+  max-width: none;
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  margin: 0 auto;
+}
 .pbe-calendar-stage .rdp-day_button { border-radius: 50%; }
 .pbe-guest-stage {
   margin-top: 17px !important;
