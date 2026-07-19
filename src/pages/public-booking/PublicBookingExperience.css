@@ -194,7 +194,8 @@
 }
 .pbe-date-summary-card + .pbe-date-summary-card { border-left: 1px solid var(--pbe-line) !important; }
 .pbe-calendar-stage > div:last-child { padding: 25px 18px 18px; }
-.pbe-calendar-stage .rdp-root { --rdp-accent-color: var(--pbe-forest); --rdp-accent-background-color: #dce7df; }
+.pbe-calendar-stage .rdp-root { width: 100%; --rdp-accent-color: var(--pbe-forest); --rdp-accent-background-color: #dce7df; }
+.pbe-calendar-stage .rdp-months { flex-wrap: nowrap; justify-content: center; margin: 0 auto; }
 .pbe-calendar-stage .rdp-day_button { border-radius: 50%; }
 .pbe-guest-stage {
   margin-top: 17px !important;
@@ -336,6 +337,7 @@
   .pbe-gallery-grid button:first-child { grid-column: 1 / -1; grid-row: auto; }
   .pbe-section h2 { font-size: clamp(39px,12vw,58px); }
   .pbe-editorial-photo { min-height: 475px; border-radius: 145px 145px 12px 12px; }
+  .pbe-calendar-stage .rdp-months { flex-direction: column; align-items: center; }
   .pbe-section-heading { display: block; }
   .pbe-section-heading .pbe-lead { margin-top: 22px; }
   .pbe-amenity-grid { grid-template-columns: 1fr 1fr; margin-top: 42px; }
