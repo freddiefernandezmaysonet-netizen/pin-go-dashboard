@@ -30,6 +30,10 @@ type PublicProperty = {
   cancellationPolicyPresentation?:
   | PublicCancellationPolicyPresentation
   | null;
+  guestAccessSettings?: {
+    configured: boolean;
+    requiresIdentityVerification: boolean;
+  } | null;
   amenities?: Array<{
   id: string;
   name: string;
@@ -1492,13 +1496,25 @@ function SmartStayIcon() {
 
 const SECURE_PRE_CHECKIN_DISCLOSURE_VERSION = "SECURE_PRECHECKIN_DISCLOSURE_V1";
 
-const SECURE_PRE_CHECKIN_DISCLOSURE_TEXT =
-  "Secure Pre-check-in is required before access credentials are released. " +
-  "The primary guest must complete Identity Check and accept the Guest Agreement. " +
-  "The reservation may be confirmed after payment, but access remains pending until all required steps are completed. " +
-  "El Registro Seguro es obligatorio antes de que se liberen las credenciales de acceso. " +
-  "El huésped principal debe completar la Verificación de Identidad y aceptar el Acuerdo del Huésped. " +
-  "La reservación puede quedar confirmada después del pago, pero el acceso permanece pendiente hasta completar todos los requisitos.";
+function buildSecurePreCheckinDisclosureText(
+  identityVerificationRequired: boolean
+) {
+  const identityRequirement = identityVerificationRequired
+    ? "The primary guest must complete Identity Check and accept the Guest Agreement. "
+    : "The primary guest must accept the Guest Agreement. Identity Check is not required for this reservation. ";
+  const identityRequirementEs = identityVerificationRequired
+    ? "El huésped principal debe completar la Verificación de Identidad y aceptar el Acuerdo del Huésped. "
+    : "El huésped principal debe aceptar el Acuerdo del Huésped. Esta reservación no requiere Verificación de Identidad. ";
+
+  return (
+    "Secure Pre-check-in is required before access credentials are released. " +
+    identityRequirement +
+    "The reservation may be confirmed after payment, but access remains pending until all required steps are completed. " +
+    "El Registro Seguro es obligatorio antes de que se liberen las credenciales de acceso. " +
+    identityRequirementEs +
+    "La reservación puede quedar confirmada después del pago, pero el acceso permanece pendiente hasta completar todos los requisitos."
+  );
+}
 
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
@@ -1664,6 +1680,15 @@ const cancellationTermsAcceptanceText = useMemo(
 );
 
 const requiresCancellationTermsAcceptance = Boolean(cancellationPolicySummary);
+
+const identityVerificationRequired =
+  property?.guestAccessSettings
+    ?.requiresIdentityVerification !== false;
+
+const securePreCheckinDisclosureText =
+  buildSecurePreCheckinDisclosureText(
+    identityVerificationRequired
+  );
 
 const reserveButtonDisabled =
   submitting ||
@@ -2016,7 +2041,7 @@ guestAcceptedSecurePreCheckinRequirementAt:
     : null,
 
 guestAcceptedSecurePreCheckinRequirementText:
-  SECURE_PRE_CHECKIN_DISCLOSURE_TEXT,
+  securePreCheckinDisclosureText,
 
 guestAcceptedSecurePreCheckinRequirementVersion:
   SECURE_PRE_CHECKIN_DISCLOSURE_VERSION,
@@ -2435,11 +2460,21 @@ return (
                       </details>
                       <details id="identity-check-policy">
                         <summary>
-                          <strong>{copy.identityCheckStep}</strong>
+                          <strong>
+                            {identityVerificationRequired
+                              ? copy.identityCheckStep
+                              : copy.guestAgreementStep}
+                          </strong>
                           <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
                         </summary>
-                        <p>{copy.securePreCheckinIntro}</p>
-                        <p>{copy.securePreCheckinAcceptanceText}</p>
+                        <p>
+                          {identityVerificationRequired
+                            ? copy.securePreCheckinIntro
+                            : preferredLanguage === "es"
+                            ? "Después de reservar, el huésped principal acepta el Acuerdo del Huésped antes de que Pin&Go libere las credenciales de acceso. Esta reservación no requiere documento ni selfie."
+                            : "After booking, the primary guest accepts the Guest Agreement before Pin&Go releases access credentials. This reservation does not require a document or selfie."}
+                        </p>
+                        <p>{securePreCheckinDisclosureText}</p>
                       </details>
                     </div>
                   </section>
@@ -2539,7 +2574,11 @@ return (
 
   <div style={styles.securePreCheckinDisclosureText}>
   <p style={styles.securePreCheckinDisclosureParagraph}>
-    {copy.securePreCheckinIntro}
+    {identityVerificationRequired
+      ? copy.securePreCheckinIntro
+      : preferredLanguage === "es"
+      ? "Después de reservar, complete el Acuerdo del Huésped para recibir automáticamente sus credenciales de acceso. No se requiere documento ni selfie."
+      : "After booking, complete the Guest Agreement to receive your access credentials automatically. No document or selfie is required."}
   </p>
 </div>
   <div style={styles.securePreCheckinSteps}>
@@ -2548,18 +2587,24 @@ return (
       <span>{copy.reservationConfirmedStep}</span>
     </div>
 
-    <div style={styles.securePreCheckinStep}>
-      <span style={styles.securePreCheckinStepNumber}>2</span>
-      <span>{copy.identityCheckStep}</span>
-    </div>
+    {identityVerificationRequired ? (
+      <div style={styles.securePreCheckinStep}>
+        <span style={styles.securePreCheckinStepNumber}>2</span>
+        <span>{copy.identityCheckStep}</span>
+      </div>
+    ) : null}
 
     <div style={styles.securePreCheckinStep}>
-      <span style={styles.securePreCheckinStepNumber}>3</span>
+      <span style={styles.securePreCheckinStepNumber}>
+        {identityVerificationRequired ? "3" : "2"}
+      </span>
       <span>{copy.guestAgreementStep}</span>
     </div>
 
     <div style={styles.securePreCheckinStep}>
-  <span style={styles.securePreCheckinStepNumber}>4</span>
+  <span style={styles.securePreCheckinStepNumber}>
+    {identityVerificationRequired ? "4" : "3"}
+  </span>
  <span>
   {copy.accessReleasedStep}
 </span>
@@ -3143,7 +3188,11 @@ return (
 </div>
 
 <div style={styles.securePreCheckinAcceptanceText}>
-  {copy.securePreCheckinAcceptanceText}
+  {identityVerificationRequired
+    ? copy.securePreCheckinAcceptanceText
+    : preferredLanguage === "es"
+    ? "El huésped principal debe aceptar el Acuerdo del Huésped. Esta reservación no requiere Verificación de Identidad. El pago confirma la reservación, pero no libera las credenciales de acceso."
+    : "The primary guest must accept the Guest Agreement. This reservation does not require Identity Check. Payment confirms the reservation, but does not release access credentials."}
   <a className="pbe-inline-document" href="#identity-check-policy">
     {preferredLanguage === "es" ? "Leer requisitos completos" : "Read full requirements"}
   </a>
