@@ -5,6 +5,8 @@ export type DashboardOrganization = {
   name: string;
   slug: string | null;
   publicBookingEnabled: boolean;
+  guestCommunicationEmail: string | null;
+  guestCommunicationEmailConfigured: boolean;
   updatedAt: string;
 };
 
@@ -12,6 +14,7 @@ export type UpdateDashboardOrganizationInput = {
   name?: string;
   slug?: string;
   publicBookingEnabled?: boolean;
+  guestCommunicationEmail?: string;
 };
 
 export async function getDashboardOrganization() {
