@@ -252,6 +252,22 @@
 .pbe-policy-list summary::-webkit-details-marker { display: none; }
 .pbe-policy-list details p { max-width: 780px; margin: -3px 0 25px; color: var(--pbe-muted); line-height: 1.7; }
 
+.pbe-guest-services { position: relative; display: grid; grid-template-columns: .8fr 1.2fr; gap: 9vw; overflow: hidden; background: #dce5dd; }
+.pbe-guest-services::after { content: "P"; position: absolute; right: -3vw; bottom: -16vw; color: rgba(23,61,49,.045); font-family: Georgia, serif; font-size: 44vw; line-height: 1; pointer-events: none; }
+.pbe-guest-services-copy, .pbe-guest-services-actions, .pbe-pin-ai-note { position: relative; z-index: 1; }
+.pbe-guest-services-copy .pbe-lead { max-width: 580px; margin-top: 27px; }
+.pbe-guest-services-actions { display: grid; gap: 13px; align-content: center; }
+.pbe-service-card { min-height: 128px; padding: 24px; display: grid; grid-template-columns: 48px 1fr auto; gap: 19px; align-items: center; border: 1px solid rgba(23,61,49,.16); border-radius: 15px; background: rgba(255,253,248,.78); transition: transform .2s ease, background .2s ease, box-shadow .2s ease; }
+.pbe-service-card:hover { transform: translateY(-3px); background: var(--pbe-paper); box-shadow: 0 16px 38px rgba(22,55,41,.09); }
+.pbe-service-card > span { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--pbe-forest); color: white; }
+.pbe-service-card small, .pbe-service-card strong, .pbe-service-card p { display: block; }
+.pbe-service-card small { margin-bottom: 7px; color: #718078; font-size: 8px; font-weight: 800; letter-spacing: .15em; }
+.pbe-service-card strong { font-size: 16px; font-weight: 650; }
+.pbe-service-card p { margin: 5px 0 0; color: var(--pbe-muted); font-size: 11px; }
+.pbe-service-card b { color: var(--pbe-forest); font-weight: 500; }
+.pbe-pin-ai-note { grid-column: 1 / -1; margin: -38px 0 0; color: #617268; font-size: 10px; letter-spacing: .02em; }
+.pbe-pin-ai-note span { margin-right: 8px; color: var(--pbe-forest); }
+
 .pbe-checkout-overlay { position: fixed; z-index: 50; inset: 0; overflow-y: auto; background: var(--pbe-ivory); color: var(--pbe-ink); }
 .pbe-checkout-shell { width: min(1160px,calc(100% - 48px)); margin: 0 auto; padding-bottom: 75px; }
 .pbe-checkout-header { min-height: 78px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-bottom: 1px solid var(--pbe-line); }
@@ -322,6 +338,9 @@
   .pbe-amenity-grid { grid-template-columns: 1fr 1fr; margin-top: 42px; }
   .pbe-amenity-card { min-height: 215px; padding: 21px; }
   .pbe-map { min-height: 410px; }
+  .pbe-guest-services { grid-template-columns: 1fr; gap: 38px; }
+  .pbe-pin-ai-note { grid-column: auto; margin: 0; }
+  .pbe-service-card { min-height: 112px; padding: 19px; grid-template-columns: 42px 1fr auto; gap: 14px; }
   .pbe-booking-intro { margin-bottom: 36px; text-align: left; }
   .pbe-reservation-flow { padding: 23px 18px !important; border-radius: 16px !important; }
   .pbe-client-fields { grid-template-columns: 1fr; }

@@ -3406,6 +3406,49 @@ return (
                 </section>
               </div>
             </section>
+
+            <section className="pbe-section pbe-guest-services" aria-labelledby="pbe-guest-services-title">
+              <div className="pbe-guest-services-copy">
+                <p className="pbe-kicker">PIN&amp;GO GUEST SERVICES</p>
+                <h2 id="pbe-guest-services-title">
+                  {preferredLanguage === "es" ? "Estamos aquí antes de tu llegada." : "We are here before you arrive."}
+                </h2>
+                <p className="pbe-lead">
+                  {preferredLanguage === "es"
+                    ? "¿Tienes preguntas sobre la propiedad, sus amenidades, la ubicación o el proceso de reserva? Nuestro equipo puede orientarte sin necesidad de contactar directamente al anfitrión."
+                    : "Questions about the property, amenities, location, or booking process? Our team can guide you without requiring direct host contact."}
+                </p>
+              </div>
+              <div className="pbe-guest-services-actions">
+                <a
+                  className="pbe-service-card"
+                  href={`mailto:support@pin-ngo.com?subject=${encodeURIComponent(`Direct Booking · ${property.publicTitle || property.name}`)}`}
+                >
+                  <span aria-hidden="true">✉</span>
+                  <div>
+                    <small>{preferredLanguage === "es" ? "CONTACTAR" : "CONTACT"}</small>
+                    <strong>support@pin-ngo.com</strong>
+                    <p>{preferredLanguage === "es" ? "Ayuda antes y después de reservar" : "Help before and after booking"}</p>
+                  </div>
+                  <b aria-hidden="true">↗</b>
+                </a>
+                <Link className="pbe-service-card" to="/legal/support-policy">
+                  <span aria-hidden="true">◎</span>
+                  <div>
+                    <small>{preferredLanguage === "es" ? "SERVICIO" : "SERVICE"}</small>
+                    <strong>{preferredLanguage === "es" ? "Cómo podemos ayudarte" : "How we can help"}</strong>
+                    <p>{preferredLanguage === "es" ? "Consulta nuestra política de soporte" : "Read our support policy"}</p>
+                  </div>
+                  <b aria-hidden="true">→</b>
+                </Link>
+              </div>
+              <p className="pbe-pin-ai-note">
+                <span aria-hidden="true">✦</span>
+                {preferredLanguage === "es"
+                  ? "Preparado para asistencia conversacional de Pin AI."
+                  : "Ready for conversational assistance from Pin AI."}
+              </p>
+            </section>
           </>
         )}
       </main>
