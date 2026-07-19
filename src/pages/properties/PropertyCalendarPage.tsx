@@ -40,6 +40,8 @@ export function PropertyCalendarPage() {
   const [manualGuestName, setManualGuestName] = useState("");
   const [manualGuestEmail, setManualGuestEmail] = useState("");
   const [manualGuestPhone, setManualGuestPhone] = useState("");
+  const [manualGuestLanguage, setManualGuestLanguage] =
+    useState<"en" | "es">("en");
   const [manualPaymentState, setManualPaymentState] = useState("NONE");
   const [manualReservationQuote, setManualReservationQuote] =
     useState<any | null>(null);
@@ -1659,6 +1661,7 @@ if (manualPaymentState === "PAID" && !manualReservationQuote) {
   guestName: manualGuestName.trim(),
   guestEmail: manualGuestEmail.trim() || null,
   guestPhone: manualGuestPhone.trim() || null,
+  preferredLanguage: manualGuestLanguage,
  checkIn: manualReservationDateKeys.checkIn,
 checkOut: manualReservationDateKeys.checkOut,
 paymentState: manualPaymentState,
@@ -1677,6 +1680,7 @@ paymentState: manualPaymentState,
       setManualGuestName("");
       setManualGuestEmail("");
       setManualGuestPhone("");
+      setManualGuestLanguage("en");
       setManualPaymentState("NONE");
       setShowCreateReservationForm(false);
       setSelectedRange({ start: null, end: null });
@@ -2653,6 +2657,21 @@ paymentState: manualPaymentState,
                 placeholder="Guest phone"
                 style={styles.inlineActionInput}
               />
+
+              <label style={styles.manualQuoteLabel}>
+                Guest communication language
+              </label>
+
+              <select
+                value={manualGuestLanguage}
+                onChange={(e) =>
+                  setManualGuestLanguage(e.target.value === "es" ? "es" : "en")
+                }
+                style={styles.inlineActionInput}
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+              </select>
 
              <select
   value={manualPaymentState}
