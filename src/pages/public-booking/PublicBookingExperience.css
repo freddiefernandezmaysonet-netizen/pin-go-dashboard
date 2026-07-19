@@ -87,6 +87,12 @@
 .pbe-secure-note { margin: 13px 0 0; color: #67716c; text-align: center; font-size: 10px; }
 
 .pbe-section { padding: 112px 6vw; }
+.pbe-page main > section:not(.pbe-hero) > div > .pbe-section {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+}
 .pbe-section h2 { margin: 0; font-size: clamp(41px,5vw,74px); line-height: 1.04; font-weight: 400; letter-spacing: -.055em; }
 .pbe-lead { color: var(--pbe-muted); font-size: 17px; line-height: 1.8; }
 .pbe-retired-experience { display: none !important; }
@@ -97,6 +103,20 @@
 .pbe-trust-list span::before { content: "✓"; margin-right: 11px; color: #6f8e7b; }
 .pbe-editorial-photo { position: relative; min-height: 600px; overflow: hidden; border-radius: 210px 210px 16px 16px; }
 .pbe-editorial-photo img { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scale(1.08); }
+
+.pbe-gallery { background: var(--pbe-forest-deep); color: white; }
+.pbe-gallery-heading { display: grid; grid-template-columns: 1fr .55fr; gap: 9vw; align-items: end; margin-bottom: 55px; }
+.pbe-gallery .pbe-kicker { color: #a8c3b1; }
+.pbe-gallery .pbe-lead { margin: 0; color: rgba(255,255,255,.65); }
+.pbe-gallery-grid { height: min(68vw, 760px); display: grid; grid-template-columns: 1.4fr .8fr .8fr; grid-template-rows: 1fr 1fr; gap: 12px; }
+.pbe-gallery-grid button { position: relative; min-width: 0; overflow: hidden; padding: 0; border: 0; border-radius: 14px; background: #203a30; cursor: pointer; }
+.pbe-gallery-grid button:first-child { grid-row: 1 / 3; }
+.pbe-gallery-grid img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .45s ease, opacity .25s ease; }
+.pbe-gallery-grid button:hover img { transform: scale(1.025); opacity: .92; }
+.pbe-gallery-grid--2 { grid-template-columns: 1.35fr 1fr; grid-template-rows: 1fr; }
+.pbe-gallery-grid--2 button:first-child { grid-row: auto; }
+.pbe-gallery-grid--3 { grid-template-columns: 1.4fr .8fr; }
+.pbe-gallery-grid--4 { grid-template-columns: 1.4fr .8fr .8fr; }
 
 .pbe-description { display: grid; grid-template-columns: .82fr 1.18fr; gap: 9vw; background: #e7dfcf; }
 .pbe-description-intro { align-self: start; }
@@ -193,6 +213,12 @@
   background: white !important;
   color: var(--pbe-ink) !important;
 }
+.pbe-review-action { margin-top: 26px !important; }
+.pbe-confirmation-stage { margin-top: 34px; padding-top: 31px; border-top: 1px solid var(--pbe-line); animation: pbe-stage-in .32s ease-out both; }
+.pbe-confirmation-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.pbe-confirmation-heading span { color: #718078; font-size: 9px; font-weight: 800; letter-spacing: .15em; }
+.pbe-confirmation-heading h3 { margin: 7px 0 0; font-size: 27px; font-weight: 500; letter-spacing: -.035em; }
+.pbe-confirmation-heading button { padding: 0 0 5px; border: 0; border-bottom: 1px solid var(--pbe-line); background: transparent; color: var(--pbe-forest); font-size: 11px; font-weight: 750; cursor: pointer; }
 .pbe-notification-option, .pbe-addons, .pbe-price-summary {
   margin-top: 20px !important;
   border: 1px solid var(--pbe-line) !important;
@@ -282,6 +308,13 @@
   .pbe-booking-card { margin: 0 -20px; padding: 27px 20px 31px; border-radius: 0; box-shadow: none; backdrop-filter: none; }
   .pbe-section { padding: 78px 22px; }
   .pbe-story, .pbe-description, .pbe-location { grid-template-columns: 1fr; gap: 51px; }
+  .pbe-gallery-heading { grid-template-columns: 1fr; gap: 22px; margin-bottom: 35px; }
+  .pbe-gallery-grid, .pbe-gallery-grid--2, .pbe-gallery-grid--3, .pbe-gallery-grid--4 {
+    height: auto;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 420px 210px 210px;
+  }
+  .pbe-gallery-grid button:first-child { grid-column: 1 / -1; grid-row: auto; }
   .pbe-section h2 { font-size: clamp(39px,12vw,58px); }
   .pbe-editorial-photo { min-height: 475px; border-radius: 145px 145px 12px 12px; }
   .pbe-section-heading { display: block; }
@@ -293,6 +326,7 @@
   .pbe-reservation-flow { padding: 23px 18px !important; border-radius: 16px !important; }
   .pbe-client-fields { grid-template-columns: 1fr; }
   .pbe-client-field:first-child { grid-column: auto; }
+  .pbe-confirmation-heading { display: grid; }
   .pbe-date-summary-card { min-height: 88px; padding: 18px 14px !important; }
   .pbe-calendar-stage > div:last-child { overflow-x: auto; padding: 18px 8px 12px; }
   .pbe-checkout-shell { width: 100%; padding: 0 20px 45px; }

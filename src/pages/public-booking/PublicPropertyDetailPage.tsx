@@ -1534,6 +1534,7 @@ export default function PublicPropertyDetailPage() {
   const [children, setChildren] = useState(0);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [confirmationStarted, setConfirmationStarted] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   
   function handlePreferredLanguageChange(
@@ -1917,6 +1918,7 @@ useEffect(() => {
 
 useEffect(() => {
   setCancellationTermsAccepted(false);
+  setConfirmationStarted(false);
 }, [
   checkIn,
   checkOut,
@@ -2270,6 +2272,36 @@ return (
                   ) : null}
                 </section>
 
+                {photos.length > 1 ? (
+                  <section className="pbe-section pbe-gallery" aria-labelledby="pbe-gallery-title">
+                    <div className="pbe-gallery-heading">
+                      <div>
+                        <p className="pbe-kicker">{preferredLanguage === "es" ? "DESCUBRE EL ESPACIO" : "DISCOVER THE SPACE"}</p>
+                        <h2 id="pbe-gallery-title">
+                          {preferredLanguage === "es" ? "Una estadía que comienza con la vista." : "A stay that begins with the view."}
+                        </h2>
+                      </div>
+                      <p className="pbe-lead">
+                        {preferredLanguage === "es"
+                          ? "Recorre cada detalle antes de elegir tus fechas."
+                          : "Explore every detail before choosing your dates."}
+                      </p>
+                    </div>
+                    <div className={`pbe-gallery-grid pbe-gallery-grid--${Math.min(photos.length, 5)}`}>
+                      {photos.slice(0, 5).map((photo, index) => (
+                        <button
+                          key={`${photo}-${index}`}
+                          type="button"
+                          onClick={() => setSelectedPhotoIndex(index)}
+                          aria-label={`${preferredLanguage === "es" ? "Abrir fotografía" : "Open photo"} ${index + 1}`}
+                        >
+                          <img src={photo} alt={`${property.publicTitle || property.name} ${index + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
                 <section className="pbe-section pbe-description" aria-labelledby="pbe-description-title">
                   <div className="pbe-description-intro">
                     <p className="pbe-kicker">
@@ -2329,7 +2361,7 @@ return (
                     </p>
                   </div>
                   <div className="pbe-amenity-grid">
-                    {(includedAmenities.length ? includedAmenities : copy.propertyHighlights.items).slice(0, 8).map((item: any) => (
+                    {[...includedAmenities, ...copy.propertyHighlights.items].slice(0, 8).map((item: any) => (
                       <article className="pbe-amenity-card" key={item.id || item.icon || item.title}>
                         <div className="pbe-amenity-icon" aria-hidden="true">◇</div>
                         <h3>{item.name || item.title}</h3>
@@ -2831,12 +2863,17 @@ return (
                           </div>
                           <button
                             type="button"
-                            onClick={() => setCheckoutStarted(false)}
+                            onClick={() => {
+                              setCheckoutStarted(false);
+                              setConfirmationStarted(false);
+                            }}
                           >
                             {preferredLanguage === "es" ? "Editar fechas" : "Edit dates"}
                           </button>
                         </div>
 
+                    {!confirmationStarted ? (
+                      <>
                     <div className="pbe-client-fields">
                     <label className="pbe-client-field" style={styles.field}>
                       <span>{copy.fullName}</span>
@@ -2953,6 +2990,32 @@ return (
 </div>
 ) : null}
 
+                        <button
+                          className="pbe-primary pbe-review-action"
+                          type="button"
+                          disabled={!guestName.trim() || !guestEmail.trim()}
+                          onClick={() => setConfirmationStarted(true)}
+                        >
+                          {preferredLanguage === "es" ? "Revisar estadía y acuerdos" : "Review stay and agreements"}
+                          <span aria-hidden="true">→</span>
+                        </button>
+                        <p className="pbe-secure-note">
+                          {preferredLanguage === "es"
+                            ? "El pago seguro con Stripe será el próximo paso."
+                            : "Secure payment with Stripe will be the next step."}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="pbe-confirmation-stage">
+                        <div className="pbe-confirmation-heading">
+                          <div>
+                            <span>{preferredLanguage === "es" ? "REVISIÓN FINAL" : "FINAL REVIEW"}</span>
+                            <h3>{preferredLanguage === "es" ? "Resumen y acuerdos" : "Summary and agreements"}</h3>
+                          </div>
+                          <button type="button" onClick={() => setConfirmationStarted(false)}>
+                            {preferredLanguage === "es" ? "Editar información" : "Edit information"}
+                          </button>
+                        </div>
 <div className="pbe-legacy-price pbe-price-summary" style={styles.priceBox}>
   <div style={styles.priceBoxTitle}>
     {copy.priceDetails}
@@ -3334,6 +3397,8 @@ return (
                     .
                   </span>
                 </div>
+                      </div>
+                    )}
                       </div>
                     )}
                   </form>
