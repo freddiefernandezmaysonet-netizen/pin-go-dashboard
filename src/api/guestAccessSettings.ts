@@ -10,10 +10,23 @@ export type GuestAccessMode =
 export type PropertyGuestAgreement = {
   id: string;
   version: string;
+
+  // Legacy compatibility fields.
   title: string;
   agreementText: string;
   rules: string[];
-  guestFacingSummary: string;
+  guestFacingSummary: string | null;
+
+  // Localized agreement fields.
+  titleEn: string | null;
+  titleEs: string | null;
+  agreementTextEn: string | null;
+  agreementTextEs: string | null;
+  rulesEn: string[] | null;
+  rulesEs: string[] | null;
+  guestFacingSummaryEn: string | null;
+  guestFacingSummaryEs: string | null;
+
   requiresIdentityVerification: boolean;
   requiresAgreementSignature: boolean;
   isActive: boolean;
@@ -35,10 +48,22 @@ export type SaveGuestAccessSettingsInput = {
   guestAccessMode: GuestAccessMode;
   cleaningNfcEnabled: boolean;
   requiresIdentityVerification: boolean;
+
+  // Legacy compatibility fields.
   title: string;
   agreementText: string;
   guestFacingSummary: string;
   rules: string[];
+
+  // Localized agreement fields.
+  titleEn: string;
+  titleEs: string;
+  agreementTextEn: string;
+  agreementTextEs: string;
+  guestFacingSummaryEn: string;
+  guestFacingSummaryEs: string;
+  rulesEn: string[];
+  rulesEs: string[];
 };
 
 export type GetGuestAccessSettingsResponse = {
