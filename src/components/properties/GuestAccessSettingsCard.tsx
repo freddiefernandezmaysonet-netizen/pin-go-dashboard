@@ -844,7 +844,7 @@ function removeRule(
           titleEs: event.target.value,
         }))
       }
-      placeholder="Acuerdo del huésped "
+      placeholder="Acuerdo del huésped"
       style={inputStyle}
     />
   </label>
