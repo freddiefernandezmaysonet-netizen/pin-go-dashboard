@@ -21,10 +21,18 @@ type GuestAccessForm = {
   guestAccessMode: GuestAccessMode;
   cleaningNfcEnabled: boolean;
   requiresIdentityVerification: boolean;
-  title: string;
-  guestFacingSummary: string;
-  agreementText: string;
-  rules: string[];
+
+  titleEn: string;
+  titleEs: string;
+
+  guestFacingSummaryEn: string;
+  guestFacingSummaryEs: string;
+
+  agreementTextEn: string;
+  agreementTextEs: string;
+
+  rulesEn: string[];
+  rulesEs: string[];
 };
 
 type AccessScenario =
@@ -36,11 +44,20 @@ const EMPTY_FORM: GuestAccessForm = {
   guestAccessMode: "PASSCODE_ONLY",
   cleaningNfcEnabled: false,
   requiresIdentityVerification: true,
-  title: "Guest Agreement",
-  guestFacingSummary:
+
+  titleEn: "Guest Agreement",
+  titleEs: "Acuerdo del huÃ©sped",
+
+  guestFacingSummaryEn:
     "Complete secure pre-check-in before access can be released.",
-  agreementText: "",
-  rules: [""],
+  guestFacingSummaryEs:
+    "Complete el registro seguro antes de que se pueda liberar el acceso.",
+
+  agreementTextEn: "",
+  agreementTextEs: "",
+
+  rulesEn: [""],
+  rulesEs: [""],
 };
 
 function settingsToForm(
@@ -48,7 +65,7 @@ function settingsToForm(
 ): GuestAccessForm {
   const agreement = settings?.activeAgreement;
 
-   if (!agreement) {
+  if (!agreement) {
     return {
       ...EMPTY_FORM,
       guestAccessMode:
@@ -56,23 +73,62 @@ function settingsToForm(
       cleaningNfcEnabled:
         settings?.cleaningNfcEnabled === true,
       requiresIdentityVerification: true,
-      rules: [""],
+      rulesEn: [""],
+      rulesEs: [""],
     };
   }
+
+  const englishRules =
+    Array.isArray(agreement.rulesEn) &&
+    agreement.rulesEn.length > 0
+      ? agreement.rulesEn
+      : Array.isArray(agreement.rules) &&
+        agreement.rules.length > 0
+      ? agreement.rules
+      : [""];
+
+  const spanishRules =
+    Array.isArray(agreement.rulesEs) &&
+    agreement.rulesEs.length > 0
+      ? agreement.rulesEs
+      : [""];
+
   return {
     guestAccessMode:
       settings?.guestAccessMode ?? "PASSCODE_ONLY",
+
     cleaningNfcEnabled:
       settings?.cleaningNfcEnabled === true,
+
     requiresIdentityVerification:
       agreement.requiresIdentityVerification !== false,
-    title: agreement.title ?? "",
-    guestFacingSummary: agreement.guestFacingSummary ?? "",
-    agreementText: agreement.agreementText ?? "",
-    rules:
-      Array.isArray(agreement.rules) && agreement.rules.length > 0
-        ? agreement.rules
-        : [""],
+
+    titleEn:
+      agreement.titleEn?.trim() ||
+      agreement.title ||
+      "",
+
+    titleEs:
+      agreement.titleEs?.trim() || "",
+
+    guestFacingSummaryEn:
+      agreement.guestFacingSummaryEn?.trim() ||
+      agreement.guestFacingSummary ||
+      "",
+
+    guestFacingSummaryEs:
+      agreement.guestFacingSummaryEs?.trim() || "",
+
+    agreementTextEn:
+      agreement.agreementTextEn?.trim() ||
+      agreement.agreementText ||
+      "",
+
+    agreementTextEs:
+      agreement.agreementTextEs?.trim() || "",
+
+    rulesEn: englishRules,
+    rulesEs: spanishRules,
   };
 }
 
@@ -174,19 +230,27 @@ export function GuestAccessSettingsCard({
     form.cleaningNfcEnabled
   );
 
-  const normalizedRules = useMemo(
-    () => normalizeRules(form.rules),
-    [form.rules]
-  );
+ const normalizedRulesEn = useMemo(
+  () => normalizeRules(form.rulesEn),
+  [form.rulesEn]
+);
 
+const normalizedRulesEs = useMemo(
+  () => normalizeRules(form.rulesEs),
+  [form.rulesEs]
+);
   const maxGuestsConfigured =
     Number(settings?.maxGuests ?? 0) > 0;
 
   const formComplete =
-    form.title.trim().length > 0 &&
-    form.guestFacingSummary.trim().length > 0 &&
-    form.agreementText.trim().length > 0 &&
-    normalizedRules.length > 0;
+  form.titleEn.trim().length > 0 &&
+  form.titleEs.trim().length > 0 &&
+  form.guestFacingSummaryEn.trim().length > 0 &&
+  form.guestFacingSummaryEs.trim().length > 0 &&
+  form.agreementTextEn.trim().length > 0 &&
+  form.agreementTextEs.trim().length > 0 &&
+  normalizedRulesEn.length > 0 &&
+  normalizedRulesEs.length > 0;
 
   const canSave =
     Boolean(propertyId) &&
@@ -217,48 +281,97 @@ export function GuestAccessSettingsCard({
     void loadSettings();
   }, [propertyId]);
 
-  function updateRule(index: number, value: string) {
-    setForm((current) => ({
-      ...current,
-      rules: current.rules.map((rule, ruleIndex) =>
+  function updateRule(
+  language: "en" | "es",
+  index: number,
+  value: string
+) {
+  const field =
+    language === "es"
+      ? "rulesEs"
+      : "rulesEn";
+
+  setForm((current) => ({
+    ...current,
+    [field]: current[field].map(
+      (rule, ruleIndex) =>
         ruleIndex === index ? value : rule
-      ),
-    }));
-  }
+    ),
+  }));
+}
 
-  function addRule() {
-    setForm((current) => ({
+function addRule(language: "en" | "es") {
+  const field =
+    language === "es"
+      ? "rulesEs"
+      : "rulesEn";
+
+  setForm((current) => ({
+    ...current,
+    [field]: [...current[field], ""],
+  }));
+}
+
+function removeRule(
+  language: "en" | "es",
+  index: number
+) {
+  const field =
+    language === "es"
+      ? "rulesEs"
+      : "rulesEn";
+
+  setForm((current) => {
+    const nextRules = current[field].filter(
+      (_rule, ruleIndex) =>
+        ruleIndex !== index
+    );
+
+    return {
       ...current,
-      rules: [...current.rules, ""],
-    }));
-  }
-
-  function removeRule(index: number) {
-    setForm((current) => {
-      const nextRules = current.rules.filter(
-        (_rule, ruleIndex) => ruleIndex !== index
-      );
-
-      return {
-        ...current,
-        rules: nextRules.length > 0 ? nextRules : [""],
-      };
-    });
-  }
+      [field]:
+        nextRules.length > 0
+          ? nextRules
+          : [""],
+    };
+  });
+}
 
   async function handleSave() {
     if (!canSave) return;
 
     const payload: SaveGuestAccessSettingsInput = {
-      guestAccessMode: form.guestAccessMode,
-      cleaningNfcEnabled: form.cleaningNfcEnabled,
-      requiresIdentityVerification:
-        form.requiresIdentityVerification,
-      title: form.title.trim(),
-      guestFacingSummary: form.guestFacingSummary.trim(),
-      agreementText: form.agreementText.trim(),
-      rules: normalizedRules,
-    };
+  guestAccessMode: form.guestAccessMode,
+  cleaningNfcEnabled:
+    form.cleaningNfcEnabled,
+  requiresIdentityVerification:
+    form.requiresIdentityVerification,
+
+  // Legacy compatibility: English remains
+  // available to existing backend consumers.
+  title: form.titleEn.trim(),
+  guestFacingSummary:
+    form.guestFacingSummaryEn.trim(),
+  agreementText:
+    form.agreementTextEn.trim(),
+  rules: normalizedRulesEn,
+
+  titleEn: form.titleEn.trim(),
+  titleEs: form.titleEs.trim(),
+
+  guestFacingSummaryEn:
+    form.guestFacingSummaryEn.trim(),
+  guestFacingSummaryEs:
+    form.guestFacingSummaryEs.trim(),
+
+  agreementTextEn:
+    form.agreementTextEn.trim(),
+  agreementTextEs:
+    form.agreementTextEs.trim(),
+
+  rulesEn: normalizedRulesEn,
+  rulesEs: normalizedRulesEs,
+};
     try {
       setLoadState("saving");
       setError(null);
@@ -360,66 +473,19 @@ export function GuestAccessSettingsCard({
             {settings?.activeAgreement?.version ?? "Not created"}
           </strong>
         </div>
-
-        <div style={summaryItemStyle}>
-          <span style={summaryLabelStyle}>Identity Check</span>
-          <strong style={summaryValueStyle}>
-            {form.requiresIdentityVerification
-              ? "Required"
-              : "Not required"}
-          </strong>
-        </div>
       </div>
 
       <div style={requirementsGridStyle}>
-        <label
-          style={{
-            ...identityControlStyle,
-            ...(form.requiresIdentityVerification
-              ? identityControlEnabledStyle
-              : identityControlDisabledStyle),
-            opacity: isBusy ? 0.65 : 1,
-            cursor: isBusy ? "not-allowed" : "pointer",
-          }}
-        >
+        <div style={requirementStyle}>
+          <span style={requirementDotStyle} />
           <div>
-            <div style={identityControlHeaderStyle}>
-              <strong>Stripe Identity Check</strong>
-              <span
-                style={{
-                  ...identityStatusStyle,
-                  ...(form.requiresIdentityVerification
-                    ? identityStatusEnabledStyle
-                    : identityStatusDisabledStyle),
-                }}
-              >
-                {form.requiresIdentityVerification
-                  ? "Required"
-                  : "Off"}
-              </span>
-            </div>
+            <strong>Identity verification required</strong>
             <p>
-              {form.requiresIdentityVerification
-                ? "The primary guest must verify an official document and selfie before access becomes eligible. Pin&Go retains the $2.50 Identity Check service fee from the host payout in the same booking transaction."
-                : "Guests accept the Guest Agreement without document or selfie verification. No Identity Check service fee is retained."}
+              Guests must complete the Stripe Identity flow before
+              access becomes eligible.
             </p>
           </div>
-
-          <input
-            type="checkbox"
-            checked={form.requiresIdentityVerification}
-            disabled={isBusy}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                requiresIdentityVerification:
-                  event.target.checked,
-              }))
-            }
-            aria-label="Require Stripe Identity Check for this property"
-            style={identityCheckboxStyle}
-          />
-        </label>
+        </div>
 
         <div style={requirementStyle}>
           <span style={requirementDotStyle} />
@@ -556,127 +622,287 @@ export function GuestAccessSettingsCard({
         </div>
       </div>
 
-      <div style={sectionStyle}>
-        <div>
-          <div style={sectionTitleStyle}>Guest Agreement</div>
-          <div style={sectionDescriptionStyle}>
-            Editing the agreement or its rules creates a new active
-            version when the contractual content changes.
-          </div>
-        </div>
+     <div style={sectionStyle}>
+  <div>
+    <div style={sectionTitleStyle}>
+      Guest Agreement â€” English
+    </div>
 
+    <div style={sectionDescriptionStyle}>
+      English contractual content shown to guests
+      whose reservation language is English.
+    </div>
+  </div>
+
+  <label style={labelStyle}>
+    Agreement title
+    <input
+      value={form.titleEn}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          titleEn: event.target.value,
+        }))
+      }
+      placeholder="Guest Agreement"
+      style={inputStyle}
+    />
+  </label>
+
+  <label style={labelStyle}>
+    Guest-facing summary
+    <textarea
+      value={form.guestFacingSummaryEn}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          guestFacingSummaryEn:
+            event.target.value,
+        }))
+      }
+      placeholder="Explain what guests must complete before receiving access."
+      style={summaryTextareaStyle}
+    />
+  </label>
+
+  <label style={labelStyle}>
+    Agreement text
+    <textarea
+      value={form.agreementTextEn}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          agreementTextEn:
+            event.target.value,
+        }))
+      }
+      placeholder="Enter the complete Guest Agreement in English."
+      style={agreementTextareaStyle}
+    />
+  </label>
+</div>
+
+<div style={rulesPanelStyle}>
+  <div style={rulesHeaderStyle}>
+    <div>
+      <div style={sectionTitleStyle}>
+        Property rules â€” English
+      </div>
+
+      <div style={sectionDescriptionStyle}>
+        These rules are shown when the reservation
+        language is English.
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => addRule("en")}
+      disabled={isBusy}
+      style={{
+        ...secondaryButtonStyle,
+        opacity: isBusy ? 0.6 : 1,
+        cursor:
+          isBusy
+            ? "not-allowed"
+            : "pointer",
+      }}
+    >
+      Add rule
+    </button>
+  </div>
+
+  <div style={rulesListStyle}>
+    {form.rulesEn.map((rule, index) => (
+      <div key={index} style={ruleRowStyle}>
         <label style={labelStyle}>
-          Agreement title
+          Rule {index + 1}
           <input
-            value={form.title}
+            value={rule}
             disabled={isBusy}
             onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                title: event.target.value,
-              }))
+              updateRule(
+                "en",
+                index,
+                event.target.value
+              )
             }
-            placeholder="Guest Agreement"
+            placeholder="Example: No smoking inside the property."
             style={inputStyle}
           />
         </label>
 
+        <button
+          type="button"
+          onClick={() =>
+            removeRule("en", index)
+          }
+          disabled={isBusy}
+          style={{
+            ...dangerButtonStyle,
+            opacity: isBusy ? 0.6 : 1,
+            cursor:
+              isBusy
+                ? "not-allowed"
+                : "pointer",
+          }}
+        >
+          Remove
+        </button>
+      </div>
+    ))}
+  </div>
+
+  {normalizedRulesEn.length === 0 ? (
+    <div style={emptyStateStyle}>
+      Add at least one English property rule.
+    </div>
+  ) : null}
+</div>
+
+<div style={sectionStyle}>
+  <div>
+    <div style={sectionTitleStyle}>
+      Acuerdo del huÃ©sped â€” EspaÃ±ol
+    </div>
+
+    <div style={sectionDescriptionStyle}>
+      Contenido contractual en espaÃ±ol mostrado
+      cuando el idioma de la reservaciÃ³n es espaÃ±ol.
+    </div>
+  </div>
+
+  <label style={labelStyle}>
+    TÃ­tulo del acuerdo
+    <input
+      value={form.titleEs}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          titleEs: event.target.value,
+        }))
+      }
+      placeholder="Acuerdo del huÃ©sped"
+      style={inputStyle}
+    />
+  </label>
+
+  <label style={labelStyle}>
+    Resumen para el huÃ©sped
+    <textarea
+      value={form.guestFacingSummaryEs}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          guestFacingSummaryEs:
+            event.target.value,
+        }))
+      }
+      placeholder="Explique lo que el huÃ©sped debe completar antes de recibir acceso."
+      style={summaryTextareaStyle}
+    />
+  </label>
+
+  <label style={labelStyle}>
+    Texto del acuerdo
+    <textarea
+      value={form.agreementTextEs}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          agreementTextEs:
+            event.target.value,
+        }))
+      }
+      placeholder="Ingrese el acuerdo completo en espaÃ±ol."
+      style={agreementTextareaStyle}
+    />
+  </label>
+</div>
+
+<div style={rulesPanelStyle}>
+  <div style={rulesHeaderStyle}>
+    <div>
+      <div style={sectionTitleStyle}>
+        Reglas de la propiedad â€” EspaÃ±ol
+      </div>
+
+      <div style={sectionDescriptionStyle}>
+        Estas reglas se muestran cuando el idioma
+        de la reservaciÃ³n es espaÃ±ol.
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => addRule("es")}
+      disabled={isBusy}
+      style={{
+        ...secondaryButtonStyle,
+        opacity: isBusy ? 0.6 : 1,
+        cursor:
+          isBusy
+            ? "not-allowed"
+            : "pointer",
+      }}
+    >
+      AÃ±adir regla
+    </button>
+  </div>
+
+  <div style={rulesListStyle}>
+    {form.rulesEs.map((rule, index) => (
+      <div key={index} style={ruleRowStyle}>
         <label style={labelStyle}>
-          Guest-facing summary
-          <textarea
-            value={form.guestFacingSummary}
+          Regla {index + 1}
+          <input
+            value={rule}
             disabled={isBusy}
             onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                guestFacingSummary: event.target.value,
-              }))
+              updateRule(
+                "es",
+                index,
+                event.target.value
+              )
             }
-            placeholder="Explain what guests must complete before receiving access."
-            style={summaryTextareaStyle}
+            placeholder="Ejemplo: No se permite fumar dentro de la propiedad."
+            style={inputStyle}
           />
         </label>
 
-        <label style={labelStyle}>
-          Agreement text
-          <textarea
-            value={form.agreementText}
-            disabled={isBusy}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                agreementText: event.target.value,
-              }))
-            }
-            placeholder="Enter the complete Guest Agreement."
-            style={agreementTextareaStyle}
-          />
-        </label>
+        <button
+          type="button"
+          onClick={() =>
+            removeRule("es", index)
+          }
+          disabled={isBusy}
+          style={{
+            ...dangerButtonStyle,
+            opacity: isBusy ? 0.6 : 1,
+            cursor:
+              isBusy
+                ? "not-allowed"
+                : "pointer",
+          }}
+        >
+          Eliminar
+        </button>
       </div>
+    ))}
+  </div>
 
-      <div style={rulesPanelStyle}>
-        <div style={rulesHeaderStyle}>
-          <div>
-            <div style={sectionTitleStyle}>Property rules</div>
-            <div style={sectionDescriptionStyle}>
-              Every rule is shown to the guest and must be accepted
-              during secure pre-check-in.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={addRule}
-            disabled={isBusy}
-            style={{
-              ...secondaryButtonStyle,
-              opacity: isBusy ? 0.6 : 1,
-              cursor: isBusy ? "not-allowed" : "pointer",
-            }}
-          >
-            Add rule
-          </button>
-        </div>
-
-        <div style={rulesListStyle}>
-          {form.rules.map((rule, index) => (
-            <div key={index} style={ruleRowStyle}>
-              <label style={labelStyle}>
-                Rule {index + 1}
-                <input
-                  value={rule}
-                  disabled={isBusy}
-                  onChange={(event) =>
-                    updateRule(index, event.target.value)
-                  }
-                  placeholder="Example: No smoking inside the property."
-                  style={inputStyle}
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={() => removeRule(index)}
-                disabled={isBusy}
-                style={{
-                  ...dangerButtonStyle,
-                  opacity: isBusy ? 0.6 : 1,
-                  cursor: isBusy ? "not-allowed" : "pointer",
-                }}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {normalizedRules.length === 0 ? (
-          <div style={emptyStateStyle}>
-            Add at least one guest-facing property rule before saving.
-          </div>
-        ) : null}
-      </div>
-
+  {normalizedRulesEs.length === 0 ? (
+    <div style={emptyStateStyle}>
+      AÃ±ada al menos una regla en espaÃ±ol.
+    </div>
+  ) : null}
+</div>
       <div style={versionNoticeStyle}>
         <strong>Immutable reservation evidence</strong>
         <p>
@@ -876,61 +1102,6 @@ const requirementDotStyle: CSSProperties = {
   flex: "0 0 auto",
   borderRadius: 999,
   background: "#2563eb",
-};
-
-const identityControlStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "flex-start",
-  justifyContent: "space-between",
-  gap: 18,
-  borderRadius: 14,
-  padding: 14,
-  fontSize: 13,
-  lineHeight: 1.45,
-  transition: "border-color 160ms ease, background 160ms ease",
-};
-
-const identityControlEnabledStyle: CSSProperties = {
-  background: "#ecfdf5",
-  border: "1px solid #a7f3d0",
-  color: "#065f46",
-};
-
-const identityControlDisabledStyle: CSSProperties = {
-  background: "#f8fafc",
-  border: "1px solid rgba(148, 163, 184, 0.34)",
-  color: "#475569",
-};
-
-const identityControlHeaderStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  flexWrap: "wrap",
-};
-
-const identityStatusStyle: CSSProperties = {
-  borderRadius: 999,
-  padding: "3px 8px",
-  fontSize: 11,
-  fontWeight: 900,
-};
-
-const identityStatusEnabledStyle: CSSProperties = {
-  background: "#d1fae5",
-  color: "#065f46",
-};
-
-const identityStatusDisabledStyle: CSSProperties = {
-  background: "#e2e8f0",
-  color: "#475569",
-};
-
-const identityCheckboxStyle: CSSProperties = {
-  width: 22,
-  height: 22,
-  flex: "0 0 auto",
-  accentColor: "#059669",
 };
 
 const sectionStyle: CSSProperties = {
