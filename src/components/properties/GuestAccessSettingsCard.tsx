@@ -46,7 +46,7 @@ const EMPTY_FORM: GuestAccessForm = {
   requiresIdentityVerification: true,
 
   titleEn: "Guest Agreement",
-  titleEs: "Acuerdo del huÃ©sped",
+  titleEs: "Acuerdo del huésped",
 
   guestFacingSummaryEn:
     "Complete secure pre-check-in before access can be released.",
@@ -475,29 +475,87 @@ function removeRule(
         </div>
       </div>
 
-      <div style={requirementsGridStyle}>
-        <div style={requirementStyle}>
-          <span style={requirementDotStyle} />
-          <div>
-            <strong>Identity verification required</strong>
-            <p>
-              Guests must complete the Stripe Identity flow before
-              access becomes eligible.
-            </p>
-          </div>
-        </div>
+    <div style={requirementsGridStyle}>
+  <div style={requirementStyle}>
+    <span style={requirementDotStyle} />
 
-        <div style={requirementStyle}>
-          <span style={requirementDotStyle} />
-          <div>
-            <strong>Guest signature required</strong>
-            <p>
-              The legal guest must accept and sign the active agreement
-              during secure pre-check-in.
-            </p>
-          </div>
-        </div>
-      </div>
+    <div>
+      <strong>
+        {form.requiresIdentityVerification
+          ? "Identity verification required"
+          : "Identity verification not required"}
+      </strong>
+
+      <p>
+        {form.requiresIdentityVerification
+          ? "Guests must complete the Stripe Identity flow before access becomes eligible."
+          : "This property does not require Stripe Identity verification before access is released."}
+      </p>
+    </div>
+  </div>
+
+  <div style={requirementStyle}>
+    <span style={requirementDotStyle} />
+
+    <div>
+      <strong>Guest signature required</strong>
+
+      <p>
+        The legal guest must accept and sign the active agreement during
+        secure pre-check-in.
+      </p>
+    </div>
+  </div>
+</div>
+      <div style={sectionStyle}>
+  <div>
+    <div style={sectionTitleStyle}>
+      Identity Check
+    </div>
+
+    <div style={sectionDescriptionStyle}>
+      Control whether guests must complete identity verification before
+      Pin&Go releases digital access.
+    </div>
+  </div>
+
+  <label
+    style={{
+      ...modeOptionStyle,
+      ...(form.requiresIdentityVerification
+        ? selectedModeOptionStyle
+        : {}),
+      opacity: isBusy ? 0.65 : 1,
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={form.requiresIdentityVerification}
+      disabled={isBusy}
+      onChange={(event) =>
+        setForm((current) => ({
+          ...current,
+          requiresIdentityVerification:
+            event.target.checked,
+        }))
+      }
+    />
+
+    <div>
+      <strong>
+        {form.requiresIdentityVerification
+          ? "Identity Check enabled"
+          : "Identity Check disabled"}
+      </strong>
+
+      <p>
+        {form.requiresIdentityVerification
+          ? "Guests must complete Stripe Identity verification before access becomes eligible."
+          : "Guests are not required to complete identity verification for this property."}
+      </p>
+    </div>
+  </label>
+</div>
 
       <div style={sectionStyle}>
         <div>
@@ -625,7 +683,7 @@ function removeRule(
      <div style={sectionStyle}>
   <div>
     <div style={sectionTitleStyle}>
-      Guest Agreement â€” English
+      Guest Agreement - English
     </div>
 
     <div style={sectionDescriptionStyle}>
@@ -689,7 +747,7 @@ function removeRule(
   <div style={rulesHeaderStyle}>
     <div>
       <div style={sectionTitleStyle}>
-        Property rules â€” English
+        Property rules - English
       </div>
 
       <div style={sectionDescriptionStyle}>
@@ -766,17 +824,17 @@ function removeRule(
 <div style={sectionStyle}>
   <div>
     <div style={sectionTitleStyle}>
-      Acuerdo del huÃ©sped â€” EspaÃ±ol
+      Acuerdo del huésped en español
     </div>
 
     <div style={sectionDescriptionStyle}>
-      Contenido contractual en espaÃ±ol mostrado
-      cuando el idioma de la reservaciÃ³n es espaÃ±ol.
+      Contenido contractual en español mostrado
+      cuando el idioma de la reservación es español.
     </div>
   </div>
 
   <label style={labelStyle}>
-    TÃ­tulo del acuerdo
+    Título del acuerdo
     <input
       value={form.titleEs}
       disabled={isBusy}
@@ -786,13 +844,13 @@ function removeRule(
           titleEs: event.target.value,
         }))
       }
-      placeholder="Acuerdo del huÃ©sped"
+      placeholder="Acuerdo del huésped "
       style={inputStyle}
     />
   </label>
 
   <label style={labelStyle}>
-    Resumen para el huÃ©sped
+    Resumen para el huésped
     <textarea
       value={form.guestFacingSummaryEs}
       disabled={isBusy}
@@ -803,7 +861,7 @@ function removeRule(
             event.target.value,
         }))
       }
-      placeholder="Explique lo que el huÃ©sped debe completar antes de recibir acceso."
+      placeholder="Explique lo que el huésped debe completar antes de recibir acceso."
       style={summaryTextareaStyle}
     />
   </label>
@@ -820,7 +878,7 @@ function removeRule(
             event.target.value,
         }))
       }
-      placeholder="Ingrese el acuerdo completo en espaÃ±ol."
+      placeholder="Ingrese el acuerdo completo en español."
       style={agreementTextareaStyle}
     />
   </label>
@@ -830,12 +888,12 @@ function removeRule(
   <div style={rulesHeaderStyle}>
     <div>
       <div style={sectionTitleStyle}>
-        Reglas de la propiedad â€” EspaÃ±ol
+        Reglas de la propiedad en español
       </div>
 
       <div style={sectionDescriptionStyle}>
         Estas reglas se muestran cuando el idioma
-        de la reservaciÃ³n es espaÃ±ol.
+        de la reservación es español.
       </div>
     </div>
 
@@ -852,7 +910,7 @@ function removeRule(
             : "pointer",
       }}
     >
-      AÃ±adir regla
+      Añadir regla
     </button>
   </div>
 
@@ -899,7 +957,7 @@ function removeRule(
 
   {normalizedRulesEs.length === 0 ? (
     <div style={emptyStateStyle}>
-      AÃ±ada al menos una regla en espaÃ±ol.
+      Añada al menos una regla en español.
     </div>
   ) : null}
 </div>
