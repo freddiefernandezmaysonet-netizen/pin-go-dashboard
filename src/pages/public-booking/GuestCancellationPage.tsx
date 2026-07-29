@@ -16,6 +16,8 @@ type CancellationRefundRule = {
 
 type CancellationPreviewResponse = {
   ok?: boolean;
+  managementPhase?: "PRE_STAY" | "IN_STAY" | "POST_STAY" | "CANCELLED";
+  cancellationAllowed?: boolean;
   alreadyCancelled?: boolean;
   reservation?: {
     reservationNumber?: string | null;
@@ -401,6 +403,24 @@ function getPreviewPayload(payload: CancellationPreviewResponse) {
   return payload;
 }
 
+function getManagementPhase(
+  preview: CancellationPreviewResponse | null | undefined
+) {
+  if (preview?.managementPhase) {
+    return preview.managementPhase;
+  }
+
+  if (
+    preview?.alreadyCancelled ||
+    preview?.reservation?.status === "CANCELLED" ||
+    preview?.reservation?.cancelledAt
+  ) {
+    return "CANCELLED";
+  }
+
+  return "PRE_STAY";
+}
+
 export default function GuestCancellationPage() {
   const { guestToken } = useParams();
 
@@ -451,9 +471,10 @@ export default function GuestCancellationPage() {
   }, [loadPreview]);
 
   const currency = preview?.reservation?.currency || "usd";
+  const managementPhase = getManagementPhase(preview);
 
   const isCancelled =
-    preview?.reservation?.status === "CANCELLED" ||
+    managementPhase === "CANCELLED" ||
     Boolean(preview?.reservation?.cancelledAt);
 
   const actionCopy = useMemo(() => getActionCopy(preview), [preview]);
@@ -462,7 +483,14 @@ export default function GuestCancellationPage() {
   const refundAmountLabel = getRefundAmountLabel(preview);
   const confirmationCopy = getConfirmationCopy(preview);
 
-  const canSubmit = Boolean(preview && !isCancelled && accepted && !submitting);
+  const canSubmit = Boolean(
+    preview &&
+      managementPhase === "PRE_STAY" &&
+      preview.cancellationAllowed !== false &&
+      !isCancelled &&
+      accepted &&
+      !submitting
+  );
 
   async function handleSubmitCancellation() {
     try {
@@ -499,6 +527,31 @@ export default function GuestCancellationPage() {
       const nextPreview = getPreviewPayload(data);
 
       if (!res.ok || !data.ok) {
+        const terminalPhase =
+          data.error === "EARLY_DEPARTURE_REQUIRED" ||
+          data.action === "EARLY_DEPARTURE_REQUIRED"
+            ? "IN_STAY"
+            : data.error === "STAY_ALREADY_COMPLETED" ||
+              data.action === "STAY_ALREADY_COMPLETED"
+            ? "POST_STAY"
+            : null;
+
+        if (terminalPhase) {
+          setPreview((currentPreview) => ({
+            ...currentPreview,
+            ...nextPreview,
+            reservation:
+              nextPreview.reservation ?? currentPreview?.reservation,
+            managementPhase: terminalPhase,
+            action:
+              terminalPhase === "IN_STAY"
+                ? "EARLY_DEPARTURE_REQUIRED"
+                : "STAY_ALREADY_COMPLETED",
+          }));
+          setAccepted(false);
+          return;
+        }
+
         if (
           data.error === "CANCELLATION_REQUIRES_HOST_APPROVAL" &&
           nextPreview.reservation
@@ -573,6 +626,24 @@ export default function GuestCancellationPage() {
                 <button type="button" style={styles.secondaryButton} onClick={loadPreview}>
                   Try again
                 </button>
+              </div>
+            ) : managementPhase === "IN_STAY" ? (
+              <div style={styles.card}>
+                <div style={styles.sectionEyebrow}>Reservation management</div>
+                <h2 style={styles.cardTitle}>Your stay has already started.</h2>
+                <p style={styles.mutedText}>
+                  If you need to leave earlier, please contact the property.
+                </p>
+              </div>
+            ) : managementPhase === "POST_STAY" ? (
+              <div style={styles.card}>
+                <div style={styles.sectionEyebrow}>Reservation management</div>
+                <h2 style={styles.cardTitle}>
+                  This stay has already been completed.
+                </h2>
+                <p style={styles.mutedText}>
+                  Cancellation is no longer available.
+                </p>
               </div>
             ) : preview?.reservation && preview?.policy && preview?.evaluation ? (
               <div style={styles.grid}>
@@ -901,7 +972,7 @@ export default function GuestCancellationPage() {
                     <div style={styles.inlineError}>{pageError}</div>
                   ) : null}
 
-                  {!isCancelled ? (
+                  {!isCancelled && preview.cancellationAllowed !== false ? (
                     <>
                       <label style={styles.reasonField}>
                         <span>Cancellation reason optional</span>
