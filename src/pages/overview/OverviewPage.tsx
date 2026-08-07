@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { PmsControlCenter } from "../../components/dashboard/PmsControlCenter";
 import { LocksCapacityCard } from "../../components/dashboard/LocksCapacityCard";
-import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 type MetricsResp = {
@@ -200,8 +199,6 @@ export function OverviewPage() {
       </div>
     
     <LocksCapacityCard />
-
-    <HostPayoutsCard /> 
 
       {showLegacyPmsUi ? (
         <>
