@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { sanitizeWhiteLabelText } from "../../lib/whiteLabel";
 
 export type OperationalWorkflowState =
   | "ACTION_REQUIRED"
@@ -163,14 +164,20 @@ function formatActor(value: unknown) {
 
 function getNextStep(item: OperationalIntelligenceItem) {
   if (item.workflowState === "ACTION_REQUIRED") {
-    return item.recommendedAction ?? item.operationalImpact ?? item.issue;
+    return sanitizeWhiteLabelText(
+      item.recommendedAction ?? item.operationalImpact ?? item.issue
+    );
   }
 
   if (item.workflowState === "WAITING" || item.workflowState === "AUTO_RESOLVING") {
-    return item.nextAutomaticStep ?? item.recommendedAction ?? item.issue;
+    return sanitizeWhiteLabelText(
+      item.nextAutomaticStep ?? item.recommendedAction ?? item.issue
+    );
   }
 
-  return item.resolutionSummary ?? item.operationalImpact ?? item.issue;
+  return sanitizeWhiteLabelText(
+    item.resolutionSummary ?? item.operationalImpact ?? item.issue
+  );
 }
 
 function OperationalTimelineItem({
@@ -218,7 +225,7 @@ function OperationalTimelineItem({
               ) : null}
               {item.guestName ? <span style={styles.contextText}>{item.guestName}</span> : null}
             </div>
-            <h4 style={styles.itemTitle}>{item.title}</h4>
+            <h4 style={styles.itemTitle}>{sanitizeWhiteLabelText(item.title)}</h4>
           </div>
 
           <div
@@ -233,12 +240,12 @@ function OperationalTimelineItem({
           </div>
         </div>
 
-        <div style={styles.issue}>{item.issue}</div>
+        <div style={styles.issue}>{sanitizeWhiteLabelText(item.issue)}</div>
 
         {item.operationalImpact ? (
           <div style={styles.impactBox}>
             <span style={styles.detailLabel}>Operational impact</span>
-            <span>{item.operationalImpact}</span>
+            <span>{sanitizeWhiteLabelText(item.operationalImpact)}</span>
           </div>
         ) : null}
 
