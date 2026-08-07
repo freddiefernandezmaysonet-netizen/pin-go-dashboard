@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../api/auth";
 import { useAuth } from "../../auth/AuthProvider";
+import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 // ✅ NAV BASE (producto normal)
 const baseNav = [
@@ -16,7 +17,9 @@ const baseNav = [
   { to: "/messages", label: "Messages" },
   { to: "/staff", label: "Staff Members" },
 
-  { to: "/integrations/pms", label: "PMS" },
+  ...(shouldShowLegacyPmsUi()
+    ? [{ to: "/integrations/pms", label: "PMS" }]
+    : []),
   { to: "/billing", label: "Billing" },
   { to: "/integrations/tuya", label: "Tuya Integration" },
   { to: "/automation/history", label: "Automation History" },
@@ -59,7 +62,6 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/admin/financial")) return "Admin Financial";
   if (pathname.startsWith("/admin/demo-center")) return "Demo Center";
  
-  if (pathname.startsWith("/integrations/pms")) return "PMS Integrations";
   if (pathname.startsWith("/billing")) return "Billing";
   if (pathname.startsWith("/integrations/tuya")) return "Tuya Integration";
 
