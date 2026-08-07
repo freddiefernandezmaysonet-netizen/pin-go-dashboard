@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getVisibleReservationSourceLabel } from "../../lib/whiteLabel";
 
 type ReservationStatus = "ACTIVE" | "CANCELLED";
 type OperationalStatus = "UPCOMING" | "IN_HOUSE" | "CHECKED_OUT" | "CANCELLED";
@@ -131,14 +132,6 @@ function paymentStyles(state: PaymentState) {
     color: "#4b5563",
     border: "1px solid #e5e7eb",
   };
-}
-
-function sourceLabel(r: ReservationRow) {
-  if (r.externalProvider === "CHANNEX") {
-    return "Pin&Go Connect";
-  }
-
-  return r.externalProvider ?? r.source ?? "—";
 }
 
 function propertyLabel(r: ReservationRow) {
@@ -521,7 +514,9 @@ useEffect(() => {
                         </div>
                       </td>
 
-                      <td style={{ padding: 12, color: "#666" }}>{sourceLabel(r)}</td>
+                      <td style={{ padding: 12, color: "#666" }}>
+                        {getVisibleReservationSourceLabel(r)}
+                      </td>
                     </tr>
                   );
                 })
