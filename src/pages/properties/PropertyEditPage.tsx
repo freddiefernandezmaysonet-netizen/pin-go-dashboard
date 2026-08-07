@@ -1334,7 +1334,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
             color: "#991b1b",
           }}
         >
-          <b>Error:</b> {err}
+          <b>Error:</b> {err.replace(/CHANNEX/gi, "Pin&Go Connect")}
         </div>
       ) : null}
 
