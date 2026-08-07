@@ -134,6 +134,10 @@ function paymentStyles(state: PaymentState) {
 }
 
 function sourceLabel(r: ReservationRow) {
+  if (r.externalProvider === "CHANNEX") {
+    return "Pin&Go Connect";
+  }
+
   return r.externalProvider ?? r.source ?? "—";
 }
 
