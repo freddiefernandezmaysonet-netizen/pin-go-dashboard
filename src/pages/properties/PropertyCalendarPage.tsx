@@ -16,6 +16,10 @@ import {
   OperationalIntelligencePanel,
   type OperationalIntelligenceItem,
 } from "../../components/properties/OperationalIntelligencePanel";
+import {
+  getVisibleReservationSourceLabel,
+  sanitizeWhiteLabelText,
+} from "../../lib/whiteLabel";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -722,9 +726,11 @@ function renderMissionActionDetails(action: any) {
   if (!hasReservationContext) {
     return (
       <div style={getMissionActionMetaStyle(action)}>
-        {action?.issue ??
-          action?.description ??
-          getMissionActionFooterLabel(action)}
+        {sanitizeWhiteLabelText(
+          action?.issue ??
+            action?.description ??
+            getMissionActionFooterLabel(action)
+        )}
       </div>
     );
   }
@@ -786,9 +792,11 @@ function renderMissionActionDetails(action: any) {
             lineHeight: 1.5,
           }}
         >
-          {action?.issue ??
-            action?.description ??
-            "Pin&Go detected an operational issue that needs review."}
+          {sanitizeWhiteLabelText(
+            action?.issue ??
+              action?.description ??
+              "Pin&Go detected an operational issue that needs review."
+          )}
         </div>
 
         <div style={{ color: "#64748b", fontWeight: 800 }}>
@@ -1103,10 +1111,12 @@ function getMissionActivityReasonLabel(entry: any) {
   }
 
   if (reason) {
-    return reason
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/^\w/, (letter) => letter.toUpperCase());
+    return sanitizeWhiteLabelText(
+      reason
+        .replaceAll("_", " ")
+        .toLowerCase()
+        .replace(/^\w/, (letter) => letter.toUpperCase())
+    );
   }
 
   return "Autonomous action completed";
@@ -1168,7 +1178,7 @@ function getMissionActivityDetail(entry: any) {
   }
 
   if (metadata.pushedToChannex === true) {
-    return "Pushed to Channex";
+    return "Pushed to Pin&Go Connect";
   }
 
   return null;
@@ -1283,7 +1293,7 @@ function getAutoResolutionDescription(entry: any) {
   const metadata = entry?.metadata ?? {};
 
   if (engine === "Distribution" && metadata.pushedToChannex === true) {
-    return "Pin&Go confirmed the latest property update was pushed to Channex.";
+    return "Pin&Go confirmed the latest property update was pushed to Pin&Go Connect.";
   }
 
   if (engine === "Distribution") {
@@ -1310,7 +1320,10 @@ function getAutoResolutionDescription(entry: any) {
     return "Pin&Go completed the communication workflow successfully.";
   }
 
-  return entry?.summary ?? "Pin&Go completed this APMS operation successfully.";
+  return (
+    sanitizeWhiteLabelText(entry?.summary) ||
+    "Pin&Go completed this APMS operation successfully."
+  );
 }
 
 function getAutoResolutionDedupKey(entry: any) {
@@ -1974,7 +1987,7 @@ paymentState: manualPaymentState,
           </div>
 
           <div style={styles.missionEngineMessage}>
-            {engineHealth?.message ??
+            {sanitizeWhiteLabelText(engineHealth?.message) ||
               getMissionEngineFallbackMessage(engineHealth.engine)}
           </div>
         </div>
@@ -2027,7 +2040,7 @@ paymentState: manualPaymentState,
 ) : null}
 
 <div style={styles.missionActivitySummary}>
-  {entry.summary}
+  {sanitizeWhiteLabelText(entry.summary)}
 </div>
 
 <div style={styles.missionActivityMeta}>
@@ -2065,7 +2078,7 @@ paymentState: manualPaymentState,
         </div>
 
         <div style={styles.missionActionText}>
-          {primaryMissionControlAction.title}
+          {sanitizeWhiteLabelText(primaryMissionControlAction.title)}
         </div>
       </div>
 
@@ -2118,7 +2131,9 @@ paymentState: manualPaymentState,
                   </span>
                 </div>
 
-                <div style={styles.missionActionText}>{action.title}</div>
+                <div style={styles.missionActionText}>
+                  {sanitizeWhiteLabelText(action.title)}
+                </div>
               </div>
 
               <div
@@ -2521,9 +2536,7 @@ paymentState: manualPaymentState,
       ? `#${reservation.reservationNumber}`
       : "Pending Reference"}
     {" · "}
-    {reservation.source ||
-      reservation.externalProvider ||
-      "Direct Booking"}
+    {getVisibleReservationSourceLabel(reservation)}
   </div>
 ) : null}
             </div>

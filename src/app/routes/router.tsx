@@ -46,6 +46,7 @@ import PublicBookingSuccessPage from "../../pages/public-booking/PublicBookingSu
 import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCancelPage";
 import GuestCancellationPage from "../../pages/public-booking/GuestCancellationPage";
 import OrganizationSettingsPage from "../../pages/organization/OrganizationSettingsPage";
+import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 
 function RootRedirect() {
@@ -162,11 +163,25 @@ export const router = createBrowserRouter([
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
 
-      { path: "/integrations/pms", element: <PmsConnectionsPage /> },
+      {
+        path: "/integrations/pms",
+        element: shouldShowLegacyPmsUi() ? (
+          <PmsConnectionsPage />
+        ) : (
+          <Navigate to="/overview" replace />
+        ),
+      },
       { path: "/integrations/ttlock", element: <TtlockConnectPage /> },
       { path: "/integrations/tuya-premium", element: <TuyaIntegrationPremiumPage /> },
       { path: "/integrations/tuya", element: <TuyaIntegrationPage /> },
-      { path: "/integrations/pms/listings-mapping", element: <ListingsMappingPage /> },
+      {
+        path: "/integrations/pms/listings-mapping",
+        element: shouldShowLegacyPmsUi() ? (
+          <ListingsMappingPage />
+        ) : (
+          <Navigate to="/overview" replace />
+        ),
+      },
     ],
   },
 

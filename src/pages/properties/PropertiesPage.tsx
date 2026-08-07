@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 type PropertyRow = {
   id: string;
@@ -48,6 +49,7 @@ export function PropertiesPage() {
   const [err, setErr] = useState<string | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const showLegacyPmsUi = shouldShowLegacyPmsUi();
 
   async function loadProperties() {
     setLoading(true);
@@ -256,7 +258,9 @@ export function PropertiesPage() {
               >
                 <Metric label="Locks" value={p.locks} />
                 <Metric label="Active Reservations" value={p.activeReservations} />
-                <Metric label="PMS" value={String(p.pms).toUpperCase()} />
+                {showLegacyPmsUi ? (
+                  <Metric label="PMS" value={String(p.pms).toUpperCase()} />
+                ) : null}
                 <Metric label="Property" value="ONLINE" />
               </div>
 

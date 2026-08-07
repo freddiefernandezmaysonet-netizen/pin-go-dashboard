@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import {
+  getVisibleReservationProviderLabel,
+  getVisibleReservationSourceLabel,
+} from "../../lib/whiteLabel";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -111,22 +115,6 @@ function money(value?: number | null, currency = "usd") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);
-}
-
-function sourceLabel(value?: string | null) {
-  const v = String(value ?? "").trim().toUpperCase();
-
-  if (!v) return "—";
-
-  if (v === "DIRECT_BOOKING") return "Direct Booking";
-  if (v === "PIN_GO_DIRECT") return "Pin&Go Direct";
-  if (v === "MANUAL") return "Manual Reservation";
-  if (v === "PIN_GO_MANUAL") return "Pin&Go Manual";
-
-  return v
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function getReservationTotalAmount(reservation: Reservation) {
@@ -298,10 +286,10 @@ export function ReservationDetailPage() {
   const reservationTotalPaid = data ? getReservationTotalAmount(data) : null;
   const reservationCurrency = data ? getReservationCurrency(data) : "usd";
   const reservationSource = data
-    ? sourceLabel(data.source ?? data.externalProvider)
+    ? getVisibleReservationSourceLabel(data)
     : "—";
   const reservationProvider = data
-    ? sourceLabel(data.externalProvider ?? "PIN_GO")
+    ? getVisibleReservationProviderLabel(data.externalProvider ?? "PIN_GO")
     : "—";
   
   if (loading) {

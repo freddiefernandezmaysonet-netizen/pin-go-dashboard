@@ -1334,7 +1334,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
             color: "#991b1b",
           }}
         >
-          <b>Error:</b> {err}
+          <b>Error:</b> {err.replace(/CHANNEX/gi, "Pin&Go Connect")}
         </div>
       ) : null}
 
@@ -3584,7 +3584,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                   fontWeight: 700,
                 }}
               >
-                Distribution error: {form.distributionLastError}
+                Distribution error: {form.distributionLastError.replace(/CHANNEX/gi, "Pin&Go Connect")}
               </div>
             ) : null}
             

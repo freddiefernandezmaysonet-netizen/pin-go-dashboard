@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { shouldShowLegacyPmsUi } from "../lib/dashboardPresentation";
 
 type Step = {
   id: string;
@@ -11,17 +12,22 @@ type Step = {
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const showLegacyPmsUi = shouldShowLegacyPmsUi();
 
   // ⚠️ MVP: estado mock (luego lo conectamos a backend)
   const steps: Step[] = useMemo(
     () => [
-      {
-        id: "pms",
-        title: "Connect PMS",
-        description: "Connect Guesty, Hostaway or Lodgify",
-        route: "/integrations/pms",
-        completed: false,
-      },
+      ...(showLegacyPmsUi
+        ? [
+            {
+              id: "pms",
+              title: "Connect PMS",
+              description: "Connect Guesty, Hostaway or Lodgify",
+              route: "/integrations/pms",
+              completed: false,
+            },
+          ]
+        : []),
       {
         id: "ttlock",
         title: "Connect TTLock",
@@ -51,7 +57,7 @@ export default function OnboardingPage() {
         completed: false,
       },
     ],
-    []
+    [showLegacyPmsUi]
   );
 
   const progress =
@@ -101,7 +107,7 @@ export default function OnboardingPage() {
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>📅 Schedule onboarding call</h2>
         <p style={styles.cardText}>
-          We’ll help you connect PMS, TTLock, smart devices and automations.
+          We’ll help you configure Pin&Go, TTLock, smart devices and automations.
         </p>
 
         <a
