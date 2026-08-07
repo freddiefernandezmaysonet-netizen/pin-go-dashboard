@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PmsControlCenter } from "../../components/dashboard/PmsControlCenter";
 import { LocksCapacityCard } from "../../components/dashboard/LocksCapacityCard";
 import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
+import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 type MetricsResp = {
   upcomingArrivals: number;
@@ -100,35 +101,47 @@ export function OverviewPage() {
   const [pms, setPms] = useState<PmsSummaryResp | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const showLegacyPmsUi = shouldShowLegacyPmsUi();
 
   useEffect(() => {
     setLoading(true);
     setErr(null);
 
-    Promise.all([
-      fetch(`${API_BASE}/api/dashboard/metrics`, { credentials: "include" }),
-      fetch(`${API_BASE}/api/dashboard/pms-summary`, { credentials: "include" }),
-    ])
+    const metricsRequest = fetch(`${API_BASE}/api/dashboard/metrics`, {
+      credentials: "include",
+    });
+
+    const pmsRequest = showLegacyPmsUi
+      ? fetch(`${API_BASE}/api/dashboard/pms-summary`, {
+          credentials: "include",
+        })
+      : Promise.resolve<Response | null>(null);
+
+    Promise.all([metricsRequest, pmsRequest])
       .then(async ([metricsRes, pmsRes]) => {
         if (!metricsRes.ok) {
           throw new Error("Metrics API error");
         }
 
-        if (!pmsRes.ok) {
-          throw new Error("PMS API error");
-        }
-
         const metrics = await metricsRes.json();
-        const pmsSummary = await pmsRes.json();
-
         setData(metrics);
-        setPms(pmsSummary);
+
+        if (pmsRes) {
+          if (!pmsRes.ok) {
+            throw new Error("PMS API error");
+          }
+
+          const pmsSummary = await pmsRes.json();
+          setPms(pmsSummary);
+        } else {
+          setPms(null);
+        }
       })
       .catch((e) => {
         setErr(String(e?.message ?? e));
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [showLegacyPmsUi]);
 
   if (err) {
     return (
@@ -190,76 +203,80 @@ export function OverviewPage() {
 
     <HostPayoutsCard /> 
 
-      <div
-        style={{
-          border: "1px solid #e5e7eb",
-          borderRadius: 18,
-          padding: 20,
-          background: "#fff",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 16,
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-         }}
-        >
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>PMS Status</div>
+      {showLegacyPmsUi ? (
+        <>
+          <div
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: 18,
+              padding: 20,
+              background: "#fff",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 16,
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 12,
+             }}
+            >
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>PMS Status</div>
 
-            <div style={{ color: "#6b7280", fontSize: 13 }}>
-              Property Management System integration health
+                <div style={{ color: "#6b7280", fontSize: 13 }}>
+                  Property Management System integration health
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  background: pms?.status === "ACTIVE" ? "#ecfdf5" : "#f3f4f6",
+                  color: pms?.status === "ACTIVE" ? "#166534" : "#6b7280",
+                  fontWeight: 600,
+                  fontSize: 12,
+                }}
+              >
+                {pms?.provider ?? "PMS"} {pms?.status ?? ""}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 14,
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              }}
+            >
+              <SmallMetric
+                title="Listings Pending Mapping"
+                value={loading ? "..." : pms?.pendingListings ?? 0}
+              />
+
+              <SmallMetric
+                title="Listings Mapped"
+                value={loading ? "..." : pms?.mappedListings ?? 0}
+              />
+
+              <SmallMetric
+                title="Total Listings"
+                value={loading ? "..." : pms?.totalListings ?? 0}
+              />
+
+              <SmallMetric
+                title="Failed Webhooks"
+                value={loading ? "..." : pms?.failedWebhookEvents ?? 0}
+              />
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "6px 12px",
-              borderRadius: 999,
-              background: pms?.status === "ACTIVE" ? "#ecfdf5" : "#f3f4f6",
-              color: pms?.status === "ACTIVE" ? "#166534" : "#6b7280",
-              fontWeight: 600,
-              fontSize: 12,
-            }}
-          >
-            {pms?.provider ?? "PMS"} {pms?.status ?? ""}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gap: 14,
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          }}
-        >
-          <SmallMetric
-            title="Listings Pending Mapping"
-            value={loading ? "..." : pms?.pendingListings ?? 0}
-          />
-
-          <SmallMetric
-            title="Listings Mapped"
-            value={loading ? "..." : pms?.mappedListings ?? 0}
-          />
-
-          <SmallMetric
-            title="Total Listings"
-            value={loading ? "..." : pms?.totalListings ?? 0}
-          />
-
-          <SmallMetric
-            title="Failed Webhooks"
-            value={loading ? "..." : pms?.failedWebhookEvents ?? 0}
-          />
-        </div>
-      </div>
-
-      <PmsControlCenter />
+          <PmsControlCenter />
+        </>
+      ) : null}
 
       <div
         style={{
