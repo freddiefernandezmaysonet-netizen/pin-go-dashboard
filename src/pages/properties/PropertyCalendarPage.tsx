@@ -1494,6 +1494,8 @@ const occupancySummary = useMemo(() => {
 
       setRateInput("");
       setShowSetRateForm(false);
+      setSelectedRange({ start: null, end: null });
+      setSelectedDay(null);
     } catch (error: any) {
       alert(String(error?.message || error));
     } finally {
