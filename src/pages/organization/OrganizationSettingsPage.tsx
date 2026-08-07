@@ -7,6 +7,7 @@ import {
   type ChannelDistributionStatus,
 } from "../../api/organization";
 import { useAuth } from "../../auth/AuthProvider";
+import { getVisibleChannelLabel } from "../../lib/whiteLabel";
 
 function normalizeSlug(value: string) {
   return value
@@ -334,7 +335,7 @@ async function handleValidateDistribution() {
               <div style={compatibilityCardStyle}>
                 <div style={labelStyle}>Channel Manager</div>
                 <div style={compatibilityTextStyle}>
-                  {channelDistribution?.provider ?? "—"} ·{" "}
+                  {getVisibleChannelLabel(channelDistribution?.provider)} ·{" "}
                   {channelDistribution?.status ?? "Not connected"}
                 </div>
               </div>
