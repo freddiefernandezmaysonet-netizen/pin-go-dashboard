@@ -7,6 +7,7 @@ import GuestExperienceCard, {
   type GuestExperienceDevice,
   type GuestExperiencePreset,
 } from "../../components/properties/GuestExperienceCard";
+import { getVisibleReservationSourceLabel } from "../../lib/whiteLabel";
 
 type PropertyRow = {
   id: string;
@@ -1208,7 +1209,6 @@ function removeGuestExperienceDevice(deviceId: string) {
         >
           <Stat title="Locks" value={item.locks} />
           <Stat title="Upcoming Reservations" value={upcomingReservations.length} />
-          <Stat title="PMS" value={String(item.pms).toUpperCase()} />
           <Stat title="Active Access" value={accessCount} />
         </div>
 
@@ -1242,8 +1242,8 @@ function removeGuestExperienceDevice(deviceId: string) {
             >
               <SectionCard title="Property Summary">
                 <div style={{ color: "#6b7280", lineHeight: 1.7 }}>
-                  {item.name} currently has <b>{item.locks}</b> active lock(s), <b>{upcomingReservations.length}</b>{" "}
-                  upcoming reservation(s), and PMS source <b>{String(item.pms).toUpperCase()}</b>.
+                  {item.name} currently has <b>{item.locks}</b> active lock(s) and <b>{upcomingReservations.length}</b>{" "}
+                  upcoming reservation(s).
                 </div>
               </SectionCard>
 
@@ -1706,7 +1706,7 @@ function removeGuestExperienceDevice(deviceId: string) {
                       }}
                     >
                       <span style={{ color: "#6b7280", fontSize: 12 }}>
-                        {String(r.externalProvider ?? r.source ?? "—").toUpperCase()}
+                        {getVisibleReservationSourceLabel(r)}
                       </span>
                       {operationalBadge(r.operationalStatus)}
                     </div>
