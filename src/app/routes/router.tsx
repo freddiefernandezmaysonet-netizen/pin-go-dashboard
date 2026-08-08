@@ -46,6 +46,7 @@ import PublicBookingSuccessPage from "../../pages/public-booking/PublicBookingSu
 import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCancelPage";
 import GuestCancellationPage from "../../pages/public-booking/GuestCancellationPage";
 import OrganizationSettingsPage from "../../pages/organization/OrganizationSettingsPage";
+import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 
@@ -57,6 +58,15 @@ function RootRedirect() {
   }
 
   return <Navigate to="/home" replace />;
+}
+
+function OrganizationRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <OrganizationSettingsPage />
+      <HostPayoutsCard />
+    </div>
+  );
 }
 
 export const router = createBrowserRouter([
@@ -153,7 +163,7 @@ export const router = createBrowserRouter([
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
-      { path: "/organization", element: <OrganizationSettingsPage /> },
+      { path: "/organization", element: <OrganizationRoute /> },
       
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
