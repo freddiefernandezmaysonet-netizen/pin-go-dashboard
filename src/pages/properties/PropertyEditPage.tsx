@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { CancellationPolicyCard } from "../../components/properties/CancellationPolicyCard";
 import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
 
@@ -3455,55 +3455,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               </button>
             </div>
          
-           <div
-  style={{
-    borderTop: "1px solid #bfdbfe",
-    paddingTop: 16,
-  }}
->
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    }}
-  >
-    <div>
-      <div
-        style={{
-          fontSize: 16,
-          fontWeight: 800,
-          color: "#111827",
-        }}
-      >
-        Property Calendar
-      </div>
 
-      <div
-        style={{
-          fontSize: 13,
-          color: "#6b7280",
-          marginTop: 4,
-        }}
-      >
-        Manage availability, reservations, blocked dates and pricing.
-      </div>
-    </div>
-
-    <Link
-  to={`/properties/${id}/calendar`}
-  style={{
-    ...primaryButtonStyle,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textDecoration: "none",
-  }}
->
-  Open Calendar
-</Link>
-  </div>
-</div>
 
           </div>
 
