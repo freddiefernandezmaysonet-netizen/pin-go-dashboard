@@ -358,10 +358,11 @@ async function handleValidateDistribution() {
             </div>
 
             <div style={previewBoxStyle}>
-              <div style={labelStyle}>Webhook URL</div>
+              <div style={labelStyle}>Connection Endpoint</div>
               <div style={urlPreviewStyle}>
-                {channelDistribution?.webhookUrl ??
-                  "Connect channel distribution to generate a webhook URL"}
+                {channelDistribution?.webhookConfigured
+                  ? "Managed securely by Pin&Go Connect"
+                  : "Connect channel distribution to configure the endpoint"}
               </div>
             </div>
 
