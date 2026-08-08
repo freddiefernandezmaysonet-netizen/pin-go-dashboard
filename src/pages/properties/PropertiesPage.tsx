@@ -277,6 +277,26 @@ export function PropertiesPage() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    navigate(`/properties/${p.id}/calendar`);
+                  }}
+                  style={{
+                    height: 38,
+                    padding: "0 14px",
+                    borderRadius: 10,
+                    border: "1px solid #dbeafe",
+                    background: "#eff6ff",
+                    color: "#1d4ed8",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Open Calendar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     navigate(`/properties/${p.id}/edit`);
                   }}
                   style={{
