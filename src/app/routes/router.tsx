@@ -9,6 +9,7 @@ import { PropertiesPage } from "../../pages/properties/PropertiesPage";
 import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPage";
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
+import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
 import { LockDetailPage } from "../../pages/lock-detail/LockDetailPage";
 import { PmsConnectionsPage } from "../../pages/integrations/PmsConnectionsPage";
 import TuyaIntegrationPremiumPage from "../../pages/integrations/TuyaIntegrationPremiumPage";
@@ -65,6 +66,15 @@ function OrganizationRoute() {
     <div style={{ display: "grid", gap: 20 }}>
       <OrganizationSettingsPage />
       <HostPayoutsCard />
+    </div>
+  );
+}
+
+function PropertyCalendarRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <PropertyCalendarStayRestrictionsPanel />
+      <PropertyCalendarPage />
     </div>
   );
 }
@@ -151,7 +161,7 @@ export const router = createBrowserRouter([
       { path: "/properties", element: <PropertiesPage /> },
       { path: "/properties/:id", element: <PropertyDetailPage /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
-      { path: "/properties/:id/calendar", element: <PropertyCalendarPage /> },
+      { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
      
       { path: "/locks", element: <LocksPage /> },
       { path: "/locks/nfc-sync", element: <NfcSyncPage /> },
