@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 
 const API_BASE =
@@ -265,7 +265,7 @@ export function PropertyCalendarStayRestrictionsPanel() {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   panel: {
     display: "grid",
     gap: 18,
