@@ -20,6 +20,21 @@ export default function CreatePropertyPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  function handleCountryChange(nextCountry: string) {
+    setCountry(nextCountry);
+
+    if (nextCountry === "Puerto Rico") {
+      setRegion("Puerto Rico");
+      setTimezone("America/Puerto_Rico");
+    } else if (nextCountry === "Dominican Republic") {
+      setTimezone("America/Santo_Domingo");
+    } else if (nextCountry === "Spain") {
+      setTimezone("Europe/Madrid");
+    } else if (nextCountry === "United Kingdom") {
+      setTimezone("Europe/London");
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -153,7 +168,7 @@ export default function CreatePropertyPage() {
               <label style={labelStyle}>Country</label>
               <select
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                onChange={(e) => handleCountryChange(e.target.value)}
                 style={inputStyle}
               >
                 <option value="">Select a country</option>
