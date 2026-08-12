@@ -103,7 +103,7 @@ export default function CreatePropertyPage() {
               lineHeight: 1.5,
             }}
           >
-            Add your first property to Pin&Go and continue to TTLock setup.
+            Add a property to Pin&Go.
           </div>
         </div>
 
@@ -151,20 +151,41 @@ export default function CreatePropertyPage() {
           <div style={twoColGridStyle}>
             <div>
               <label style={labelStyle}>Country</label>
-              <input
+              <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 style={inputStyle}
-              />
+              >
+                <option value="">Select a country</option>
+                <option value="United States">United States</option>
+                <option value="Puerto Rico">Puerto Rico</option>
+                <option value="Canada">Canada</option>
+                <option value="Mexico">Mexico</option>
+                <option value="Spain">Spain</option>
+                <option value="Dominican Republic">Dominican Republic</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <div>
               <label style={labelStyle}>Timezone</label>
-              <input
+              <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
                 style={inputStyle}
-              />
+              >
+                <option value="America/Puerto_Rico">America/Puerto_Rico</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="America/Chicago">America/Chicago</option>
+                <option value="America/Denver">America/Denver</option>
+                <option value="America/Los_Angeles">America/Los_Angeles</option>
+                <option value="America/Toronto">America/Toronto</option>
+                <option value="America/Mexico_City">America/Mexico_City</option>
+                <option value="America/Santo_Domingo">America/Santo_Domingo</option>
+                <option value="Europe/Madrid">Europe/Madrid</option>
+                <option value="Europe/London">Europe/London</option>
+              </select>
             </div>
           </div>
 
@@ -211,14 +232,19 @@ export default function CreatePropertyPage() {
 
             <div>
               <label style={labelStyle}>Cleaning start offset (minutes)</label>
-              <input
-                type="number"
-                min={0}
-                max={180}
+              <select
                 value={cleaningStartOffsetMinutes}
                 onChange={(e) => setCleaningStartOffsetMinutes(e.target.value)}
                 style={inputStyle}
-              />
+              >
+                <option value="0">0 minutes</option>
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="45">45 minutes</option>
+                <option value="60">60 minutes</option>
+                <option value="90">90 minutes</option>
+                <option value="120">120 minutes</option>
+              </select>
             </div>
           </div>
 
