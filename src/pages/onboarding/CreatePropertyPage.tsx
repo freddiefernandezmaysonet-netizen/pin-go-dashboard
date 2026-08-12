@@ -4,6 +4,19 @@ import { createProperty } from "../../api/properties";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const GOOGLE_MAPS_SCRIPT_ID = "pin-go-google-maps";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+const TIMEZONE_OPTIONS = [
+  "America/Puerto_Rico",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Toronto",
+  "America/Mexico_City",
+  "America/Santo_Domingo",
+  "Europe/Madrid",
+  "Europe/London",
+];
 
 type GoogleMapsWindow = Window & {
   google?: any;
@@ -71,6 +84,7 @@ function loadGooglePlaces(apiKey: string) {
 export default function CreatePropertyPage() {
   const navigate = useNavigate();
   const autocompleteMountRef = useRef<HTMLDivElement>(null);
+  const timezoneLookupIdRef = useRef(0);
 
   const [name, setName] = useState("");
   const [address1, setAddress1] = useState("");
@@ -90,6 +104,7 @@ export default function CreatePropertyPage() {
   const [locationMessage, setLocationMessage] = useState(
     GOOGLE_MAPS_API_KEY ? "" : "Google Places is unavailable. Enter the address manually."
   );
+  const [timezoneLookupMessage, setTimezoneLookupMessage] = useState("");
 
   function handleCountryChange(nextCountry: string) {
     setCountry(nextCountry);
@@ -157,18 +172,62 @@ export default function CreatePropertyPage() {
             setCity(nextCity);
 
             if (nextCountry) {
-              handleCountryChange(nextCountry);
+              setCountry(nextCountry);
             }
 
-            if (nextRegion) {
+            if (nextCountry === "Puerto Rico") {
+              setRegion("Puerto Rico");
+            } else if (nextRegion) {
               setRegion(nextRegion);
-            } else if (nextCountry && nextCountry !== "Puerto Rico") {
+            } else if (nextCountry) {
               setRegion("");
             }
 
             if (place.location) {
-              setLatitude(String(place.location.lat()));
-              setLongitude(String(place.location.lng()));
+              const nextLatitude = place.location.lat();
+              const nextLongitude = place.location.lng();
+              const lookupId = ++timezoneLookupIdRef.current;
+
+              setLatitude(String(nextLatitude));
+              setLongitude(String(nextLongitude));
+              setTimezoneLookupMessage("Detecting timezone...");
+
+              try {
+                const params = new URLSearchParams({
+                  lat: String(nextLatitude),
+                  lng: String(nextLongitude),
+                });
+                const response = await fetch(
+                  `${API_BASE}/api/dashboard/location/timezone?${params.toString()}`,
+                  { credentials: "include" }
+                );
+                const result = await response.json();
+                const resolvedTimezone =
+                  typeof result?.timezone === "string" && result.timezone.trim()
+                    ? result.timezone
+                    : null;
+
+                if (
+                  !cancelled &&
+                  lookupId === timezoneLookupIdRef.current &&
+                  response.ok &&
+                  result?.ok === true &&
+                  resolvedTimezone
+                ) {
+                  setTimezone(resolvedTimezone);
+                  setTimezoneLookupMessage("");
+                } else if (!cancelled && lookupId === timezoneLookupIdRef.current) {
+                  setTimezoneLookupMessage(
+                    "Timezone could not be detected automatically. Please confirm it manually."
+                  );
+                }
+              } catch {
+                if (!cancelled && lookupId === timezoneLookupIdRef.current) {
+                  setTimezoneLookupMessage(
+                    "Timezone could not be detected automatically. Please confirm it manually."
+                  );
+                }
+              }
             }
           } catch {
             autocompleteElement?.remove();
@@ -364,17 +423,18 @@ export default function CreatePropertyPage() {
                 onChange={(e) => setTimezone(e.target.value)}
                 style={inputStyle}
               >
-                <option value="America/Puerto_Rico">America/Puerto_Rico</option>
-                <option value="America/New_York">America/New_York</option>
-                <option value="America/Chicago">America/Chicago</option>
-                <option value="America/Denver">America/Denver</option>
-                <option value="America/Los_Angeles">America/Los_Angeles</option>
-                <option value="America/Toronto">America/Toronto</option>
-                <option value="America/Mexico_City">America/Mexico_City</option>
-                <option value="America/Santo_Domingo">America/Santo_Domingo</option>
-                <option value="Europe/Madrid">Europe/Madrid</option>
-                <option value="Europe/London">Europe/London</option>
+                {!TIMEZONE_OPTIONS.includes(timezone) ? (
+                  <option value={timezone}>{timezone}</option>
+                ) : null}
+                {TIMEZONE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
+              {timezoneLookupMessage ? (
+                <div style={locationMessageStyle}>{timezoneLookupMessage}</div>
+              ) : null}
             </div>
           </div>
 
