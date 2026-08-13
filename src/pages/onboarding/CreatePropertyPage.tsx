@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createProperty } from "../../api/properties";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
 const GOOGLE_MAPS_SCRIPT_ID = "pin-go-google-maps";
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 const TIMEZONE_OPTIONS = [
@@ -24,11 +25,21 @@ type GoogleMapsWindow = Window & {
 
 let googleMapsLoader: Promise<any> | null = null;
 
+async function importGoogleMapsLibraries(google: any) {
+  await Promise.all([
+    google.maps.importLibrary("places"),
+    google.maps.importLibrary("maps"),
+    google.maps.importLibrary("marker"),
+  ]);
+
+  return google;
+}
+
 function loadGooglePlaces(apiKey: string) {
   const mapsWindow = window as GoogleMapsWindow;
 
   if (mapsWindow.google?.maps) {
-    return mapsWindow.google.maps.importLibrary("places").then(() => mapsWindow.google);
+    return importGoogleMapsLibraries(mapsWindow.google);
   }
 
   if (googleMapsLoader) {
@@ -48,8 +59,11 @@ function loadGooglePlaces(apiKey: string) {
           throw new Error("Google Maps did not initialize");
         }
 
-        await mapsWindow.google.maps.importLibrary("places");
-        resolve(mapsWindow.google);
+        resolve(
+          await importGoogleMapsLibraries(
+            mapsWindow.google
+          )
+        );
       } catch (error) {
         googleMapsLoader = null;
         reject(error);
@@ -84,6 +98,10 @@ function loadGooglePlaces(apiKey: string) {
 export default function CreatePropertyPage() {
   const navigate = useNavigate();
   const autocompleteMountRef = useRef<HTMLDivElement>(null);
+  const mapMountRef = useRef<HTMLDivElement>(null);
+  const googleMapsRef = useRef<any>(null);
+  const mapRef = useRef<any>(null);
+  const mapMarkerRef = useRef<any>(null);
   const timezoneLookupIdRef = useRef(0);
 
   const [name, setName] = useState("");
@@ -97,6 +115,7 @@ export default function CreatePropertyPage() {
 
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
 
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -136,6 +155,8 @@ export default function CreatePropertyPage() {
           return;
         }
 
+        googleMapsRef.current = google;
+
         autocompleteElement = new google.maps.places.PlaceAutocompleteElement();
         (autocompleteElement as any).placeholder = "Search for the property address";
         autocompleteElement.style.width = "100%";
@@ -152,6 +173,8 @@ export default function CreatePropertyPage() {
             if (cancelled) {
               return;
             }
+
+            setLocationConfirmed(false);
 
             const components = place.addressComponents ?? [];
             const componentValue = (type: string) =>
@@ -228,9 +251,15 @@ export default function CreatePropertyPage() {
                   );
                 }
               }
+            } else {
+              setLatitude("");
+              setLongitude("");
             }
           } catch {
             autocompleteElement?.remove();
+            setLatitude("");
+            setLongitude("");
+            setLocationConfirmed(false);
             setPlacesAvailable(false);
             setLocationMessage(
               "Google Places could not load this location. Enter the address manually."
@@ -261,6 +290,66 @@ export default function CreatePropertyPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const google = googleMapsRef.current;
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if (
+      !google?.maps ||
+      !GOOGLE_MAPS_MAP_ID ||
+      !mapMountRef.current ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      latitude.trim() === "" ||
+      longitude.trim() === ""
+    ) {
+      return;
+    }
+
+    const position = { lat, lng };
+
+    if (!mapRef.current) {
+      mapRef.current = new google.maps.Map(
+        mapMountRef.current,
+        {
+          center: position,
+          zoom: 18,
+          mapId: GOOGLE_MAPS_MAP_ID,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+        }
+      );
+
+      mapMarkerRef.current =
+        new google.maps.marker.AdvancedMarkerElement({
+          map: mapRef.current,
+          position,
+          title: address1 || "Property location",
+        });
+
+      return;
+    }
+
+    mapRef.current.setCenter(position);
+    mapRef.current.setZoom(18);
+
+    if (mapMarkerRef.current) {
+      mapMarkerRef.current.position = position;
+      mapMarkerRef.current.title =
+        address1 || "Property location";
+    }
+  }, [address1, latitude, longitude]);
+
+  const hasSelectedLocation =
+    latitude.trim() !== "" && longitude.trim() !== "";
+  const requiresLocationConfirmation =
+    placesAvailable && hasSelectedLocation;
+  const submitDisabled =
+    submitting ||
+    (requiresLocationConfirmation && !locationConfirmed);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -280,6 +369,16 @@ export default function CreatePropertyPage() {
 
       if (lng !== null && !Number.isFinite(lng)) {
         throw new Error("Longitude must be a valid number");
+      }
+
+      if (
+        lat !== null &&
+        lng !== null &&
+        !locationConfirmed
+      ) {
+        throw new Error(
+          "Confirm the property location on the map before continuing"
+        );
       }
 
       await createProperty({
@@ -374,6 +473,100 @@ export default function CreatePropertyPage() {
             {locationMessage ? (
               <div style={locationMessageStyle}>{locationMessage}</div>
             ) : null}
+          </div>
+
+          <div
+            style={{
+              display:
+                requiresLocationConfirmation
+                  ? "grid"
+                  : "none",
+              gap: 12,
+              border: "1px solid #dbeafe",
+              borderRadius: 16,
+              background: "#f8fbff",
+              padding: 14,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#111827",
+                  fontSize: 15,
+                  fontWeight: 750,
+                }}
+              >
+                Confirm property location
+              </div>
+              <div
+                style={{
+                  color: "#6b7280",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  marginTop: 3,
+                }}
+              >
+                Make sure the pin marks the exact property guests should navigate to.
+              </div>
+            </div>
+
+            <div
+              ref={mapMountRef}
+              aria-label="Selected property location map"
+              style={{
+                width: "100%",
+                height: 280,
+                borderRadius: 14,
+                border: "1px solid #dbe3ee",
+                overflow: "hidden",
+                background: "#e5e7eb",
+              }}
+            />
+
+            <div
+              style={{
+                color: "#374151",
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              {address1}
+            </div>
+
+            {locationConfirmed ? (
+              <div
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid #bbf7d0",
+                  background: "#f0fdf4",
+                  color: "#166534",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "11px 12px",
+                }}
+              >
+                ✓ Location confirmed
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() =>
+                  setLocationConfirmed(true)
+                }
+                style={{
+                  height: 42,
+                  borderRadius: 12,
+                  border: "1px solid #2563eb",
+                  background: "#ffffff",
+                  color: "#1d4ed8",
+                  fontSize: 13,
+                  fontWeight: 750,
+                  cursor: "pointer",
+                }}
+              >
+                Confirm location
+              </button>
+            )}
           </div>
 
           <div style={twoColGridStyle}>
@@ -481,16 +674,16 @@ export default function CreatePropertyPage() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitDisabled}
             style={{
               height: 46,
               borderRadius: 12,
               border: "none",
-              background: submitting ? "#93c5fd" : "#2563eb",
+              background: submitDisabled ? "#93c5fd" : "#2563eb",
               color: "#ffffff",
               fontSize: 14,
               fontWeight: 700,
-              cursor: submitting ? "not-allowed" : "pointer",
+              cursor: submitDisabled ? "not-allowed" : "pointer",
               marginTop: 4,
             }}
           >
