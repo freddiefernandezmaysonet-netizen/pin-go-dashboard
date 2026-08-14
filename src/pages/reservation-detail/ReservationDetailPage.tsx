@@ -249,6 +249,15 @@ export function ReservationDetailPage() {
   const [data, setData] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [cancellationSubmitting, setCancellationSubmitting] = useState(false);
+  const [cancellationError, setCancellationError] = useState<string | null>(null);
+  const [cancellationNotice, setCancellationNotice] = useState<{
+    tone: "success" | "warning";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -289,7 +298,7 @@ export function ReservationDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, refreshKey]);
 
   const passcodes = useMemo(() => data?.passcodes ?? [], [data]);
   const nfcCards = useMemo(() => data?.nfc ?? [], [data]);
@@ -302,6 +311,90 @@ export function ReservationDetailPage() {
   const reservationProvider = data
     ? getVisibleReservationProviderLabel(data.externalProvider ?? "PIN_GO")
     : "—";
+
+  const canCancelManualReservation =
+    String(data?.status ?? "").trim().toUpperCase() === "ACTIVE" &&
+    String(data?.source ?? "").trim().toUpperCase() === "MANUAL" &&
+    String(data?.externalProvider ?? "").trim().toUpperCase() ===
+      "PIN_GO_MANUAL";
+
+  function openCancellationDialog() {
+    setCancellationReason("");
+    setCancellationError(null);
+    setCancellationNotice(null);
+    setCancelDialogOpen(true);
+  }
+
+  function closeCancellationDialog() {
+    if (cancellationSubmitting) return;
+
+    setCancelDialogOpen(false);
+    setCancellationError(null);
+  }
+
+  async function cancelManualReservation() {
+    const reason = cancellationReason.trim();
+
+    if (!reason) {
+      setCancellationError("A cancellation reason is required.");
+      return;
+    }
+
+    if (!id || !canCancelManualReservation || cancellationSubmitting) {
+      return;
+    }
+
+    try {
+      setCancellationSubmitting(true);
+      setCancellationError(null);
+
+      const response = await fetch(
+        `${API_BASE}/api/dashboard/reservations/${id}/cancel-manual`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason }),
+        }
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        message?: string;
+        operationalFinalization?: {
+          ok?: boolean;
+        };
+      } | null;
+
+      if (!response.ok || payload?.ok !== true) {
+        throw new Error(
+          payload?.message || "Unable to cancel this manual reservation."
+        );
+      }
+
+      const followUpNeedsAttention =
+        payload.operationalFinalization?.ok === false;
+
+      setCancellationNotice({
+        tone: followUpNeedsAttention ? "warning" : "success",
+        message: followUpNeedsAttention
+          ? "Reservation cancelled. Some follow-up operations need attention in Mission Control."
+          : "Manual reservation cancelled successfully.",
+      });
+      setCancelDialogOpen(false);
+      setCancellationReason("");
+      setRefreshKey((current) => current + 1);
+    } catch (error: unknown) {
+      setCancellationError(
+        error instanceof Error
+          ? error.message
+          : "Unable to cancel this manual reservation."
+      );
+    } finally {
+      setCancellationSubmitting(false);
+    }
+  }
   
   if (loading) {
     return (
@@ -377,8 +470,57 @@ export function ReservationDetailPage() {
           ← Back to reservations
         </Link>
 
-        <div>{statusPill(data.operationalStatus)}</div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
+          <div>{statusPill(data.operationalStatus)}</div>
+
+          {canCancelManualReservation ? (
+            <button
+              type="button"
+              onClick={openCancellationDialog}
+              style={{
+                border: "1px solid #dc2626",
+                borderRadius: 10,
+                padding: "8px 12px",
+                background: "#fff",
+                color: "#b91c1c",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Cancel manual reservation
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {cancellationNotice ? (
+        <div
+          role="status"
+          style={{
+            border:
+              cancellationNotice.tone === "warning"
+                ? "1px solid #fde68a"
+                : "1px solid #a7f3d0",
+            background:
+              cancellationNotice.tone === "warning" ? "#fffbeb" : "#ecfdf5",
+            color:
+              cancellationNotice.tone === "warning" ? "#92400e" : "#065f46",
+            padding: 14,
+            borderRadius: 14,
+            fontWeight: 700,
+          }}
+        >
+          {cancellationNotice.message}
+        </div>
+      ) : null}
 
       <div
         style={{
@@ -781,6 +923,174 @@ export function ReservationDetailPage() {
           )}
         </div>
       </div>
+
+      {cancelDialogOpen ? (
+        <div
+          role="presentation"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            display: "grid",
+            placeItems: "center",
+            padding: 20,
+            background: "rgba(17, 24, 39, 0.55)",
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manual-cancellation-title"
+            style={{
+              width: "min(100%, 560px)",
+              borderRadius: 18,
+              background: "#fff",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
+              padding: 22,
+            }}
+          >
+            <h2
+              id="manual-cancellation-title"
+              style={{ margin: 0, color: "#991b1b", fontSize: 22 }}
+            >
+              Cancel manual reservation?
+            </h2>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 8,
+                marginTop: 14,
+                color: "#374151",
+                lineHeight: 1.5,
+              }}
+            >
+              <div>This will cancel the reservation and close its access lifecycle.</div>
+              <div>The guest and the related cleaner will be notified.</div>
+              <div>
+                Any manually recorded payment remains unchanged. No Stripe refund
+                will be processed.
+              </div>
+            </div>
+
+            <label
+              htmlFor="manual-cancellation-reason"
+              style={{
+                display: "block",
+                marginTop: 18,
+                color: "#111827",
+                fontWeight: 700,
+              }}
+            >
+              Cancellation reason
+            </label>
+            <textarea
+              id="manual-cancellation-reason"
+              value={cancellationReason}
+              onChange={(event) => {
+                setCancellationReason(event.target.value);
+                if (cancellationError) setCancellationError(null);
+              }}
+              maxLength={1000}
+              rows={4}
+              disabled={cancellationSubmitting}
+              placeholder="Explain why this reservation is being cancelled."
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                marginTop: 8,
+                border: "1px solid #d1d5db",
+                borderRadius: 10,
+                padding: 12,
+                resize: "vertical",
+                font: "inherit",
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: 6,
+                textAlign: "right",
+                color: "#6b7280",
+                fontSize: 12,
+              }}
+            >
+              {cancellationReason.length}/1000
+            </div>
+
+            {cancellationError ? (
+              <div
+                role="alert"
+                style={{
+                  marginTop: 12,
+                  border: "1px solid #fecaca",
+                  borderRadius: 10,
+                  background: "#fef2f2",
+                  color: "#991b1b",
+                  padding: 10,
+                  fontWeight: 600,
+                }}
+              >
+                {cancellationError}
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 10,
+                marginTop: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeCancellationDialog}
+                disabled={cancellationSubmitting}
+                style={{
+                  border: "1px solid #d1d5db",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  background: "#fff",
+                  color: "#374151",
+                  fontWeight: 700,
+                  cursor: cancellationSubmitting ? "not-allowed" : "pointer",
+                }}
+              >
+                Keep reservation
+              </button>
+              <button
+                type="button"
+                onClick={cancelManualReservation}
+                disabled={
+                  cancellationSubmitting || !cancellationReason.trim()
+                }
+                style={{
+                  border: "1px solid #b91c1c",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  background:
+                    cancellationSubmitting || !cancellationReason.trim()
+                      ? "#fca5a5"
+                      : "#b91c1c",
+                  color: "#fff",
+                  fontWeight: 800,
+                  cursor:
+                    cancellationSubmitting || !cancellationReason.trim()
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                {cancellationSubmitting
+                  ? "Cancelling..."
+                  : "Cancel reservation"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
