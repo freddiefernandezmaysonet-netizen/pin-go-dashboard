@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getVisibleReservationSourceLabel } from "../../lib/whiteLabel";
 
 type ReservationStatus = "ACTIVE" | "CANCELLED";
 type OperationalStatus = "UPCOMING" | "IN_HOUSE" | "CHECKED_OUT" | "CANCELLED";
-type PaymentState = "NONE" | "PAID" | "FAILED" | "PENDING";
+type PaymentState = "NONE" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED";
 
 type ReservationRow = {
   id: string;
@@ -111,7 +111,7 @@ function paymentStyles(state: PaymentState) {
     };
   }
 
-  if (state === "PENDING") {
+  if (state === "PARTIALLY_REFUNDED") {
     return {
       background: "#fffbeb",
       color: "#92400e",
@@ -119,7 +119,7 @@ function paymentStyles(state: PaymentState) {
     };
   }
 
-  if (state === "FAILED") {
+  if (state === "NONE") {
     return {
       background: "#fef2f2",
       color: "#991b1b",
@@ -138,20 +138,108 @@ function propertyLabel(r: ReservationRow) {
   return r.property?.name ?? r.propertyId ?? "—";
 }
 
+function operationalStatusLabel(status: OperationalStatus) {
+  if (status === "IN_HOUSE") return "In house";
+  if (status === "CHECKED_OUT") return "Checked out";
+  if (status === "CANCELLED") return "Cancelled";
+  return "Upcoming";
+}
+
+function paymentStateLabel(state: PaymentState) {
+  if (state === "PAID") return "Paid";
+  if (state === "PARTIALLY_REFUNDED") return "Partially refunded";
+  if (state === "REFUNDED") return "Refunded";
+  return "Not paid";
+}
+
+function parsePositiveInt(value: string | null, fallback: number) {
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function inclusiveEndDate(value: string) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString();
+}
+
+const filterLabelStyle = {
+  color: "#475569",
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.01em",
+} as const;
+
+const filterControlStyle = {
+  width: "100%",
+  minHeight: 40,
+  padding: "9px 11px",
+  borderRadius: 10,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  color: "#0f172a",
+  outline: "none",
+} as const;
+
 export function ReservationsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [properties, setProperties] = useState<PropertiesResp["items"]>([]);
-  const [propertyId, setPropertyId] = useState<string>("ALL");
-  const [status, setStatus] = useState<string>("ALL");
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState<number>(1);
-  const [pageSize] = useState<number>(10);
+  const propertyId = searchParams.get("propertyId") || "ALL";
+  const operationalStatus = searchParams.get("operationalStatus") || "ALL";
+  const paymentState = searchParams.get("paymentState") || "ALL";
+  const source = searchParams.get("source") || "ALL";
+  const from = searchParams.get("from") || "";
+  const to = searchParams.get("to") || "";
+  const sort = searchParams.get("sort") || "checkIn_desc";
+  const search = searchParams.get("search") || "";
+  const page = parsePositiveInt(searchParams.get("page"), 1);
+  const requestedPageSize = parsePositiveInt(searchParams.get("pageSize"), 25);
+  const pageSize = [10, 25, 50].includes(requestedPageSize)
+    ? requestedPageSize
+    : 25;
+  const [searchInput, setSearchInput] = useState(search);
 
   const [data, setData] = useState<ReservationsResp | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  function updateFilters(
+    changes: Record<string, string | null>,
+    resetPage = true
+  ) {
+    const next = new URLSearchParams(searchParams);
+
+    Object.entries(changes).forEach(([key, value]) => {
+      if (!value || value === "ALL") {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    });
+
+    if (resetPage) {
+      next.delete("page");
+    }
+
+    setSearchParams(next, { replace: true });
+  }
+
+  function clearAllFilters() {
+    const next = new URLSearchParams();
+
+    if (pageSize !== 25) {
+      next.set("pageSize", String(pageSize));
+    }
+
+    setSearchInput("");
+    setSearchParams(next, { replace: true });
+  }
 
   useEffect(() => {
     api<PropertiesResp>("/api/dashboard/properties")
@@ -159,35 +247,64 @@ export function ReservationsPage() {
       .catch(() => setProperties([]));
   }, []);
 
-useEffect(() => {
-  const timer = window.setTimeout(() => {
-    const normalizedSearch = searchInput.trim().replace(/^#/, "");
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
 
-    setPage(1);
-    setSearch(normalizedSearch);
-  }, 350);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const normalizedSearch = searchInput.trim().replace(/^#/, "");
 
-  return () => {
-    window.clearTimeout(timer);
-  };
-}, [searchInput]);
+      if (normalizedSearch !== search) {
+        const next = new URLSearchParams(searchParams);
 
- const qs = useMemo(() => {
-  const q = new URLSearchParams();
+        if (normalizedSearch) {
+          next.set("search", normalizedSearch);
+        } else {
+          next.delete("search");
+        }
 
-  q.set("page", String(page));
-  q.set("pageSize", String(pageSize));
+        next.delete("page");
+        setSearchParams(next, { replace: true });
+      }
+    }, 350);
 
-  if (propertyId !== "ALL") {
-    q.set("propertyId", propertyId);
-  }
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [search, searchInput, searchParams, setSearchParams]);
 
-  if (search) {
-    q.set("search", search);
-  }
+  const qs = useMemo(() => {
+    const q = new URLSearchParams();
 
-  return q.toString();
-}, [page, pageSize, propertyId, search]);
+    q.set("page", String(page));
+    q.set("pageSize", String(pageSize));
+    q.set("sort", sort);
+
+    if (propertyId !== "ALL") q.set("propertyId", propertyId);
+    if (operationalStatus !== "ALL") {
+      q.set("operationalStatus", operationalStatus);
+    }
+    if (paymentState !== "ALL") q.set("paymentState", paymentState);
+    if (source !== "ALL") q.set("source", source);
+    if (from) q.set("from", `${from}T00:00:00.000Z`);
+    if (to) q.set("to", inclusiveEndDate(to));
+    if (search) q.set("search", search);
+
+    return q.toString();
+  }, [
+    from,
+    operationalStatus,
+    page,
+    pageSize,
+    paymentState,
+    propertyId,
+    search,
+    sort,
+    source,
+    to,
+  ]);
+
   useEffect(() => {
     setLoading(true);
     setErr(null);
@@ -198,144 +315,224 @@ useEffect(() => {
       .finally(() => setLoading(false));
   }, [qs]);
 
-  const filteredItems =
-    status === "ALL"
-      ? data?.items ?? []
-      : (data?.items ?? []).filter((r) => r.operationalStatus === status);
-
+  const items = data?.items ?? [];
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
+  const activeFilterCount = [
+    propertyId !== "ALL",
+    operationalStatus !== "ALL",
+    paymentState !== "ALL",
+    source !== "ALL",
+    Boolean(from),
+    Boolean(to),
+    Boolean(search),
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
+  const resultStart = data && data.total > 0 ? (data.page - 1) * data.pageSize + 1 : 0;
+  const resultEnd = data ? Math.min(data.page * data.pageSize, data.total) : 0;
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div
         style={{
-          display: "flex",
-          gap: 12,
-          alignItems: "center",
-          flexWrap: "wrap",
           width: "100%",
-          border: "1px solid #e5e7eb",
-          borderRadius: 16,
-          padding: 12,
+          border: "1px solid #dbe3ee",
+          borderRadius: 18,
+          padding: 16,
           background: "#fff",
+          boxShadow: "0 1px 3px rgba(15, 23, 42, 0.05)",
+          display: "grid",
+          gap: 16,
         }}
       >
-        <div style={{ display: "grid", gap: 6 }}>
-          <div style={{ fontSize: 12, color: "#666", fontWeight: 600 }}>Property</div>
-          <select
-            value={propertyId}
-            onChange={(e) => {
-              setPage(1);
-              setPropertyId(e.target.value);
-            }}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-            }}
-          >
-            <option value="ALL">All</option>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ color: "#0f172a", fontSize: 17, fontWeight: 800 }}>
+              Find reservations
+            </div>
+            <div style={{ color: "#64748b", fontSize: 13, marginTop: 4 }}>
+              Search and narrow the complete reservation history.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {hasActiveFilters ? (
+              <span
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "#eff6ff",
+                  color: "#1d4ed8",
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              >
+                {activeFilterCount} active
+              </span>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              disabled={!hasActiveFilters}
+              style={{
+                minHeight: 36,
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #cbd5e1",
+                background: "#fff",
+                color: hasActiveFilters ? "#334155" : "#94a3b8",
+                cursor: hasActiveFilters ? "pointer" : "not-allowed",
+                fontWeight: 700,
+              }}
+            >
+              Clear all
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: "grid", gap: 6 }}>
-          <div style={{ fontSize: 12, color: "#666", fontWeight: 600 }}>Operational Status</div>
-          <select
-            value={status}
-            onChange={(e) => {
-              setPage(1);
-              setStatus(e.target.value);
-            }}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-            }}
-          >
-            <option value="ALL">All</option>
-            <option value="UPCOMING">UPCOMING</option>
-            <option value="IN_HOUSE">IN_HOUSE</option>
-            <option value="CHECKED_OUT">CHECKED_OUT</option>
-            <option value="CANCELLED">CANCELLED</option>
-          </select>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+          }}
+        >
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Search reservations</span>
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Reservation #, guest, email, room or external ID"
+              aria-label="Search reservations"
+              style={filterControlStyle}
+            />
+          </label>
+
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Property</span>
+            <select
+              value={propertyId}
+              onChange={(e) => updateFilters({ propertyId: e.target.value })}
+              style={filterControlStyle}
+            >
+              <option value="ALL">All properties</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-       <div
-  style={{
-    display: "grid",
-    gap: 6,
-    flex: "1 1 300px",
-    minWidth: 260,
-  }}
->
-  <div
-    style={{
-      fontSize: 12,
-      color: "#666",
-      fontWeight: 600,
-    }}
-  >
-    Search Reservations
-  </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+            gap: 12,
+          }}
+        >
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Stay from</span>
+            <input
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(e) => updateFilters({ from: e.target.value })}
+              style={filterControlStyle}
+            />
+          </label>
 
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-    }}
-  >
-    <input
-      type="search"
-      value={searchInput}
-      onChange={(e) => setSearchInput(e.target.value)}
-      placeholder="Reservation #, guest, email or room"
-      aria-label="Search reservations"
-      style={{
-        width: "100%",
-        padding: "8px 10px",
-        borderRadius: 10,
-        border: "1px solid #e5e7eb",
-        background: "#fff",
-        color: "#111827",
-        outline: "none",
-      }}
-    />
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Stay through</span>
+            <input
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(e) => updateFilters({ to: e.target.value })}
+              style={filterControlStyle}
+            />
+          </label>
 
-    {searchInput ? (
-      <button
-        type="button"
-        onClick={() => {
-          setSearchInput("");
-          setSearch("");
-          setPage(1);
-        }}
-        style={{
-          padding: "8px 10px",
-          borderRadius: 10,
-          border: "1px solid #e5e7eb",
-          background: "#fff",
-          color: "#374151",
-          cursor: "pointer",
-          fontWeight: 700,
-          whiteSpace: "nowrap",
-        }}
-      >
-        Clear
-      </button>
-    ) : null}
-  </div>
-</div>
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Operational status</span>
+            <select
+              value={operationalStatus}
+              onChange={(e) =>
+                updateFilters({ operationalStatus: e.target.value })
+              }
+              style={filterControlStyle}
+            >
+              <option value="ALL">All stays</option>
+              <option value="UPCOMING">Upcoming</option>
+              <option value="IN_HOUSE">In house</option>
+              <option value="CHECKED_OUT">Checked out</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </label>
 
-        <div style={{ marginLeft: "auto", color: "#666", fontSize: 13 }}>
-          {loading ? "Loading…" : data ? `${filteredItems.length} shown / ${data.total} total` : "—"}
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Payment status</span>
+            <select
+              value={paymentState}
+              onChange={(e) => updateFilters({ paymentState: e.target.value })}
+              style={filterControlStyle}
+            >
+              <option value="ALL">All payments</option>
+              <option value="PAID">Paid</option>
+              <option value="NONE">Not paid</option>
+              <option value="PARTIALLY_REFUNDED">Partially refunded</option>
+              <option value="REFUNDED">Refunded</option>
+            </select>
+          </label>
+
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Source</span>
+            <select
+              value={source}
+              onChange={(e) => updateFilters({ source: e.target.value })}
+              style={filterControlStyle}
+            >
+              <option value="ALL">All sources</option>
+              <option value="PIN_GO_DIRECT">Pin&amp;Go Direct</option>
+              <option value="PIN_GO_MANUAL">Pin&amp;Go Manual</option>
+              <option value="AIRBNB">Airbnb</option>
+              <option value="VRBO">Vrbo</option>
+              <option value="BOOKING_COM">Booking.com</option>
+            </select>
+          </label>
+
+          <label style={{ display: "grid", gap: 6 }}>
+            <span style={filterLabelStyle}>Sort by</span>
+            <select
+              value={sort}
+              onChange={(e) => updateFilters({ sort: e.target.value })}
+              style={filterControlStyle}
+            >
+              <option value="checkIn_desc">Latest check-in first</option>
+              <option value="checkIn_asc">Earliest check-in first</option>
+              <option value="checkOut_asc">Earliest check-out first</option>
+              <option value="checkOut_desc">Latest check-out first</option>
+              <option value="updatedAt_desc">Recently updated</option>
+            </select>
+          </label>
+        </div>
+
+        <div style={{ color: "#64748b", fontSize: 13 }}>
+          {loading
+            ? "Updating results…"
+            : data
+            ? `Showing ${resultStart}–${resultEnd} of ${data.total} matching reservations`
+            : "—"}
         </div>
       </div>
 
@@ -406,14 +603,14 @@ useEffect(() => {
                     Loading…
                   </td>
                 </tr>
-              ) : filteredItems.length === 0 ? (
+              ) : items.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ padding: 16, color: "#666" }}>
                     No reservations found for this filter.
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((r) => {
+                items.map((r) => {
                   const styles = statusStyles(r.operationalStatus);
                   const payment = paymentStyles(r.paymentState);
 
@@ -485,7 +682,7 @@ useEffect(() => {
                             gap: 6,
                           }}
                         >
-                          {r.operationalStatus}
+                          {operationalStatusLabel(r.operationalStatus)}
                         </span>
                       </td>
 
@@ -504,7 +701,7 @@ useEffect(() => {
                             gap: 6,
                           }}
                         >
-                          {r.paymentState}
+                          {paymentStateLabel(r.paymentState)}
                         </span>
                       </td>
 
@@ -528,48 +725,99 @@ useEffect(() => {
         <div
           style={{
             display: "flex",
-            gap: 10,
+            justifyContent: "space-between",
+            gap: 16,
             alignItems: "center",
-            padding: 12,
+            flexWrap: "wrap",
+            padding: "12px 14px",
             borderTop: "1px solid #f3f4f6",
-            background: "#fff",
+            background: "#f8fafc",
           }}
         >
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1 || loading}
+          <label
             style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid #e5e7eb",
-              background: page <= 1 ? "#f9fafb" : "#fff",
-              cursor: page <= 1 ? "not-allowed" : "pointer",
-              color: "#111827",
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              color: "#475569",
+              fontSize: 13,
               fontWeight: 600,
             }}
           >
-            Prev
-          </button>
+            Rows per page
+            <select
+              value={pageSize}
+              onChange={(e) =>
+                updateFilters({
+                  pageSize: e.target.value === "25" ? null : e.target.value,
+                })
+              }
+              style={{
+                padding: "7px 9px",
+                borderRadius: 9,
+                border: "1px solid #cbd5e1",
+                background: "#fff",
+                color: "#0f172a",
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </label>
 
-          <div style={{ color: "#666", fontSize: 13 }}>
-            Page <b>{page}</b> / {totalPages}
+          <div style={{ color: "#64748b", fontSize: 13 }}>
+            {resultStart}–{resultEnd} of {data?.total ?? 0}
           </div>
 
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages || loading}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid #e5e7eb",
-              background: page >= totalPages ? "#f9fafb" : "#fff",
-              cursor: page >= totalPages ? "not-allowed" : "pointer",
-              color: "#111827",
-              fontWeight: 600,
-            }}
-          >
-            Next
-          </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button
+              onClick={() => {
+                const previousPage = Math.max(1, page - 1);
+                updateFilters(
+                  { page: previousPage === 1 ? null : String(previousPage) },
+                  false
+                );
+              }}
+              disabled={page <= 1 || loading}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #cbd5e1",
+                background: page <= 1 ? "#f1f5f9" : "#fff",
+                cursor: page <= 1 ? "not-allowed" : "pointer",
+                color: page <= 1 ? "#94a3b8" : "#0f172a",
+                fontWeight: 700,
+              }}
+            >
+              Previous
+            </button>
+
+            <div style={{ color: "#475569", fontSize: 13, minWidth: 90, textAlign: "center" }}>
+              Page <b>{page}</b> of {totalPages}
+            </div>
+
+            <button
+              onClick={() =>
+                updateFilters(
+                  { page: String(Math.min(totalPages, page + 1)) },
+                  false
+                )
+              }
+              disabled={page >= totalPages || loading}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #cbd5e1",
+                background: page >= totalPages ? "#f1f5f9" : "#fff",
+                cursor: page >= totalPages ? "not-allowed" : "pointer",
+                color: page >= totalPages ? "#94a3b8" : "#0f172a",
+                fontWeight: 700,
+              }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>
