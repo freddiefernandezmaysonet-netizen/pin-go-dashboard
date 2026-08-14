@@ -93,15 +93,26 @@ type Reservation = {
   pricingBreakdown?: PricingBreakdown | null;
   stripeCheckoutSessionId?: string | null;
   stripePaymentIntentId?: string | null;
-  property?: { id: string; name: string } | null;
+  property?: { id: string; name: string; timezone?: string | null } | null;
   passcodes?: Passcode[];
   nfc?: Nfc[];
 };
 
-function fmt(d?: string | null) {
+function fmt(d?: string | null, timezone?: string | null) {
   if (!d) return "—";
   const dt = new Date(d);
-  return isNaN(dt.getTime()) ? d : dt.toLocaleString();
+
+  if (isNaN(dt.getTime())) return d;
+
+  try {
+    return dt.toLocaleString(undefined, {
+      timeZone: timezone || "UTC",
+    });
+  } catch {
+    return dt.toLocaleString(undefined, {
+      timeZone: "UTC",
+    });
+  }
 }
 
 function money(value?: number | null, currency = "usd") {
@@ -476,8 +487,8 @@ export function ReservationDetailPage() {
           gap: 16,
         }}
       >
-        <Stat title="Check-in" value={fmt(data.checkIn)} />
-        <Stat title="Check-out" value={fmt(data.checkOut)} />
+        <Stat title="Check-in" value={fmt(data.checkIn, data.property?.timezone)} />
+        <Stat title="Check-out" value={fmt(data.checkOut, data.property?.timezone)} />
         <Stat title="Operational Status" value={statusPill(data.operationalStatus)} />
         <Stat title="Room" value={data.roomName ?? "—"} />
       </div>
@@ -703,7 +714,9 @@ export function ReservationDetailPage() {
                   </div>
 
                   <div>
-                    <b>Access Period:</b> {fmt(p.startsAt)} — {fmt(p.endsAt)}
+                    <b>Access Period:</b>{" "}
+                    {fmt(p.startsAt, data.property?.timezone)} —{" "}
+                    {fmt(p.endsAt, data.property?.timezone)}
                   </div>
 
                   <div>
@@ -754,7 +767,9 @@ export function ReservationDetailPage() {
                   </div>
 
                   <div>
-                    <b>Access Period:</b> {fmt(n.startsAt)} — {fmt(n.endsAt)}
+                    <b>Access Period:</b>{" "}
+                    {fmt(n.startsAt, data.property?.timezone)} —{" "}
+                    {fmt(n.endsAt, data.property?.timezone)}
                   </div>
 
                   <div>
