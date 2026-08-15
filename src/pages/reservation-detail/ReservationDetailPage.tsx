@@ -57,10 +57,10 @@ type PricingTax = {
 };
 
 type PricingBreakdown = {
-  nights: number;
+  nights?: number | null;
   currency: string;
-  nightlyRate: number;
-  nightlySubtotal: number;
+  nightlyRate?: number | null;
+  nightlySubtotal?: number | null;
   cleaningFee: number;
   amenitiesTotal: number;
   taxesTotal: number;
@@ -150,6 +150,59 @@ function getReservationCurrency(reservation: Reservation) {
     reservation.pricingBreakdown?.currency ||
     "usd"
   );
+}
+
+function isHostCreatedManualReservation(reservation?: Reservation | null) {
+  return (
+    String(reservation?.source ?? "").trim().toUpperCase() === "MANUAL" &&
+    String(reservation?.externalProvider ?? "").trim().toUpperCase() ===
+      "PIN_GO_MANUAL"
+  );
+}
+
+function getNightlyRatePresentation(reservation: Reservation) {
+  const nightlyRate = reservation.pricingBreakdown?.nightlyRate;
+
+  if (
+    nightlyRate !== null &&
+    nightlyRate !== undefined &&
+    Number.isFinite(Number(nightlyRate))
+  ) {
+    return {
+      title: "Nightly Rate",
+      amount: Number(nightlyRate),
+    };
+  }
+
+  if (!isHostCreatedManualReservation(reservation)) {
+    return {
+      title: "Nightly Rate",
+      amount: null,
+    };
+  }
+
+  const nightlySubtotal = reservation.pricingBreakdown?.nightlySubtotal;
+  const nights = reservation.pricingBreakdown?.nights;
+
+  if (
+    nightlySubtotal === null ||
+    nightlySubtotal === undefined ||
+    nights === null ||
+    nights === undefined ||
+    !Number.isFinite(Number(nightlySubtotal)) ||
+    !Number.isFinite(Number(nights)) ||
+    Number(nights) <= 0
+  ) {
+    return {
+      title: "Nightly Rate",
+      amount: null,
+    };
+  }
+
+  return {
+    title: "Average Nightly Rate",
+    amount: Number(nightlySubtotal) / Number(nights),
+  };
 }
 
 function labelizeStatus(value?: string | null) {
@@ -311,6 +364,9 @@ export function ReservationDetailPage() {
   const reservationProvider = data
     ? getVisibleReservationProviderLabel(data.externalProvider ?? "PIN_GO")
     : "—";
+  const nightlyRatePresentation = data
+    ? getNightlyRatePresentation(data)
+    : { title: "Nightly Rate", amount: null };
 
   const canCancelManualReservation =
     String(data?.status ?? "").trim().toUpperCase() === "ACTIVE" &&
@@ -695,8 +751,12 @@ export function ReservationDetailPage() {
       }}
     >
       <Stat
-        title="Nightly Rate"
-        value={`$${Number(data.pricingBreakdown.nightlyRate ?? 0).toFixed(2)}`}
+        title={nightlyRatePresentation.title}
+        value={
+          nightlyRatePresentation.amount === null
+            ? "—"
+            : money(nightlyRatePresentation.amount, reservationCurrency)
+        }
       />
 
       <Stat
