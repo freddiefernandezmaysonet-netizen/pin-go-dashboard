@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useBrand } from "../../branding/BrandProvider";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -668,6 +669,13 @@ function getManagementPhase(
 
 export default function GuestCancellationPage() {
   const { guestToken } = useParams();
+  const { brand, isCustomBrand } = useBrand();
+  const brandLogoUrl =
+    brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
+  const brandHomePath =
+    brand.kind === "CUSTOM_BRAND"
+      ? `/book/${brand.organizationSlug}`
+      : "/home";
 
   const [preview, setPreview] = useState<CancellationPreviewResponse | null>(
     null
@@ -1174,17 +1182,17 @@ export default function GuestCancellationPage() {
     <div style={styles.page}>
       <header style={styles.header}>
         <div style={styles.headerInner}>
-          <Link to="/home" style={styles.brandWrap}>
+          <Link to={brandHomePath} style={styles.brandWrap}>
             <img
-              src="/pin-go-logo.png"
-              alt="Pin&Go logo"
+              src={brandLogoUrl}
+              alt={`${brand.displayName} logo`}
               style={styles.logo}
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
             <div>
-              <div style={styles.brandName}>Pin&Go</div>
+              <div style={styles.brandName}>{brand.displayName}</div>
               <div style={styles.slogan}>Manage reservation</div>
             </div>
           </Link>
@@ -2017,8 +2025,9 @@ export default function GuestCancellationPage() {
 
       <footer style={styles.footer}>
         <div style={styles.container}>
-          © Pin&Go. Reservation management powered by autonomous property
-          operations.
+          {isCustomBrand
+            ? `© ${brand.displayName}. Reservation management powered by Pin&Go.`
+            : "© Pin&Go. Reservation management powered by autonomous property operations."}
         </div>
       </footer>
     </div>
