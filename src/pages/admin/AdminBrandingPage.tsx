@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AdminBrandingRequestError,
   type AdminBrandDomain,
+  type AdminBrandOrganizationSearchResult,
   type BrandAssetKind,
   type BrandDomainStatus,
   type BrandDomainType,
@@ -9,11 +10,12 @@ import {
   type UploadedBrandAsset,
   createEnterpriseBrandRevisionDraft,
   createOrganizationOwnerInvitation,
-  getEnterpriseBrandingStatus,
+  getEnterpriseBrandingStatusBySlug,
   initializeEnterpriseBrand,
   provisionEnterpriseBrand,
   publishEnterpriseBrand,
   revokeOrganizationOwnerInvitation,
+  searchEnterpriseBrandingOrganizations,
   submitBrandRevisionForApproval,
   suspendEnterpriseBrand,
   transitionBrandDomain,
@@ -133,8 +135,14 @@ export default function AdminBrandingPage() {
     useState<UploadedBrandAsset | null>(null);
   const [revisionFavicon, setRevisionFavicon] =
     useState<UploadedBrandAsset | null>(null);
-  const [organizationId, setOrganizationId] = useState(
-    () => new URLSearchParams(window.location.search).get("organizationId") ?? ""
+  const [organizationQuery, setOrganizationQuery] = useState("");
+  const [organizationResults, setOrganizationResults] = useState<
+    AdminBrandOrganizationSearchResult[]
+  >([]);
+  const [organizationSearchCompleted, setOrganizationSearchCompleted] =
+    useState(false);
+  const [selectedOrganizationSlug, setSelectedOrganizationSlug] = useState(
+    () => new URLSearchParams(window.location.search).get("organization") ?? ""
   );
   const [status, setStatus] = useState<EnterpriseBrandingStatus | null>(null);
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -166,10 +174,11 @@ export default function AdminBrandingPage() {
     [status]
   );
 
-  async function fetchStatus(id: string) {
-    const result = await getEnterpriseBrandingStatus(id);
+  async function fetchStatus(slug: string) {
+    const normalizedSlug = slug.trim().toLowerCase();
+    const result = await getEnterpriseBrandingStatusBySlug(normalizedSlug);
     setStatus(result);
-    setOrganizationId(result.id);
+    setSelectedOrganizationSlug(normalizedSlug);
     setOwnerEmail(result.organizationInvitations[0]?.email ?? "");
     setProviderDomainId(result.brandProfile?.domains[0]?.providerDomainId ?? "");
     if (!result.brandProfile) {
@@ -183,15 +192,16 @@ export default function AdminBrandingPage() {
       setExistingFavicon(null);
     }
     const url = new URL(window.location.href);
-    url.searchParams.set("organizationId", result.id);
+    url.searchParams.delete("organizationId");
+    url.searchParams.set("organization", normalizedSlug);
     window.history.replaceState(null, "", url);
     return result;
   }
 
-  async function loadStatus(id = organizationId) {
-    const normalizedId = id.trim();
-    if (!normalizedId) {
-      setError("Enter an organization ID.");
+  async function loadStatus(slug: string) {
+    const normalizedSlug = slug.trim().toLowerCase();
+    if (!normalizedSlug) {
+      setError("Select an organization from the search results.");
       return;
     }
 
@@ -200,7 +210,9 @@ export default function AdminBrandingPage() {
     setError(null);
     setInvitationLink(null);
     try {
-      await fetchStatus(normalizedId);
+      await fetchStatus(normalizedSlug);
+      setOrganizationResults([]);
+      setOrganizationSearchCompleted(false);
     } catch (caught) {
       setStatus(null);
       setError(errorMessage(caught));
@@ -209,8 +221,43 @@ export default function AdminBrandingPage() {
     }
   }
 
+  async function searchOrganizations() {
+    const normalizedQuery = organizationQuery.trim();
+    if (normalizedQuery.length < 2 || normalizedQuery.length > 100) {
+      setError("Enter between 2 and 100 characters to search organizations.");
+      return;
+    }
+
+    setOperation("search");
+    setMessage(null);
+    setError(null);
+    setOrganizationSearchCompleted(false);
+    try {
+      const results = await searchEnterpriseBrandingOrganizations(
+        normalizedQuery
+      );
+      setOrganizationResults(results);
+      setOrganizationSearchCompleted(true);
+    } catch (caught) {
+      setOrganizationResults([]);
+      setError(errorMessage(caught));
+    } finally {
+      setOperation(null);
+    }
+  }
+
+  async function refreshSelectedStatus() {
+    const slug = String(status?.slug ?? selectedOrganizationSlug)
+      .trim()
+      .toLowerCase();
+    if (!slug) {
+      throw new Error("Select an organization before refreshing its branding record.");
+    }
+    return fetchStatus(slug);
+  }
+
   useEffect(() => {
-    if (organizationId) void loadStatus(organizationId);
+    if (selectedOrganizationSlug) void loadStatus(selectedOrganizationSlug);
     // The initial query string is intentionally read only once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -325,7 +372,7 @@ export default function AdminBrandingPage() {
         faviconUrl: existingFavicon.url,
         faviconPublicId: existingFavicon.publicId,
       });
-      await fetchStatus(status.id);
+      await refreshSelectedStatus();
       setMessage(
         `Branding initialized for ${status.name} as ${basisLabel}. The profile, revision and domain remain unpublished drafts.`
       );
@@ -371,7 +418,7 @@ export default function AdminBrandingPage() {
         faviconUrl: revisionFavicon.url,
         faviconPublicId: revisionFavicon.publicId,
       });
-      await fetchStatus(status.id);
+      await refreshSelectedStatus();
       setMessage(
         `Corrected revision ${revision.version} created as a draft. Review it, then submit it separately for owner approval.`
       );
@@ -411,15 +458,18 @@ export default function AdminBrandingPage() {
         faviconUrl: favicon.url,
         faviconPublicId: favicon.publicId,
       });
+      const provisionedSlug = result.organization.slug?.trim().toLowerCase();
+      if (!provisionedSlug) {
+        throw new Error("The provisioned organization does not have a public slug.");
+      }
       const link = invitationUrl(result.invitationToken);
       setInvitationLink(link);
-      setOrganizationId(result.organization.id);
       setOwnerEmail(result.invitation.email);
       setForm(INITIAL_FORM);
       setEligibilityConfirmed(false);
       setLogo(null);
       setFavicon(null);
-      await fetchStatus(result.organization.id);
+      await fetchStatus(provisionedSlug);
       setMessage(
         "Organization provisioned. Copy the owner invitation now; the token is not stored in this console."
       );
@@ -441,7 +491,7 @@ export default function AdminBrandingPage() {
     setError(null);
     try {
       await action();
-      await fetchStatus(status.id);
+      await refreshSelectedStatus();
       setMessage(successMessage);
       return true;
     } catch (caught) {
@@ -466,7 +516,7 @@ export default function AdminBrandingPage() {
         ownerEmail.trim().toLowerCase()
       );
       setInvitationLink(invitationUrl(result.token));
-      await fetchStatus(status.id);
+      await refreshSelectedStatus();
       setMessage(
         "New owner invitation created. Copy it now; the token is shown only in this session."
       );
@@ -667,28 +717,68 @@ export default function AdminBrandingPage() {
         <section style={cardStyle}>
           <p style={eyebrowDarkStyle}>Existing customer</p>
           <h2 style={headingStyle}>Open branding record</h2>
-          <div style={{ display: "flex", gap: 10, alignItems: "end" }}>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void searchOrganizations();
+            }}
+            style={{ display: "flex", gap: 10, alignItems: "end" }}
+          >
             <div style={{ flex: 1 }}>
               <Field
-                label="Organization ID"
-                value={organizationId}
-                onChange={setOrganizationId}
-                placeholder="Organization UUID"
+                label="Organization name or slug"
+                value={organizationQuery}
+                onChange={setOrganizationQuery}
+                placeholder="Remanso de Paz"
               />
             </div>
             <button
-              type="button"
+              type="submit"
               disabled={operation !== null}
-              onClick={() => void loadStatus()}
               style={secondaryButtonStyle}
             >
-              {operation === "load" ? "Loading…" : "Load"}
+              {operation === "search" ? "Searching…" : "Search"}
             </button>
-          </div>
+          </form>
+
+          {organizationResults.length > 0 && (
+            <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+              {organizationResults.map((organization) => (
+                <button
+                  key={organization.slug}
+                  type="button"
+                  disabled={operation !== null}
+                  onClick={() => void loadStatus(organization.slug)}
+                  style={{
+                    ...secondaryButtonStyle,
+                    display: "grid",
+                    gap: 4,
+                    width: "100%",
+                    textAlign: "left",
+                  }}
+                >
+                  <strong>{organization.name}</strong>
+                  <span style={helpStyle}>
+                    {organization.slug} · {organization.propertyCount}{" "}
+                    {organization.propertyCount === 1 ? "property" : "properties"}
+                    {organization.brandStatus
+                      ? ` · branding ${humanize(organization.brandStatus)}`
+                      : " · branding not created"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {organizationSearchCompleted && organizationResults.length === 0 && (
+            <p style={{ ...helpStyle, marginTop: 14 }}>
+              No organizations matched that name or slug.
+            </p>
+          )}
 
           {!status && (
             <p style={{ ...helpStyle, marginTop: 18 }}>
-              Load a record to review its approval, domain and publication state.
+              Search and select an organization to review its branding record.
             </p>
           )}
 

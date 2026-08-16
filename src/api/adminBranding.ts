@@ -121,6 +121,13 @@ export type EnterpriseBrandingStatus = AdminBrandOrganization & {
   organizationInvitations: AdminOrganizationInvitation[];
 };
 
+export type AdminBrandOrganizationSearchResult = {
+  name: string;
+  slug: string;
+  propertyCount: number;
+  brandStatus: BrandProfileStatus | null;
+};
+
 export type EnterpriseBrandProvisioningResult = {
   organization: AdminBrandOrganization;
   profile: AdminBrandProfileRecord;
@@ -396,6 +403,80 @@ export async function getEnterpriseBrandingStatus(
   );
 
   if (!isRecord(data.organization) || !textValue(data.organization.id)) {
+    throw new AdminBrandingRequestError({
+      code: "ADMIN_BRANDING_RESPONSE_INVALID",
+      status: 200,
+      message: "The enterprise branding status response is invalid.",
+    });
+  }
+
+  return data.organization;
+}
+
+export async function searchEnterpriseBrandingOrganizations(
+  query: string
+): Promise<AdminBrandOrganizationSearchResult[]> {
+  const normalizedQuery = query.trim();
+  const data = await adminBrandingRequest<{ organizations: unknown }>(
+    `/api/internal/admin/branding/organizations/search?query=${encodeURIComponent(
+      normalizedQuery
+    )}`,
+    { method: "GET" }
+  );
+
+  if (!Array.isArray(data.organizations)) {
+    throw new AdminBrandingRequestError({
+      code: "ADMIN_BRANDING_RESPONSE_INVALID",
+      status: 200,
+      message: "The organization search response is invalid.",
+    });
+  }
+
+  return data.organizations.map((item) => {
+    const record = isRecord(item) ? item : null;
+    const name = textValue(record?.name);
+    const slug = textValue(record?.slug);
+    const propertyCount = Number(record?.propertyCount);
+    const brandStatus = record?.brandStatus;
+    if (
+      !name ||
+      !slug ||
+      !Number.isInteger(propertyCount) ||
+      propertyCount < 0 ||
+      (brandStatus !== null &&
+        brandStatus !== "DRAFT" &&
+        brandStatus !== "ACTIVE" &&
+        brandStatus !== "SUSPENDED")
+    ) {
+      throw new AdminBrandingRequestError({
+        code: "ADMIN_BRANDING_RESPONSE_INVALID",
+        status: 200,
+        message: "The organization search response is invalid.",
+      });
+    }
+
+    return { name, slug, propertyCount, brandStatus };
+  });
+}
+
+export async function getEnterpriseBrandingStatusBySlug(
+  organizationSlug: string
+): Promise<EnterpriseBrandingStatus> {
+  const normalizedSlug = organizationSlug.trim().toLowerCase();
+  const data = await adminBrandingRequest<{
+    organization: EnterpriseBrandingStatus;
+  }>(
+    `/api/internal/admin/branding/organizations/by-slug/${resourcePath(
+      normalizedSlug
+    )}/status`,
+    { method: "GET" }
+  );
+
+  if (
+    !isRecord(data.organization) ||
+    !textValue(data.organization.id) ||
+    textValue(data.organization.slug) !== normalizedSlug
+  ) {
     throw new AdminBrandingRequestError({
       code: "ADMIN_BRANDING_RESPONSE_INVALID",
       status: 200,
