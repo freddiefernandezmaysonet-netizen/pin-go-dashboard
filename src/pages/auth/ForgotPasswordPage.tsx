@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { forgotPassword, verifyForgotPasswordCode } from "../../api/password";
+import { useBrand } from "../../branding/BrandProvider";
 
 export default function ForgotPasswordPage() {
+  const { brand, isCustomBrand } = useBrand();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code" | "done">("email");
@@ -111,16 +113,62 @@ export default function ForgotPasswordPage() {
         }}
       >
         <div style={{ marginBottom: 24 }}>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              color: "#111827",
-              marginBottom: 6,
-            }}
-          >
-            Pin&Go
-          </div>
+          {isCustomBrand && brand.kind === "CUSTOM_BRAND" ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 10,
+              }}
+            >
+              <img
+                src={brand.logoUrl}
+                alt={`${brand.displayName} logo`}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  objectFit: "contain",
+                  borderRadius: 12,
+                }}
+              />
+              <div>
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 800,
+                    color: "#111827",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {brand.displayName}
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: "#9ca3af",
+                    fontSize: 11,
+                  }}
+                >
+                  Powered by Pin&Go
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                color: "#111827",
+                marginBottom: 6,
+              }}
+            >
+              Pin&Go
+            </div>
+          )}
 
           <div
             style={{
@@ -153,7 +201,7 @@ export default function ForgotPasswordPage() {
               </label>
               <input
                 type="email"
-                placeholder="admin@pingo.com"
+                placeholder={isCustomBrand ? "name@example.com" : "admin@pingo.com"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
@@ -173,7 +221,11 @@ export default function ForgotPasswordPage() {
             {error ? <Alert type="error" text={error} /> : null}
             {message ? <Alert type="info" text={message} /> : null}
 
-            <button type="submit" disabled={submitting} style={buttonStyle(submitting)}>
+            <button
+              type="submit"
+              disabled={submitting}
+              style={buttonStyle(submitting, isCustomBrand)}
+            >
               {submitting ? "Sending..." : "Send verification code"}
             </button>
           </form>
@@ -218,7 +270,11 @@ export default function ForgotPasswordPage() {
             {error ? <Alert type="error" text={error} /> : null}
             {message ? <Alert type="info" text={message} /> : null}
 
-            <button type="submit" disabled={submitting} style={buttonStyle(submitting)}>
+            <button
+              type="submit"
+              disabled={submitting}
+              style={buttonStyle(submitting, isCustomBrand)}
+            >
               {submitting ? "Verifying..." : "Verify code"}
             </button>
 
@@ -228,7 +284,9 @@ export default function ForgotPasswordPage() {
               style={{
                 border: "none",
                 background: "transparent",
-                color: "#2563eb",
+                color: isCustomBrand
+                  ? "var(--brand-primary-color, #2563eb)"
+                  : "#2563eb",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -248,8 +306,12 @@ export default function ForgotPasswordPage() {
               style={{
                 height: 46,
                 borderRadius: 12,
-                background: "#2563eb",
-                color: "#ffffff",
+                background: isCustomBrand
+                  ? "var(--brand-primary-color, #2563eb)"
+                  : "#2563eb",
+                color: isCustomBrand
+                  ? "var(--brand-on-primary-color, #ffffff)"
+                  : "#ffffff",
                 fontSize: 14,
                 fontWeight: 700,
                 display: "grid",
@@ -275,7 +337,9 @@ export default function ForgotPasswordPage() {
             <Link
               to="/login"
               style={{
-                color: "#2563eb",
+                color: isCustomBrand
+                  ? "var(--brand-primary-color, #2563eb)"
+                  : "#2563eb",
                 fontWeight: 600,
                 textDecoration: "none",
               }}
@@ -309,13 +373,22 @@ function Alert({ type, text }: { type: "error" | "info"; text: string }) {
   );
 }
 
-function buttonStyle(disabled: boolean): React.CSSProperties {
+function buttonStyle(
+  disabled: boolean,
+  useCustomBrand: boolean
+): React.CSSProperties {
   return {
     height: 46,
     borderRadius: 12,
     border: "none",
-    background: disabled ? "#93c5fd" : "#2563eb",
-    color: "#ffffff",
+    background: disabled
+      ? "#93c5fd"
+      : useCustomBrand
+        ? "var(--brand-primary-color, #2563eb)"
+        : "#2563eb",
+    color: useCustomBrand
+      ? "var(--brand-on-primary-color, #ffffff)"
+      : "#ffffff",
     fontSize: 14,
     fontWeight: 700,
     cursor: disabled ? "not-allowed" : "pointer",
