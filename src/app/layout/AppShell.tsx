@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../api/auth";
+import { getOrganizationBrandingReview } from "../../api/organizationBranding";
 import { useAuth } from "../../auth/AuthProvider";
+import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 // ✅ NAV BASE (producto normal)
@@ -33,8 +36,12 @@ function SideItem({ to, label }: { to: string; label: string }) {
         padding: "10px 12px",
         borderRadius: 12,
         textDecoration: "none",
-        color: isActive ? "#111827" : "#6b7280",
-        background: isActive ? "#f3f4f6" : "transparent",
+        color: isActive
+          ? "var(--brand-on-primary-color, #ffffff)"
+          : "#6b7280",
+        background: isActive
+          ? "var(--brand-primary-color, #2563eb)"
+          : "transparent",
         fontWeight: isActive ? 600 : 500,
         display: "block",
       })}
@@ -51,6 +58,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/reservations")) return "Reservations";
   if (pathname.startsWith("/access")) return "Access";
   if (pathname.startsWith("/team")) return "Team";
+  if (pathname.startsWith("/organization/branding-review")) return "Brand Approval";
   if (pathname.startsWith("/organization")) return "Organization";
   if (pathname.startsWith("/staff")) return "Staff Members";
   if (pathname.startsWith("/health")) return "Health Center";
@@ -61,6 +69,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/admin/sales-followups")) return "Sales Follow-ups";
   if (pathname.startsWith("/admin/financial")) return "Admin Financial";
   if (pathname.startsWith("/admin/demo-center")) return "Demo Center";
+  if (pathname.startsWith("/admin/branding")) return "Enterprise Branding";
  
   if (pathname.startsWith("/billing")) return "Billing";
   if (pathname.startsWith("/integrations/tuya")) return "Tuya Integration";
@@ -72,6 +81,37 @@ export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { brand, isCustomBrand } = useBrand();
+  const [canReviewOrganizationBrand, setCanReviewOrganizationBrand] =
+    useState(false);
+  const logoUrl =
+    brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
+
+  useEffect(() => {
+    if (user?.role !== "ORG_ADMIN" && user?.role !== "ADMIN") {
+      setCanReviewOrganizationBrand(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setCanReviewOrganizationBrand(false);
+
+    getOrganizationBrandingReview(controller.signal)
+      .then((review) => {
+        if (!controller.signal.aborted) {
+          setCanReviewOrganizationBrand(
+            review.profile?.experienceType === "ENTERPRISE_BRANDED"
+          );
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setCanReviewOrganizationBrand(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [user?.id, user?.orgId, user?.role]);
 
   async function handleLogout() {
     try {
@@ -92,6 +132,9 @@ export function AppShell() {
 ]);
 
 const memberNav = baseNav.filter((item) => !memberHiddenPaths.has(item.to));
+const organizationNav = canReviewOrganizationBrand
+  ? [...baseNav, { to: "/organization/branding-review", label: "Brand Approval" }]
+  : baseNav;
 
  // ✅ NAV DINÁMICO (solo tú ves admin)
 const nav =
@@ -101,10 +144,11 @@ const nav =
         { to: "/admin/financial", label: "Admin Financial" },
         { to: "/admin/sales-followups", label: "Sales Follow-ups" },
         { to: "/admin/demo-center", label: "Demo Center" },
+        { to: "/admin/branding", label: "Enterprise Branding" },
       ]
     : user?.role === "MEMBER"
       ? memberNav
-      : baseNav;
+      : organizationNav;
   const pageTitle = getPageTitle(location.pathname);
 
   return (
@@ -127,12 +171,37 @@ const nav =
       >
         <div
           style={{
-            fontSize: 20,
-            fontWeight: 700,
             marginBottom: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
           }}
         >
-          Pin&Go
+          <img
+            src={logoUrl}
+            alt={`${brand.displayName} logo`}
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+            style={{
+              width: 38,
+              height: 38,
+              objectFit: "contain",
+              borderRadius: 9,
+            }}
+          />
+
+          <div
+            style={{
+              minWidth: 0,
+              fontSize: 20,
+              fontWeight: 700,
+              lineHeight: 1.15,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {brand.displayName}
+          </div>
         </div>
 
         <nav style={{ display: "grid", gap: 8 }}>
@@ -143,9 +212,22 @@ const nav =
 
         <div style={{ flex: 1 }} />
 
+        {isCustomBrand && brand.poweredByPinGo ? (
+          <div
+            style={{
+              marginTop: 24,
+              fontSize: 11,
+              color: "#9ca3af",
+              textAlign: "center",
+            }}
+          >
+            Powered by Pin&Go
+          </div>
+        ) : null}
+
         <div
           style={{
-            marginTop: 24,
+            marginTop: isCustomBrand ? 12 : 24,
             paddingTop: 16,
             borderTop: "1px solid #e5e7eb",
           }}
@@ -213,7 +295,7 @@ const nav =
                 marginTop: 4,
               }}
             >
-              Pin&Go Dashboard
+              {brand.displayName} Dashboard
             </div>
           </div>
 
@@ -241,13 +323,13 @@ const nav =
                 width: 38,
                 height: 38,
                 borderRadius: 999,
-                background: "#dbeafe",
-                color: "#1d4ed8",
+                background: "var(--brand-primary-color, #2563eb)",
+                color: "var(--brand-on-primary-color, #ffffff)",
                 display: "grid",
                 placeItems: "center",
                 fontWeight: 800,
                 fontSize: 14,
-                border: "1px solid #bfdbfe",
+                border: "1px solid rgba(15, 23, 42, 0.08)",
               }}
             >
               {(user?.email?.[0] ?? "P").toUpperCase()}
