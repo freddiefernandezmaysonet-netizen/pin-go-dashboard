@@ -173,10 +173,14 @@ function parseBrandContext(payload: unknown): BrandContext {
 export async function fetchBrandContext(
   signal?: AbortSignal
 ): Promise<BrandContext> {
+  const brandHostname = window.location.hostname.trim().toLowerCase();
   const response = await fetch(`${BRANDING_API_BASE}/api/public/brand-context`, {
     method: "GET",
     headers: {
       Accept: "application/json",
+      ...(brandHostname
+        ? { "X-Pin-Go-Brand-Hostname": brandHostname }
+        : {}),
     },
     credentials: "include",
     cache: "no-store",
