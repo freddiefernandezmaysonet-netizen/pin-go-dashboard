@@ -6,8 +6,16 @@ if (!API_BASE) {
   throw new Error("Missing VITE_API_BASE");
 }
 
+function brandHostnameHeader() {
+  const hostname = window.location.hostname.trim().toLowerCase();
+  return hostname
+    ? { "X-Pin-Go-Brand-Hostname": hostname }
+    : {};
+}
+
 export async function fetchMe() {
   const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: brandHostnameHeader(),
     credentials: "include",
   });
 
@@ -24,6 +32,7 @@ export async function login(email: string, password: string) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...brandHostnameHeader(),
     },
     credentials: "include",
     body: JSON.stringify({ email, password }),
@@ -41,6 +50,7 @@ export async function login(email: string, password: string) {
 export async function logout() {
   const res = await fetch(`${API_BASE}/auth/logout`, {
     method: "POST",
+    headers: brandHostnameHeader(),
     credentials: "include",
   });
 
