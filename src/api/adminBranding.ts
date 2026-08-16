@@ -41,6 +41,11 @@ export type ProvisionEnterpriseBrandInput = BrandIdentityInput & {
   domainType: BrandDomainType;
 };
 
+export type InitializeEnterpriseBrandInput = BrandIdentityInput & {
+  hostname: string;
+  domainType: BrandDomainType;
+};
+
 export type AdminBrandOrganization = {
   id: string;
   name: string;
@@ -123,6 +128,12 @@ export type EnterpriseBrandProvisioningResult = {
   domain: AdminBrandDomain;
   invitation: AdminOrganizationInvitation;
   invitationToken: string;
+};
+
+export type EnterpriseBrandInitializationResult = {
+  profile: AdminBrandProfileRecord;
+  revision: AdminBrandRevision;
+  domain: AdminBrandDomain;
 };
 
 export type TransitionBrandDomainInput = {
@@ -393,6 +404,44 @@ export async function getEnterpriseBrandingStatus(
   }
 
   return data.organization;
+}
+
+export async function initializeEnterpriseBrand(
+  organizationId: string,
+  input: InitializeEnterpriseBrandInput
+): Promise<EnterpriseBrandInitializationResult> {
+  const normalizedOrganizationId = organizationId.trim();
+  const data = await adminBrandingRequest<EnterpriseBrandInitializationResult>(
+    `/api/internal/admin/branding/organizations/${resourcePath(
+      normalizedOrganizationId
+    )}/initialize`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    }
+  );
+
+  const profileId = textValue(data.profile?.id);
+  if (
+    !normalizedOrganizationId ||
+    !profileId ||
+    textValue(data.profile?.organizationId) !== normalizedOrganizationId ||
+    data.profile?.status !== "DRAFT" ||
+    textValue(data.revision?.id) === null ||
+    textValue(data.revision?.brandProfileId) !== profileId ||
+    data.revision?.approvalStatus !== "DRAFT" ||
+    textValue(data.domain?.id) === null ||
+    textValue(data.domain?.brandProfileId) !== profileId ||
+    data.domain?.status !== "PENDING_CONFIGURATION"
+  ) {
+    throw new AdminBrandingRequestError({
+      code: "ADMIN_BRANDING_RESPONSE_INVALID",
+      status: 201,
+      message: "The enterprise brand initialization response is invalid.",
+    });
+  }
+
+  return data;
 }
 
 export async function createEnterpriseBrandRevisionDraft(
