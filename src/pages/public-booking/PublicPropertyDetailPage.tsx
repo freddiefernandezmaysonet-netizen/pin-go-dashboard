@@ -4,6 +4,7 @@ import { addDays, format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
+import { useBrand } from "../../branding/BrandProvider";
 import "./PublicBookingExperience.css";
 
 type PublicProperty = {
@@ -52,6 +53,16 @@ type PublicProperty = {
     name: string;
     slug: string;
   };
+};
+
+type PublicPricingQuote = {
+  totalAmount: string | number | null;
+  nightlySubtotal: string | number | null;
+  cleaningFee: string | number | null;
+  nightlyRates?: Array<{
+    date: string;
+    rate: string | number;
+  }>;
 };
 
 type PublicCancellationRefundRule = {
@@ -1518,6 +1529,13 @@ function buildSecurePreCheckinDisclosureText(
 
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
+  const { brand, isCustomBrand } = useBrand();
+  const brandLogoUrl =
+    brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
+  const brandCollectionPath =
+    brand.kind === "CUSTOM_BRAND"
+      ? `/book/${brand.organizationSlug}`
+      : `/book/${organizationSlug}`;
 
   const [property, setProperty] = useState<PublicProperty | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1548,7 +1566,7 @@ export default function PublicPropertyDetailPage() {
   setSecurePreCheckinRequirementAccepted,
 ] = useState(false);
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
-  const [pricing, setPricing] = useState<any | null>(null);
+  const [pricing, setPricing] = useState<PublicPricingQuote | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -1696,14 +1714,6 @@ const reserveButtonDisabled =
   !checkOut ||
   !securePreCheckinRequirementAccepted ||
   (requiresCancellationTermsAcceptance && !cancellationTermsAccepted);
-  const blockedDateObjects = useMemo(
-    () =>
-      blockedDates
-      .map((dateKey) => fromDateInputValue(dateKey))
-      .filter((date): date is Date => Boolean(date)),
-  [blockedDates]
-);
-
   const nightlyRate = Number(property?.baseNightlyRate ?? 0);
   const cleaningFee = Number(property?.cleaningFee ?? 0);
   const subtotal = nights * nightlyRate;
@@ -1819,10 +1829,12 @@ function formatDisplayTime(time?: string | null) {
         if (active) {
           setProperty(data.property ?? data.item);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (active) {
           setPageError(
-            err?.message || copy.failedToLoadProperty
+            err instanceof Error
+              ? err.message
+              : copy.failedToLoadProperty
           );
         }
       } finally {
@@ -2066,8 +2078,12 @@ guestAcceptedSecurePreCheckinRequirementSource:
         );
       }
       window.location.href = data.checkoutUrl;
-      } catch (err: any) {
-        setBookingError(err?.message || "Unable to reserve this property.");
+      } catch (err: unknown) {
+        setBookingError(
+          err instanceof Error
+            ? err.message
+            : "Unable to reserve this property."
+        );
       } finally {
       setSubmitting(false);
     }
@@ -2078,14 +2094,19 @@ return (
     <header className="pbe-header" style={styles.header}>
       <div className="pbe-header-inner" style={styles.headerInner}>
         <Link
-          to={`/book/${organizationSlug}`}
+          to={brandCollectionPath}
           className="pbe-brand"
           style={styles.brandWrap}
         >
           <img
-            src="/pin-go-logo.png"
-            alt="Pin&Go logo"
-            style={styles.logo}
+            src={brandLogoUrl}
+            alt={`${brand.displayName} logo`}
+            style={{
+              ...styles.logo,
+              ...(isCustomBrand
+                ? { backgroundColor: "#ffffff", filter: "none", padding: 4 }
+                : {}),
+            }}
             onError={(e) => {
               (
                 e.currentTarget as HTMLImageElement
@@ -2094,7 +2115,7 @@ return (
           />
 
           <div>
-            <div style={styles.brandName}>Pin&Go</div>
+            <div style={styles.brandName}>{brand.displayName}</div>
             <div style={styles.slogan}>
               {copy.directBooking}
             </div>
@@ -2254,7 +2275,9 @@ return (
   />
 ))}
                         {photos.length === 1 ? (
-                          <div style={styles.galleryEmpty}>Pin&Go Stay</div>
+                          <div style={styles.galleryEmpty}>
+                            {brand.displayName} Stay
+                          </div>
                         ) : null}
                       </div>
                     </>
@@ -2395,15 +2418,30 @@ return (
                     </p>
                   </div>
                   <div className="pbe-amenity-grid">
-                    {[...includedAmenities, ...copy.propertyHighlights.items].slice(0, 8).map((item: any) => (
-                      <article className="pbe-amenity-card" key={item.id || item.icon || item.title}>
-                        <div className="pbe-amenity-icon">
-                          <AmenityIcon name={item.name || item.title} />
-                        </div>
-                        <h3>{item.name || item.title}</h3>
-                        <p>{item.description || (preferredLanguage === "es" ? "Incluido con tu estadía." : "Included with your stay.")}</p>
-                      </article>
-                    ))}
+                    {[...includedAmenities, ...copy.propertyHighlights.items]
+                      .slice(0, 8)
+                      .map((item) => {
+                        const isPropertyAmenity = "name" in item;
+                        const name = isPropertyAmenity
+                          ? item.name
+                          : item.title;
+                        const key = isPropertyAmenity ? item.id : item.icon;
+
+                        return (
+                          <article className="pbe-amenity-card" key={key}>
+                            <div className="pbe-amenity-icon">
+                              <AmenityIcon name={name} />
+                            </div>
+                            <h3>{name}</h3>
+                            <p>
+                              {item.description ||
+                                (preferredLanguage === "es"
+                                  ? "Incluido con tu estadía."
+                                  : "Included with your stay.")}
+                            </p>
+                          </article>
+                        );
+                      })}
                   </div>
                 </section>
 
@@ -3105,7 +3143,7 @@ return (
 
   {pricing?.nightlyRates?.length ? (
     <div style={styles.nightlyRatesBreakdown}>
-      {pricing.nightlyRates.map((item: any) => (
+      {pricing.nightlyRates.map((item) => (
         <div
           key={item.date}
           style={styles.nightlyRateItem}
@@ -3578,7 +3616,13 @@ return (
 
       <footer className="pbe-footer" style={styles.footer}>
         <div style={styles.container}>
-          © Pin&Go. Direct booking powered by autonomous property operations.
+          {isCustomBrand
+            ? `© ${brand.displayName}. ${
+                preferredLanguage === "es"
+                  ? "Reservas directas impulsadas por Pin&Go."
+                  : "Direct booking powered by Pin&Go."
+              }`
+            : "© Pin&Go. Direct booking powered by autonomous property operations."}
         </div>
       </footer>
     </div>
