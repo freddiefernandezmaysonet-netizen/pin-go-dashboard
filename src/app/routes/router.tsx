@@ -1,4 +1,6 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+/* eslint-disable react-refresh/only-export-components -- Router modules intentionally export route configuration alongside route components. */
+import type { ReactElement } from "react";
+import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
 import { OverviewPage } from "../../pages/overview/OverviewPage";
 import { ReservationsPage } from "../../pages/reservations/ReservationsPage";
@@ -17,6 +19,7 @@ import ListingsMappingPage from "../../pages/pms/ListingsMappingPage";
 import LoginPage from "../../pages/LoginPage";
 import SignupPage from "../../pages/auth/SignupPage";
 import SignupSuccessPage from "../../pages/auth/SignupSuccessPage";
+import OrganizationInvitationPage from "../../pages/auth/OrganizationInvitationPage";
 import { RequireAuth } from "../../auth/RequireAuth";
 import CreatePropertyPage from "../../pages/onboarding/CreatePropertyPage";
 import TtlockConnectPage from "../../pages/integrations/TtlockConnectPage";
@@ -40,24 +43,76 @@ import BillingPolicyPage from "../../pages/BillingPolicyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
 import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
 import AdminDemoCenterPage from "../../pages/admin/AdminDemoCenterPage";
+import AdminBrandingPage from "../../pages/admin/AdminBrandingPage";
 import PublicBookingSitePage from "../../pages/public-booking/PublicBookingSitePage";
 import PublicPropertyDetailPage from "../../pages/public-booking/PublicPropertyDetailPage";
 import PublicBookingSuccessPage from "../../pages/public-booking/PublicBookingSuccessPage";
 import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCancelPage";
 import GuestCancellationPage from "../../pages/public-booking/GuestCancellationPage";
 import OrganizationSettingsPage from "../../pages/organization/OrganizationSettingsPage";
+import OrganizationBrandingReviewPage from "../../pages/organization/OrganizationBrandingReviewPage";
 import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
+import { useAuth } from "../../auth/AuthProvider";
+import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
 
 function RootRedirect() {
   const host = window.location.hostname;
+  const { isCustomBrand } = useBrand();
 
-  if (host === "app.pin-ngo.com") {
+  if (
+    isCustomBrand ||
+    host === "app.pin-ngo.com" ||
+    host.endsWith(".vercel.app")
+  ) {
     return <Navigate to="/overview" replace />;
   }
 
   return <Navigate to="/home" replace />;
+}
+
+function LandingRoute() {
+  const { isCustomBrand } = useBrand();
+  return isCustomBrand ? <Navigate to="/overview" replace /> : <LandingPage />;
+}
+
+function StandardBrandRoute({ children }: { children: ReactElement }) {
+  const { isCustomBrand } = useBrand();
+  return isCustomBrand ? <Navigate to="/login" replace /> : children;
+}
+
+function BrandOrganizationRoute({ children }: { children: ReactElement }) {
+  const { brand } = useBrand();
+  const { organizationSlug } = useParams();
+  const requestedSlug = String(organizationSlug ?? "").trim().toLowerCase();
+
+  if (
+    brand.kind === "CUSTOM_BRAND" &&
+    requestedSlug !== brand.organizationSlug
+  ) {
+    return <Navigate to={`/book/${brand.organizationSlug}`} replace />;
+  }
+
+  return children;
+}
+
+function PlatformAdminRoute({ children }: { children: ReactElement }) {
+  const { user } = useAuth();
+  return user?.role === "PLATFORM_ADMIN" ? (
+    children
+  ) : (
+    <Navigate to="/overview" replace />
+  );
+}
+
+function OrganizationBrandReviewerRoute({ children }: { children: ReactElement }) {
+  const { user } = useAuth();
+  return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" ? (
+    children
+  ) : (
+    <Navigate to="/overview" replace />
+  );
 }
 
 function OrganizationRoute() {
@@ -73,15 +128,23 @@ export const router = createBrowserRouter([
  
   {
   path: "/home",
-  element: <LandingPage />,
+  element: <LandingRoute />,
   },
   {
   path: "/book/:organizationSlug",
-  element: <PublicBookingSitePage />,
+  element: (
+    <BrandOrganizationRoute>
+      <PublicBookingSitePage />
+    </BrandOrganizationRoute>
+  ),
   },
   {
   path: "/book/:organizationSlug/:propertySlug",
-  element: <PublicPropertyDetailPage />,
+  element: (
+    <BrandOrganizationRoute>
+      <PublicPropertyDetailPage />
+    </BrandOrganizationRoute>
+  ),
   },
   {
   path: "/booking/success",
@@ -104,8 +167,16 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
+    path: "/organization-invitation",
+    element: <OrganizationInvitationPage />,
+  },
+  {
     path: "/signup",
-    element: <SignupPage />,
+    element: (
+      <StandardBrandRoute>
+        <SignupPage />
+      </StandardBrandRoute>
+    ),
   },
   { 
     path: "/legal/terms",
@@ -125,7 +196,11 @@ export const router = createBrowserRouter([
   },
   {
     path: "/signup/success",
-    element: <SignupSuccessPage />,
+    element: (
+      <StandardBrandRoute>
+        <SignupSuccessPage />
+      </StandardBrandRoute>
+    ),
   },
   {
     path: "/forgot-password",
@@ -164,6 +239,14 @@ export const router = createBrowserRouter([
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
+      {
+        path: "/organization/branding-review",
+        element: (
+          <OrganizationBrandReviewerRoute>
+            <OrganizationBrandingReviewPage />
+          </OrganizationBrandReviewerRoute>
+        ),
+      },
       
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
@@ -172,6 +255,15 @@ export const router = createBrowserRouter([
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
+
+      {
+        path: "/admin/branding",
+        element: (
+          <PlatformAdminRoute>
+            <AdminBrandingPage />
+          </PlatformAdminRoute>
+        ),
+      },
 
       {
         path: "/integrations/pms",
@@ -199,7 +291,9 @@ export const router = createBrowserRouter([
   path: "/admin/sales-followups",
   element: (
     <RequireAuth>
-      <AdminSalesFollowupsPage />
+      <PlatformAdminRoute>
+        <AdminSalesFollowupsPage />
+      </PlatformAdminRoute>
     </RequireAuth>
   ),
 },
@@ -208,7 +302,9 @@ export const router = createBrowserRouter([
   path: "/admin/demo-center",
   element: (
     <RequireAuth>
-      <AdminDemoCenterPage />
+      <PlatformAdminRoute>
+        <AdminDemoCenterPage />
+      </PlatformAdminRoute>
     </RequireAuth>
   ),
 },
@@ -217,7 +313,9 @@ export const router = createBrowserRouter([
     path: "/admin/financial",
     element: (
       <RequireAuth>
-        <AdminFinancialPage />
+        <PlatformAdminRoute>
+          <AdminFinancialPage />
+        </PlatformAdminRoute>
       </RequireAuth>
     ),
   },

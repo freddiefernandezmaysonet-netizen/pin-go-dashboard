@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/backend/:path*",
+      "destination": "https://api.pin-ngo.com/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

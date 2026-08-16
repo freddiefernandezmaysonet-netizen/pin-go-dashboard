@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useBrand } from "../../branding/BrandProvider";
 import "./PublicBookingExperience.css";
 
 type PublicProperty = {
@@ -55,6 +56,7 @@ function formatMoney(value: string | number | null | undefined) {
 
 export default function PublicBookingSitePage() {
   const { organizationSlug } = useParams();
+  const { brand, isCustomBrand } = useBrand();
   const [organization, setOrganization] = useState<PublicOrganization | null>(
     null
   );
@@ -70,13 +72,22 @@ export default function PublicBookingSitePage() {
     }
   });
   const isSpanish = preferredLanguage === "es";
+  const brandLogoUrl =
+    brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
+  const brandHomePath =
+    brand.kind === "CUSTOM_BRAND"
+      ? `/book/${brand.organizationSlug}`
+      : "/home";
 
   const title = useMemo(() => {
     if (!organization) return isSpanish ? "Reserva tu estadía" : "Book your stay";
+    const displayName = isCustomBrand
+      ? brand.displayName
+      : organization.name;
     return isSpanish
-      ? `Descubre ${organization.name}`
-      : `Discover ${organization.name}`;
-  }, [isSpanish, organization]);
+      ? `Descubre ${displayName}`
+      : `Discover ${displayName}`;
+  }, [brand.displayName, isCustomBrand, isSpanish, organization]);
 
   function changeLanguage(language: "en" | "es") {
     setPreferredLanguage(language);
@@ -108,9 +119,13 @@ export default function PublicBookingSitePage() {
         if (active) {
           setOrganization(data.organization);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (active) {
-          setError(err?.message || "Failed to load booking site");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load booking site"
+          );
         }
       } finally {
         if (active) {
@@ -132,17 +147,26 @@ export default function PublicBookingSitePage() {
     <div className="pbe-collection-page" style={styles.page}>
       <header className="pbe-collection-header" style={styles.header}>
         <div className="pbe-collection-header-inner" style={styles.headerInner}>
-          <Link className="pbe-collection-brand" to="/home" style={styles.brandWrap}>
+          <Link
+            className="pbe-collection-brand"
+            to={brandHomePath}
+            style={styles.brandWrap}
+          >
             <img
-              src="/pin-go-logo.png"
-              alt="Pin&Go logo"
-              style={styles.logo}
+              src={brandLogoUrl}
+              alt={`${brand.displayName} logo`}
+              style={{
+                ...styles.logo,
+                ...(isCustomBrand
+                  ? { backgroundColor: "#ffffff", filter: "none", padding: 4 }
+                  : {}),
+              }}
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
             <div>
-              <div style={styles.brandName}>Pin&Go</div>
+              <div style={styles.brandName}>{brand.displayName}</div>
               <div style={styles.slogan}>Direct Booking</div>
             </div>
           </Link>
@@ -251,7 +275,9 @@ export default function PublicBookingSitePage() {
                             </p>
                           ) : (
                             <p style={styles.cardText}>
-                              Book this property directly through Pin&Go.
+                              {isSpanish
+                                ? `Reserva esta propiedad directamente con ${brand.displayName}.`
+                                : `Book this property directly through ${brand.displayName}.`}
                             </p>
                           )}
 
@@ -286,7 +312,13 @@ export default function PublicBookingSitePage() {
 
       <footer className="pbe-collection-footer" style={styles.footer}>
         <div style={styles.container}>
-          © Pin&Go. Direct booking powered by autonomous property operations.
+          {isCustomBrand
+            ? `© ${brand.displayName}. ${
+                isSpanish
+                  ? "Reservas directas impulsadas por Pin&Go."
+                  : "Direct booking powered by Pin&Go."
+              }`
+            : "© Pin&Go. Direct booking powered by autonomous property operations."}
         </div>
       </footer>
     </div>

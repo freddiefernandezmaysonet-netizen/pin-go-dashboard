@@ -3,16 +3,28 @@ import { Link, useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { fetchProperties } from "../api/properties";
 import { useAuth } from "../auth/AuthProvider";
+import { useBrand } from "../branding/BrandProvider";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
+  const { brand, isCustomBrand } = useBrand();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const logoUrl =
+    brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
+  const brandPanelColor =
+    brand.kind === "CUSTOM_BRAND" ? brand.primaryColor : "#0f172a";
+  const brandPanelTextColor =
+    brand.kind === "CUSTOM_BRAND" ? brand.onPrimaryColor : "#ffffff";
+  const brandButtonColor =
+    brand.kind === "CUSTOM_BRAND" ? brand.primaryColor : "#2563eb";
+  const brandButtonTextColor =
+    brand.kind === "CUSTOM_BRAND" ? brand.onPrimaryColor : "#ffffff";
 
   useEffect(() => {
     const checkMobile = () => {
@@ -57,7 +69,7 @@ export default function LoginPage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(37, 99, 235, 0.08), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
+          "radial-gradient(circle at top, color-mix(in srgb, var(--brand-primary-color, #2563eb) 10%, transparent), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)",
         display: "grid",
         placeItems: "center",
         padding: isMobile ? 16 : 24,
@@ -77,8 +89,8 @@ export default function LoginPage() {
       >
         <div
           style={{
-            background: "#0f172a",
-            color: "white",
+            background: brandPanelColor,
+            color: brandPanelTextColor,
             padding: isMobile ? 26 : 40,
             display: "flex",
             flexDirection: "column",
@@ -86,22 +98,27 @@ export default function LoginPage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-  <img
-    src="/pin-go-logo.png"
-    alt="Pin&Go logo"
-    style={{
-      width: 48,
-      height: 48,
-      objectFit: "contain",
-      borderRadius: 10,
-      background: "rgba(255,255,255,0.08)",
-      padding: 6,
-    }}
-  />
+            <img
+              src={logoUrl}
+              alt={`${brand.displayName} logo`}
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+              style={{
+                width: 48,
+                height: 48,
+                objectFit: "contain",
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.12)",
+                padding: 6,
+              }}
+            />
 
-  <div>
-    <div style={{ fontWeight: 800, fontSize: 22 }}>Pin&Go</div>
-              <div style={{ fontSize: 13, color: "#94a3b8" }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 22 }}>
+                {brand.displayName}
+              </div>
+              <div style={{ fontSize: 13, opacity: 0.72 }}>
                 Secure Access Made Simple
               </div>
             </div>
@@ -111,7 +128,7 @@ export default function LoginPage() {
             Welcome back 
           </h1>
 
-          <p style={{ color: "#94a3b8", marginTop: 10, lineHeight: 1.7 }}>
+          <p style={{ marginTop: 10, lineHeight: 1.7, opacity: 0.72 }}>
             Manage access, automate operations, and deliver a seamless guest
             experience.
           </p>
@@ -121,6 +138,12 @@ export default function LoginPage() {
             <li>✔ PMS integrations</li>
             <li>✔ Smart automation</li>
           </ul>
+
+          {isCustomBrand && brand.poweredByPinGo ? (
+            <div style={{ marginTop: 24, fontSize: 11, opacity: 0.65 }}>
+              Powered by Pin&Go
+            </div>
+          ) : null}
         </div>
 
         <div style={{ padding: isMobile ? 26 : 40 }}>
@@ -129,7 +152,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
             <input
               type="email"
-              placeholder="admin@pingo.com"
+              placeholder="you@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={inputStyle}
@@ -149,14 +172,24 @@ export default function LoginPage() {
 
             {error && <div style={{ color: "red" }}>{error}</div>}
 
-            <button type="submit" disabled={submitting} style={btn}>
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{
+                ...btn,
+                background: brandButtonColor,
+                color: brandButtonTextColor,
+              }}
+            >
               {submitting ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <div style={{ marginTop: 20 }}>
-            Don&apos;t have an account? <Link to="/signup">Create one</Link>
-          </div>
+          {!isCustomBrand ? (
+            <div style={{ marginTop: 20 }}>
+              Don&apos;t have an account? <Link to="/signup">Create one</Link>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -176,8 +209,6 @@ const btn: React.CSSProperties = {
   height: 46,
   borderRadius: 12,
   border: "none",
-  background: "#2563eb",
-  color: "white",
   fontWeight: 700,
   cursor: "pointer",
 };
