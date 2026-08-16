@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { resetPassword } from "../../api/password";
+import { useBrand } from "../../branding/BrandProvider";
 
 export default function ResetPasswordPage() {
+  const { brand, isCustomBrand } = useBrand();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -48,7 +50,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         navigate("/login");
       }, 1500);
-    } catch (e) {
+    } catch {
       setError("Unable to reset password.");
     } finally {
       setSubmitting(false);
@@ -77,16 +79,62 @@ export default function ResetPasswordPage() {
         }}
       >
         <div style={{ marginBottom: 24 }}>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              color: "#111827",
-              marginBottom: 6,
-            }}
-          >
-            Pin&Go
-          </div>
+          {isCustomBrand && brand.kind === "CUSTOM_BRAND" ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 10,
+              }}
+            >
+              <img
+                src={brand.logoUrl}
+                alt={`${brand.displayName} logo`}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+                style={{
+                  width: 48,
+                  height: 48,
+                  objectFit: "contain",
+                  borderRadius: 12,
+                }}
+              />
+              <div>
+                <div
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 800,
+                    color: "#111827",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {brand.displayName}
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: "#9ca3af",
+                    fontSize: 11,
+                  }}
+                >
+                  Powered by Pin&Go
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 800,
+                color: "#111827",
+                marginBottom: 6,
+              }}
+            >
+              Pin&Go
+            </div>
+          )}
 
           <div
             style={{
@@ -229,8 +277,15 @@ export default function ResetPasswordPage() {
               height: 46,
               borderRadius: 12,
               border: "none",
-              background: submitting || !token ? "#93c5fd" : "#2563eb",
-              color: "#ffffff",
+              background:
+                submitting || !token
+                  ? "#93c5fd"
+                  : isCustomBrand
+                    ? "var(--brand-primary-color, #2563eb)"
+                    : "#2563eb",
+              color: isCustomBrand
+                ? "var(--brand-on-primary-color, #ffffff)"
+                : "#ffffff",
               fontSize: 14,
               fontWeight: 700,
               cursor: submitting || !token ? "not-allowed" : "pointer",
@@ -253,7 +308,9 @@ export default function ResetPasswordPage() {
           <Link
             to="/login"
             style={{
-              color: "#2563eb",
+              color: isCustomBrand
+                ? "var(--brand-primary-color, #2563eb)"
+                : "#2563eb",
               fontWeight: 600,
               textDecoration: "none",
             }}
