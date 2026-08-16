@@ -10,6 +10,7 @@ import {
   createEnterpriseBrandRevisionDraft,
   createOrganizationOwnerInvitation,
   getEnterpriseBrandingStatus,
+  initializeEnterpriseBrand,
   provisionEnterpriseBrand,
   publishEnterpriseBrand,
   revokeOrganizationOwnerInvitation,
@@ -40,7 +41,21 @@ type ProvisioningForm = {
 
 type AssetUploadTarget =
   | `provision-${BrandAssetKind}`
+  | `initialize-${BrandAssetKind}`
   | `revision-${BrandAssetKind}`;
+
+type ExistingInitializationBasis =
+  | ""
+  | "INTERNAL_TEST"
+  | "COMMERCIAL_10_PLUS";
+
+type ExistingInitializationForm = {
+  displayName: string;
+  hostname: string;
+  domainType: BrandDomainType;
+  primaryColor: string;
+  basis: ExistingInitializationBasis;
+};
 
 const INITIAL_FORM: ProvisioningForm = {
   organizationName: "",
@@ -50,6 +65,14 @@ const INITIAL_FORM: ProvisioningForm = {
   hostname: "",
   domainType: "CUSTOM_DOMAIN",
   primaryColor: "#155EEF",
+};
+
+const INITIAL_EXISTING_FORM: ExistingInitializationForm = {
+  displayName: "",
+  hostname: "",
+  domainType: "PINNGO_SUBDOMAIN",
+  primaryColor: "#155EEF",
+  basis: "",
 };
 
 function normalizeSlug(value: string) {
@@ -94,6 +117,15 @@ export default function AdminBrandingPage() {
   const [eligibilityConfirmed, setEligibilityConfirmed] = useState(false);
   const [logo, setLogo] = useState<UploadedBrandAsset | null>(null);
   const [favicon, setFavicon] = useState<UploadedBrandAsset | null>(null);
+  const [existingForm, setExistingForm] = useState<ExistingInitializationForm>(
+    INITIAL_EXISTING_FORM
+  );
+  const [existingInitializationConfirmed, setExistingInitializationConfirmed] =
+    useState(false);
+  const [existingLogo, setExistingLogo] =
+    useState<UploadedBrandAsset | null>(null);
+  const [existingFavicon, setExistingFavicon] =
+    useState<UploadedBrandAsset | null>(null);
   const [assetLoading, setAssetLoading] = useState<AssetUploadTarget | null>(null);
   const [revisionDisplayName, setRevisionDisplayName] = useState("");
   const [revisionPrimaryColor, setRevisionPrimaryColor] = useState("#155EEF");
@@ -140,6 +172,16 @@ export default function AdminBrandingPage() {
     setOrganizationId(result.id);
     setOwnerEmail(result.organizationInvitations[0]?.email ?? "");
     setProviderDomainId(result.brandProfile?.domains[0]?.providerDomainId ?? "");
+    if (!result.brandProfile) {
+      setExistingForm({
+        ...INITIAL_EXISTING_FORM,
+        displayName: result.name,
+        hostname: result.slug ? `${result.slug}.pin-ngo.com` : "",
+      });
+      setExistingInitializationConfirmed(false);
+      setExistingLogo(null);
+      setExistingFavicon(null);
+    }
     const url = new URL(window.location.href);
     url.searchParams.set("organizationId", result.id);
     window.history.replaceState(null, "", url);
@@ -191,7 +233,7 @@ export default function AdminBrandingPage() {
   ]);
 
   async function uploadAsset(
-    scope: "provision" | "revision",
+    scope: "provision" | "initialize" | "revision",
     kind: BrandAssetKind,
     file: File | null
   ) {
@@ -205,6 +247,9 @@ export default function AdminBrandingPage() {
       if (scope === "provision") {
         if (kind === "logo") setLogo(uploaded);
         else setFavicon(uploaded);
+      } else if (scope === "initialize") {
+        if (kind === "logo") setExistingLogo(uploaded);
+        else setExistingFavicon(uploaded);
       } else if (kind === "logo") {
         setRevisionLogo(uploaded);
       } else {
@@ -212,13 +257,82 @@ export default function AdminBrandingPage() {
       }
       setMessage(
         `${kind === "logo" ? "Logo" : "Favicon"} uploaded securely for ${
-          scope === "provision" ? "provisioning" : "the corrected revision"
+          scope === "provision"
+            ? "provisioning"
+            : scope === "initialize"
+              ? "existing organization initialization"
+              : "the corrected revision"
         }.`
       );
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
       setAssetLoading(null);
+    }
+  }
+
+  async function initializeExistingOrganization(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+    setMessage(null);
+    setError(null);
+
+    if (!status || status.brandProfile) {
+      setError("Load an existing organization without a branding profile.");
+      return;
+    }
+    if (!existingForm.basis) {
+      setError("Select the authorization basis for this initialization.");
+      return;
+    }
+    if (!existingInitializationConfirmed) {
+      setError("Confirm the selected authorization basis before initializing.");
+      return;
+    }
+    if (!existingLogo || !existingFavicon) {
+      setError("Upload both the logo and favicon before initializing.");
+      return;
+    }
+
+    const displayName = existingForm.displayName.trim();
+    if (displayName.length < 2 || displayName.length > 100) {
+      setError("Customer-facing name must contain between 2 and 100 characters.");
+      return;
+    }
+
+    const basisLabel =
+      existingForm.basis === "INTERNAL_TEST"
+        ? "a controlled internal test"
+        : "a commercially approved 10+ property customer";
+    if (
+      !window.confirm(
+        `Initialize branding for ${status.name} as ${basisLabel}? This creates a draft only and does not publish a live brand.`
+      )
+    ) {
+      return;
+    }
+
+    setOperation("initialize");
+    try {
+      await initializeEnterpriseBrand(status.id, {
+        displayName,
+        hostname: existingForm.hostname.trim().toLowerCase(),
+        domainType: existingForm.domainType,
+        primaryColor: existingForm.primaryColor.toUpperCase(),
+        logoUrl: existingLogo.url,
+        logoPublicId: existingLogo.publicId,
+        faviconUrl: existingFavicon.url,
+        faviconPublicId: existingFavicon.publicId,
+      });
+      await fetchStatus(status.id);
+      setMessage(
+        `Branding initialized for ${status.name} as ${basisLabel}. The profile, revision and domain remain unpublished drafts.`
+      );
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setOperation(null);
     }
   }
 
@@ -582,6 +696,167 @@ export default function AdminBrandingPage() {
             <div style={{ display: "grid", gap: 20, marginTop: 24 }}>
               <SummaryGrid status={status} />
 
+              {!profile && (
+                <form
+                  onSubmit={initializeExistingOrganization}
+                  style={{ ...subcardStyle, borderColor: "#93c5fd" }}
+                >
+                  <p style={eyebrowDarkStyle}>Existing organization</p>
+                  <h3 style={subheadingStyle}>Initialize branding draft</h3>
+                  <p style={helpStyle}>
+                    Use this flow for a controlled Pin&amp;Go test or for a
+                    commercially approved customer that manages at least 10
+                    properties. Initialization does not publish the brand or send
+                    an owner invitation.
+                  </p>
+                  <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+                    <label style={labelStyle}>
+                      Authorization basis
+                      <select
+                        value={existingForm.basis}
+                        onChange={(event) => {
+                          setExistingForm((current) => ({
+                            ...current,
+                            basis: event.target
+                              .value as ExistingInitializationBasis,
+                          }));
+                          setExistingInitializationConfirmed(false);
+                        }}
+                        style={inputStyle}
+                        required
+                      >
+                        <option value="">Select one</option>
+                        <option value="INTERNAL_TEST">
+                          Controlled Pin&amp;Go internal test
+                        </option>
+                        <option value="COMMERCIAL_10_PLUS">
+                          Commercial customer — verified 10+ properties
+                        </option>
+                      </select>
+                    </label>
+                    <Field
+                      label="Customer-facing name"
+                      value={existingForm.displayName}
+                      onChange={(value) =>
+                        setExistingForm((current) => ({
+                          ...current,
+                          displayName: value,
+                        }))
+                      }
+                      required
+                    />
+                    <label style={labelStyle}>
+                      Domain type
+                      <select
+                        value={existingForm.domainType}
+                        onChange={(event) =>
+                          setExistingForm((current) => ({
+                            ...current,
+                            domainType: event.target.value as BrandDomainType,
+                          }))
+                        }
+                        style={inputStyle}
+                      >
+                        <option value="CUSTOM_DOMAIN">Customer domain</option>
+                        <option value="PINNGO_SUBDOMAIN">
+                          Direct pin-ngo.com subdomain
+                        </option>
+                      </select>
+                    </label>
+                    <Field
+                      label="Hostname"
+                      value={existingForm.hostname}
+                      onChange={(value) =>
+                        setExistingForm((current) => ({
+                          ...current,
+                          hostname: value,
+                        }))
+                      }
+                      help="Hostname only, without https:// or a path."
+                      placeholder={
+                        existingForm.domainType === "CUSTOM_DOMAIN"
+                          ? "portal.customer.com"
+                          : "customer.pin-ngo.com"
+                      }
+                      required
+                    />
+                    <label style={labelStyle}>
+                      Primary color
+                      <span
+                        style={{ display: "flex", alignItems: "center", gap: 12 }}
+                      >
+                        <input
+                          type="color"
+                          value={existingForm.primaryColor}
+                          onChange={(event) =>
+                            setExistingForm((current) => ({
+                              ...current,
+                              primaryColor: event.target.value,
+                            }))
+                          }
+                          style={{
+                            width: 54,
+                            height: 44,
+                            border: 0,
+                            background: "none",
+                          }}
+                        />
+                        <input
+                          readOnly
+                          value={existingForm.primaryColor.toUpperCase()}
+                          style={inputStyle}
+                        />
+                      </span>
+                    </label>
+                    <AssetField
+                      kind="logo"
+                      asset={existingLogo}
+                      loading={assetLoading === "initialize-logo"}
+                      disabled={assetLoading !== null || operation !== null}
+                      onSelect={(file) =>
+                        void uploadAsset("initialize", "logo", file)
+                      }
+                    />
+                    <AssetField
+                      kind="favicon"
+                      asset={existingFavicon}
+                      loading={assetLoading === "initialize-favicon"}
+                      disabled={assetLoading !== null || operation !== null}
+                      onSelect={(file) =>
+                        void uploadAsset("initialize", "favicon", file)
+                      }
+                    />
+                    {existingForm.basis && (
+                      <label style={confirmationStyle}>
+                        <input
+                          type="checkbox"
+                          checked={existingInitializationConfirmed}
+                          onChange={(event) =>
+                            setExistingInitializationConfirmed(
+                              event.target.checked
+                            )
+                          }
+                        />
+                        <span>
+                          {existingForm.basis === "INTERNAL_TEST"
+                            ? "I confirm this is a controlled Pin&Go internal test. It will remain a draft until separately reviewed."
+                            : "I confirm that Pin&Go commercially approved this customer and verified that it manages at least 10 properties."}
+                        </span>
+                      </label>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={operation !== null || assetLoading !== null}
+                      style={primaryButtonStyle}
+                    >
+                      {operation === "initialize"
+                        ? "Initializing draft…"
+                        : "Initialize branding draft"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
               {profile && latestRevision && (
                 <div style={subcardStyle}>
                   <div style={sectionHeadingStyle}>
@@ -777,49 +1052,57 @@ export default function AdminBrandingPage() {
                 </div>
               )}
 
-              <div style={subcardStyle}>
-                <p style={eyebrowDarkStyle}>Account owner</p>
-                <h3 style={subheadingStyle}>Invitation recovery</h3>
-                <Field
-                  label="Owner email"
-                  type="email"
-                  value={ownerEmail}
-                  onChange={setOwnerEmail}
-                />
-                <button
-                  type="button"
-                  disabled={operation !== null}
-                  style={{ ...secondaryButtonStyle, marginTop: 12 }}
-                  onClick={() => void createInvitation()}
-                >
-                  {operation === "invite" ? "Creating…" : "Create new owner invitation"}
-                </button>
-                {pendingInvitations.length > 0 && (
-                  <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
-                    {pendingInvitations.map((invitation) => (
-                      <div key={invitation.id} style={invitationRowStyle}>
-                        <span>
-                          {invitation.email} · expires {formatDate(invitation.expiresAt)}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={operation !== null}
-                          style={textButtonStyle}
-                          onClick={() =>
-                            void runStatusOperation(
-                              `revoke-${invitation.id}`,
-                              "Invitation revoked.",
-                              () => revokeOrganizationOwnerInvitation(invitation.id)
-                            )
-                          }
-                        >
-                          {operation === `revoke-${invitation.id}` ? "Revoking…" : "Revoke"}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {profile && (
+                <div style={subcardStyle}>
+                  <p style={eyebrowDarkStyle}>Account owner</p>
+                  <h3 style={subheadingStyle}>Invitation recovery</h3>
+                  <Field
+                    label="Owner email"
+                    type="email"
+                    value={ownerEmail}
+                    onChange={setOwnerEmail}
+                  />
+                  <button
+                    type="button"
+                    disabled={operation !== null}
+                    style={{ ...secondaryButtonStyle, marginTop: 12 }}
+                    onClick={() => void createInvitation()}
+                  >
+                    {operation === "invite"
+                      ? "Creating…"
+                      : "Create new owner invitation"}
+                  </button>
+                  {pendingInvitations.length > 0 && (
+                    <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
+                      {pendingInvitations.map((invitation) => (
+                        <div key={invitation.id} style={invitationRowStyle}>
+                          <span>
+                            {invitation.email} · expires{" "}
+                            {formatDate(invitation.expiresAt)}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={operation !== null}
+                            style={textButtonStyle}
+                            onClick={() =>
+                              void runStatusOperation(
+                                `revoke-${invitation.id}`,
+                                "Invitation revoked.",
+                                () =>
+                                  revokeOrganizationOwnerInvitation(invitation.id)
+                              )
+                            }
+                          >
+                            {operation === `revoke-${invitation.id}`
+                              ? "Revoking…"
+                              : "Revoke"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {profile?.status === "ACTIVE" && (
                 <div style={{ ...subcardStyle, borderColor: "#fecaca" }}>
