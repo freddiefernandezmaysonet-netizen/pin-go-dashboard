@@ -8,6 +8,17 @@ type DemoResult = {
   checkIn?: string;
   checkOut?: string;
   paymentState?: string;
+  delivery?: {
+    email?: {
+      enabled?: boolean;
+      to?: string | null;
+    };
+    sms?: {
+      enabled?: boolean;
+      to?: string | null;
+    };
+    preferredLanguage?: "es" | "en";
+  };
   message?: string;
   error?: string;
 };
@@ -43,6 +54,13 @@ export default function AdminDemoCenterPage() {
 
   const [checkIn, setCheckIn] = useState(defaultTimes.checkIn);
   const [checkOut, setCheckOut] = useState(defaultTimes.checkOut);
+  const [guestName, setGuestName] = useState("Pin&Go Demo Guest");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [preferredLanguage, setPreferredLanguage] = useState<"es" | "en">(
+    "es"
+  );
+  const [smsConsent, setSmsConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DemoResult | null>(null);
 
@@ -53,6 +71,21 @@ export default function AdminDemoCenterPage() {
     try {
       if (!checkIn || !checkOut) {
         setResult({ error: "Select check-in and check-out time first." });
+        return;
+      }
+
+      if (!guestName.trim()) {
+        setResult({ error: "Enter the demo guest name." });
+        return;
+      }
+
+      if (!guestEmail.trim()) {
+        setResult({ error: "Enter the email that should receive the access code." });
+        return;
+      }
+
+      if (smsConsent && !guestPhone.trim()) {
+        setResult({ error: "Enter a phone number before enabling SMS delivery." });
         return;
       }
 
@@ -78,6 +111,11 @@ export default function AdminDemoCenterPage() {
         body: JSON.stringify({
           checkIn: checkInIso,
           checkOut: checkOutIso,
+          guestName: guestName.trim(),
+          guestEmail: guestEmail.trim(),
+          guestPhone: guestPhone.trim() || null,
+          preferredLanguage,
+          smsConsent,
         }),
       });
 
@@ -184,6 +222,76 @@ export default function AdminDemoCenterPage() {
             onChange={setCheckOut}
           />
 
+          <TextField
+            label="Demo guest name"
+            type="text"
+            value={guestName}
+            onChange={setGuestName}
+            placeholder="Pin&Go Demo Guest"
+            required
+          />
+
+          <TextField
+            label="Access email"
+            type="email"
+            value={guestEmail}
+            onChange={setGuestEmail}
+            placeholder="you@example.com"
+            required
+          />
+
+          <TextField
+            label="Mobile phone"
+            type="tel"
+            value={guestPhone}
+            onChange={setGuestPhone}
+            placeholder="+17875550123"
+            required={smsConsent}
+          />
+
+          <label
+            style={{
+              display: "grid",
+              gap: 8,
+              padding: 14,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.10)",
+              border: "1px solid rgba(255,255,255,0.18)",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 12,
+                color: "#bfdbfe",
+                fontWeight: 900,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Guest language
+            </span>
+
+            <select
+              value={preferredLanguage}
+              onChange={(event) =>
+                setPreferredLanguage(event.target.value === "en" ? "en" : "es")
+              }
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.22)",
+                background: "rgba(255,255,255,0.95)",
+                padding: "11px 12px",
+                fontWeight: 800,
+                color: "#0f172a",
+              }}
+            >
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+
           <div
             style={{
               padding: 14,
@@ -207,6 +315,46 @@ export default function AdminDemoCenterPage() {
             <div style={{ fontSize: 16, fontWeight: 900 }}>PAID</div>
           </div>
         </div>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            marginTop: 18,
+            padding: 14,
+            borderRadius: 16,
+            background: "rgba(255,255,255,0.10)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            color: "#dbeafe",
+            fontWeight: 750,
+            lineHeight: 1.45,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={smsConsent}
+            onChange={(event) => setSmsConsent(event.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <span>
+            Send the access code by SMS. I confirm that this number is authorized
+            to receive transactional messages for this controlled internal demo.
+          </span>
+        </label>
+
+        <p
+          style={{
+            margin: "14px 0 0",
+            color: "#bfdbfe",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          Email will be sent through the production delivery flow when the
+          access is created. SMS follows the same flow only when the confirmation
+          above is selected.
+        </p>
 
         <button
           onClick={runDemo}
@@ -318,6 +466,30 @@ export default function AdminDemoCenterPage() {
             <InfoCard label="Payment State" value={result.paymentState ?? "PAID"} />
             <InfoCard label="Reservation ID" value={reservation?.id ?? "—"} />
             <InfoCard label="Guest" value={reservation?.guestName ?? "—"} />
+            <InfoCard
+              label="Email delivery"
+              value={
+                result.delivery?.email?.enabled
+                  ? `Scheduled via production flow → ${result.delivery.email.to ?? "—"}`
+                  : "—"
+              }
+            />
+            <InfoCard
+              label="SMS delivery"
+              value={
+                result.delivery?.sms?.enabled
+                  ? `Scheduled via production flow → ${result.delivery.sms.to ?? "—"}`
+                  : "Not requested"
+              }
+            />
+            <InfoCard
+              label="Message language"
+              value={
+                result.delivery?.preferredLanguage === "es"
+                  ? "Español"
+                  : "English"
+              }
+            />
             <InfoCard label="Check-in" value={formatDate(reservation?.checkIn ?? result.checkIn)} />
             <InfoCard label="Check-out" value={formatDate(reservation?.checkOut ?? result.checkOut)} />
             <InfoCard label="Access Status" value={grant?.status ?? "—"} />
@@ -463,5 +635,66 @@ function InfoCard({ label, value }: { label: string; value: string }) {
         {value}
       </div>
     </div>
+  );
+}
+
+function TextField({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  label: string;
+  type: "text" | "email" | "tel";
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  required?: boolean;
+}) {
+  return (
+    <label
+      style={{
+        display: "grid",
+        gap: 8,
+        padding: 14,
+        borderRadius: 18,
+        background: "rgba(255,255,255,0.10)",
+        border: "1px solid rgba(255,255,255,0.18)",
+      }}
+    >
+      <span
+        style={{
+          fontSize: 12,
+          color: "#bfdbfe",
+          fontWeight: 900,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+        }}
+      >
+        {label}
+        {required ? " *" : ""}
+      </span>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        required={required}
+        autoComplete="off"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          borderRadius: 12,
+          border: "1px solid rgba(255,255,255,0.22)",
+          background: "rgba(255,255,255,0.95)",
+          padding: "11px 12px",
+          fontWeight: 800,
+          color: "#0f172a",
+        }}
+      />
+    </label>
   );
 }
