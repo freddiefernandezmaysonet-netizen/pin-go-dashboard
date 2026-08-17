@@ -1,5 +1,11 @@
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { Link } from "react-router-dom";
 import { PmsControlCenter } from "../../components/dashboard/PmsControlCenter";
 import { LocksCapacityCard } from "../../components/dashboard/LocksCapacityCard";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
@@ -24,17 +30,67 @@ type PmsSummaryResp = {
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
+function CardLink({
+  to,
+  label,
+  style,
+  children,
+}: {
+  to: string;
+  label: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const highlighted = hovered || focused;
+
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        ...style,
+        display: style?.display ?? "block",
+        color: "inherit",
+        textDecoration: "none",
+        cursor: "pointer",
+        transform: highlighted ? "translateY(-2px)" : "translateY(0)",
+        boxShadow: highlighted
+          ? "0 10px 24px rgba(15, 23, 42, 0.12)"
+          : style?.boxShadow,
+        outline: focused
+          ? "3px solid rgba(37, 99, 235, 0.28)"
+          : "none",
+        outlineOffset: 3,
+        transition:
+          "transform 160ms ease, box-shadow 160ms ease, outline-color 160ms ease",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function MetricCard({
   title,
   value,
   accent,
+  to,
 }: {
   title: string;
   value: string | number;
   accent: string;
+  to: string;
 }) {
   return (
-    <div
+    <CardLink
+      to={to}
+      label={`Open ${title}`}
       style={{
         border: "1px solid #e5e7eb",
         borderRadius: 18,
@@ -65,7 +121,7 @@ function MetricCard({
       >
         {value}
       </div>
-    </div>
+    </CardLink>
   );
 }
 
@@ -171,38 +227,51 @@ export function OverviewPage() {
           title="Upcoming Arrivals"
           value={loading ? "..." : data?.upcomingArrivals ?? 0}
           accent="#2563eb"
+          to="/reservations"
         />
 
         <MetricCard
           title="Guests In House"
           value={loading ? "..." : data?.inHouse ?? 0}
           accent="#16a34a"
+          to="/reservations"
         />
 
         <MetricCard
           title="Checkouts Today"
           value={loading ? "..." : data?.checkoutsToday ?? 0}
           accent="#f59e0b"
+          to="/reservations"
         />
 
         <MetricCard
           title="Active Locks"
           value={loading ? "..." : data?.activeLocks ?? 0}
           accent="#7c3aed"
+          to="/locks"
         />
 
         <MetricCard
           title="Properties"
           value={loading ? "..." : data?.properties ?? 0}
           accent="#0f766e"
+          to="/properties"
         />
       </div>
-    
-    <LocksCapacityCard />
+
+      <CardLink
+        to="/locks"
+        label="Open Locks Capacity"
+        style={{ borderRadius: 18 }}
+      >
+        <LocksCapacityCard />
+      </CardLink>
 
       {showLegacyPmsUi ? (
         <>
-          <div
+          <CardLink
+            to="/integrations/pms"
+            label="Open PMS integrations"
             style={{
               border: "1px solid #e5e7eb",
               borderRadius: 18,
@@ -269,13 +338,15 @@ export function OverviewPage() {
                 value={loading ? "..." : pms?.failedWebhookEvents ?? 0}
               />
             </div>
-          </div>
+          </CardLink>
 
           <PmsControlCenter />
         </>
       ) : null}
 
-      <div
+      <CardLink
+        to="/health"
+        label="Open Health Center"
         style={{
           border: "1px solid #e5e7eb",
           borderRadius: 18,
@@ -293,7 +364,7 @@ export function OverviewPage() {
                 data?.updatedAt ?? ""
               ).toLocaleString()}`}
         </div>
-      </div>
+      </CardLink>
     </div>
   );
 }
