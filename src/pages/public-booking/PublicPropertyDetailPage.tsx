@@ -52,6 +52,7 @@ type PublicProperty = {
     id: string;
     name: string;
     slug: string;
+    contactEmail: string;
   };
 };
 
@@ -3526,12 +3527,12 @@ return (
               <div className="pbe-guest-services-actions">
                 <a
                   className="pbe-service-card"
-                  href={`mailto:support@pin-ngo.com?subject=${encodeURIComponent(`Direct Booking · ${property.publicTitle || property.name}`)}`}
+                  href={`mailto:${property.organization.contactEmail}?subject=${encodeURIComponent(`Direct Booking · ${property.publicTitle || property.name}`)}`}
                 >
                   <span aria-hidden="true">✉</span>
                   <div>
                     <small>{preferredLanguage === "es" ? "CONTACTAR" : "CONTACT"}</small>
-                    <strong>support@pin-ngo.com</strong>
+                    <strong>{property.organization.contactEmail}</strong>
                     <p>{preferredLanguage === "es" ? "Ayuda antes y después de reservar" : "Help before and after booking"}</p>
                   </div>
                   <b aria-hidden="true">↗</b>
