@@ -103,6 +103,7 @@ type PropertyItem = {
   distributionLastError?: string | null;
   publicTitle?: string | null;
   publicDescription?: string | null;
+  publicDescriptionEs?: string | null;
   publicPhotos?: string[] | null;
   organization?: {
   slug?: string | null;
@@ -240,6 +241,7 @@ export function PropertyEditPage() {
     distributionLastError: "",
     publicTitle: "",
     publicDescription: "",
+    publicDescriptionEs: "",
     publicPhotosText: "",
  });
 
@@ -392,6 +394,7 @@ cleaningFee:
           slug: p.slug ?? "",
           publicTitle: p.publicTitle ?? "",
           publicDescription: p.publicDescription ?? "",
+          publicDescriptionEs: p.publicDescriptionEs ?? "",
           publicPhotosText: Array.isArray(p.publicPhotos)
           ? p.publicPhotos.join("\n")
           : "",
@@ -448,6 +451,7 @@ cleaningFee:
           timezone: form.timezone,
           publicTitle: form.publicTitle,
           publicDescription: form.publicDescription,
+          publicDescriptionEs: form.publicDescriptionEs,
           publicPhotos: form.publicPhotosText
              .split("\n")
              .map((url) => url.trim())
@@ -1638,7 +1642,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 </div>
 
 <div style={{ display: "grid", gap: 6 }}>
-  <div style={labelStyle}>Public Description</div>
+  <div style={labelStyle}>Public Description (English)</div>
 
   <textarea
     value={form.publicDescription}
@@ -1649,6 +1653,27 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
       }))
     }
     placeholder="Describe the guest experience, location, amenities and unique features of the property."
+    style={{
+      ...inputStyle,
+      height: 120,
+      padding: 14,
+      resize: "vertical",
+    }}
+  />
+</div>
+
+<div style={{ display: "grid", gap: 6 }}>
+  <div style={labelStyle}>Public Description (Spanish)</div>
+
+  <textarea
+    value={form.publicDescriptionEs}
+    onChange={(e) =>
+      setForm((s) => ({
+        ...s,
+        publicDescriptionEs: e.target.value,
+      }))
+    }
+    placeholder="Describa la experiencia, ubicación, amenidades y características únicas de la propiedad."
     style={{
       ...inputStyle,
       height: 120,
