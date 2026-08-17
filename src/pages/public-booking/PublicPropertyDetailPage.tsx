@@ -2401,17 +2401,9 @@ return (
                     </p>
                   </div>
                   <div className="pbe-description-list">
-                    <details open>
-                      <summary>
-                        <span>01</span>
-                        <strong>{preferredLanguage === "es" ? "La propiedad" : "The property"}</strong>
-                        <i aria-hidden="true">+</i>
-                      </summary>
-                      <p>{publicDescription}</p>
-                    </details>
                     <details>
                       <summary>
-                        <span>02</span>
+                        <span>01</span>
                         <strong>{preferredLanguage === "es" ? "Llegada y salida" : "Arrival and departure"}</strong>
                         <i aria-hidden="true">+</i>
                       </summary>
@@ -2423,7 +2415,7 @@ return (
                     </details>
                     <details>
                       <summary>
-                        <span>03</span>
+                        <span>02</span>
                         <strong>{preferredLanguage === "es" ? "Llegada segura" : "Secure arrival"}</strong>
                         <i aria-hidden="true">+</i>
                       </summary>
