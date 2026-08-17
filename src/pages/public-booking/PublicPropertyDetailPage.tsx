@@ -14,6 +14,7 @@ type PublicProperty = {
   slug: string | null;
   publicTitle?: string | null;
   publicDescription?: string | null;
+  publicDescriptionEs?: string | null;
   publicPhotos?: unknown;
   baseNightlyRate?: string | number | null;
   cleaningFee?: string | number | null;
@@ -1006,11 +1007,12 @@ function getRefundBasisDisclosure(
 
 function buildCancellationTermsAcceptanceText(
   policy: PublicCancellationPolicy | null | undefined,
-  summary: ReturnType<typeof getCancellationPolicySummary>
+  summary: ReturnType<typeof getCancellationPolicySummary>,
+  language: GuestLanguage
 ) {
   if (!policy || !summary) return "";
 
-  const refundBasisDisclosure = getRefundBasisDisclosure(policy);
+  const refundBasisDisclosure = getRefundBasisDisclosure(policy, language);
 
   const refundTimelineText = summary.rules
     .map((rule) => {
@@ -1018,24 +1020,34 @@ function buildCancellationTermsAcceptanceText(
 
       return `${rule.label}: ${formatRefundPercent(
         rule.refundPercent
-      )} refund - ${ruleWindow}`;
+      )} ${language === "es" ? "de reembolso" : "refund"} - ${ruleWindow}`;
     })
     .join(" | ");
 
   const scenarioText =
     summary.scenarios.length > 0
-      ? `Important non-refundable cases: ${summary.scenarios
-          .map((scenario) => getScenarioLabel(scenario))
+      ? `${
+          language === "es"
+            ? "Casos importantes no reembolsables"
+            : "Important non-refundable cases"
+        }: ${summary.scenarios
+          .map((scenario) => getScenarioLabel(scenario, language))
           .join(", ")}.`
       : "";
 
   return [
-    "I understand and agree to the cancellation terms shown above, including how any eligible refund is calculated.",
-    `Cancellation policy: ${summary.title}.`,
+    language === "es"
+      ? "Entiendo y acepto los términos de cancelación mostrados anteriormente, incluyendo cómo se calcula cualquier reembolso elegible."
+      : "I understand and agree to the cancellation terms shown above, including how any eligible refund is calculated.",
+    `${language === "es" ? "Política de cancelación" : "Cancellation policy"}: ${summary.title}.`,
     summary.headline,
     summary.summaryText,
-    refundBasisDisclosure ? `Refund basis: ${refundBasisDisclosure}` : "",
-    refundTimelineText ? `Refund timeline: ${refundTimelineText}.` : "",
+    refundBasisDisclosure
+      ? `${language === "es" ? "Base del reembolso" : "Refund basis"}: ${refundBasisDisclosure}`
+      : "",
+    refundTimelineText
+      ? `${language === "es" ? "Cronología del reembolso" : "Refund timeline"}: ${refundTimelineText}.`
+      : "",
     scenarioText,
     summary.approvalNote,
   ]
@@ -1509,22 +1521,29 @@ function SmartStayIcon() {
 const SECURE_PRE_CHECKIN_DISCLOSURE_VERSION = "SECURE_PRECHECKIN_DISCLOSURE_V1";
 
 function buildSecurePreCheckinDisclosureText(
-  identityVerificationRequired: boolean
+  identityVerificationRequired: boolean,
+  language: GuestLanguage
 ) {
+  if (language === "es") {
+    const identityRequirement = identityVerificationRequired
+      ? "El huésped principal debe completar la Verificación de Identidad y aceptar el Acuerdo del Huésped. "
+      : "El huésped principal debe aceptar el Acuerdo del Huésped. Esta reservación no requiere Verificación de Identidad. ";
+
+    return (
+      "El Registro Seguro es obligatorio antes de que se liberen las credenciales de acceso. " +
+      identityRequirement +
+      "La reservación puede quedar confirmada después del pago, pero el acceso permanece pendiente hasta completar todos los requisitos."
+    );
+  }
+
   const identityRequirement = identityVerificationRequired
     ? "The primary guest must complete Identity Check and accept the Guest Agreement. "
     : "The primary guest must accept the Guest Agreement. Identity Check is not required for this reservation. ";
-  const identityRequirementEs = identityVerificationRequired
-    ? "El huésped principal debe completar la Verificación de Identidad y aceptar el Acuerdo del Huésped. "
-    : "El huésped principal debe aceptar el Acuerdo del Huésped. Esta reservación no requiere Verificación de Identidad. ";
 
   return (
     "Secure Pre-check-in is required before access credentials are released. " +
     identityRequirement +
-    "The reservation may be confirmed after payment, but access remains pending until all required steps are completed. " +
-    "El Registro Seguro es obligatorio antes de que se liberen las credenciales de acceso. " +
-    identityRequirementEs +
-    "La reservación puede quedar confirmada después del pago, pero el acceso permanece pendiente hasta completar todos los requisitos."
+    "The reservation may be confirmed after payment, but access remains pending until all required steps are completed."
   );
 }
 
@@ -1597,6 +1616,10 @@ export default function PublicPropertyDetailPage() {
 }
 
   const copy = PUBLIC_PROPERTY_COPY[preferredLanguage];
+  const publicDescription =
+    preferredLanguage === "es"
+      ? property?.publicDescriptionEs || copy.defaultPropertyDescription
+      : property?.publicDescription || copy.defaultPropertyDescription;
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
@@ -1689,12 +1712,14 @@ const cancellationTermsAcceptanceText = useMemo(
       ?.acceptanceText ??
     buildCancellationTermsAcceptanceText(
       property?.cancellationPolicy,
-      cancellationPolicySummary
+      cancellationPolicySummary,
+      preferredLanguage
     ),
   [
     property?.cancellationPolicyPresentation,
     property?.cancellationPolicy,
     cancellationPolicySummary,
+    preferredLanguage,
   ]
 );
 
@@ -1706,7 +1731,8 @@ const identityVerificationRequired =
 
 const securePreCheckinDisclosureText =
   buildSecurePreCheckinDisclosureText(
-    identityVerificationRequired
+    identityVerificationRequired,
+    preferredLanguage
   );
 
 const reserveButtonDisabled =
@@ -1824,7 +1850,7 @@ function formatDisplayTime(time?: string | null) {
         const data = await res.json();
 
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || "Property not found");
+          throw new Error(copy.propertyNotFound);
         }
 
         if (active) {
@@ -2083,7 +2109,7 @@ guestAcceptedSecurePreCheckinRequirementSource:
         setBookingError(
           err instanceof Error
             ? err.message
-            : "Unable to reserve this property."
+            : copy.unableToReserveProperty
         );
       } finally {
       setSubmitting(false);
@@ -2310,7 +2336,7 @@ return (
                         : "A place that feels special before you arrive."}
                     </h2>
                     <p className="pbe-lead">
-                      {property.publicDescription || copy.defaultPropertyDescription}
+                      {publicDescription}
                     </p>
                     <div className="pbe-trust-list">
                       <span>{preferredLanguage === "es" ? "Reserva directa y segura" : "Secure direct booking"}</span>
@@ -2381,7 +2407,7 @@ return (
                         <strong>{preferredLanguage === "es" ? "La propiedad" : "The property"}</strong>
                         <i aria-hidden="true">+</i>
                       </summary>
-                      <p>{property.publicDescription || copy.defaultPropertyDescription}</p>
+                      <p>{publicDescription}</p>
                     </details>
                     <details>
                       <summary>
@@ -2391,7 +2417,7 @@ return (
                       </summary>
                       <p>
                         {preferredLanguage === "es"
-                          ? `Check-in ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. Check-out ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`
+                          ? `${copy.checkIn} ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. ${copy.checkOut} ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`
                           : `Check-in ${formatDisplayTime(property.checkInTime) || copy.configuredByHost}. Check-out ${formatDisplayTime(property.checkOutTime) || "11:00 AM"}.`}
                       </p>
                     </details>
@@ -2546,9 +2572,9 @@ return (
       className={`pbe-long-description${descriptionExpanded ? " is-expanded" : ""}`}
       style={styles.overviewText}
     >
-      {property.publicDescription || copy.defaultPropertyDescription}
+      {publicDescription}
     </div>
-    {(property.publicDescription?.length ?? 0) > 520 ? (
+    {publicDescription.length > 520 ? (
       <button
         className="pbe-description-toggle"
         type="button"
@@ -3514,7 +3540,11 @@ return (
 
             <section className="pbe-section pbe-guest-services" aria-labelledby="pbe-guest-services-title">
               <div className="pbe-guest-services-copy">
-                <p className="pbe-kicker">PIN&amp;GO GUEST SERVICES</p>
+                <p className="pbe-kicker">
+                  {preferredLanguage === "es"
+                    ? "SERVICIOS PARA HUÉSPEDES DE PIN&GO"
+                    : "PIN&GO GUEST SERVICES"}
+                </p>
                 <h2 id="pbe-guest-services-title">
                   {preferredLanguage === "es" ? "Estamos aquí antes de tu llegada." : "We are here before you arrive."}
                 </h2>
@@ -3527,7 +3557,11 @@ return (
               <div className="pbe-guest-services-actions">
                 <a
                   className="pbe-service-card"
-                  href={`mailto:${property.organization.contactEmail}?subject=${encodeURIComponent(`Direct Booking · ${property.publicTitle || property.name}`)}`}
+                  href={`mailto:${property.organization.contactEmail}?subject=${encodeURIComponent(
+                    `${preferredLanguage === "es" ? "Reservación directa" : "Direct Booking"} · ${
+                      property.publicTitle || property.name
+                    }`
+                  )}`}
                 >
                   <span aria-hidden="true">✉</span>
                   <div>
@@ -3576,7 +3610,7 @@ return (
 
       <img
         src={photos[selectedPhotoIndex]}
-        alt="Property"
+        alt={preferredLanguage === "es" ? "Propiedad" : "Property"}
         style={styles.lightboxImage}
       />
 
@@ -3623,6 +3657,8 @@ return (
                   ? "Reservas directas impulsadas por Pin&Go."
                   : "Direct booking powered by Pin&Go."
               }`
+            : preferredLanguage === "es"
+            ? "© Pin&Go. Reservación directa impulsada por operaciones autónomas de propiedades."
             : "© Pin&Go. Direct booking powered by autonomous property operations."}
         </div>
       </footer>

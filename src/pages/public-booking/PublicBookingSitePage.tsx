@@ -9,6 +9,7 @@ type PublicProperty = {
   slug: string | null;
   publicTitle?: string | null;
   publicDescription?: string | null;
+  publicDescriptionEs?: string | null;
   publicPhotos?: unknown;
   baseNightlyRate?: string | number | null;
   cleaningFee?: string | number | null;
@@ -113,7 +114,11 @@ export default function PublicBookingSitePage() {
         const data = await res.json();
 
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || "Booking site not found");
+          throw new Error(
+            isSpanish
+              ? "No se encontró la página de reservaciones"
+              : "Booking site not found"
+          );
         }
 
         if (active) {
@@ -124,6 +129,8 @@ export default function PublicBookingSitePage() {
           setError(
             err instanceof Error
               ? err.message
+              : isSpanish
+              ? "No se pudo cargar la página de reservaciones"
               : "Failed to load booking site"
           );
         }
@@ -141,7 +148,7 @@ export default function PublicBookingSitePage() {
     return () => {
       active = false;
     };
-  }, [organizationSlug]);
+  }, [isSpanish, organizationSlug]);
 
   return (
     <div className="pbe-collection-page" style={styles.page}>
@@ -167,10 +174,16 @@ export default function PublicBookingSitePage() {
             />
             <div>
               <div style={styles.brandName}>{brand.displayName}</div>
-              <div style={styles.slogan}>Direct Booking</div>
+              <div style={styles.slogan}>
+                {isSpanish ? "Reservación directa" : "Direct Booking"}
+              </div>
             </div>
           </Link>
-          <div className="pbe-collection-language" role="group" aria-label="Guest language">
+          <div
+            className="pbe-collection-language"
+            role="group"
+            aria-label={isSpanish ? "Idioma del huésped" : "Guest language"}
+          >
             <button type="button" aria-pressed={!isSpanish} onClick={() => changeLanguage("en")}>EN</button>
             <button type="button" aria-pressed={isSpanish} onClick={() => changeLanguage("es")}>ES</button>
           </div>
@@ -205,12 +218,16 @@ export default function PublicBookingSitePage() {
         <section className="pbe-collection-section" style={styles.sectionAlt}>
           <div style={styles.container}>
             {loading ? (
-              <div style={styles.stateBox}>Loading properties...</div>
+              <div style={styles.stateBox}>
+                {isSpanish ? "Cargando propiedades..." : "Loading properties..."}
+              </div>
             ) : error ? (
               <div style={styles.errorBox}>{error}</div>
             ) : !organization?.properties?.length ? (
               <div style={styles.stateBox}>
-                No public properties are available right now.
+                {isSpanish
+                  ? "No hay propiedades públicas disponibles en este momento."
+                  : "No public properties are available right now."}
               </div>
             ) : (
               <>
@@ -253,8 +270,12 @@ export default function PublicBookingSitePage() {
                           ) : (
                            <div style={styles.photoPlaceholder}>
   <div style={styles.placeholderIcon}>⌂</div>
-  <div style={styles.placeholderTitle}>Property Preview</div>
-  <div style={styles.placeholderText}>Direct Booking</div>
+  <div style={styles.placeholderTitle}>
+    {isSpanish ? "Vista previa de la propiedad" : "Property Preview"}
+  </div>
+  <div style={styles.placeholderText}>
+    {isSpanish ? "Reservación directa" : "Direct Booking"}
+  </div>
 </div>
 
                           )}
@@ -262,22 +283,25 @@ export default function PublicBookingSitePage() {
 
                         <div className="pbe-collection-card-body" style={styles.cardBody}>
                           <div style={styles.cardMeta}>
-                            {location || "Direct booking property"}
+                            {location ||
+                              (isSpanish
+                                ? "Propiedad de reservación directa"
+                                : "Direct booking property")}
                           </div>
 
                           <h3 style={styles.cardTitle}>
                             {property.publicTitle || property.name}
                           </h3>
 
-                          {property.publicDescription ? (
+                          {isSpanish ? (
                             <p style={styles.cardText}>
-                              {property.publicDescription}
+                              {property.publicDescriptionEs ||
+                                `Reserva esta propiedad directamente con ${brand.displayName}.`}
                             </p>
                           ) : (
                             <p style={styles.cardText}>
-                              {isSpanish
-                                ? `Reserva esta propiedad directamente con ${brand.displayName}.`
-                                : `Book this property directly through ${brand.displayName}.`}
+                              {property.publicDescription ||
+                                `Book this property directly through ${brand.displayName}.`}
                             </p>
                           )}
 
@@ -289,7 +313,9 @@ export default function PublicBookingSitePage() {
                                   <span style={styles.muted}>{isSpanish ? "/ noche" : "/ night"}</span>
                                 </>
                               ) : (
-                                <span style={styles.muted}>Rate available soon</span>
+                                <span style={styles.muted}>
+                                  {isSpanish ? "Tarifa disponible pronto" : "Rate available soon"}
+                                </span>
                               )}
                             </div>
                            
@@ -318,6 +344,8 @@ export default function PublicBookingSitePage() {
                   ? "Reservas directas impulsadas por Pin&Go."
                   : "Direct booking powered by Pin&Go."
               }`
+            : isSpanish
+            ? "© Pin&Go. Reservación directa impulsada por operaciones autónomas de propiedades."
             : "© Pin&Go. Direct booking powered by autonomous property operations."}
         </div>
       </footer>
