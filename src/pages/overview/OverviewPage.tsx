@@ -227,21 +227,21 @@ export function OverviewPage() {
           title="Upcoming Arrivals"
           value={loading ? "..." : data?.upcomingArrivals ?? 0}
           accent="#2563eb"
-          to="/reservations"
+          to="/reservations?operationalStatus=UPCOMING&sort=checkIn_asc"
         />
 
         <MetricCard
           title="Guests In House"
           value={loading ? "..." : data?.inHouse ?? 0}
           accent="#16a34a"
-          to="/reservations"
+          to="/reservations?operationalStatus=IN_HOUSE&sort=checkOut_asc"
         />
 
         <MetricCard
           title="Checkouts Today"
           value={loading ? "..." : data?.checkoutsToday ?? 0}
           accent="#f59e0b"
-          to="/reservations"
+          to="/reservations?operationalStatus=CHECKOUTS_TODAY&sort=checkOut_asc"
         />
 
         <MetricCard

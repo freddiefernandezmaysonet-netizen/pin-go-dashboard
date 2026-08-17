@@ -475,6 +475,7 @@ export function ReservationsPage() {
               <option value="ALL">All stays</option>
               <option value="UPCOMING">Upcoming</option>
               <option value="IN_HOUSE">In house</option>
+              <option value="CHECKOUTS_TODAY">Checkouts today</option>
               <option value="CHECKED_OUT">Checked out</option>
               <option value="CANCELLED">Cancelled</option>
             </select>

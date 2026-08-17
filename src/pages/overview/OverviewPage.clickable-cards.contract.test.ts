@@ -29,15 +29,15 @@ test("overview metric cards navigate to their operational sections", async () =>
 
   assert.match(
     source,
-    /title="Upcoming Arrivals"[\s\S]*?to="\/reservations"/
+    /title="Upcoming Arrivals"[\s\S]*?to="\/reservations\?operationalStatus=UPCOMING&sort=checkIn_asc"/
   );
   assert.match(
     source,
-    /title="Guests In House"[\s\S]*?to="\/reservations"/
+    /title="Guests In House"[\s\S]*?to="\/reservations\?operationalStatus=IN_HOUSE&sort=checkOut_asc"/
   );
   assert.match(
     source,
-    /title="Checkouts Today"[\s\S]*?to="\/reservations"/
+    /title="Checkouts Today"[\s\S]*?to="\/reservations\?operationalStatus=CHECKOUTS_TODAY&sort=checkOut_asc"/
   );
   assert.match(
     source,
@@ -46,6 +46,22 @@ test("overview metric cards navigate to their operational sections", async () =>
   assert.match(
     source,
     /title="Properties"[\s\S]*?to="\/properties"/
+  );
+});
+
+test("reservations exposes the checkouts today deep-link filter", async () => {
+  const source = await readFile(
+    new URL("../reservations/ReservationsPage.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    source,
+    /<option value="CHECKOUTS_TODAY">Checkouts today<\/option>/
+  );
+  assert.match(
+    source,
+    /q\.set\("operationalStatus", operationalStatus\)/
   );
 });
 
