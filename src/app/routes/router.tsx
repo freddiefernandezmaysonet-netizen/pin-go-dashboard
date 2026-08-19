@@ -3,6 +3,7 @@ import { AppShell } from "../layout/AppShell";
 import { OverviewPage } from "../../pages/overview/OverviewPage";
 import { ReservationsPage } from "../../pages/reservations/ReservationsPage";
 import { ReservationDetailPage } from "../../pages/reservation-detail/ReservationDetailPage";
+import { ManualReservationDateChangePanel } from "../../components/reservations/ManualReservationDateChangePanel";
 import { LocksPage } from "../../pages/locks/LocksPage";
 import { AccessPage } from "../../pages/access/AccessPage";
 import { PropertiesPage } from "../../pages/properties/PropertiesPage";
@@ -50,7 +51,6 @@ import OrganizationSettingsPage from "../../pages/organization/OrganizationSetti
 import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
-
 function RootRedirect() {
   const host = window.location.hostname;
 
@@ -79,35 +79,43 @@ function PropertyCalendarRoute() {
   );
 }
 
+function ReservationDetailRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <ManualReservationDateChangePanel />
+      <ReservationDetailPage />
+    </div>
+  );
+}
+
 export const router = createBrowserRouter([
- 
   {
-  path: "/home",
-  element: <LandingPage />,
+    path: "/home",
+    element: <LandingPage />,
   },
   {
-  path: "/book/:organizationSlug",
-  element: <PublicBookingSitePage />,
+    path: "/book/:organizationSlug",
+    element: <PublicBookingSitePage />,
   },
   {
-  path: "/book/:organizationSlug/:propertySlug",
-  element: <PublicPropertyDetailPage />,
+    path: "/book/:organizationSlug/:propertySlug",
+    element: <PublicPropertyDetailPage />,
   },
   {
-  path: "/booking/success",
-  element: <PublicBookingSuccessPage />,
+    path: "/booking/success",
+    element: <PublicBookingSuccessPage />,
   },
   {
-  path: "/booking/cancel",
-  element: <PublicBookingCancelPage />,
+    path: "/booking/cancel",
+    element: <PublicBookingCancelPage />,
   },
   {
-  path: "/booking/manage/:guestToken",
-  element: <GuestCancellationPage />,
+    path: "/booking/manage/:guestToken",
+    element: <GuestCancellationPage />,
   },
   {
-  path: "/",
-  element: <RootRedirect />,
+    path: "/",
+    element: <RootRedirect />,
   },
   {
     path: "/login",
@@ -117,21 +125,21 @@ export const router = createBrowserRouter([
     path: "/signup",
     element: <SignupPage />,
   },
-  { 
+  {
     path: "/legal/terms",
-    element: <TermsPage /> 
+    element: <TermsPage />,
   },
-  { 
+  {
     path: "/legal/privacy",
-    element: <PrivacyPage /> 
+    element: <PrivacyPage />,
   },
-  { 
-  path: "/legal/support-policy",
-  element: <SupportPolicyPage /> 
+  {
+    path: "/legal/support-policy",
+    element: <SupportPolicyPage />,
   },
-  { 
-  path: "/legal/billing-policy",
-  element: <BillingPolicyPage /> 
+  {
+    path: "/legal/billing-policy",
+    element: <BillingPolicyPage />,
   },
   {
     path: "/signup/success",
@@ -145,7 +153,6 @@ export const router = createBrowserRouter([
     path: "/reset-password",
     element: <ResetPasswordPage />,
   },
-
   {
     element: (
       <RequireAuth>
@@ -162,23 +169,23 @@ export const router = createBrowserRouter([
       { path: "/properties/:id", element: <PropertyDetailPage /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
       { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
-     
+
       { path: "/locks", element: <LocksPage /> },
       { path: "/locks/nfc-sync", element: <NfcSyncPage /> },
       { path: "/locks/:id", element: <LockDetailPage /> },
 
       { path: "/reservations", element: <ReservationsPage /> },
-      { path: "/reservations/:id", element: <ReservationDetailPage /> },
+      { path: "/reservations/:id", element: <ReservationDetailRoute /> },
 
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
-      
+
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
-           
+
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
@@ -204,26 +211,23 @@ export const router = createBrowserRouter([
       },
     ],
   },
-
-{
-  path: "/admin/sales-followups",
-  element: (
-    <RequireAuth>
-      <AdminSalesFollowupsPage />
-    </RequireAuth>
-  ),
-},
-
- {
-  path: "/admin/demo-center",
-  element: (
-    <RequireAuth>
-      <AdminDemoCenterPage />
-    </RequireAuth>
-  ),
-},
-
-{
+  {
+    path: "/admin/sales-followups",
+    element: (
+      <RequireAuth>
+        <AdminSalesFollowupsPage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/admin/demo-center",
+    element: (
+      <RequireAuth>
+        <AdminDemoCenterPage />
+      </RequireAuth>
+    ),
+  },
+  {
     path: "/admin/financial",
     element: (
       <RequireAuth>
