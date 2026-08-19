@@ -11,6 +11,7 @@ import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPa
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
 import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
+import { ChannexFullSyncPanel } from "../../components/properties/ChannexFullSyncPanel";
 import { LockDetailPage } from "../../pages/lock-detail/LockDetailPage";
 import { PmsConnectionsPage } from "../../pages/integrations/PmsConnectionsPage";
 import TuyaIntegrationPremiumPage from "../../pages/integrations/TuyaIntegrationPremiumPage";
@@ -70,6 +71,15 @@ function OrganizationRoute() {
   );
 }
 
+function PropertyDetailRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <ChannexFullSyncPanel />
+      <PropertyDetailPage />
+    </div>
+  );
+}
+
 function PropertyCalendarRoute() {
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -89,70 +99,22 @@ function ReservationDetailRoute() {
 }
 
 export const router = createBrowserRouter([
-  {
-    path: "/home",
-    element: <LandingPage />,
-  },
-  {
-    path: "/book/:organizationSlug",
-    element: <PublicBookingSitePage />,
-  },
-  {
-    path: "/book/:organizationSlug/:propertySlug",
-    element: <PublicPropertyDetailPage />,
-  },
-  {
-    path: "/booking/success",
-    element: <PublicBookingSuccessPage />,
-  },
-  {
-    path: "/booking/cancel",
-    element: <PublicBookingCancelPage />,
-  },
-  {
-    path: "/booking/manage/:guestToken",
-    element: <GuestCancellationPage />,
-  },
-  {
-    path: "/",
-    element: <RootRedirect />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/signup",
-    element: <SignupPage />,
-  },
-  {
-    path: "/legal/terms",
-    element: <TermsPage />,
-  },
-  {
-    path: "/legal/privacy",
-    element: <PrivacyPage />,
-  },
-  {
-    path: "/legal/support-policy",
-    element: <SupportPolicyPage />,
-  },
-  {
-    path: "/legal/billing-policy",
-    element: <BillingPolicyPage />,
-  },
-  {
-    path: "/signup/success",
-    element: <SignupSuccessPage />,
-  },
-  {
-    path: "/forgot-password",
-    element: <ForgotPasswordPage />,
-  },
-  {
-    path: "/reset-password",
-    element: <ResetPasswordPage />,
-  },
+  { path: "/home", element: <LandingPage /> },
+  { path: "/book/:organizationSlug", element: <PublicBookingSitePage /> },
+  { path: "/book/:organizationSlug/:propertySlug", element: <PublicPropertyDetailPage /> },
+  { path: "/booking/success", element: <PublicBookingSuccessPage /> },
+  { path: "/booking/cancel", element: <PublicBookingCancelPage /> },
+  { path: "/booking/manage/:guestToken", element: <GuestCancellationPage /> },
+  { path: "/", element: <RootRedirect /> },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/signup", element: <SignupPage /> },
+  { path: "/legal/terms", element: <TermsPage /> },
+  { path: "/legal/privacy", element: <PrivacyPage /> },
+  { path: "/legal/support-policy", element: <SupportPolicyPage /> },
+  { path: "/legal/billing-policy", element: <BillingPolicyPage /> },
+  { path: "/signup/success", element: <SignupSuccessPage /> },
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
     element: (
       <RequireAuth>
@@ -164,75 +126,48 @@ export const router = createBrowserRouter([
       { path: "/onboarding", element: <OnboardingPage /> },
       { path: "/onboarding/property", element: <CreatePropertyPage /> },
       { path: "/overview", element: <OverviewPage /> },
-
       { path: "/properties", element: <PropertiesPage /> },
-      { path: "/properties/:id", element: <PropertyDetailPage /> },
+      { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
       { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
-
       { path: "/locks", element: <LocksPage /> },
       { path: "/locks/nfc-sync", element: <NfcSyncPage /> },
       { path: "/locks/:id", element: <LockDetailPage /> },
-
       { path: "/reservations", element: <ReservationsPage /> },
       { path: "/reservations/:id", element: <ReservationDetailRoute /> },
-
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
-
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
-
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
-
       {
         path: "/integrations/pms",
-        element: shouldShowLegacyPmsUi() ? (
-          <PmsConnectionsPage />
-        ) : (
-          <Navigate to="/overview" replace />
-        ),
+        element: shouldShowLegacyPmsUi() ? <PmsConnectionsPage /> : <Navigate to="/overview" replace />,
       },
       { path: "/integrations/ttlock", element: <TtlockConnectPage /> },
       { path: "/integrations/tuya-premium", element: <TuyaIntegrationPremiumPage /> },
       { path: "/integrations/tuya", element: <TuyaIntegrationPage /> },
       {
         path: "/integrations/pms/listings-mapping",
-        element: shouldShowLegacyPmsUi() ? (
-          <ListingsMappingPage />
-        ) : (
-          <Navigate to="/overview" replace />
-        ),
+        element: shouldShowLegacyPmsUi() ? <ListingsMappingPage /> : <Navigate to="/overview" replace />,
       },
     ],
   },
   {
     path: "/admin/sales-followups",
-    element: (
-      <RequireAuth>
-        <AdminSalesFollowupsPage />
-      </RequireAuth>
-    ),
+    element: <RequireAuth><AdminSalesFollowupsPage /></RequireAuth>,
   },
   {
     path: "/admin/demo-center",
-    element: (
-      <RequireAuth>
-        <AdminDemoCenterPage />
-      </RequireAuth>
-    ),
+    element: <RequireAuth><AdminDemoCenterPage /></RequireAuth>,
   },
   {
     path: "/admin/financial",
-    element: (
-      <RequireAuth>
-        <AdminFinancialPage />
-      </RequireAuth>
-    ),
+    element: <RequireAuth><AdminFinancialPage /></RequireAuth>,
   },
 ]);
