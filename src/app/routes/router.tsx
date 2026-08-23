@@ -5,7 +5,6 @@ import { AppShell } from "../layout/AppShell";
 import { OverviewPage } from "../../pages/overview/OverviewPage";
 import { ReservationsPage } from "../../pages/reservations/ReservationsPage";
 import { ReservationDetailPage } from "../../pages/reservation-detail/ReservationDetailPage";
-import { ManualReservationDateChangePanel } from "../../components/reservations/ManualReservationDateChangePanel";
 import { LocksPage } from "../../pages/locks/LocksPage";
 import { AccessPage } from "../../pages/access/AccessPage";
 import { PropertiesPage } from "../../pages/properties/PropertiesPage";
@@ -145,15 +144,6 @@ function PropertyCalendarRoute() {
   );
 }
 
-function ReservationDetailRoute() {
-  return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <ManualReservationDateChangePanel />
-      <ReservationDetailPage />
-    </div>
-  );
-}
-
 export const router = createBrowserRouter([
  
   {
@@ -263,7 +253,7 @@ export const router = createBrowserRouter([
       { path: "/locks/:id", element: <LockDetailPage /> },
 
       { path: "/reservations", element: <ReservationsPage /> },
-      { path: "/reservations/:id", element: <ReservationDetailRoute /> },
+      { path: "/reservations/:id", element: <ReservationDetailPage /> },
 
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
