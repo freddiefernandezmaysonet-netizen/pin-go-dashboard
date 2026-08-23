@@ -5,12 +5,15 @@ import { AppShell } from "../layout/AppShell";
 import { OverviewPage } from "../../pages/overview/OverviewPage";
 import { ReservationsPage } from "../../pages/reservations/ReservationsPage";
 import { ReservationDetailPage } from "../../pages/reservation-detail/ReservationDetailPage";
+import { ManualReservationDateChangePanel } from "../../components/reservations/ManualReservationDateChangePanel";
 import { LocksPage } from "../../pages/locks/LocksPage";
 import { AccessPage } from "../../pages/access/AccessPage";
 import { PropertiesPage } from "../../pages/properties/PropertiesPage";
 import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPage";
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
+import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
+import { ChannexFullSyncPanel } from "../../components/properties/ChannexFullSyncPanel";
 import { LockDetailPage } from "../../pages/lock-detail/LockDetailPage";
 import { PmsConnectionsPage } from "../../pages/integrations/PmsConnectionsPage";
 import TuyaIntegrationPremiumPage from "../../pages/integrations/TuyaIntegrationPremiumPage";
@@ -124,6 +127,33 @@ function OrganizationRoute() {
   );
 }
 
+function PropertyDetailRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <ChannexFullSyncPanel />
+      <PropertyDetailPage />
+    </div>
+  );
+}
+
+function PropertyCalendarRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <PropertyCalendarStayRestrictionsPanel />
+      <PropertyCalendarPage />
+    </div>
+  );
+}
+
+function ReservationDetailRoute() {
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <ManualReservationDateChangePanel />
+      <ReservationDetailPage />
+    </div>
+  );
+}
+
 export const router = createBrowserRouter([
  
   {
@@ -224,16 +254,16 @@ export const router = createBrowserRouter([
       { path: "/overview", element: <OverviewPage /> },
 
       { path: "/properties", element: <PropertiesPage /> },
-      { path: "/properties/:id", element: <PropertyDetailPage /> },
+      { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
-      { path: "/properties/:id/calendar", element: <PropertyCalendarPage /> },
+      { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
      
       { path: "/locks", element: <LocksPage /> },
       { path: "/locks/nfc-sync", element: <NfcSyncPage /> },
       { path: "/locks/:id", element: <LockDetailPage /> },
 
       { path: "/reservations", element: <ReservationsPage /> },
-      { path: "/reservations/:id", element: <ReservationDetailPage /> },
+      { path: "/reservations/:id", element: <ReservationDetailRoute /> },
 
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
