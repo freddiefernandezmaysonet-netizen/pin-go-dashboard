@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import {
+  buildManualReservationDateChangeReviewModel,
+  confirmManualReservationDateChange,
+  dateKeyInTimezone,
+  nightsBetween,
+  requestManualReservationDateChangePreview,
+} from "./manualReservationDateChangeFlow.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || "https://api.pin-ngo.com";
 
@@ -22,36 +29,12 @@ type DateChangePreview = {
   paymentHandledOutsidePinGo: true;
 };
 
-function dateKeyInTimezone(value: string, timezone?: string | null) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone || "UTC",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(date);
-    const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-    return `${get("year")}-${get("month")}-${get("day")}`;
-  } catch {
-    return date.toISOString().slice(0, 10);
-  }
-}
-
 function money(value: number | null | undefined, currency = "usd") {
   if (value == null || !Number.isFinite(Number(value))) return "—";
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency: String(currency || "usd").toUpperCase(),
   }).format(Number(value));
-}
-
-function nightsBetween(checkIn: string, checkOut: string) {
-  if (!checkIn || !checkOut) return 0;
-  const start = new Date(`${checkIn}T00:00:00Z`).getTime();
-  const end = new Date(`${checkOut}T00:00:00Z`).getTime();
-  return Math.max(0, Math.round((end - start) / 86_400_000));
 }
 
 export function ManualReservationDateChangePanel() {
@@ -86,6 +69,13 @@ export function ManualReservationDateChangePanel() {
   }, [id]);
 
   const proposedNights = useMemo(() => nightsBetween(checkIn, checkOut), [checkIn, checkOut]);
+  const reviewModel = useMemo(() => {
+    if (!preview) return null;
+    return buildManualReservationDateChangeReviewModel({
+      preview,
+      timezone: reservation?.property?.timezone,
+    });
+  }, [preview, reservation?.property?.timezone]);
 
   if (!reservation || String(reservation.source ?? "").toUpperCase() !== "MANUAL" || String(reservation.status ?? "").toUpperCase() !== "ACTIVE") return null;
 
@@ -96,15 +86,13 @@ export function ManualReservationDateChangePanel() {
       setError(null);
       setMessage(null);
       setPreview(null);
-      const response = await fetch(`${API_BASE}/api/dashboard/reservations/${encodeURIComponent(id)}/dates/preview`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ checkInDate: checkIn, checkOutDate: checkOut }),
+      const reviewed = await requestManualReservationDateChangePreview({
+        apiBase: API_BASE,
+        reservationId: id,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload?.ok !== true || !payload?.preview) throw new Error(payload?.message || payload?.error || "Unable to review reservation change.");
-      setPreview(payload.preview as DateChangePreview);
+      setPreview(reviewed as DateChangePreview);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to review reservation change.");
     } finally {
@@ -118,19 +106,12 @@ export function ManualReservationDateChangePanel() {
       setWorking(true);
       setError(null);
       setMessage(null);
-      const response = await fetch(`${API_BASE}/api/dashboard/reservations/${encodeURIComponent(id)}/dates`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          checkInDate: checkIn,
-          checkOutDate: checkOut,
-          expectedReservationUpdatedAt: preview.reservationUpdatedAt,
-          expectedProposedTotalAmount: preview.proposed.totalAmount,
-        }),
+      await confirmManualReservationDateChange({
+        apiBase: API_BASE,
+        reservationId: id,
+        preview,
+        timezone: reservation.property?.timezone,
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload?.ok !== true) throw new Error(payload?.message || payload?.error || "Unable to update reservation dates.");
       setMessage("Reservation dates and pricing updated successfully.");
       setEditing(false);
       window.setTimeout(() => window.location.reload(), 1000);
@@ -162,22 +143,22 @@ export function ManualReservationDateChangePanel() {
           <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700 }}>Check-out<input type="date" value={checkOut} onChange={(event) => { setCheckOut(event.target.value); setPreview(null); }} style={{ padding: 10, borderRadius: 10, border: "1px solid #d1d5db" }} /></label>
         </div>
 
-        {!preview ? <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "#f8fafc", fontSize: 13, color: "#374151" }}>
+        {!reviewModel ? <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "#f8fafc", fontSize: 13, color: "#374151" }}>
           <strong>Current reservation</strong><br />{currentCheckIn} – {currentCheckOut} · {currentNights} nights · {money(reservation.totalAmount, reservation.currency ?? "usd")}<br /><br />
           <strong>Proposed dates</strong><br />{checkIn || "—"} – {checkOut || "—"} · {proposedNights} nights
         </div> : null}
 
-        {preview ? <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: "#f8fafc", border: "1px solid #dbeafe", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
+        {reviewModel ? <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: "#f8fafc", border: "1px solid #dbeafe", fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
           <strong>Review before confirming</strong><br /><br />
-          <strong>Current reservation</strong><br />{currentCheckIn} – {currentCheckOut} · {currentNights} nights<br />{money(preview.current.totalAmount, preview.current.currency)}<br /><br />
-          <strong>Proposed reservation</strong><br />{checkIn} – {checkOut} · {preview.proposed.nights} nights<br />{money(preview.proposed.totalAmount, preview.proposed.currency)}<br /><br />
-          <strong>Price difference</strong><br />{preview.difference == null ? "—" : `${preview.difference >= 0 ? "+" : ""}${money(preview.difference, preview.proposed.currency)}`}<br />
+          <strong>Current reservation</strong><br />{reviewModel.current.checkInDate} – {reviewModel.current.checkOutDate} · {reviewModel.current.nights} nights<br />{money(reviewModel.current.totalAmount, reviewModel.current.currency)}<br /><br />
+          <strong>Proposed reservation</strong><br />{reviewModel.proposed.checkInDate} – {reviewModel.proposed.checkOutDate} · {reviewModel.proposed.nights} nights<br />{money(reviewModel.proposed.totalAmount, reviewModel.proposed.currency)}<br /><br />
+          <strong>Price difference</strong><br />{reviewModel.difference == null ? "—" : `${reviewModel.difference >= 0 ? "+" : ""}${money(reviewModel.difference, reviewModel.proposed.currency)}`}<br />
           <span style={{ color: "#6b7280" }}>Payment is handled outside Pin&Go. Confirming updates the reservation and its operational schedule; it does not create a Stripe charge.</span>
         </div> : null}
 
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          {!preview ? <button type="button" disabled={working || proposedNights <= 0} onClick={reviewChange} style={{ border: "1px solid #2563eb", background: "#2563eb", color: "#fff", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: working ? "default" : "pointer", opacity: working || proposedNights <= 0 ? 0.65 : 1 }}>{working ? "Calculating..." : "Review change"}</button> : <button type="button" disabled={working} onClick={confirmChange} style={{ border: "1px solid #2563eb", background: "#2563eb", color: "#fff", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: working ? "default" : "pointer", opacity: working ? 0.65 : 1 }}>{working ? "Updating..." : "Confirm change"}</button>}
-          {preview ? <button type="button" disabled={working} onClick={() => setPreview(null)} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#374151", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: "pointer" }}>Edit dates</button> : null}
+          {!reviewModel ? <button type="button" disabled={working || proposedNights <= 0} onClick={reviewChange} style={{ border: "1px solid #2563eb", background: "#2563eb", color: "#fff", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: working ? "default" : "pointer", opacity: working || proposedNights <= 0 ? 0.65 : 1 }}>{working ? "Calculating..." : "Review change"}</button> : <button type="button" disabled={working} onClick={confirmChange} style={{ border: "1px solid #2563eb", background: "#2563eb", color: "#fff", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: working ? "default" : "pointer", opacity: working ? 0.65 : 1 }}>{working ? "Updating..." : "Confirm change"}</button>}
+          {reviewModel ? <button type="button" disabled={working} onClick={() => setPreview(null)} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#374151", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: "pointer" }}>Edit dates</button> : null}
           <button type="button" disabled={working} onClick={() => { setEditing(false); setCheckIn(currentCheckIn); setCheckOut(currentCheckOut); setError(null); setPreview(null); }} style={{ border: "1px solid #d1d5db", background: "#fff", color: "#374151", borderRadius: 10, padding: "10px 14px", fontWeight: 700, cursor: "pointer" }}>Cancel</button>
         </div>
       </> : null}
