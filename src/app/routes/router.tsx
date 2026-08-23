@@ -59,10 +59,19 @@ import { useAuth } from "../../auth/AuthProvider";
 import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 
+
 function RootRedirect() {
   const host = window.location.hostname;
   const { isCustomBrand } = useBrand();
-  if (isCustomBrand || host === "app.pin-ngo.com" || host.endsWith(".vercel.app")) return <Navigate to="/overview" replace />;
+
+  if (
+    isCustomBrand ||
+    host === "app.pin-ngo.com" ||
+    host.endsWith(".vercel.app")
+  ) {
+    return <Navigate to="/overview" replace />;
+  }
+
   return <Navigate to="/home" replace />;
 }
 
@@ -80,90 +89,264 @@ function BrandOrganizationRoute({ children }: { children: ReactElement }) {
   const { brand } = useBrand();
   const { organizationSlug } = useParams();
   const requestedSlug = String(organizationSlug ?? "").trim().toLowerCase();
-  if (brand.kind === "CUSTOM_BRAND" && requestedSlug !== brand.organizationSlug) return <Navigate to={`/book/${brand.organizationSlug}`} replace />;
+
+  if (
+    brand.kind === "CUSTOM_BRAND" &&
+    requestedSlug !== brand.organizationSlug
+  ) {
+    return <Navigate to={`/book/${brand.organizationSlug}`} replace />;
+  }
+
   return children;
 }
 
 function PlatformAdminRoute({ children }: { children: ReactElement }) {
   const { user } = useAuth();
-  return user?.role === "PLATFORM_ADMIN" ? children : <Navigate to="/overview" replace />;
+  return user?.role === "PLATFORM_ADMIN" ? (
+    children
+  ) : (
+    <Navigate to="/overview" replace />
+  );
 }
 
 function OrganizationBrandReviewerRoute({ children }: { children: ReactElement }) {
   const { user } = useAuth();
-  return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" ? children : <Navigate to="/overview" replace />;
+  return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" ? (
+    children
+  ) : (
+    <Navigate to="/overview" replace />
+  );
 }
 
 function OrganizationRoute() {
-  return <div style={{ display: "grid", gap: 20 }}><OrganizationSettingsPage /><HostPayoutsCard /></div>;
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <OrganizationSettingsPage />
+      <HostPayoutsCard />
+    </div>
+  );
 }
 
 function PropertyDetailRoute() {
-  return <div style={{ display: "grid", gap: 20 }}><ChannexFullSyncPanel /><PropertyDetailPage /></div>;
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <ChannexFullSyncPanel />
+      <PropertyDetailPage />
+    </div>
+  );
 }
 
 function PropertyCalendarRoute() {
-  return <div style={{ display: "grid", gap: 20 }}><PropertyCalendarStayRestrictionsPanel /><PropertyCalendarPage /></div>;
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <PropertyCalendarStayRestrictionsPanel />
+      <PropertyCalendarPage />
+    </div>
+  );
 }
 
 function ReservationDetailRoute() {
-  return <div style={{ display: "grid", gap: 20 }}><ManualReservationDateChangePanel /><ReservationDetailPage /></div>;
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      <ManualReservationDateChangePanel />
+      <ReservationDetailPage />
+    </div>
+  );
 }
 
 export const router = createBrowserRouter([
-  { path: "/home", element: <LandingRoute /> },
-  { path: "/book/:organizationSlug", element: <BrandOrganizationRoute><PublicBookingSitePage /></BrandOrganizationRoute> },
-  { path: "/book/:organizationSlug/:propertySlug", element: <BrandOrganizationRoute><PublicPropertyDetailPage /></BrandOrganizationRoute> },
-  { path: "/booking/success", element: <PublicBookingSuccessPage /> },
-  { path: "/booking/cancel", element: <PublicBookingCancelPage /> },
-  { path: "/booking/manage/:guestToken", element: <GuestCancellationPage /> },
-  { path: "/", element: <RootRedirect /> },
-  { path: "/login", element: <LoginPage /> },
-  { path: "/organization-invitation", element: <OrganizationInvitationPage /> },
-  { path: "/signup", element: <StandardBrandRoute><SignupPage /></StandardBrandRoute> },
-  { path: "/legal/terms", element: <TermsPage /> },
-  { path: "/legal/privacy", element: <PrivacyPage /> },
-  { path: "/legal/support-policy", element: <SupportPolicyPage /> },
-  { path: "/legal/billing-policy", element: <BillingPolicyPage /> },
-  { path: "/signup/success", element: <StandardBrandRoute><SignupSuccessPage /></StandardBrandRoute> },
-  { path: "/forgot-password", element: <ForgotPasswordPage /> },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
+ 
   {
-    element: <RequireAuth><AppShell /></RequireAuth>,
+  path: "/home",
+  element: <LandingRoute />,
+  },
+  {
+  path: "/book/:organizationSlug",
+  element: (
+    <BrandOrganizationRoute>
+      <PublicBookingSitePage />
+    </BrandOrganizationRoute>
+  ),
+  },
+  {
+  path: "/book/:organizationSlug/:propertySlug",
+  element: (
+    <BrandOrganizationRoute>
+      <PublicPropertyDetailPage />
+    </BrandOrganizationRoute>
+  ),
+  },
+  {
+  path: "/booking/success",
+  element: <PublicBookingSuccessPage />,
+  },
+  {
+  path: "/booking/cancel",
+  element: <PublicBookingCancelPage />,
+  },
+  {
+  path: "/booking/manage/:guestToken",
+  element: <GuestCancellationPage />,
+  },
+  {
+  path: "/",
+  element: <RootRedirect />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/organization-invitation",
+    element: <OrganizationInvitationPage />,
+  },
+  {
+    path: "/signup",
+    element: (
+      <StandardBrandRoute>
+        <SignupPage />
+      </StandardBrandRoute>
+    ),
+  },
+  { 
+    path: "/legal/terms",
+    element: <TermsPage /> 
+  },
+  { 
+    path: "/legal/privacy",
+    element: <PrivacyPage /> 
+  },
+  { 
+  path: "/legal/support-policy",
+  element: <SupportPolicyPage /> 
+  },
+  { 
+  path: "/legal/billing-policy",
+  element: <BillingPolicyPage /> 
+  },
+  {
+    path: "/signup/success",
+    element: (
+      <StandardBrandRoute>
+        <SignupSuccessPage />
+      </StandardBrandRoute>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+
+  {
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       { path: "/", element: <Navigate to="/overview" replace /> },
       { path: "/onboarding", element: <OnboardingPage /> },
       { path: "/onboarding/property", element: <CreatePropertyPage /> },
       { path: "/overview", element: <OverviewPage /> },
+
       { path: "/properties", element: <PropertiesPage /> },
       { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
       { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
+     
       { path: "/locks", element: <LocksPage /> },
       { path: "/locks/nfc-sync", element: <NfcSyncPage /> },
       { path: "/locks/:id", element: <LockDetailPage /> },
+
       { path: "/reservations", element: <ReservationsPage /> },
       { path: "/reservations/:id", element: <ReservationDetailRoute /> },
+
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
-      { path: "/organization/branding-review", element: <OrganizationBrandReviewerRoute><OrganizationBrandingReviewPage /></OrganizationBrandReviewerRoute> },
+      {
+        path: "/organization/branding-review",
+        element: (
+          <OrganizationBrandReviewerRoute>
+            <OrganizationBrandingReviewPage />
+          </OrganizationBrandReviewerRoute>
+        ),
+      },
+      
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <AutomationHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
+           
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
-      { path: "/admin/branding", element: <PlatformAdminRoute><AdminBrandingPage /></PlatformAdminRoute> },
-      { path: "/integrations/pms", element: shouldShowLegacyPmsUi() ? <PmsConnectionsPage /> : <Navigate to="/overview" replace /> },
+
+      {
+        path: "/admin/branding",
+        element: (
+          <PlatformAdminRoute>
+            <AdminBrandingPage />
+          </PlatformAdminRoute>
+        ),
+      },
+
+      {
+        path: "/integrations/pms",
+        element: shouldShowLegacyPmsUi() ? (
+          <PmsConnectionsPage />
+        ) : (
+          <Navigate to="/overview" replace />
+        ),
+      },
       { path: "/integrations/ttlock", element: <TtlockConnectPage /> },
       { path: "/integrations/tuya-premium", element: <TuyaIntegrationPremiumPage /> },
       { path: "/integrations/tuya", element: <TuyaIntegrationPage /> },
-      { path: "/integrations/pms/listings-mapping", element: shouldShowLegacyPmsUi() ? <ListingsMappingPage /> : <Navigate to="/overview" replace /> },
+      {
+        path: "/integrations/pms/listings-mapping",
+        element: shouldShowLegacyPmsUi() ? (
+          <ListingsMappingPage />
+        ) : (
+          <Navigate to="/overview" replace />
+        ),
+      },
     ],
   },
-  { path: "/admin/sales-followups", element: <RequireAuth><PlatformAdminRoute><AdminSalesFollowupsPage /></PlatformAdminRoute></RequireAuth> },
-  { path: "/admin/demo-center", element: <RequireAuth><PlatformAdminRoute><AdminDemoCenterPage /></PlatformAdminRoute></RequireAuth> },
-  { path: "/admin/financial", element: <RequireAuth><PlatformAdminRoute><AdminFinancialPage /></PlatformAdminRoute></RequireAuth> },
+
+{
+  path: "/admin/sales-followups",
+  element: (
+    <RequireAuth>
+      <PlatformAdminRoute>
+        <AdminSalesFollowupsPage />
+      </PlatformAdminRoute>
+    </RequireAuth>
+  ),
+},
+
+ {
+  path: "/admin/demo-center",
+  element: (
+    <RequireAuth>
+      <PlatformAdminRoute>
+        <AdminDemoCenterPage />
+      </PlatformAdminRoute>
+    </RequireAuth>
+  ),
+},
+
+{
+    path: "/admin/financial",
+    element: (
+      <RequireAuth>
+        <PlatformAdminRoute>
+          <AdminFinancialPage />
+        </PlatformAdminRoute>
+      </RequireAuth>
+    ),
+  },
 ]);
