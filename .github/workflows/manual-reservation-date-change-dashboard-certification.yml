@@ -1,0 +1,34 @@
+name: Manual Reservation Date Change Dashboard Certification
+
+on:
+  pull_request:
+    paths:
+      - "src/components/reservations/ManualReservationDateChangePanel.tsx"
+      - "src/components/reservations/manualReservationDateChangeFlow.js"
+      - "src/components/reservations/manualReservationDateChangeFlow.test.js"
+      - "src/app/routes/router.tsx"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/manual-reservation-date-change-dashboard-certification.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --silent --no-audit --no-fund
+      - name: Certify review-to-confirm behavior
+        run: npm run test:manual-reservation-date-change
+      - name: Build dashboard
+        run: npm run build
