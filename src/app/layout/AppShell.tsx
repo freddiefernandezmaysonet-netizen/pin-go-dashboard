@@ -25,7 +25,8 @@ const baseNav = [
     : []),
   { to: "/billing", label: "Billing" },
   { to: "/integrations/tuya", label: "Tuya Integration" },
-  { to: "/automation/history", label: "Automation History" },
+  { to: "/apms/decision-history", label: "APMS Decision History" },
+  { to: "/automation/history", label: "Device Automation History" },
 ];
 
 function SideItem({ to, label }: { to: string; label: string }) {
@@ -62,7 +63,8 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/organization")) return "Organization";
   if (pathname.startsWith("/staff")) return "Staff Members";
   if (pathname.startsWith("/health")) return "Health Center";
-  if (pathname.startsWith("/automation/history")) return "Automation History";
+  if (pathname.startsWith("/apms/decision-history")) return "APMS Decision History";
+  if (pathname.startsWith("/automation/history")) return "Device Automation History";
   if (pathname.startsWith("/messages")) return "Messages";
 
   // ✅ NUEVO
