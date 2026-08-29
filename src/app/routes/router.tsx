@@ -34,7 +34,8 @@ import { HealthCenterPage } from "../../pages/health-center/HealthCenterPage";
 import { StaffMembersPage } from "../../pages/staff/StaffMembersPage";
 import ForgotPasswordPage from "../../pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "../../pages/auth/ResetPasswordPage";
-import AutomationHistoryPage from "../../pages/AutomationHistoryPage";
+import DeviceAutomationHistoryPage from "../../pages/DeviceAutomationHistoryPage";
+import ApmsDecisionHistoryPage from "../../pages/ApmsDecisionHistoryPage";
 import MessagesPage from "../../pages/messages/MessagesPage";
 import TeamPage from "../../pages/TeamPage";
 import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
@@ -279,7 +280,8 @@ export const router = createBrowserRouter([
       },
       
       { path: "/health", element: <HealthCenterPage /> },
-      { path: "/automation/history", element: <AutomationHistoryPage /> },
+      { path: "/automation/history", element: <DeviceAutomationHistoryPage /> },
+      { path: "/apms/decision-history", element: <ApmsDecisionHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
            
       { path: "/billing", element: <BillingPage /> },
