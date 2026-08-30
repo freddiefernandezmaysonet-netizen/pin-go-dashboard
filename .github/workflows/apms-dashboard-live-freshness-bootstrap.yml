@@ -1,0 +1,86 @@
+name: APMS Dashboard Live Freshness Bootstrap
+
+on:
+  push:
+    branches:
+      - agent/apms-dashboard-live-freshness-closure
+
+permissions:
+  contents: write
+
+jobs:
+  certify-and-finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Fence exact base and source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "bf76261fe80d56addcc1c64d456f0b6e90841e84"
+          test "$(git hash-object src/pages/properties/PropertyCalendarPage.tsx)" = "10af42cd05b1ef5e12937f34e7716c0021a5f616"
+
+      - name: Apply exact freshness transform
+        run: python3 .apms-live-freshness/apply_live_freshness.py
+
+      - name: Verify structural contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'MISSION_CONTROL_POLL_INTERVAL_MS' src/pages/properties/PropertyCalendarPage.tsx
+          grep -q 'window.setInterval' src/pages/properties/PropertyCalendarPage.tsx
+          grep -q 'window.clearInterval' src/pages/properties/PropertyCalendarPage.tsx
+          grep -q 'Failed to refresh Mission Control' src/pages/properties/PropertyCalendarPage.tsx
+          test "$(grep -c '/mission-control?from=' src/pages/properties/PropertyCalendarPage.tsx)" -eq 1
+
+      - name: Run Mission Control tests
+        run: |
+          node --test src/lib/apmsMissionControlPresentation.test.mjs
+          node --test src/lib/apmsMissionControlFreshness.test.mjs
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build dashboard
+        run: npm run build
+
+      - name: Run existing dashboard regression
+        run: npm run test:manual-reservation-date-change
+
+      - name: Verify protected scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed='^(src/pages/properties/PropertyCalendarPage.tsx|src/lib/apmsMissionControlFreshness.js|src/lib/apmsMissionControlFreshness.test.mjs|\.apms-live-freshness/apply_live_freshness.py|\.github/workflows/apms-dashboard-live-freshness-bootstrap.yml)$'
+          changed="$(git status --porcelain | sed -E 's/^.. //' | sort -u)"
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
+            echo "$path" | grep -Eq "$allowed" || { echo "Unexpected changed file: $path"; exit 1; }
+          done <<< "$changed"
+
+      - name: Remove bootstrap and finalize exact diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .apms-live-freshness
+          rm -f .github/workflows/apms-dashboard-live-freshness-bootstrap.yml
+          git add -A
+          files="$(git diff --cached --name-only bf76261fe80d56addcc1c64d456f0b6e90841e84 | sort)"
+          expected="$(printf '%s\n' \
+            src/lib/apmsMissionControlFreshness.js \
+            src/lib/apmsMissionControlFreshness.test.mjs \
+            src/pages/properties/PropertyCalendarPage.tsx | sort)"
+          test "$files" = "$expected" || { echo "Final scope mismatch"; echo "$files"; exit 1; }
+
+      - name: Commit certified closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Add Mission Control live freshness polling"
+          git push origin HEAD:agent/apms-dashboard-live-freshness-closure
