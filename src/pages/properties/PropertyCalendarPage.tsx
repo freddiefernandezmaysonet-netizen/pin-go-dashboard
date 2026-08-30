@@ -24,6 +24,10 @@ import {
   getLiveMissionControlMetric,
   getMissionControlDisplayStatus,
 } from "../../lib/apmsMissionControlPresentation.js";
+import {
+  MISSION_CONTROL_POLL_INTERVAL_MS,
+  createMissionControlRefreshState,
+} from "../../lib/apmsMissionControlFreshness.js";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -120,18 +124,9 @@ export function PropertyCalendarPage() {
         );
         const blockedData = await blockedRes.json();
 
-        const missionControlRes = await fetch(
-          `${API_BASE}/api/dashboard/properties/${id}/mission-control?from=${from}&to=${to}`,
-          { credentials: "include" }
-        );
-        const missionControlData = await missionControlRes.json();
-
         if (!active) return;
 
         setProperty(propertyRes.ok ? propertyData.item : null);
-        setMissionControlSnapshot(
-          missionControlRes.ok ? missionControlData.item : null
-        );
 
         setNightlyRates(
           ratesRes.ok && Array.isArray(ratesData.rates) ? ratesData.rates : []
@@ -150,7 +145,6 @@ export function PropertyCalendarPage() {
           setNightlyRates([]);
           setReservations([]);
           setBlockedDates([]);
-          setMissionControlSnapshot(null);
         }
       } finally {
         if (active) setLoading(false);
@@ -161,6 +155,52 @@ export function PropertyCalendarPage() {
 
     return () => {
       active = false;
+    };
+  }, [id, from, to]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let active = true;
+    let requestSequence = 0;
+
+    async function refreshMissionControl() {
+      const sequence = ++requestSequence;
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/dashboard/properties/${id}/mission-control?from=${from}&to=${to}`,
+          { credentials: "include" }
+        );
+        const data = await response.json().catch(() => ({}));
+
+        if (!active || sequence !== requestSequence) return;
+
+        const next = createMissionControlRefreshState({
+          ok: response.ok,
+          item: data?.item,
+          refreshedAt: new Date(),
+        });
+        setMissionControlSnapshot(next.snapshot);
+      } catch (error) {
+        console.error("Failed to refresh Mission Control", error);
+        if (!active || sequence !== requestSequence) return;
+        const next = createMissionControlRefreshState({ ok: false });
+        setMissionControlSnapshot(next.snapshot);
+      }
+    }
+
+    setMissionControlSnapshot(null);
+    void refreshMissionControl();
+    const intervalId = window.setInterval(
+      () => void refreshMissionControl(),
+      MISSION_CONTROL_POLL_INTERVAL_MS
+    );
+
+    return () => {
+      active = false;
+      requestSequence += 1;
+      window.clearInterval(intervalId);
     };
   }, [id, from, to]);
 
