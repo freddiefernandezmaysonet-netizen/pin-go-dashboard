@@ -140,7 +140,12 @@ function applyDocumentBrand(brand: BrandContext) {
       ? brand.faviconUrl
       : "/pinngo-favicon.png";
 
-  document.title = brand.displayName;
+  const managesDocumentTitle =
+    !window.location.pathname.startsWith("/book/");
+
+  if (managesDocumentTitle) {
+    document.title = brand.displayName;
+  }
   root.style.setProperty("--brand-primary-color", primaryColor);
   root.style.setProperty("--brand-on-primary-color", onPrimaryColor);
   favicon.href = faviconUrl;
@@ -152,7 +157,9 @@ function applyDocumentBrand(brand: BrandContext) {
   }
 
   return () => {
-    document.title = originalTitle;
+    if (managesDocumentTitle) {
+      document.title = originalTitle;
+    }
 
     if (originalPrimary) {
       root.style.setProperty("--brand-primary-color", originalPrimary);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
+import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
 
 type PublicProperty = {
@@ -94,6 +95,22 @@ export default function PublicBookingSitePage() {
   }, [brand.displayName, isCustomBrand, isSpanish, organization]);
 
   const heroPhotoUrl = getPhotoUrl(organization?.properties?.[0]?.publicPhotos);
+  const publicBrandName = isCustomBrand
+    ? brand.displayName
+    : organization?.name || brand.displayName;
+  const documentTitle = isSpanish
+    ? `${publicBrandName} | Reservación directa`
+    : `${publicBrandName} | Direct Booking`;
+  const documentDescription = isSpanish
+    ? `Reserva propiedades seleccionadas directamente con ${publicBrandName} mediante una experiencia segura impulsada por Pin&Go.`
+    : `Book selected properties directly with ${publicBrandName} through a secure experience powered by Pin&Go.`;
+
+  usePublicDocumentMetadata({
+    title: documentTitle,
+    description: documentDescription,
+    language: preferredLanguage,
+    fallbackTitle: brand.displayName,
+  });
 
   function changeLanguage(language: "en" | "es") {
     setPreferredLanguage(language);

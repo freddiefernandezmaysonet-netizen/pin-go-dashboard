@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
+import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -668,6 +669,7 @@ function getManagementPhase(
 }
 
 export default function GuestCancellationPage() {
+  usePublicNoIndex();
   const { guestToken } = useParams();
   const { brand, isCustomBrand } = useBrand();
   const brandLogoUrl =

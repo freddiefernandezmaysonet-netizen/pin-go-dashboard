@@ -1,8 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
 
 export default function PublicBookingSuccessPage() {
+  usePublicNoIndex();
   const query = new URLSearchParams(
     window.location.search
   );

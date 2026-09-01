@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
 
 export default function PublicBookingCancelPage() {
+  usePublicNoIndex();
   const organizationSlug =
     new URLSearchParams(window.location.search).get("organization") || "";
   const isSpanish = (() => {
