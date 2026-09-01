@@ -120,27 +120,6 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   return response.json();
 }
 
-function getRequestHostname(_request: Request, url: URL): string {
-  return url.hostname.trim().toLowerCase();
-}
-
-async function resolveBrandContext(hostname: string): Promise<PublicBrandContext | null> {
-  try {
-    const payload = (await fetchJson(`${PUBLIC_API_BASE}/api/public/brand-context`, {
-      headers: {
-        "X-Pin-Go-Brand-Hostname": hostname,
-      },
-    })) as {
-      ok?: boolean;
-      data?: PublicBrandContext;
-    };
-
-    return payload.ok && payload.data ? payload.data : null;
-  } catch {
-    return null;
-  }
-}
-
 function resolvePublicBrandName(
   brand: PublicBrandContext | null,
   organizationName: string | null | undefined
@@ -168,7 +147,6 @@ async function resolveMetadata(
   url: URL,
   route: PublicBookingRoute
 ): Promise<ServerVisibleMetadata | null> {
-  const hostname = getRequestHostname(request, url);
   const language = resolveLanguage(request, url);
   const locale = language === "es" ? "es_PR" : "en_US";
   const canonicalUrl = `${url.origin}${url.pathname}`;
@@ -181,14 +159,12 @@ async function resolveMetadata(
         route.organizationSlug
       )}`;
 
-  const [bookingPayload, brand] = await Promise.all([
-    fetchJson(bookingUrl),
-    resolveBrandContext(hostname),
-  ]);
+  const bookingPayload = await fetchJson(bookingUrl);
 
   if (route.propertySlug) {
     const payload = bookingPayload as {
       ok?: boolean;
+      publicBrand?: PublicBrandContext | null;
       property?: PublicProperty;
       item?: PublicProperty;
     };
@@ -196,6 +172,7 @@ async function resolveMetadata(
 
     if (!payload.ok || !property) return null;
 
+    const brand = payload.publicBrand ?? null;
     const siteName = resolvePublicBrandName(brand, property.organization?.name);
     const propertyName = property.publicTitle?.trim() || property.name?.trim();
     if (!propertyName) return null;
@@ -226,12 +203,14 @@ async function resolveMetadata(
 
   const payload = bookingPayload as {
     ok?: boolean;
+    publicBrand?: PublicBrandContext | null;
     organization?: PublicOrganization;
   };
   const organization = payload.organization;
 
   if (!payload.ok || !organization) return null;
 
+  const brand = payload.publicBrand ?? null;
   const siteName = resolvePublicBrandName(brand, organization.name);
   const title =
     language === "es"
