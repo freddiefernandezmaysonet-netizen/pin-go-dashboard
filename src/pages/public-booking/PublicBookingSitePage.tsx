@@ -390,6 +390,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: 48,
     objectFit: "contain",
     borderRadius: 10,
+    filter: "none",
   },
   brandName: {
     fontSize: 22,
