@@ -5,6 +5,8 @@ type PublicBrandContext = {
   kind?: "PIN_GO_STANDARD" | "CUSTOM_BRAND";
   displayName?: string | null;
   logoUrl?: string | null;
+  organizationSlug?: string | null;
+  customDomain?: string | null;
 };
 
 type PublicProperty = {
@@ -33,6 +35,7 @@ type ServerVisibleMetadata = {
   description: string;
   siteName: string;
   canonicalUrl: string;
+  canonicalHostname: string | null;
   locale: "en_US" | "es_PR";
   language: "en" | "es";
   imageUrl: string | null;
@@ -142,6 +145,55 @@ function resolveFallbackImage(
   return `${origin}/pin-go-logo.png`;
 }
 
+function resolvePublishedCustomDomain(
+  brand: PublicBrandContext | null,
+  organizationSlug: string
+): string | null {
+  if (brand?.kind !== "CUSTOM_BRAND") return null;
+
+  const brandOrganizationSlug = brand.organizationSlug?.trim().toLowerCase();
+  if (brandOrganizationSlug && brandOrganizationSlug !== organizationSlug.toLowerCase()) {
+    return null;
+  }
+
+  const hostname = brand.customDomain?.trim().toLowerCase();
+  if (!hostname || hostname.length > 253 || hostname.includes("..")) return null;
+  if (!/^[a-z0-9.-]+$/.test(hostname)) return null;
+
+  const labels = hostname.split(".");
+  if (labels.length < 2) return null;
+  if (
+    labels.some(
+      (label) =>
+        !label ||
+        label.length > 63 ||
+        label.startsWith("-") ||
+        label.endsWith("-")
+    )
+  ) {
+    return null;
+  }
+
+  if (!/[a-z]/.test(labels[labels.length - 1])) return null;
+  return hostname;
+}
+
+function resolveCanonicalTarget(
+  brand: PublicBrandContext | null,
+  organizationSlug: string,
+  url: URL
+): { canonicalUrl: string; canonicalHostname: string | null } {
+  const canonicalHostname = resolvePublishedCustomDomain(brand, organizationSlug);
+  const canonicalOrigin = canonicalHostname
+    ? `https://${canonicalHostname}`
+    : url.origin;
+
+  return {
+    canonicalUrl: `${canonicalOrigin}${url.pathname}`,
+    canonicalHostname,
+  };
+}
+
 async function resolveMetadata(
   request: Request,
   url: URL,
@@ -149,7 +201,6 @@ async function resolveMetadata(
 ): Promise<ServerVisibleMetadata | null> {
   const language = resolveLanguage(request, url);
   const locale = language === "es" ? "es_PR" : "en_US";
-  const canonicalUrl = `${url.origin}${url.pathname}`;
 
   const bookingUrl = route.propertySlug
     ? `${PUBLIC_API_BASE}/api/public-booking/${encodeURIComponent(
@@ -173,6 +224,7 @@ async function resolveMetadata(
     if (!payload.ok || !property) return null;
 
     const brand = payload.publicBrand ?? null;
+    const canonical = resolveCanonicalTarget(brand, route.organizationSlug, url);
     const siteName = resolvePublicBrandName(brand, property.organization?.name);
     const propertyName = property.publicTitle?.trim() || property.name?.trim();
     if (!propertyName) return null;
@@ -193,7 +245,8 @@ async function resolveMetadata(
       title: `${propertyName} | ${siteName}`,
       description,
       siteName,
-      canonicalUrl,
+      canonicalUrl: canonical.canonicalUrl,
+      canonicalHostname: canonical.canonicalHostname,
       locale,
       language,
       imageUrl,
@@ -211,6 +264,7 @@ async function resolveMetadata(
   if (!payload.ok || !organization) return null;
 
   const brand = payload.publicBrand ?? null;
+  const canonical = resolveCanonicalTarget(brand, route.organizationSlug, url);
   const siteName = resolvePublicBrandName(brand, organization.name);
   const title =
     language === "es"
@@ -229,7 +283,8 @@ async function resolveMetadata(
     title,
     description,
     siteName,
-    canonicalUrl,
+    canonicalUrl: canonical.canonicalUrl,
+    canonicalHostname: canonical.canonicalHostname,
     locale,
     language,
     imageUrl,
@@ -311,16 +366,35 @@ export default async function middleware(request: Request): Promise<Response> {
     return indexPromise;
   }
 
-  if (request.method === "HEAD") {
-    return indexPromise;
-  }
-
   const [indexResponse, metadata] = await Promise.all([
     indexPromise,
     resolveMetadata(request, url, route).catch(() => null),
   ]);
 
   if (!indexResponse.ok || !metadata) {
+    return indexResponse;
+  }
+
+  const requestHostname = url.hostname.trim().toLowerCase();
+  if (
+    metadata.canonicalHostname &&
+    (url.protocol !== "https:" || requestHostname !== metadata.canonicalHostname)
+  ) {
+    const redirectUrl = new URL(url.toString());
+    redirectUrl.protocol = "https:";
+    redirectUrl.hostname = metadata.canonicalHostname;
+    redirectUrl.port = "";
+
+    return new Response(null, {
+      status: 308,
+      headers: {
+        location: redirectUrl.toString(),
+        "cache-control": "public, max-age=0, s-maxage=300",
+      },
+    });
+  }
+
+  if (request.method === "HEAD") {
     return indexResponse;
   }
 
