@@ -120,9 +120,8 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   return response.json();
 }
 
-function getRequestHostname(request: Request, url: URL): string {
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  return (forwardedHost || url.hostname).toLowerCase();
+function getRequestHostname(_request: Request, url: URL): string {
+  return url.hostname.trim().toLowerCase();
 }
 
 async function resolveBrandContext(hostname: string): Promise<PublicBrandContext | null> {
