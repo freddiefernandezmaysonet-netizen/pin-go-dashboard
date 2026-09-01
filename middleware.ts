@@ -42,6 +42,12 @@ type ServerVisibleMetadata = {
   imageAlt: string;
 };
 
+type PublicBookingDiscovery = {
+  canonicalHostname: string;
+  organizationSlug: string;
+  propertySlugs: string[];
+};
+
 function safeDecode(value: string): string | null {
   try {
     const decoded = decodeURIComponent(value).trim();
@@ -106,6 +112,44 @@ function normalizeDescription(value: string): string {
   return `${normalized.slice(0, 177).trimEnd()}...`;
 }
 
+function normalizeCrawlerHostname(value: unknown): string | null {
+  const hostname =
+    typeof value === "string" ? value.trim().toLowerCase() : "";
+  if (!hostname || hostname.length > 253 || hostname.includes("..")) return null;
+  if (!/^[a-z0-9.-]+$/.test(hostname)) return null;
+
+  const labels = hostname.split(".");
+  if (labels.length < 2) return null;
+  if (
+    labels.some(
+      (label) =>
+        !label ||
+        label.length > 63 ||
+        label.startsWith("-") ||
+        label.endsWith("-")
+    )
+  ) {
+    return null;
+  }
+
+  if (!/[a-z]/.test(labels[labels.length - 1])) return null;
+  return hostname;
+}
+
+function normalizeDiscoverySlug(value: unknown): string | null {
+  const slug = typeof value === "string" ? value.trim() : "";
+  if (
+    !slug ||
+    slug.length > 200 ||
+    /[\/\\?#]/.test(slug) ||
+    /[\u0000-\u001F\u007F]/.test(slug)
+  ) {
+    return null;
+  }
+
+  return slug;
+}
+
 async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   const response = await fetch(url, {
     ...init,
@@ -121,6 +165,173 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   }
 
   return response.json();
+}
+
+async function resolvePublicBookingDiscovery(
+  hostname: string
+): Promise<PublicBookingDiscovery | null> {
+  const requestHostname = normalizeCrawlerHostname(hostname);
+  if (!requestHostname) return null;
+
+  const payload = (await fetchJson(
+    `${PUBLIC_API_BASE}/api/public-booking/discovery?hostname=${encodeURIComponent(
+      requestHostname
+    )}`
+  )) as {
+    ok?: boolean;
+    discovery?: {
+      canonicalHostname?: unknown;
+      organizationSlug?: unknown;
+      propertySlugs?: unknown;
+    } | null;
+  };
+
+  if (!payload.ok || !payload.discovery) return null;
+
+  const canonicalHostname = normalizeCrawlerHostname(
+    payload.discovery.canonicalHostname
+  );
+  const organizationSlug = normalizeDiscoverySlug(
+    payload.discovery.organizationSlug
+  );
+  const rawPropertySlugs = payload.discovery.propertySlugs;
+
+  if (
+    !canonicalHostname ||
+    canonicalHostname !== requestHostname ||
+    !organizationSlug ||
+    !Array.isArray(rawPropertySlugs)
+  ) {
+    return null;
+  }
+
+  const propertySlugs = Array.from(
+    new Set(
+      rawPropertySlugs
+        .map((value) => normalizeDiscoverySlug(value))
+        .filter((value): value is string => Boolean(value))
+    )
+  ).sort((left, right) => left.localeCompare(right));
+
+  if (propertySlugs.length === 0) return null;
+
+  return {
+    canonicalHostname,
+    organizationSlug,
+    propertySlugs,
+  };
+}
+
+function xmlEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function buildCanonicalBookingUrl(
+  discovery: PublicBookingDiscovery,
+  propertySlug?: string
+): string {
+  const collectionUrl = `https://${discovery.canonicalHostname}/book/${encodeURIComponent(
+    discovery.organizationSlug
+  )}`;
+
+  return propertySlug
+    ? `${collectionUrl}/${encodeURIComponent(propertySlug)}`
+    : collectionUrl;
+}
+
+function buildSitemapXml(discovery: PublicBookingDiscovery): string {
+  const urls = [
+    buildCanonicalBookingUrl(discovery),
+    ...discovery.propertySlugs.map((propertySlug) =>
+      buildCanonicalBookingUrl(discovery, propertySlug)
+    ),
+  ];
+
+  const entries = urls
+    .map((url) => `  <url><loc>${xmlEscape(url)}</loc></url>`)
+    .join("\n");
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    entries,
+    "</urlset>",
+    "",
+  ].join("\n");
+}
+
+async function handleCrawlerEndpoint(
+  request: Request,
+  url: URL
+): Promise<Response> {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response(null, {
+      status: 405,
+      headers: {
+        allow: "GET, HEAD",
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow, noarchive",
+      },
+    });
+  }
+
+  const requestHostname = normalizeCrawlerHostname(url.hostname);
+  const discovery = requestHostname
+    ? await resolvePublicBookingDiscovery(requestHostname).catch(() => null)
+    : null;
+  const isHead = request.method === "HEAD";
+
+  if (url.pathname === "/robots.txt") {
+    let robots = "User-agent: *\nAllow: /\n";
+
+    if (discovery && discovery.canonicalHostname === requestHostname) {
+      robots += `Sitemap: https://${discovery.canonicalHostname}/sitemap.xml\n`;
+    }
+
+    return new Response(isHead ? null : robots, {
+      status: 200,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control":
+          "public, max-age=0, s-maxage=300, stale-while-revalidate=3600",
+        vary: "Host",
+        "x-content-type-options": "nosniff",
+      },
+    });
+  }
+
+  if (
+    url.pathname !== "/sitemap.xml" ||
+    !discovery ||
+    discovery.canonicalHostname !== requestHostname
+  ) {
+    return new Response(isHead ? null : "Not Found\n", {
+      status: 404,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow, noarchive",
+        "x-content-type-options": "nosniff",
+      },
+    });
+  }
+
+  const sitemap = buildSitemapXml(discovery);
+  return new Response(isHead ? null : sitemap, {
+    status: 200,
+    headers: {
+      "content-type": "application/xml; charset=utf-8",
+      "cache-control":
+        "public, max-age=0, s-maxage=300, stale-while-revalidate=3600",
+      vary: "Host",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }
 
 function resolvePublicBrandName(
@@ -359,6 +570,11 @@ async function fetchStaticIndex(request: Request): Promise<Response> {
 
 export default async function middleware(request: Request): Promise<Response> {
   const url = new URL(request.url);
+
+  if (url.pathname === "/robots.txt" || url.pathname === "/sitemap.xml") {
+    return handleCrawlerEndpoint(request, url);
+  }
+
   const route = parsePublicBookingRoute(url.pathname);
   const indexPromise = fetchStaticIndex(request);
 
@@ -420,5 +636,5 @@ export default async function middleware(request: Request): Promise<Response> {
 }
 
 export const config = {
-  matcher: ["/book/:path*"],
+  matcher: ["/book/:path*", "/robots.txt", "/sitemap.xml"],
 };
