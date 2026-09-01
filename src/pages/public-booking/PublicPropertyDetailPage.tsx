@@ -5,6 +5,7 @@ import { enUS, es } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
+import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
 
 type PublicProperty = {
@@ -1635,6 +1636,19 @@ export default function PublicPropertyDetailPage() {
     preferredLanguage === "es"
       ? property?.publicDescriptionEs || copy.defaultPropertyDescription
       : property?.publicDescription || copy.defaultPropertyDescription;
+  const publicBrandName = isCustomBrand
+    ? brand.displayName
+    : property?.organization.name || brand.displayName;
+  const propertyDisplayTitle =
+    property?.publicTitle || property?.name ||
+    (preferredLanguage === "es" ? "Propiedad" : "Property");
+
+  usePublicDocumentMetadata({
+    title: `${propertyDisplayTitle} | ${publicBrandName}`,
+    description: publicDescription,
+    language: preferredLanguage,
+    fallbackTitle: brand.displayName,
+  });
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
@@ -2240,7 +2254,7 @@ return (
               <div className="pbe-rescue-hero-shade" aria-hidden="true" />
               <div className="pbe-rescue-hero-content" style={styles.heroContainer}>
                 <div className="pbe-rescue-eyebrow" style={styles.badge}>
-                  {property.organization.name}
+                  {publicBrandName}
                 </div>
 
                 <h1 className="pbe-rescue-title" style={styles.heroTitle}>
