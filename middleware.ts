@@ -40,6 +40,7 @@ type ServerVisibleMetadata = {
   language: "en" | "es";
   imageUrl: string | null;
   imageAlt: string;
+  structuredData: Record<string, unknown>;
 };
 
 type PublicBookingDiscovery = {
@@ -110,6 +111,93 @@ function normalizeDescription(value: string): string {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (normalized.length <= 180) return normalized;
   return `${normalized.slice(0, 177).trimEnd()}...`;
+}
+
+function secureJsonLdImage(value: string | null | undefined): string | null {
+  const candidate = value?.trim() || "";
+  return /^https:\/\//i.test(candidate) ? candidate : null;
+}
+
+function buildPublicStructuredData(params: {
+  canonicalUrl: string;
+  canonicalCollectionUrl: string;
+  siteName: string;
+  title: string;
+  description: string;
+  language: "en" | "es";
+  imageUrl: string | null;
+  brand: PublicBrandContext | null;
+  propertyName?: string;
+}): Record<string, unknown> {
+  const organizationId = `${params.canonicalCollectionUrl}#organization`;
+  const logoUrl = secureJsonLdImage(
+    params.brand?.kind === "CUSTOM_BRAND" ? params.brand.logoUrl : null
+  );
+  const imageUrl = secureJsonLdImage(params.imageUrl);
+  const pageId = `${params.canonicalUrl}#webpage`;
+  const accommodationId = `${params.canonicalUrl}#accommodation`;
+
+  const organization = {
+    "@type": "Organization",
+    "@id": organizationId,
+    name: params.siteName,
+    url: params.canonicalCollectionUrl,
+    ...(logoUrl ? { logo: logoUrl } : {}),
+  };
+
+  if (!params.propertyName) {
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        organization,
+        {
+          "@type": "CollectionPage",
+          "@id": pageId,
+          url: params.canonicalUrl,
+          name: params.title,
+          description: params.description,
+          inLanguage: params.language,
+          publisher: { "@id": organizationId },
+          ...(imageUrl ? { image: imageUrl } : {}),
+        },
+      ],
+    };
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      organization,
+      {
+        "@type": "WebPage",
+        "@id": pageId,
+        url: params.canonicalUrl,
+        name: params.title,
+        description: params.description,
+        inLanguage: params.language,
+        publisher: { "@id": organizationId },
+        mainEntity: { "@id": accommodationId },
+        ...(imageUrl ? { image: imageUrl } : {}),
+      },
+      {
+        "@type": "Accommodation",
+        "@id": accommodationId,
+        url: params.canonicalUrl,
+        name: params.propertyName,
+        description: params.description,
+        ...(imageUrl ? { image: imageUrl } : {}),
+      },
+    ],
+  };
+}
+
+function serializeStructuredData(value: Record<string, unknown>): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
 }
 
 function normalizeCrawlerHostname(value: unknown): string | null {
@@ -451,9 +539,11 @@ async function resolveMetadata(
         fallbackDescription
     );
     const imageUrl = firstPhoto(property.publicPhotos) || resolveFallbackImage(brand, url.origin);
+    const title = `${propertyName} | ${siteName}`;
+    const canonicalCollectionUrl = canonical.canonicalUrl.replace(/\/[^/]+$/, "");
 
     return {
-      title: `${propertyName} | ${siteName}`,
+      title,
       description,
       siteName,
       canonicalUrl: canonical.canonicalUrl,
@@ -462,6 +552,17 @@ async function resolveMetadata(
       language,
       imageUrl,
       imageAlt: propertyName,
+      structuredData: buildPublicStructuredData({
+        canonicalUrl: canonical.canonicalUrl,
+        canonicalCollectionUrl,
+        siteName,
+        title,
+        description,
+        language,
+        imageUrl,
+        brand,
+        propertyName,
+      }),
     };
   }
 
@@ -500,6 +601,16 @@ async function resolveMetadata(
     language,
     imageUrl,
     imageAlt: siteName,
+    structuredData: buildPublicStructuredData({
+      canonicalUrl: canonical.canonicalUrl,
+      canonicalCollectionUrl: canonical.canonicalUrl,
+      siteName,
+      title,
+      description,
+      language,
+      imageUrl,
+      brand,
+    }),
   };
 }
 
@@ -526,6 +637,7 @@ function buildMetadataMarkup(metadata: ServerVisibleMetadata): string {
     `<meta name="twitter:card" content="${metadata.imageUrl ? "summary_large_image" : "summary"}" />`,
     `<meta name="twitter:title" content="${htmlEscape(metadata.title)}" />`,
     `<meta name="twitter:description" content="${htmlEscape(metadata.description)}" />`,
+    `<script type="application/ld+json">${serializeStructuredData(metadata.structuredData)}</script>`,
   ]
     .filter(Boolean)
     .join("\n    ");
