@@ -63,6 +63,9 @@ export default function PublicBookingSitePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [brandLogoFailed, setBrandLogoFailed] = useState(false);
+  const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
+  const [failedPhotoIds, setFailedPhotoIds] = useState<string[]>([]);
   const [preferredLanguage, setPreferredLanguage] = useState<"en" | "es">(() => {
     try {
       return window.localStorage.getItem("pingo_guest_preferred_language") === "es"
@@ -90,6 +93,8 @@ export default function PublicBookingSitePage() {
       : `Discover ${displayName}`;
   }, [brand.displayName, isCustomBrand, isSpanish, organization]);
 
+  const heroPhotoUrl = getPhotoUrl(organization?.properties?.[0]?.publicPhotos);
+
   function changeLanguage(language: "en" | "es") {
     setPreferredLanguage(language);
     try {
@@ -98,6 +103,14 @@ export default function PublicBookingSitePage() {
       // The booking experience remains usable without browser persistence.
     }
   }
+
+  useEffect(() => {
+    setBrandLogoFailed(false);
+  }, [brandLogoUrl]);
+
+  useEffect(() => {
+    setHeroPhotoFailed(false);
+  }, [heroPhotoUrl]);
 
   useEffect(() => {
     let active = true;
@@ -123,6 +136,7 @@ export default function PublicBookingSitePage() {
 
         if (active) {
           setOrganization(data.organization);
+          setFailedPhotoIds([]);
         }
       } catch (err: unknown) {
         if (active) {
@@ -159,19 +173,29 @@ export default function PublicBookingSitePage() {
             to={brandHomePath}
             style={styles.brandWrap}
           >
-            <img
-              src={brandLogoUrl}
-              alt={`${brand.displayName} logo`}
-              style={{
-                ...styles.logo,
-                ...(isCustomBrand
-                  ? { backgroundColor: "#ffffff", filter: "none", padding: 4 }
-                  : {}),
-              }}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
+            {brandLogoFailed ? (
+              <div
+                aria-hidden="true"
+                style={{
+                  ...styles.logo,
+                  ...styles.logoFallback,
+                }}
+              >
+                {brand.displayName.trim().slice(0, 1).toUpperCase() || "P"}
+              </div>
+            ) : (
+              <img
+                src={brandLogoUrl}
+                alt={`${brand.displayName} logo`}
+                style={{
+                  ...styles.logo,
+                  ...(isCustomBrand
+                    ? { backgroundColor: "#ffffff", filter: "none", padding: 4 }
+                    : {}),
+                }}
+                onError={() => setBrandLogoFailed(true)}
+              />
+            )}
             <div>
               <div style={styles.brandName}>{brand.displayName}</div>
               <div style={styles.slogan}>
@@ -184,27 +208,48 @@ export default function PublicBookingSitePage() {
             role="group"
             aria-label={isSpanish ? "Idioma del huésped" : "Guest language"}
           >
-            <button type="button" aria-pressed={!isSpanish} onClick={() => changeLanguage("en")}>EN</button>
-            <button type="button" aria-pressed={isSpanish} onClick={() => changeLanguage("es")}>ES</button>
+            <button
+              type="button"
+              aria-pressed={!isSpanish}
+              onClick={() => changeLanguage("en")}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              aria-pressed={isSpanish}
+              onClick={() => changeLanguage("es")}
+            >
+              ES
+            </button>
           </div>
         </div>
       </header>
 
       <main>
         <section className="pbe-collection-hero" style={styles.heroSection}>
-          {getPhotoUrl(organization?.properties?.[0]?.publicPhotos) ? (
+          {heroPhotoUrl && !heroPhotoFailed ? (
             <img
-              src={getPhotoUrl(organization?.properties?.[0]?.publicPhotos) || ""}
+              src={heroPhotoUrl}
               alt=""
               aria-hidden="true"
+              loading="eager"
+              decoding="async"
+              onError={() => setHeroPhotoFailed(true)}
             />
           ) : null}
           <div className="pbe-collection-hero-shade" aria-hidden="true" />
           <div className="pbe-collection-hero-copy" style={styles.heroContainer}>
-            <div style={styles.badge}>{isSpanish ? "RESERVA DIRECTA" : "DIRECT BOOKING"}</div>
+            <div style={styles.badge}>
+              {isSpanish ? "RESERVA DIRECTA" : "DIRECT BOOKING"}
+            </div>
 
             <h1 style={styles.heroTitle}>
-              {loading ? (isSpanish ? "Preparando la colección..." : "Preparing the collection...") : title}
+              {loading
+                ? isSpanish
+                  ? "Preparando la colección..."
+                  : "Preparing the collection..."
+                : title}
             </h1>
 
             <p style={styles.heroSubtitle}>
@@ -218,13 +263,15 @@ export default function PublicBookingSitePage() {
         <section className="pbe-collection-section" style={styles.sectionAlt}>
           <div style={styles.container}>
             {loading ? (
-              <div style={styles.stateBox}>
+              <div role="status" aria-live="polite" style={styles.stateBox}>
                 {isSpanish ? "Cargando propiedades..." : "Loading properties..."}
               </div>
             ) : error ? (
-              <div style={styles.errorBox}>{error}</div>
+              <div role="alert" aria-live="assertive" style={styles.errorBox}>
+                {error}
+              </div>
             ) : !organization?.properties?.length ? (
-              <div style={styles.stateBox}>
+              <div role="status" aria-live="polite" style={styles.stateBox}>
                 {isSpanish
                   ? "No hay propiedades públicas disponibles en este momento."
                   : "No public properties are available right now."}
@@ -241,6 +288,7 @@ export default function PublicBookingSitePage() {
                 <div className="pbe-collection-grid" style={styles.propertyGrid}>
                   {organization.properties.map((property) => {
                     const photoUrl = getPhotoUrl(property.publicPhotos);
+                    const photoFailed = failedPhotoIds.includes(property.id);
                     const nightlyRate = formatMoney(property.baseNightlyRate);
                     const location = [property.city, property.region, property.country]
                       .filter(Boolean)
@@ -255,29 +303,42 @@ export default function PublicBookingSitePage() {
                         className="pbe-collection-card"
                         key={property.id}
                         to={propertyUrl}
+                        aria-disabled={!property.slug}
                         style={{
                           ...styles.propertyCard,
                           ...(property.slug ? {} : styles.disabledCard),
                         }}
                       >
                         <div className="pbe-collection-photo" style={styles.photoWrap}>
-                          {photoUrl ? (
+                          {photoUrl && !photoFailed ? (
                             <img
                               src={photoUrl}
                               alt={property.publicTitle || property.name}
                               style={styles.photo}
+                              loading="lazy"
+                              decoding="async"
+                              onError={() =>
+                                setFailedPhotoIds((prev) =>
+                                  prev.includes(property.id)
+                                    ? prev
+                                    : [...prev, property.id]
+                                )
+                              }
                             />
                           ) : (
-                           <div style={styles.photoPlaceholder}>
-  <div style={styles.placeholderIcon}>⌂</div>
-  <div style={styles.placeholderTitle}>
-    {isSpanish ? "Vista previa de la propiedad" : "Property Preview"}
-  </div>
-  <div style={styles.placeholderText}>
-    {isSpanish ? "Reservación directa" : "Direct Booking"}
-  </div>
-</div>
-
+                            <div style={styles.photoPlaceholder}>
+                              <div>
+                                <div style={styles.placeholderIcon}>⌂</div>
+                                <div style={styles.placeholderTitle}>
+                                  {isSpanish
+                                    ? "Vista previa de la propiedad"
+                                    : "Property Preview"}
+                                </div>
+                                <div style={styles.placeholderText}>
+                                  {isSpanish ? "Reservación directa" : "Direct Booking"}
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
 
@@ -309,19 +370,27 @@ export default function PublicBookingSitePage() {
                             <div>
                               {nightlyRate ? (
                                 <>
+                                  <span style={styles.ratePrefix}>
+                                    {isSpanish ? "Desde" : "From"}{" "}
+                                  </span>
                                   <strong>{nightlyRate}</strong>{" "}
-                                  <span style={styles.muted}>{isSpanish ? "/ noche" : "/ night"}</span>
+                                  <span style={styles.muted}>
+                                    {isSpanish ? "/ noche" : "/ night"}
+                                  </span>
                                 </>
                               ) : (
                                 <span style={styles.muted}>
-                                  {isSpanish ? "Tarifa disponible pronto" : "Rate available soon"}
+                                  {isSpanish
+                                    ? "Tarifa disponible pronto"
+                                    : "Rate available soon"}
                                 </span>
                               )}
                             </div>
-                           
-                              {property.maxGuests ? (
+
+                            {property.maxGuests ? (
                               <div style={styles.muted}>
-                                {isSpanish ? "Hasta" : "Up to"} {property.maxGuests} {isSpanish ? "huéspedes" : "guests"}
+                                {isSpanish ? "Hasta" : "Up to"} {property.maxGuests}{" "}
+                                {isSpanish ? "huéspedes" : "guests"}
                               </div>
                             ) : null}
                           </div>
@@ -337,16 +406,32 @@ export default function PublicBookingSitePage() {
       </main>
 
       <footer className="pbe-collection-footer" style={styles.footer}>
-        <div style={styles.container}>
-          {isCustomBrand
-            ? `© ${brand.displayName}. ${
-                isSpanish
-                  ? "Reservas directas impulsadas por Pin&Go."
-                  : "Direct booking powered by Pin&Go."
-              }`
-            : isSpanish
-            ? "© Pin&Go. Reservación directa impulsada por operaciones autónomas de propiedades."
-            : "© Pin&Go. Direct booking powered by autonomous property operations."}
+        <div style={{ ...styles.container, ...styles.footerInner }}>
+          <div>
+            {isCustomBrand
+              ? `© ${brand.displayName}. ${
+                  isSpanish
+                    ? "Reservas directas impulsadas por Pin&Go."
+                    : "Direct booking powered by Pin&Go."
+                }`
+              : isSpanish
+              ? "© Pin&Go. Reservación directa impulsada por operaciones autónomas de propiedades."
+              : "© Pin&Go. Direct booking powered by autonomous property operations."}
+          </div>
+          <nav
+            aria-label={isSpanish ? "Información legal y soporte" : "Legal and support"}
+            style={styles.footerLinks}
+          >
+            <Link to="/legal/terms" style={styles.footerLink}>
+              {isSpanish ? "Términos" : "Terms"}
+            </Link>
+            <Link to="/legal/privacy" style={styles.footerLink}>
+              {isSpanish ? "Privacidad" : "Privacy"}
+            </Link>
+            <Link to="/legal/support-policy" style={styles.footerLink}>
+              {isSpanish ? "Soporte" : "Support"}
+            </Link>
+          </nav>
         </div>
       </footer>
     </div>
@@ -391,6 +476,15 @@ const styles: Record<string, React.CSSProperties> = {
     objectFit: "contain",
     borderRadius: 10,
     filter: "none",
+  },
+  logoFallback: {
+    display: "grid",
+    placeItems: "center",
+    background: "#ffffff",
+    border: "1px solid #d7e0dc",
+    color: "#173d31",
+    fontWeight: 900,
+    fontSize: 20,
   },
   brandName: {
     fontSize: 22,
@@ -455,20 +549,19 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: 22,
   },
- propertyCard: {
-  overflow: "hidden",
-  background: "#ffffff",
-  border: "1px solid #e2e8f0",
-  borderRadius: 24,
-  boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
-  textDecoration: "none",
-  color: "#0f172a",
-  display: "flex",
-  flexDirection: "column",
-  cursor: "pointer",
-  transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+  propertyCard: {
+    overflow: "hidden",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: 24,
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+    textDecoration: "none",
+    color: "#0f172a",
+    display: "flex",
+    flexDirection: "column",
+    cursor: "pointer",
+    transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
   },
- 
   disabledCard: {
     pointerEvents: "none",
     opacity: 0.65,
@@ -487,6 +580,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: "100%",
     display: "grid",
     placeItems: "center",
+    textAlign: "center",
     color: "#64748b",
     fontWeight: 800,
     background:
@@ -509,17 +603,17 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 22,
     lineHeight: 1.2,
   },
- cardText: {
-  margin: 0,
-  color: "#475569",
-  lineHeight: 1.6,
-  fontSize: 15,
-  flex: 1,
-  overflow: "hidden",
-  display: "-webkit-box",
-  WebkitLineClamp: 3,
-  WebkitBoxOrient: "vertical",
-},
+  cardText: {
+    margin: 0,
+    color: "#475569",
+    lineHeight: 1.6,
+    fontSize: 15,
+    flex: 1,
+    overflow: "hidden",
+    display: "-webkit-box",
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: "vertical",
+  },
   cardFooter: {
     marginTop: 12,
     paddingTop: 14,
@@ -529,6 +623,11 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
     flexWrap: "wrap",
     alignItems: "center",
+  },
+  ratePrefix: {
+    color: "#64748b",
+    fontSize: 13,
+    fontWeight: 700,
   },
   muted: {
     color: "#64748b",
@@ -551,39 +650,54 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "center",
     fontWeight: 700,
   },
- 
-placeholderIcon: {
-  width: 54,
-  height: 54,
-  borderRadius: 18,
-  display: "grid",
-  placeItems: "center",
-  margin: "0 auto 12px",
-  background: "rgba(255,255,255,0.75)",
-  color: "#1d4ed8",
-  fontSize: 28,
-  boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
-},
-
-placeholderTitle: {
-  fontSize: 18,
-  fontWeight: 900,
-  color: "#0f172a",
-},
-
-placeholderText: {
-  marginTop: 4,
-  fontSize: 13,
-  fontWeight: 700,
-  color: "#64748b",
-},
-
- footer: {
+  placeholderIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    display: "grid",
+    placeItems: "center",
+    margin: "0 auto 12px",
+    background: "rgba(255,255,255,0.75)",
+    color: "#1d4ed8",
+    fontSize: 28,
+    boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
+  },
+  placeholderTitle: {
+    fontSize: 18,
+    fontWeight: 900,
+    color: "#0f172a",
+  },
+  placeholderText: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#64748b",
+  },
+  footer: {
     borderTop: "1px solid #e2e8f0",
     padding: "24px 20px",
     color: "#64748b",
     fontSize: 14,
     background: "#fff",
     textAlign: "center",
+  },
+  footerInner: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: "10px 20px",
+  },
+  footerLinks: {
+    display: "inline-flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 14,
+  },
+  footerLink: {
+    color: "#475569",
+    fontWeight: 700,
+    textDecoration: "underline",
+    textUnderlineOffset: 3,
   },
 };
