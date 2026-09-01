@@ -193,3 +193,8 @@
     background-position: 0 50%;
   }
 }
+
+/* Public booking brand logos must preserve their original colors. */
+.pbe-page .pbe-brand img {
+  filter: none !important;
+}
