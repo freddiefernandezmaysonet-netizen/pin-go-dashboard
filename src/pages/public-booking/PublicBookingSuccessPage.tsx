@@ -22,7 +22,20 @@ export default function PublicBookingSuccessPage() {
   const isSpanish = language === "es";
 
   return (
-    <main className="pbe-success-page">
+    <main
+      className="pbe-success-page"
+      style={{
+        "--pbe-ink": "#17241f",
+        "--pbe-forest": "#173d31",
+        "--pbe-forest-deep": "#0f2f27",
+        "--pbe-sage": "#849a89",
+        "--pbe-sand": "#e9dfc9",
+        "--pbe-ivory": "#f8f5ed",
+        "--pbe-paper": "#fffdf8",
+        "--pbe-line": "rgba(23, 61, 49, 0.17)",
+        "--pbe-muted": "#647069",
+      } as React.CSSProperties}
+    >
       <section className="pbe-success-card" aria-labelledby="booking-success-title">
         <div className="pbe-success-mark" aria-hidden="true">
           <svg
