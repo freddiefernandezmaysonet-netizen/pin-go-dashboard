@@ -21,7 +21,6 @@ type PublicProperty = {
   maxGuests?: number | null;
   minimumNights?: number | null;
   maximumNights?: number | null;
-  address1?: string | null;
   city?: string | null;
   region?: string | null;
   country?: string | null;
@@ -209,11 +208,11 @@ const PUBLIC_PROPERTY_COPY = {
   smsUpdatesTitle:
     "Pin&Go Smart Stay SMS Updates (Optional)",
   smsUpdatesDescription:
-    "Receive important updates about your stay, including your booking confirmation, smart lock access code, check- in instructions, check-out reminders, and important property alerts.",
+    "Receive important updates about your stay, including your booking confirmation, smart lock access code, check-in instructions, check-out reminders, and important property alerts.",
   smsUpdatesLegal:
     "Message frequency varies. Message & data rates may apply. Reply STOP to opt out and HELP for assistance.",
   smsUpdatesOptionalNotice:
-    "SMS consent is optional and is not required to complete this reservation. Reservation confirmation and check-i  in instructions will also be delivered by email.",
+    "SMS consent is optional and is not required to complete this reservation. Reservation confirmation and check-in instructions will also be delivered by email.",
   securePaymentsPoweredBy:
     "Secure payments powered by",
   redirectToStripe:
@@ -1599,6 +1598,22 @@ export default function PublicPropertyDetailPage() {
   const [checkoutStarted, setCheckoutStarted] = useState(false);
   const [confirmationStarted, setConfirmationStarted] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  useEffect(() => {
+    if (selectedPhotoIndex === null) return;
+
+    function handleLightboxKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSelectedPhotoIndex(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleLightboxKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleLightboxKeyDown);
+    };
+  }, [selectedPhotoIndex]);
   
   function handlePreferredLanguageChange(
   language: GuestLanguage
@@ -1793,7 +1808,6 @@ const displayCleaningFee = pricing?.cleaningFee ?? cleaningFee;
 const displayTotal = pricing?.totalAmount ?? total;
 
 const location = [
-    property?.address1,
     property?.city,
     property?.region,
     property?.country,
@@ -2195,7 +2209,7 @@ return (
     </header>
       <main>
         {loading ? (
-          <section style={styles.heroSection}>
+          <section role="status" aria-live="polite" style={styles.heroSection}>
             <div style={styles.heroContainer}>
               <h1 style={styles.heroTitle}>
                 {copy.loadingProperty}
@@ -2205,7 +2219,7 @@ return (
         ) : pageError || !property ? (
           <section style={styles.sectionAlt}>
             <div style={styles.container}>
-              <div style={styles.errorBox}>
+              <div role="alert" aria-live="assertive" style={styles.errorBox}>
                 {pageError || copy.propertyNotFound}
               </div>
             </div>
@@ -2219,6 +2233,8 @@ return (
                   src={photos[0]}
                   alt=""
                   aria-hidden="true"
+                  loading="eager"
+                  decoding="async"
                 />
               ) : null}
               <div className="pbe-rescue-hero-shade" aria-hidden="true" />
@@ -2351,7 +2367,12 @@ return (
                       onClick={() => setSelectedPhotoIndex(photos[1] ? 1 : 0)}
                       aria-label={preferredLanguage === "es" ? "Abrir fotografía de la propiedad" : "Open property photo"}
                     >
-                      <img src={photos[1] || photos[0]} alt={property.publicTitle || property.name} />
+                      <img
+                        src={photos[1] || photos[0]}
+                        alt={property.publicTitle || property.name}
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </button>
                   ) : null}
                 </section>
@@ -2379,7 +2400,12 @@ return (
                           onClick={() => setSelectedPhotoIndex(index)}
                           aria-label={`${preferredLanguage === "es" ? "Abrir fotografía" : "Open photo"} ${index + 1}`}
                         >
-                          <img src={photo} alt={`${property.publicTitle || property.name} ${index + 1}`} />
+                          <img
+                            src={photo}
+                            alt={`${property.publicTitle || property.name} ${index + 1}`}
+                            loading="lazy"
+                            decoding="async"
+                          />
                         </button>
                       ))}
                     </div>
@@ -2862,6 +2888,7 @@ return (
                         <div style={styles.stepper}>
                           <button
                             type="button"
+                            aria-label={preferredLanguage === "es" ? "Disminuir adultos" : "Decrease adults"}
                             onClick={() => updateAdults(adults - 1)}
                             disabled={adults <= 1}
                             style={{
@@ -2876,6 +2903,7 @@ return (
 
                           <button
                             type="button"
+                            aria-label={preferredLanguage === "es" ? "Aumentar adultos" : "Increase adults"}
                             onClick={() => updateAdults(adults + 1)}
                             disabled={
                               property.maxGuests
@@ -2908,6 +2936,7 @@ return (
                         <div style={styles.stepper}>
                           <button
                             type="button"
+                            aria-label={preferredLanguage === "es" ? "Disminuir niños" : "Decrease children"}
                             onClick={() => updateChildren(children - 1)}
                             disabled={children <= 0}
                             style={{
@@ -2922,6 +2951,7 @@ return (
 
                           <button
                             type="button"
+                            aria-label={preferredLanguage === "es" ? "Aumentar niños" : "Increase children"}
                             onClick={() => updateChildren(children + 1)}
                             disabled={
                               property.maxGuests
@@ -2997,6 +3027,9 @@ return (
                       <span>{copy.fullName}</span>
 
                       <input
+                        name="name"
+                        autoComplete="name"
+                        required
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder={copy.guestNamePlaceholder}
@@ -3008,6 +3041,9 @@ return (
 
                       <input
                         type="email"
+                        name="email"
+                        autoComplete="email"
+                        required
                         value={guestEmail}
                         onChange={(e) => setGuestEmail(e.target.value)}
                         placeholder="guest@email.com"
@@ -3018,6 +3054,10 @@ return (
                        <span>{copy.phone}</span>
 
                        <input
+                         type="tel"
+                         name="tel"
+                         autoComplete="tel"
+                         inputMode="tel"
                          value={guestPhone}
                          onChange={(e) => setGuestPhone(e.target.value)}
                          placeholder="+1..."
@@ -3465,7 +3505,9 @@ return (
   </div>
 ) : null}
                     {bookingError ? (
-                      <div style={styles.inlineError}>{bookingError}</div>
+                      <div role="alert" aria-live="assertive" style={styles.inlineError}>
+                        {bookingError}
+                      </div>
                     ) : null}
 
                     <button
@@ -3585,6 +3627,9 @@ return (
       </main>
 {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
   <div
+    role="dialog"
+    aria-modal="true"
+    aria-label={preferredLanguage === "es" ? "Galería de fotografías" : "Photo gallery"}
     style={styles.lightboxOverlay}
     onClick={() => setSelectedPhotoIndex(null)}
   >
@@ -3594,6 +3639,7 @@ return (
     >
       <button
         type="button"
+        aria-label={preferredLanguage === "es" ? "Cerrar galería" : "Close gallery"}
         style={styles.lightboxClose}
         onClick={() => setSelectedPhotoIndex(null)}
       >
@@ -3602,7 +3648,8 @@ return (
 
       <img
         src={photos[selectedPhotoIndex]}
-        alt={preferredLanguage === "es" ? "Propiedad" : "Property"}
+        alt={`${property?.publicTitle || property?.name || (preferredLanguage === "es" ? "Propiedad" : "Property")} ${selectedPhotoIndex + 1}`}
+        decoding="async"
         style={styles.lightboxImage}
       />
 
@@ -3610,6 +3657,7 @@ return (
         <>
           <button
             type="button"
+            aria-label={preferredLanguage === "es" ? "Fotografía anterior" : "Previous photo"}
             style={styles.lightboxPrev}
             onClick={() =>
               setSelectedPhotoIndex(
@@ -3624,6 +3672,7 @@ return (
 
           <button
             type="button"
+            aria-label={preferredLanguage === "es" ? "Siguiente fotografía" : "Next photo"}
             style={styles.lightboxNext}
             onClick={() =>
               setSelectedPhotoIndex(
