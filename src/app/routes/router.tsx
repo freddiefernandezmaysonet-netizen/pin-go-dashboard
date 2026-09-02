@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- Router modules intentionally export route configuration alongside route components. */
-import type { ReactElement } from "react";
+import { lazy, Suspense, type ReactElement, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
 import { OverviewPage } from "../../pages/overview/OverviewPage";
@@ -59,6 +59,19 @@ import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
 import { useAuth } from "../../auth/AuthProvider";
 import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
+import { reviewsE1Enabled } from "../../lib/reviewsConfig";
+
+const GuestReviewPage = lazy(() => import("../../pages/public-booking/GuestReviewPage"));
+const ReputationPage = lazy(() => import("../../pages/reputation/ReputationPage"));
+const AdminReviewModerationPage = lazy(() => import("../../pages/admin/AdminReviewModerationPage"));
+
+function ReviewRouteBoundary({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<div role="status" style={{ padding: 24 }}>Loading reviews…</div>}>
+      {children}
+    </Suspense>
+  );
+}
 
 
 function RootRedirect() {
@@ -113,6 +126,17 @@ function PlatformAdminRoute({ children }: { children: ReactElement }) {
 function OrganizationBrandReviewerRoute({ children }: { children: ReactElement }) {
   const { user } = useAuth();
   return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" ? (
+    children
+  ) : (
+    <Navigate to="/overview" replace />
+  );
+}
+
+function ReviewManagerRoute({ children }: { children: ReactElement }) {
+  const { user } = useAuth();
+  return user?.role === "ORG_ADMIN" ||
+    user?.role === "ADMIN" ||
+    user?.role === "PLATFORM_ADMIN" ? (
     children
   ) : (
     <Navigate to="/overview" replace />
@@ -189,6 +213,9 @@ export const router = createBrowserRouter([
   path: "/booking/manage/:guestToken",
   element: <GuestCancellationPage />,
   },
+  ...(reviewsE1Enabled
+    ? [{ path: "/review", element: <ReviewRouteBoundary><GuestReviewPage /></ReviewRouteBoundary> }]
+    : []),
   {
   path: "/",
   element: <RootRedirect />,
@@ -283,6 +310,9 @@ export const router = createBrowserRouter([
       { path: "/automation/history", element: <DeviceAutomationHistoryPage /> },
       { path: "/apms/decision-history", element: <ApmsDecisionHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
+      ...(reviewsE1Enabled
+        ? [{ path: "/reputation", element: <ReviewManagerRoute><ReviewRouteBoundary><ReputationPage /></ReviewRouteBoundary></ReviewManagerRoute> }]
+        : []),
            
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
@@ -296,6 +326,9 @@ export const router = createBrowserRouter([
           </PlatformAdminRoute>
         ),
       },
+      ...(reviewsE1Enabled
+        ? [{ path: "/admin/review-moderation", element: <PlatformAdminRoute><ReviewRouteBoundary><AdminReviewModerationPage /></ReviewRouteBoundary></PlatformAdminRoute> }]
+        : []),
 
       {
         path: "/integrations/pms",

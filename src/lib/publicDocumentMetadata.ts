@@ -116,16 +116,21 @@ export function usePublicDocumentMetadata({
   }, [description, fallbackTitle, language, title]);
 }
 
-export function usePublicNoIndex() {
+export function usePublicNoIndex(options: { noReferrer?: boolean } = {}) {
+  const noReferrer = options.noReferrer === true;
+
   useEffect(() => {
     const robotsMeta = ensureMeta("robots");
+    const referrerMeta = noReferrer ? ensureMeta("referrer") : null;
     robotsMeta.element.setAttribute(
       "content",
       "noindex, nofollow, noarchive"
     );
+    referrerMeta?.element.setAttribute("content", "no-referrer");
 
     return () => {
       restoreManagedElement(robotsMeta, "content");
+      if (referrerMeta) restoreManagedElement(referrerMeta, "content");
     };
-  }, []);
+  }, [noReferrer]);
 }
