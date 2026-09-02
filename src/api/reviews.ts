@@ -126,6 +126,7 @@ export type PublicReviewsPayload = {
 export type PublicReviewSort = "RECENT" | "HIGHEST" | "LOWEST";
 
 const BASE =
+  import.meta.env.VITE_REVIEWS_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_BASE ||
   "https://api.pin-ngo.com";
