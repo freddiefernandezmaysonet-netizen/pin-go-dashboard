@@ -49,6 +49,16 @@ type PublicBookingDiscovery = {
   propertySlugs: string[];
 };
 
+class MetadataSourceHttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Metadata source returned ${status}`);
+    this.name = "MetadataSourceHttpError";
+    this.status = status;
+  }
+}
+
 function safeDecode(value: string): string | null {
   try {
     const decoded = decodeURIComponent(value).trim();
@@ -249,10 +259,22 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   });
 
   if (!response.ok) {
-    throw new Error(`Metadata source returned ${response.status}`);
+    throw new MetadataSourceHttpError(response.status);
   }
 
   return response.json();
+}
+
+function buildPublicBookingNotFoundResponse(request: Request): Response {
+  return new Response(request.method === "HEAD" ? null : "Not Found\n", {
+    status: 404,
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "no-store",
+      "x-robots-tag": "noindex, nofollow, noarchive",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }
 
 async function resolvePublicBookingDiscovery(
@@ -688,16 +710,37 @@ export default async function middleware(request: Request): Promise<Response> {
   }
 
   const route = parsePublicBookingRoute(url.pathname);
+  const isPublicRead = request.method === "GET" || request.method === "HEAD";
+
+  if (!route && isPublicRead) {
+    return buildPublicBookingNotFoundResponse(request);
+  }
+
   const indexPromise = fetchStaticIndex(request);
 
-  if (!route || (request.method !== "GET" && request.method !== "HEAD")) {
+  if (!route || !isPublicRead) {
     return indexPromise;
   }
 
-  const [indexResponse, metadata] = await Promise.all([
+  const metadataPromise = resolveMetadata(request, url, route).then(
+    (metadata) => ({ metadata, authoritativeNotFound: false }),
+    (error: unknown) => ({
+      metadata: null,
+      authoritativeNotFound:
+        error instanceof MetadataSourceHttpError && error.status === 404,
+    })
+  );
+
+  const [indexResponse, metadataResolution] = await Promise.all([
     indexPromise,
-    resolveMetadata(request, url, route).catch(() => null),
+    metadataPromise,
   ]);
+
+  if (metadataResolution.authoritativeNotFound) {
+    return buildPublicBookingNotFoundResponse(request);
+  }
+
+  const metadata = metadataResolution.metadata;
 
   if (!indexResponse.ok || !metadata) {
     return indexResponse;
