@@ -1,0 +1,50 @@
+name: Enterprise Reviews E1 Dashboard Certification
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/enterprise-reviews-e1-dashboard-certification.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "src/api/reviews.ts"
+      - "src/app/layout/AppShell.tsx"
+      - "src/app/routes/router.tsx"
+      - "src/components/reviews/**"
+      - "src/lib/publicDocumentMetadata.ts"
+      - "src/lib/publicReviewsPagination.ts"
+      - "src/lib/reviewModerationPolicy.ts"
+      - "src/lib/reviewsConfig.ts"
+      - "src/pages/admin/AdminReviewModerationPage.tsx"
+      - "src/pages/public-booking/GuestReviewPage.tsx"
+      - "src/pages/public-booking/PublicBookingExperience.css"
+      - "src/pages/public-booking/PublicPropertyDetailPage.tsx"
+      - "src/pages/reputation/ReputationPage.tsx"
+      - "src/reviews.enterprise-e1.contract.test.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: Guest, public, host and moderation experience
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --silent --no-audit --no-fund
+
+      - name: Certify Enterprise Reviews E1 dashboard
+        run: npm run test:enterprise-reviews-e1
