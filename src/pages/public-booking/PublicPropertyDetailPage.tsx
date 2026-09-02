@@ -1,12 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { addDays, format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
+import type { PublicReviewsSummary } from "../../components/reviews/PublicReviewsSection";
 import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
+import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 import "./PublicBookingExperience.css";
+
+const PublicReviewsSection = lazy(async () => {
+  const module = await import("../../components/reviews/PublicReviewsSection");
+  return { default: module.PublicReviewsSection };
+});
 
 type PublicProperty = {
   id: string;
@@ -1558,6 +1565,8 @@ export default function PublicPropertyDetailPage() {
       : `/book/${organizationSlug}`;
 
   const [property, setProperty] = useState<PublicProperty | null>(null);
+  const [loadedPublicReviewsSummary, setLoadedPublicReviewsSummary] =
+    useState<(PublicReviewsSummary & { requestKey: string }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
    const [preferredLanguage, setPreferredLanguage] =
@@ -1599,6 +1608,20 @@ export default function PublicPropertyDetailPage() {
   const [checkoutStarted, setCheckoutStarted] = useState(false);
   const [confirmationStarted, setConfirmationStarted] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+
+  const publicReviewsRequestKey = `${organizationSlug ?? ""}/${propertySlug ?? ""}`;
+  const publicReviewsSummary =
+    loadedPublicReviewsSummary?.requestKey === publicReviewsRequestKey
+      ? loadedPublicReviewsSummary
+      : null;
+  const handlePublicReviewsSummaryChange = useCallback(
+    (summary: PublicReviewsSummary | null) => {
+      setLoadedPublicReviewsSummary(
+        summary ? { ...summary, requestKey: publicReviewsRequestKey } : null
+      );
+    },
+    [publicReviewsRequestKey]
+  );
 
   useEffect(() => {
     if (selectedPhotoIndex === null) return;
@@ -1910,6 +1933,7 @@ function formatDisplayTime(time?: string | null) {
   organizationSlug,
   propertySlug,
   copy.failedToLoadProperty,
+  copy.propertyNotFound,
   preferredLanguage,
 ]);
 
@@ -2261,6 +2285,32 @@ return (
                   {property.publicTitle || property.name}
                 </h1>
 
+                {reviewsE1Enabled && publicReviewsSummary ? (
+                  <a
+                    href="#pbe-reviews-title"
+                    style={styles.heroReviewSummary}
+                    aria-label={
+                      preferredLanguage === "es"
+                        ? `${publicReviewsSummary.overallRating.toFixed(1)} de 5, ${publicReviewsSummary.total} ${publicReviewsSummary.total === 1 ? "evaluación" : "evaluaciones"} verificadas`
+                        : `${publicReviewsSummary.overallRating.toFixed(1)} out of 5, ${publicReviewsSummary.total} verified ${publicReviewsSummary.total === 1 ? "review" : "reviews"}`
+                    }
+                  >
+                    <span aria-hidden="true" style={styles.heroReviewStar}>★</span>
+                    <strong>{publicReviewsSummary.overallRating.toFixed(1)}</strong>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      {publicReviewsSummary.total}{" "}
+                      {preferredLanguage === "es"
+                        ? publicReviewsSummary.total === 1
+                          ? "evaluación"
+                          : "evaluaciones"
+                        : publicReviewsSummary.total === 1
+                          ? "review"
+                          : "reviews"}
+                    </span>
+                  </a>
+                ) : null}
+
                 <div className="pbe-rescue-accent" aria-hidden="true" />
 
                 <div className="pbe-rescue-meta" style={styles.heroMeta}>
@@ -2424,6 +2474,18 @@ return (
                       ))}
                     </div>
                   </section>
+                ) : null}
+
+                {reviewsE1Enabled && organizationSlug && propertySlug ? (
+                  <Suspense fallback={null}>
+                    <PublicReviewsSection
+                      key={`${organizationSlug}/${propertySlug}`}
+                      organizationSlug={organizationSlug}
+                      propertySlug={propertySlug}
+                      language={preferredLanguage}
+                      onSummaryChange={handlePublicReviewsSummaryChange}
+                    />
+                  </Suspense>
                 ) : null}
 
                 <section className="pbe-section pbe-description" aria-labelledby="pbe-description-title">
@@ -3826,6 +3888,27 @@ languageButtonActive: {
     letterSpacing: "-0.055em",
     maxWidth: 900,
     margin: "0 auto",
+  },
+  heroReviewSummary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    width: "fit-content",
+    marginTop: 20,
+    padding: "8px 12px",
+    border: "1px solid rgba(255,255,255,.38)",
+    borderRadius: 999,
+    background: "rgba(12,35,27,.42)",
+    color: "rgba(255,255,255,.94)",
+    fontSize: 14,
+    fontWeight: 750,
+    lineHeight: 1,
+    textDecoration: "none",
+    backdropFilter: "blur(8px)",
+  },
+  heroReviewStar: {
+    color: "#e3b45d",
+    fontSize: 16,
   },
   heroMeta: {
     margin: "18px auto 0",

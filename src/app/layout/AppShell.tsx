@@ -5,6 +5,7 @@ import { getOrganizationBrandingReview } from "../../api/organizationBranding";
 import { useAuth } from "../../auth/AuthProvider";
 import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
+import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 
 // ✅ NAV BASE (producto normal)
 const baseNav = [
@@ -18,6 +19,7 @@ const baseNav = [
   { to: "/organization", label: "Organization" },
   
   { to: "/messages", label: "Messages" },
+  ...(reviewsE1Enabled ? [{ to: "/reputation", label: "Reputation" }] : []),
   { to: "/staff", label: "Staff Members" },
 
   ...(shouldShowLegacyPmsUi()
@@ -66,12 +68,14 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/apms/decision-history")) return "APMS Decision History";
   if (pathname.startsWith("/automation/history")) return "Device Automation History";
   if (pathname.startsWith("/messages")) return "Messages";
+  if (pathname.startsWith("/reputation")) return "Reputation";
 
   // ✅ NUEVO
   if (pathname.startsWith("/admin/sales-followups")) return "Sales Follow-ups";
   if (pathname.startsWith("/admin/financial")) return "Admin Financial";
   if (pathname.startsWith("/admin/demo-center")) return "Demo Center";
   if (pathname.startsWith("/admin/branding")) return "Enterprise Branding";
+  if (pathname.startsWith("/admin/review-moderation")) return "Review Moderation";
  
   if (pathname.startsWith("/billing")) return "Billing";
   if (pathname.startsWith("/integrations/tuya")) return "Tuya Integration";
@@ -131,6 +135,7 @@ export function AppShell() {
   "/integrations/tuya",
   "/integrations/tuya-premium",
   "/integrations/pms/listings-mapping",
+  "/reputation",
 ]);
 
 const memberNav = baseNav.filter((item) => !memberHiddenPaths.has(item.to));
@@ -147,6 +152,9 @@ const nav =
         { to: "/admin/sales-followups", label: "Sales Follow-ups" },
         { to: "/admin/demo-center", label: "Demo Center" },
         { to: "/admin/branding", label: "Enterprise Branding" },
+        ...(reviewsE1Enabled
+          ? [{ to: "/admin/review-moderation", label: "Review Moderation" }]
+          : []),
       ]
     : user?.role === "MEMBER"
       ? memberNav
