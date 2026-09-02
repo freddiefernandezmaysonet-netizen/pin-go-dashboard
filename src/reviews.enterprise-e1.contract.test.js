@@ -32,6 +32,7 @@ test("Reviews E1 presentation is explicitly default-off", () => {
 });
 
 test("review secrets stay in the browser fragment and authorization header", () => {
+  assert.match(api, /VITE_REVIEWS_API_BASE/);
   assert.match(guest, /URLSearchParams\(hash\.replace/);
   assert.match(guest, /window\.history\.replaceState\(window\.history\.state, "", cleanUrl\)/);
   assert.match(api, /Authorization: `ReviewToken \$\{token\}`/);
