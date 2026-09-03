@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test:landing-apms": "node --test src/pages/LandingPage.apms.contract.test.mjs",
     "test:manual-reservation-date-change": "node --test src/components/reservations/manualReservationDateChangeFlow.test.js",
     "test:enterprise-reviews-e1": "node --test src/reviews.enterprise-e1.contract.test.js && eslint src/api/reviews.ts src/lib/reviewsConfig.ts src/lib/publicDocumentMetadata.ts src/lib/publicReviewsPagination.ts src/lib/reviewModerationPolicy.ts src/components/reviews/PublicReviewsSection.tsx src/pages/public-booking/GuestReviewPage.tsx src/pages/public-booking/PublicPropertyDetailPage.tsx src/pages/reputation/ReputationPage.tsx src/pages/admin/AdminReviewModerationPage.tsx src/app/layout/AppShell.tsx src/app/routes/router.tsx && vite build"
   },
