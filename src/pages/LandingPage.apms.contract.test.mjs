@@ -37,6 +37,17 @@ test("PMS integrations are optional instead of a prerequisite", () => {
   assert.match(landing, /No para comenzar/);
 });
 
+test("the first direct-booking search step is present without removing hardware", () => {
+  assert.match(landing, /Properties Powered by Pin&Go/);
+  assert.match(landing, /Encuentra propiedades disponibles/);
+  assert.match(landing, /Destino o ubicación/);
+  assert.match(landing, /searchCheckIn: "Check-in"/);
+  assert.match(landing, /searchCheckOut: "Check-out"/);
+  assert.match(landing, /searchGuests: "Huéspedes"/);
+  assert.match(landing, /searchCta: "Buscar propiedades"/);
+  assert.match(landing, /<HaasConfigurator/);
+});
+
 test("the retained booking flow is safe in visual previews", () => {
   assert.match(landing, /bookingType=\{bookingType\}/);
   assert.match(landing, /initialTopic=/);

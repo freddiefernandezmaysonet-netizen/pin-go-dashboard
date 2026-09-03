@@ -5,10 +5,33 @@ import HaasConfigurator from "../components/HaasConfigurator";
 
 type Lang = "es" | "en";
 
+function getLocalToday() {
+  const now = new Date();
+  const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return localNow.toISOString().slice(0, 10);
+}
+
+function getFollowingDate(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("es");
   const [openBooking, setOpenBooking] = useState(false);
   const [bookingType, setBookingType] = useState<"onboarding" | "demo">("onboarding");
+  const [staySearch, setStaySearch] = useState({
+    location: "",
+    checkIn: "",
+    checkOut: "",
+    guests: "2",
+  });
+  const [searchPrepared, setSearchPrepared] = useState(false);
+  const today = getLocalToday();
+  const minimumCheckOut = staySearch.checkIn
+    ? getFollowingDate(staySearch.checkIn)
+    : today;
 
   const t = useMemo(() => {
     return lang === "es"
@@ -33,6 +56,19 @@ export default function LandingPage() {
           heroCtaPrimary: "Empezar ahora",
           heroCtaSecondary: "Iniciar sesión",
           heroTrust: "Hardware compatible • Configuración guiada",
+
+          searchEyebrow: "Properties Powered by Pin&Go",
+          searchTitle: "Encuentra propiedades disponibles",
+          searchText:
+            "Indica dónde y cuándo deseas hospedarte. Pin&Go mostrará únicamente propiedades disponibles para tu estadía.",
+          searchLocation: "Ubicación",
+          searchLocationPlaceholder: "Destino o ubicación",
+          searchCheckIn: "Check-in",
+          searchCheckOut: "Check-out",
+          searchGuests: "Huéspedes",
+          searchCta: "Buscar propiedades",
+          searchPrepared:
+            "Criterios preparados. En el próximo paso conectaremos los resultados disponibles.",
 
           slogan: "Autonomous Property Management",
 
@@ -124,6 +160,19 @@ export default function LandingPage() {
           heroCtaPrimary: "Get started",
           heroCtaSecondary: "Log in",
           heroTrust: "Compatible hardware • Guided setup",
+
+          searchEyebrow: "Properties Powered by Pin&Go",
+          searchTitle: "Find available properties",
+          searchText:
+            "Tell us where and when you want to stay. Pin&Go will show only properties available for your trip.",
+          searchLocation: "Location",
+          searchLocationPlaceholder: "Destination or location",
+          searchCheckIn: "Check-in",
+          searchCheckOut: "Check-out",
+          searchGuests: "Guests",
+          searchCta: "Search properties",
+          searchPrepared:
+            "Search criteria prepared. Available results will be connected in the next step.",
 
           slogan: "Autonomous Property Management",
 
@@ -353,6 +402,115 @@ export default function LandingPage() {
             </div>
 
             <p style={styles.heroTrust}>{t.heroTrust}</p>
+          </div>
+        </section>
+
+        <section style={styles.searchSection} aria-labelledby="stay-search-title">
+          <div style={styles.searchPanel}>
+            <div style={styles.searchHeading}>
+              <div style={styles.searchEyebrow}>{t.searchEyebrow}</div>
+              <h2 id="stay-search-title" style={styles.searchTitle}>
+                {t.searchTitle}
+              </h2>
+              <p style={styles.searchText}>{t.searchText}</p>
+            </div>
+
+            <form
+              style={styles.searchForm}
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSearchPrepared(true);
+              }}
+            >
+              <label style={styles.searchField}>
+                <span style={styles.searchLabel}>{t.searchLocation}</span>
+                <input
+                  type="search"
+                  value={staySearch.location}
+                  placeholder={t.searchLocationPlaceholder}
+                  onChange={(event) => {
+                    setStaySearch((current) => ({
+                      ...current,
+                      location: event.target.value,
+                    }));
+                    setSearchPrepared(false);
+                  }}
+                  style={styles.searchInput}
+                  required
+                />
+              </label>
+
+              <label style={styles.searchField}>
+                <span style={styles.searchLabel}>{t.searchCheckIn}</span>
+                <input
+                  type="date"
+                  min={today}
+                  value={staySearch.checkIn}
+                  onChange={(event) => {
+                    const checkIn = event.target.value;
+                    setStaySearch((current) => ({
+                      ...current,
+                      checkIn,
+                      checkOut:
+                        current.checkOut &&
+                        current.checkOut < getFollowingDate(checkIn)
+                          ? ""
+                          : current.checkOut,
+                    }));
+                    setSearchPrepared(false);
+                  }}
+                  style={styles.searchInput}
+                  required
+                />
+              </label>
+
+              <label style={styles.searchField}>
+                <span style={styles.searchLabel}>{t.searchCheckOut}</span>
+                <input
+                  type="date"
+                  min={minimumCheckOut}
+                  value={staySearch.checkOut}
+                  onChange={(event) => {
+                    setStaySearch((current) => ({
+                      ...current,
+                      checkOut: event.target.value,
+                    }));
+                    setSearchPrepared(false);
+                  }}
+                  style={styles.searchInput}
+                  required
+                />
+              </label>
+
+              <label style={styles.searchField}>
+                <span style={styles.searchLabel}>{t.searchGuests}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={staySearch.guests}
+                  onChange={(event) => {
+                    setStaySearch((current) => ({
+                      ...current,
+                      guests: event.target.value,
+                    }));
+                    setSearchPrepared(false);
+                  }}
+                  style={styles.searchInput}
+                  required
+                />
+              </label>
+
+              <button type="submit" style={styles.searchButton}>
+                {t.searchCta}
+              </button>
+            </form>
+
+            {searchPrepared && (
+              <p role="status" aria-live="polite" style={styles.searchStatus}>
+                {t.searchPrepared}
+              </p>
+            )}
           </div>
         </section>
 
@@ -826,6 +984,86 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 14,
     color: "#64748b",
     fontSize: 14,
+  },
+  searchSection: {
+    padding: "0 20px 34px",
+    background: "#f8fafc",
+  },
+  searchPanel: {
+    maxWidth: 1120,
+    margin: "0 auto",
+    border: "1px solid #dbe5eb",
+    borderRadius: 22,
+    background: "#ffffff",
+    padding: "28px clamp(20px, 4vw, 38px)",
+    boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)",
+  },
+  searchHeading: {
+    maxWidth: 720,
+  },
+  searchEyebrow: {
+    color: "#047857",
+    fontSize: 13,
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+  },
+  searchTitle: {
+    margin: "8px 0 0",
+    color: "#0f172a",
+    fontSize: "clamp(1.7rem, 3vw, 2.25rem)",
+    lineHeight: 1.15,
+  },
+  searchText: {
+    margin: "10px 0 0",
+    color: "#475569",
+    fontSize: 16,
+    lineHeight: 1.65,
+  },
+  searchForm: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    alignItems: "end",
+    gap: 12,
+    marginTop: 24,
+  },
+  searchField: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 7,
+  },
+  searchLabel: {
+    color: "#334155",
+    fontSize: 14,
+    fontWeight: 700,
+  },
+  searchInput: {
+    boxSizing: "border-box",
+    width: "100%",
+    minHeight: 48,
+    border: "1px solid #cbd5e1",
+    borderRadius: 11,
+    background: "#ffffff",
+    padding: "11px 13px",
+    color: "#0f172a",
+    fontSize: 16,
+  },
+  searchButton: {
+    minHeight: 48,
+    border: 0,
+    borderRadius: 11,
+    background: "#0f172a",
+    padding: "12px 18px",
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  searchStatus: {
+    margin: "14px 0 0",
+    color: "#475569",
+    fontSize: 14,
+    lineHeight: 1.5,
   },
   section: {
     padding: "80px 20px",
