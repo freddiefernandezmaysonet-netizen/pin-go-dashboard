@@ -47,10 +47,21 @@ test("host and guest journeys are separated without removing hardware", () => {
   assert.match(landing, /<HaasConfigurator/);
 
   assert.match(stays, /Properties Powered by Pin&Go/);
-  assert.match(stays, /Encuentra propiedades disponibles/);
-  assert.match(stays, /Destino o ubicación/);
+  assert.match(stays, /Encuentra un lugar que se sienta tuyo/);
+  assert.match(stays, /Ciudad o destino/);
   assert.match(stays, /to="\/home"/);
   assert.match(router, /path: "\/stays"/);
+});
+
+test("featured stays use real public booking data and honest review labels", () => {
+  assert.match(stays, /FEATURED_ORGANIZATION_SLUGS = \["remansodepaz"\]/);
+  assert.match(stays, /\/api\/public-booking\/\$\{encodeURIComponent\(organizationSlug\)\}/);
+  assert.match(stays, /\/api\/public-reviews\/property\//);
+  assert.match(stays, /reviewCount >= 5/);
+  assert.match(stays, /rating >= 4\.7/);
+  assert.match(stays, /Nueva en Pin&Go/);
+  assert.match(stays, /Ver disponibilidad y precio/);
+  assert.doesNotMatch(stays, /baseNightlyRate/);
 });
 
 test("the retained booking flow is safe in visual previews", () => {
