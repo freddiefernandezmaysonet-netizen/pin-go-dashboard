@@ -6,8 +6,10 @@ const readSource = (relativePath) =>
   readFileSync(new URL(relativePath, import.meta.url), "utf8");
 
 const landing = readSource("./LandingPage.tsx");
+const stays = readSource("./StaysPage.tsx");
 const bookingModal = readSource("../components/OnboardingBookingModal.tsx");
 const brandProvider = readSource("../branding/BrandProvider.tsx");
+const router = readSource("../app/routes/router.tsx");
 
 test("the existing landing now leads with the APMS value proposition", () => {
   assert.match(landing, /Pin&Go opera tu propiedad\. Tú mantienes el control\./);
@@ -37,15 +39,18 @@ test("PMS integrations are optional instead of a prerequisite", () => {
   assert.match(landing, /No para comenzar/);
 });
 
-test("the first direct-booking search step is present without removing hardware", () => {
-  assert.match(landing, /Properties Powered by Pin&Go/);
-  assert.match(landing, /Encuentra propiedades disponibles/);
-  assert.match(landing, /Destino o ubicación/);
-  assert.match(landing, /searchCheckIn: "Check-in"/);
-  assert.match(landing, /searchCheckOut: "Check-out"/);
-  assert.match(landing, /searchGuests: "Huéspedes"/);
-  assert.match(landing, /searchCta: "Buscar propiedades"/);
+test("host and guest journeys are separated without removing hardware", () => {
+  assert.match(landing, /Administrar propiedades/);
+  assert.match(landing, /Buscar alojamiento/);
+  assert.match(landing, /to="\/stays"/);
+  assert.doesNotMatch(landing, /Encuentra propiedades disponibles/);
   assert.match(landing, /<HaasConfigurator/);
+
+  assert.match(stays, /Properties Powered by Pin&Go/);
+  assert.match(stays, /Encuentra propiedades disponibles/);
+  assert.match(stays, /Destino o ubicación/);
+  assert.match(stays, /to="\/home"/);
+  assert.match(router, /path: "\/stays"/);
 });
 
 test("the retained booking flow is safe in visual previews", () => {
@@ -65,5 +70,6 @@ test("route metadata and the standard Pin&Go brand remain guarded", () => {
   assert.match(landing, /description\.content\s*=\s*t\.metaDescription/);
   assert.match(brandProvider, /brand\.kind === "PIN_GO_STANDARD"/);
   assert.match(brandProvider, /path === "\/home"/);
+  assert.match(brandProvider, /path === "\/stays"/);
   assert.match(brandProvider, /brand\.kind === "CUSTOM_BRAND" \|\|/);
 });

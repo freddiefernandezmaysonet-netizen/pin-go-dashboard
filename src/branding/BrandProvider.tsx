@@ -143,7 +143,10 @@ function applyDocumentBrand(brand: BrandContext) {
   const path = window.location.pathname;
   const isStandardLanding =
     brand.kind === "PIN_GO_STANDARD" &&
-    (path === "/home" || path === "/home/");
+    (path === "/home" ||
+      path === "/home/" ||
+      path === "/stays" ||
+      path === "/stays/");
   const managesDocumentTitle =
     !path.startsWith("/book/") &&
     (brand.kind === "CUSTOM_BRAND" || !isStandardLanding);
