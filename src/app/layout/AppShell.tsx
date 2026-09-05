@@ -27,7 +27,6 @@ const baseNav = [
     : []),
   { to: "/billing", label: "Billing" },
   { to: "/integrations/tuya", label: "Tuya Integration" },
-  { to: "/apms/decision-history", label: "APMS Decision History" },
   { to: "/automation/history", label: "Device Automation History" },
 ];
 
