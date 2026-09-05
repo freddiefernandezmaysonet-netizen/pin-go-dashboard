@@ -13,7 +13,6 @@ import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPa
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
 import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
-import { ChannexFullSyncPanel } from "../../components/properties/ChannexFullSyncPanel";
 import { LockDetailPage } from "../../pages/lock-detail/LockDetailPage";
 import { PmsConnectionsPage } from "../../pages/integrations/PmsConnectionsPage";
 import TuyaIntegrationPremiumPage from "../../pages/integrations/TuyaIntegrationPremiumPage";
@@ -153,12 +152,7 @@ function OrganizationRoute() {
 }
 
 function PropertyDetailRoute() {
-  return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <ChannexFullSyncPanel />
-      <PropertyDetailPage />
-    </div>
-  );
+  return <PropertyDetailPage />;
 }
 
 function PropertyCalendarRoute() {

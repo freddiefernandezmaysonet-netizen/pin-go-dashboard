@@ -142,8 +142,6 @@ export function PropertyEditPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [provisioningChannex, setProvisioningChannex] = useState(false);
-  const [syncingChannexAvailability, setSyncingChannexAvailability] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
@@ -530,7 +528,6 @@ cleaningFee:
               ? null
               : Number(form.maximumNights),
           isPublicBookable: form.isPublicBookable,
-          distributionEnabled: form.distributionEnabled,
         }),
       });
 
@@ -546,105 +543,6 @@ cleaningFee:
       setSaving(false);
     }
   }
-
-async function handleEnableDistribution() {
-  if (!id) return;
-
-  setSaving(true);
-  setErr(null);
-
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/dashboard/properties/${id}/distribution/enable`,
-      {
-        method: "POST",
-        credentials: "include",
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to enable distribution");
-    }
-
-    setForm((s) => ({
-      ...s,
-      distributionEnabled: true,
-    }));
-  } catch (e: any) {
-    setErr(String(e?.message ?? e));
-  } finally {
-    setSaving(false);
-  }
-}
-
-async function handleProvisionChannex() {
-  if (!id) return;
-
-  setProvisioningChannex(true);
-  setErr(null);
-
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/dashboard/properties/${id}/channex/provision`,
-      {
-        method: "POST",
-        credentials: "include",
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(
-        data?.error || "Failed to provision Channex property"
-      );
-    }
-
-    alert(
-      `Channex provisioned successfully.\n\n${JSON.stringify(
-        data.result,
-        null,
-        2
-      )}`
-    );
-  } catch (e: any) {
-    setErr(String(e?.message ?? e));
-  } finally {
-    setProvisioningChannex(false);
-  }
-}
-
-async function handleSyncChannexAvailability() {
-  if (!id) return;
-
-  setSyncingChannexAvailability(true);
-  setErr(null);
-
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/dashboard/properties/${id}/channex/sync-availability`,
-      {
-        method: "POST",
-        credentials: "include",
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to sync Channex availability");
-    }
-
-  (window as any).lastChannexSyncResult = data.result;
-console.log("CHANNEX_SYNC_RESULT", JSON.stringify(data.result, null, 2)); 
-  } catch (e: any) {
-    setErr(String(e?.message ?? e));
-  } finally {
-    setSyncingChannexAvailability(false);
-  }
-}
 
 async function handleUploadPhotos(
   e: React.ChangeEvent<HTMLInputElement>
@@ -1249,55 +1147,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     border: "1px solid #fde68a",
   };
 }
-
-  const distributionStatus =
-    form.distributionStatus || (form.distributionEnabled ? "ACTIVE" : "DISABLED");
-
-  const distributionStatusLabel =
-    distributionStatus === "ACTIVE"
-      ? "Active"
-      : distributionStatus === "ENABLING"
-      ? "Enabling"
-      : distributionStatus === "FAILED"
-      ? "Failed"
-      : "Disabled";
-
-  const distributionStatusColors =
-    distributionStatus === "ACTIVE"
-      ? {
-          background: "#f0fdf4",
-          borderColor: "#bbf7d0",
-          color: "#166534",
-        }
-      : distributionStatus === "FAILED"
-      ? {
-          background: "#fef2f2",
-          borderColor: "#fecaca",
-          color: "#991b1b",
-        }
-      : distributionStatus === "ENABLING"
-      ? {
-          background: "#fffbeb",
-          borderColor: "#fde68a",
-          color: "#92400e",
-        }
-      : {
-          background: "#f9fafb",
-          borderColor: "#e5e7eb",
-          color: "#6b7280",
-        };
-
-  const formatDistributionDate = (value?: string | null) => {
-    if (!value) return "—";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return "—";
-    }
-
-    return date.toLocaleString();
-  };
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -3485,117 +3334,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
           </div>
 
           </div>
-          <div style={cardStyle}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div style={sectionTitleStyle}>Distribution Settings</div>
-                <div style={sectionDescriptionStyle}>
-                  Let Pin&Go prepare this property for external booking channels.
-                  Pin&Go will handle the channel manager setup, rates, availability,
-                  and reservation ingestion automatically.
-                </div>
-              </div>
-             <div
-  style={{
-    ...statusBadgeStyle,
-    background: distributionStatusColors.background,
-    borderColor: distributionStatusColors.borderColor,
-    color: distributionStatusColors.color,
-  }}
->
-  {distributionStatusLabel}
-</div>
-              
-            </div>
-                       <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: 12,
-              }}
-            >
-              <div style={distributionInfoCardStyle}>
-                <div style={distributionInfoLabelStyle}>Status</div>
-                <div
-                  style={{
-                    ...distributionInfoValueStyle,
-                    color: distributionStatusColors.color,
-                  }}
-                >
-                  {distributionStatusLabel}
-                </div>
-              </div>
-
-              <div style={distributionInfoCardStyle}>
-                <div style={distributionInfoLabelStyle}>Last Sync</div>
-                <div style={distributionInfoValueStyle}>
-                  {formatDistributionDate(form.distributionLastSyncedAt)}
-                </div>
-              </div>
-
-              <div style={distributionInfoCardStyle}>
-                <div style={distributionInfoLabelStyle}>Enabled At</div>
-                <div style={distributionInfoValueStyle}>
-                  {formatDistributionDate(form.distributionEnabledAt)}
-                </div>
-              </div>
-            </div>
-
-            {form.distributionLastError ? (
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 14,
-                  border: "1px solid #fecaca",
-                  background: "#fef2f2",
-                  color: "#991b1b",
-                  fontSize: 13,
-                  fontWeight: 700,
-                }}
-              >
-                Distribution error: {form.distributionLastError.replace(/CHANNEX/gi, "Pin&Go Connect")}
-              </div>
-            ) : null}
-            
-            <label style={toggleRowStyle}>
-              <input
-                type="checkbox"
-                checked={form.distributionEnabled}
-                onChange={async (e) => {
-  if (e.target.checked) {
-    await handleEnableDistribution();
-    return;
-  }
-
-  setForm((s) => ({
-    ...s,
-    distributionEnabled: false,
-  }));
-}}
-
-              />
-
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#111827" }}>
-                  Enable external channel distribution
-                </div>
-                <div style={helperTextStyle}>
-                  When enabled, Pin&Go will prepare this property for channels
-                  like Airbnb, Booking.com, and Vrbo through the connected channel
-                  distribution layer.
-                </div>
-              </div>
-            </label>
-          </div>
-
 <div
   style={{
     display: "flex",
@@ -3673,26 +3411,6 @@ const toggleRowStyle: React.CSSProperties = {
   border: "1px solid #e5e7eb",
   background: "#f9fafb",
   cursor: "pointer",
-};
-
-const distributionInfoCardStyle: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 14,
-  border: "1px solid #e5e7eb",
-  background: "#f9fafb",
-};
-
-const distributionInfoLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  color: "#6b7280",
-};
-
-const distributionInfoValueStyle: React.CSSProperties = {
-  marginTop: 4,
-  fontSize: 14,
-  fontWeight: 900,
-  color: "#111827",
 };
 
 const helperTextStyle: React.CSSProperties = {
