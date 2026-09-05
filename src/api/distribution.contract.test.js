@@ -11,6 +11,14 @@ const router = readFileSync(
   new URL("../app/routes/router.tsx", import.meta.url),
   "utf8"
 );
+const connectionCenterPage = readFileSync(
+  new URL("../pages/distribution/ConnectionCenterPage.tsx", import.meta.url),
+  "utf8"
+);
+const propertyDetail = readFileSync(
+  new URL("../pages/property-detail/PropertyDetailPage.tsx", import.meta.url),
+  "utf8"
+);
 
 test("Connection Center client is property-scoped and credentialed", () => {
   assert.match(
@@ -43,4 +51,31 @@ test("legacy property controls cannot bypass the commercial lifecycle", () => {
   assert.doesNotMatch(propertyEditor, /\/channex\/(?:provision|sync-availability)/i);
   assert.doesNotMatch(propertyEditor, /distributionEnabled:\s*form\.distributionEnabled/);
   assert.doesNotMatch(router, /ChannexFullSyncPanel/);
+});
+
+test("mutations are tenant-route scoped and carry fresh idempotency keys", () => {
+  assert.match(source, /channels\/\$\{encodeURIComponent\(provider\)\}\/prepare/);
+  assert.match(source, /channels\/\$\{encodeURIComponent\(provider\)\}\/session/);
+  assert.match(source, /"Idempotency-Key":\s*createIdempotencyKey/);
+  assert.match(source, /crypto\?\.randomUUID/);
+  assert.doesNotMatch(source, /localStorage|sessionStorage/);
+});
+
+test("Connection Center is routed from property detail and restricted to administrators", () => {
+  assert.match(router, /properties\/:id\/distribution/);
+  assert.match(propertyDetail, /Abrir centro de conexiones/);
+  assert.match(connectionCenterPage, /ADMIN_ROLES\.has\(user\.role\)/);
+});
+
+test("iframe is ephemeral, sandboxed and only rendered after a session exists", () => {
+  assert.match(connectionCenterPage, /\{session && <ConnectionFrame/);
+  assert.match(connectionCenterPage, /sandbox="allow-forms allow-popups allow-scripts allow-same-origin"/);
+  assert.match(connectionCenterPage, /referrerPolicy="no-referrer"/);
+  assert.match(connectionCenterPage, /srcDoc=\{props\.simulated/);
+  assert.doesNotMatch(connectionCenterPage, /localStorage|sessionStorage/);
+});
+
+test("simulation is explicit and states that it makes no external calls or data changes", () => {
+  assert.match(connectionCenterPage, /searchParams\.get\("simulation"\) === "1"/);
+  assert.match(connectionCenterPage, /no se harán llamadas externas ni cambios de datos/i);
 });

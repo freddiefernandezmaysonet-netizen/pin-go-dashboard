@@ -83,6 +83,20 @@ export type DistributionConnectionCenter = {
   }>;
 };
 
+export type DistributionConnectionSession = {
+  sessionId: string;
+  token: string;
+  launchUrl: string;
+  expiresAt: string;
+};
+
+export class DistributionApiError extends Error {
+  constructor(readonly code: string, readonly status: number) {
+    super(code);
+    this.name = "DistributionApiError";
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -170,4 +184,84 @@ export async function getDistributionConnectionCenter(propertyId: string) {
   }
 
   return parseDistributionConnectionCenter(payload);
+}
+
+function createIdempotencyKey(action: string): string {
+  const random = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+  return `ota.${action}:${random}`.replace(/[^A-Za-z0-9._:-]/g, "-").slice(0, 120);
+}
+
+async function postDistribution(path: string, action: string): Promise<unknown> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": createIdempotencyKey(action),
+    },
+    body: "{}",
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const code = isRecord(payload) && typeof payload.error === "string"
+      ? payload.error
+      : "DISTRIBUTION_REQUEST_FAILED";
+    throw new DistributionApiError(code, response.status);
+  }
+  return payload;
+}
+
+export async function prepareDistributionChannel(
+  propertyId: string,
+  provider: "AIRBNB" | "BOOKING_COM"
+): Promise<"READY"> {
+  const payload = await postDistribution(
+    `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/${encodeURIComponent(provider)}/prepare`,
+    "prepare"
+  );
+  if (!isRecord(payload) || payload.ok !== true || payload.provisioningStatus !== "READY") {
+    throw new Error("INVALID_DISTRIBUTION_PREPARE_RESPONSE");
+  }
+  return "READY";
+}
+
+export async function issueDistributionConnectionSession(
+  propertyId: string,
+  provider: "AIRBNB" | "BOOKING_COM"
+): Promise<DistributionConnectionSession> {
+  const payload = await postDistribution(
+    `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/${encodeURIComponent(provider)}/session`,
+    "session"
+  );
+  if (!isRecord(payload) || payload.ok !== true || !isRecord(payload.session)) {
+    throw new Error("INVALID_DISTRIBUTION_SESSION_RESPONSE");
+  }
+  const session = payload.session;
+  if (
+    typeof session.sessionId !== "string" ||
+    typeof session.token !== "string" ||
+    typeof session.launchUrl !== "string" ||
+    typeof session.expiresAt !== "string"
+  ) {
+    throw new Error("INVALID_DISTRIBUTION_SESSION_RESPONSE");
+  }
+  const launchUrl = new URL(session.launchUrl);
+  if (launchUrl.protocol !== "https:") {
+    throw new Error("INVALID_DISTRIBUTION_SESSION_RESPONSE");
+  }
+  return session as DistributionConnectionSession;
+}
+
+export async function transitionDistributionConnectionSession(
+  sessionId: string,
+  event: "opened" | "completed" | "cancelled"
+): Promise<void> {
+  const payload = await postDistribution(
+    `/api/dashboard/distribution/sessions/${encodeURIComponent(sessionId)}/${event}`,
+    `session-${event}`
+  );
+  if (!isRecord(payload) || payload.ok !== true) {
+    throw new Error("INVALID_DISTRIBUTION_TRANSITION_RESPONSE");
+  }
 }
