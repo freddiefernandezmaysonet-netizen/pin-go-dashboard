@@ -1,3 +1,5 @@
+import { isAllowedDistributionFrameUrl } from "../lib/distributionFramePolicy";
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
 export const DISTRIBUTION_PROVIDERS = [
@@ -85,7 +87,6 @@ export type DistributionConnectionCenter = {
 
 export type DistributionConnectionSession = {
   sessionId: string;
-  token: string;
   launchUrl: string;
   expiresAt: string;
 };
@@ -240,14 +241,12 @@ export async function issueDistributionConnectionSession(
   const session = payload.session;
   if (
     typeof session.sessionId !== "string" ||
-    typeof session.token !== "string" ||
     typeof session.launchUrl !== "string" ||
     typeof session.expiresAt !== "string"
   ) {
     throw new Error("INVALID_DISTRIBUTION_SESSION_RESPONSE");
   }
-  const launchUrl = new URL(session.launchUrl);
-  if (launchUrl.protocol !== "https:") {
+  if (!isAllowedDistributionFrameUrl(session.launchUrl)) {
     throw new Error("INVALID_DISTRIBUTION_SESSION_RESPONSE");
   }
   return session as DistributionConnectionSession;

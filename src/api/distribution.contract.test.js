@@ -3,6 +3,13 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const source = readFileSync(new URL("./distribution.ts", import.meta.url), "utf8");
+const framePolicy = readFileSync(
+  new URL("../lib/distributionFramePolicy.ts", import.meta.url),
+  "utf8"
+);
+const vercel = JSON.parse(
+  readFileSync(new URL("../../vercel.json", import.meta.url), "utf8")
+);
 const propertyEditor = readFileSync(
   new URL("../pages/properties/PropertyEditPage.tsx", import.meta.url),
   "utf8"
@@ -73,6 +80,20 @@ test("iframe is ephemeral, sandboxed and only rendered after a session exists", 
   assert.match(connectionCenterPage, /referrerPolicy="no-referrer"/);
   assert.match(connectionCenterPage, /srcDoc=\{props\.simulated/);
   assert.doesNotMatch(connectionCenterPage, /localStorage|sessionStorage/);
+});
+
+test("connection session is restricted to exact frame origins without a duplicated token field", () => {
+  assert.doesNotMatch(source, /typeof session\.token/);
+  assert.match(source, /isAllowedDistributionFrameUrl\(session\.launchUrl\)/);
+  assert.match(framePolicy, /https:\/\/app\.channex\.io/);
+  assert.match(framePolicy, /https:\/\/staging\.channex\.io/);
+  assert.match(framePolicy, /DISTRIBUTION_FRAME_ORIGINS\.has\(parsed\.origin\)/);
+
+  const csp = vercel.headers
+    .flatMap((entry) => entry.headers)
+    .find((header) => header.key === "Content-Security-Policy")?.value;
+  assert.match(csp, /frame-src 'self' https:\/\/app\.channex\.io https:\/\/staging\.channex\.io/);
+  assert.match(csp, /object-src 'none'/);
 });
 
 test("simulation is explicit and states that it makes no external calls or data changes", () => {

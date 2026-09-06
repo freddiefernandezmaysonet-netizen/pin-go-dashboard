@@ -131,7 +131,7 @@ export function ConnectionCenterPage() {
     try {
       if (simulated) {
         setFrameReady(false);
-        setSession({ provider, value: { sessionId: `simulation-${provider}`, token: "simulation-only", launchUrl: "https://simulation.invalid/connect", expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } });
+        setSession({ provider, value: { sessionId: `simulation-${provider}`, launchUrl: "https://simulation.invalid/connect", expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } });
       } else {
         await prepareDistributionChannel(id, provider);
         setFrameReady(false);
