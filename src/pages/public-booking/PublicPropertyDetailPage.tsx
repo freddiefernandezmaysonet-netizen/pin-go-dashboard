@@ -1950,54 +1950,46 @@ function formatDisplayTime(time?: string | null) {
   preferredLanguage,
 ]);
 
-useEffect(() => {
-  if (!property?.id) return;
+const refreshBlockedDates = useCallback(async () => {
+  if (!property?.id) {
+    setBlockedDates([]);
+    return;
+  }
 
-  let active = true;
+  try {
+    const today = new Date();
+    const from = toDateInputValue(today);
+    const to = toDateInputValue(addDays(today, 365));
 
-  async function loadBlockedDates() {
-    try {
-      const today = new Date();
-      const from = toDateInputValue(today);
-      const to = toDateInputValue(addDays(today, 365));
+    const res = await fetch(`${API_BASE}/api/public-booking/blocked-dates`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        propertyId: property.id,
+        from,
+        to,
+      }),
+    });
 
-      const res = await fetch(`${API_BASE}/api/public-booking/blocked-dates`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          propertyId: property?.id,
-          from,
-          to,
-        }),
-      });
+    const data = await res.json();
 
-      const data = await res.json();
+    if (!res.ok || !data.ok) {
+      setBlockedDates([]);
+      return;
+    }
 
-      if (!active) return;
-
-      if (!res.ok || !data.ok) {
-        setBlockedDates([]);
-        return;
-      }
-
-      setBlockedDates(Array.isArray(data.blockedDates) ? data.blockedDates : []);
-    } catch (err) {
-  console.error("[blocked dates frontend error]", err);
-  if (active) {
+    setBlockedDates(Array.isArray(data.blockedDates) ? data.blockedDates : []);
+  } catch (err) {
+    console.error("[blocked dates frontend error]", err);
     setBlockedDates([]);
   }
-}
-
-  }
-
-  loadBlockedDates();
-
-  return () => {
-    active = false;
-  };
 }, [property?.id]);
+
+useEffect(() => {
+  void refreshBlockedDates();
+}, [refreshBlockedDates]);
 
 useEffect(() => {
   let active = true;
@@ -2163,6 +2155,26 @@ guestAcceptedSecurePreCheckinRequirementSource:
       });
 
       const data = await res.json();
+
+      if (
+        res.status === 409 &&
+        data?.error === "Property is not available for the selected dates"
+      ) {
+        setPricing(null);
+        await refreshBlockedDates();
+        setBookingError(
+          preferredLanguage === "es"
+            ? "Estas fechas acaban de dejar de estar disponibles. Selecciona otras fechas para continuar."
+            : "These dates just became unavailable. Select different dates to continue."
+        );
+        window.setTimeout(() => {
+          document.getElementById("pbe-booking-title")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }, 0);
+        return;
+      }
 
       if (!res.ok || !data.ok || !data.checkoutUrl) {
         throw new Error(
