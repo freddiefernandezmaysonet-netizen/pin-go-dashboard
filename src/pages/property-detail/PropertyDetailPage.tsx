@@ -8,6 +8,7 @@ import GuestExperienceCard, {
   type GuestExperiencePreset,
 } from "../../components/properties/GuestExperienceCard";
 import { getVisibleReservationSourceLabel } from "../../lib/whiteLabel";
+import { useAuth } from "../../auth/AuthProvider";
 
 type PropertyRow = {
   id: string;
@@ -673,6 +674,7 @@ function applyGuestExperiencePresetToDevices(
 
 export function PropertyDetailPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [tab, setTab] = useState<"overview" | "locks" | "reservations" | "access">("overview");
 
   const [item, setItem] = useState<PropertyRow | null>(null);
@@ -1252,6 +1254,17 @@ function removeGuestExperienceDevice(deviceId: string) {
                   This view is focused on <b>upcoming reservations</b> and <b>active access</b> for this property.
                 </div>
               </SectionCard>
+
+              {(user?.role === "ORG_ADMIN" || user?.role === "ADMIN" || user?.role === "PLATFORM_ADMIN") && (
+                <SectionCard title="Channel distribution">
+                  <div style={{ display: "grid", gap: 12, color: "#6b7280", lineHeight: 1.7 }}>
+                    <span>Conecta y supervisa los canales de reserva de esta propiedad.</span>
+                    <Link to={`/properties/${id}/distribution`} style={{ color: "#2563eb", fontWeight: 700 }}>
+                      Abrir centro de conexiones →
+                    </Link>
+                  </div>
+                </SectionCard>
+              )}
             </div>
 
             <SectionCard
