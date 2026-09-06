@@ -8,6 +8,7 @@ import { useBrand } from "../../branding/BrandProvider";
 import type { PublicReviewsSummary } from "../../components/reviews/PublicReviewsSection";
 import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
+import { parseBookingSearchHandoff } from "./bookingSearchHandoff";
 import "./PublicBookingExperience.css";
 
 const PublicReviewsSection = lazy(async () => {
@@ -1583,8 +1584,13 @@ export default function PublicPropertyDetailPage() {
     }
   }); 
   
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
+  const bookingSearchHandoff = useMemo(
+    () => parseBookingSearchHandoff(window.location.search),
+    []
+  );
+
+  const [checkIn, setCheckIn] = useState(bookingSearchHandoff?.checkIn ?? "");
+  const [checkOut, setCheckOut] = useState(bookingSearchHandoff?.checkOut ?? "");
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
@@ -1602,7 +1608,7 @@ export default function PublicPropertyDetailPage() {
  
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
-  const [adults, setAdults] = useState(1);
+  const [adults, setAdults] = useState(bookingSearchHandoff?.guests ?? 1);
   const [children, setChildren] = useState(0);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [checkoutStarted, setCheckoutStarted] = useState(false);
@@ -1851,6 +1857,13 @@ const location = [
   ]
     .filter(Boolean)
     .join(", ");
+
+  useEffect(() => {
+    const maxGuests = property?.maxGuests;
+    if (!maxGuests || maxGuests < 1) return;
+
+    setAdults((current) => Math.max(1, Math.min(current, maxGuests)));
+  }, [property?.maxGuests]);
 
   function updateAdults(nextValue: number) {
     const maxGuests = property?.maxGuests ?? 99;
