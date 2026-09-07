@@ -1,0 +1,50 @@
+name: Temporary Direct Booking Calendar Handoff Month Apply
+
+on:
+  push:
+    branches:
+      - agent/direct-booking-calendar-handoff-month
+    paths:
+      - ".github/workflows/direct-booking-calendar-handoff-month-apply.yml"
+      - ".github/scripts/apply_direct_booking_calendar_handoff_month.py"
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/direct-booking-calendar-handoff-month
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Apply anchored Direct Booking calendar patch
+        run: python .github/scripts/apply_direct_booking_calendar_handoff_month.py
+
+      - name: Verify calendar handoff marker
+        run: grep -F 'defaultMonth={fromDateInputValue(checkIn)}' src/pages/public-booking/PublicPropertyDetailPage.tsx
+
+      - name: Install locked dependencies
+        run: npm ci --silent --no-audit --no-fund
+
+      - name: Build dashboard
+        run: npm run build
+
+      - name: Commit only Direct Booking calendar change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/public-booking/PublicPropertyDetailPage.tsx
+          test -n "$(git status --porcelain src/pages/public-booking/PublicPropertyDetailPage.tsx)"
+          git commit -m "Open Direct Booking calendar at handed-off stay month"
+          git push origin HEAD:agent/direct-booking-calendar-handoff-month
