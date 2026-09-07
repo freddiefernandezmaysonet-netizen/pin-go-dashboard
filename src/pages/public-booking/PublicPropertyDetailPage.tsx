@@ -2958,6 +2958,7 @@ return (
     <DayPicker     
       mode="range"
       numberOfMonths={2}
+      defaultMonth={fromDateInputValue(checkIn)}
       locale={preferredLanguage === "es" ? es : enUS}
       selected={{
         from: fromDateInputValue(checkIn),
