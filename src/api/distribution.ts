@@ -227,6 +227,19 @@ export async function prepareDistributionChannel(
   return "READY";
 }
 
+export async function reconcileDistributionChannel(
+  propertyId: string,
+  provider: "AIRBNB" | "BOOKING_COM"
+): Promise<void> {
+  const payload = await postDistribution(
+    `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/${encodeURIComponent(provider)}/reconcile`,
+    "reconcile"
+  );
+  if (!isRecord(payload) || payload.ok !== true || !isRecord(payload.readiness)) {
+    throw new Error("INVALID_DISTRIBUTION_RECONCILIATION_RESPONSE");
+  }
+}
+
 export async function issueDistributionConnectionSession(
   propertyId: string,
   provider: "AIRBNB" | "BOOKING_COM"
