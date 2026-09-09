@@ -13,6 +13,7 @@ import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPa
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
 import { ConnectionCenterPage } from "../../pages/distribution/ConnectionCenterPage";
+import { AirbnbConnectionCallbackPage } from "../../pages/distribution/AirbnbConnectionCallbackPage";
 import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
 import { LockDetailPage } from "../../pages/lock-detail/LockDetailPage";
 import { PmsConnectionsPage } from "../../pages/integrations/PmsConnectionsPage";
@@ -73,7 +74,6 @@ function ReviewRouteBoundary({ children }: { children: ReactNode }) {
   );
 }
 
-
 function RootRedirect() {
   const host = window.location.hostname;
   const { isCustomBrand } = useBrand();
@@ -116,31 +116,17 @@ function BrandOrganizationRoute({ children }: { children: ReactElement }) {
 
 function PlatformAdminRoute({ children }: { children: ReactElement }) {
   const { user } = useAuth();
-  return user?.role === "PLATFORM_ADMIN" ? (
-    children
-  ) : (
-    <Navigate to="/overview" replace />
-  );
+  return user?.role === "PLATFORM_ADMIN" ? children : <Navigate to="/overview" replace />;
 }
 
 function OrganizationBrandReviewerRoute({ children }: { children: ReactElement }) {
   const { user } = useAuth();
-  return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" ? (
-    children
-  ) : (
-    <Navigate to="/overview" replace />
-  );
+  return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" ? children : <Navigate to="/overview" replace />;
 }
 
 function ReviewManagerRoute({ children }: { children: ReactElement }) {
   const { user } = useAuth();
-  return user?.role === "ORG_ADMIN" ||
-    user?.role === "ADMIN" ||
-    user?.role === "PLATFORM_ADMIN" ? (
-    children
-  ) : (
-    <Navigate to="/overview" replace />
-  );
+  return user?.role === "ORG_ADMIN" || user?.role === "ADMIN" || user?.role === "PLATFORM_ADMIN" ? children : <Navigate to="/overview" replace />;
 }
 
 function OrganizationRoute() {
@@ -152,232 +138,74 @@ function OrganizationRoute() {
   );
 }
 
-function PropertyDetailRoute() {
-  return <PropertyDetailPage />;
-}
-
+function PropertyDetailRoute() { return <PropertyDetailPage />; }
 function PropertyCalendarRoute() {
-  return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <PropertyCalendarStayRestrictionsPanel />
-      <PropertyCalendarPage />
-    </div>
-  );
+  return <div style={{ display: "grid", gap: 20 }}><PropertyCalendarStayRestrictionsPanel /><PropertyCalendarPage /></div>;
 }
-
 function ReservationDetailRoute() {
-  return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <ManualReservationDateChangePanel />
-      <ReservationDetailPage />
-    </div>
-  );
+  return <div style={{ display: "grid", gap: 20 }}><ManualReservationDateChangePanel /><ReservationDetailPage /></div>;
 }
 
 export const router = createBrowserRouter([
- 
+  { path: "/home", element: <LandingRoute /> },
+  { path: "/book/:organizationSlug", element: <BrandOrganizationRoute><PublicBookingSitePage /></BrandOrganizationRoute> },
+  { path: "/book/:organizationSlug/:propertySlug", element: <BrandOrganizationRoute><PublicPropertyDetailPage /></BrandOrganizationRoute> },
+  { path: "/booking/success", element: <PublicBookingSuccessPage /> },
+  { path: "/booking/cancel", element: <PublicBookingCancelPage /> },
+  { path: "/booking/manage/:guestToken", element: <GuestCancellationPage /> },
+  ...(reviewsE1Enabled ? [{ path: "/review", element: <ReviewRouteBoundary><GuestReviewPage /></ReviewRouteBoundary> }] : []),
+  { path: "/", element: <RootRedirect /> },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/organization-invitation", element: <OrganizationInvitationPage /> },
+  { path: "/signup", element: <StandardBrandRoute><SignupPage /></StandardBrandRoute> },
+  { path: "/legal/terms", element: <TermsPage /> },
+  { path: "/legal/privacy", element: <PrivacyPage /> },
+  { path: "/legal/support-policy", element: <SupportPolicyPage /> },
+  { path: "/legal/billing-policy", element: <BillingPolicyPage /> },
+  { path: "/signup/success", element: <StandardBrandRoute><SignupSuccessPage /></StandardBrandRoute> },
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
-  path: "/home",
-  element: <LandingRoute />,
-  },
-  {
-  path: "/book/:organizationSlug",
-  element: (
-    <BrandOrganizationRoute>
-      <PublicBookingSitePage />
-    </BrandOrganizationRoute>
-  ),
-  },
-  {
-  path: "/book/:organizationSlug/:propertySlug",
-  element: (
-    <BrandOrganizationRoute>
-      <PublicPropertyDetailPage />
-    </BrandOrganizationRoute>
-  ),
-  },
-  {
-  path: "/booking/success",
-  element: <PublicBookingSuccessPage />,
-  },
-  {
-  path: "/booking/cancel",
-  element: <PublicBookingCancelPage />,
-  },
-  {
-  path: "/booking/manage/:guestToken",
-  element: <GuestCancellationPage />,
-  },
-  ...(reviewsE1Enabled
-    ? [{ path: "/review", element: <ReviewRouteBoundary><GuestReviewPage /></ReviewRouteBoundary> }]
-    : []),
-  {
-  path: "/",
-  element: <RootRedirect />,
-  },
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/organization-invitation",
-    element: <OrganizationInvitationPage />,
-  },
-  {
-    path: "/signup",
-    element: (
-      <StandardBrandRoute>
-        <SignupPage />
-      </StandardBrandRoute>
-    ),
-  },
-  { 
-    path: "/legal/terms",
-    element: <TermsPage /> 
-  },
-  { 
-    path: "/legal/privacy",
-    element: <PrivacyPage /> 
-  },
-  { 
-  path: "/legal/support-policy",
-  element: <SupportPolicyPage /> 
-  },
-  { 
-  path: "/legal/billing-policy",
-  element: <BillingPolicyPage /> 
-  },
-  {
-    path: "/signup/success",
-    element: (
-      <StandardBrandRoute>
-        <SignupSuccessPage />
-      </StandardBrandRoute>
-    ),
-  },
-  {
-    path: "/forgot-password",
-    element: <ForgotPasswordPage />,
-  },
-  {
-    path: "/reset-password",
-    element: <ResetPasswordPage />,
-  },
-
-  {
-    element: (
-      <RequireAuth>
-        <AppShell />
-      </RequireAuth>
-    ),
+    element: <RequireAuth><AppShell /></RequireAuth>,
     children: [
       { path: "/", element: <Navigate to="/overview" replace /> },
       { path: "/onboarding", element: <OnboardingPage /> },
       { path: "/onboarding/property", element: <CreatePropertyPage /> },
       { path: "/overview", element: <OverviewPage /> },
-
       { path: "/properties", element: <PropertiesPage /> },
       { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
       { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
       { path: "/properties/:id/distribution", element: <ConnectionCenterPage /> },
-     
+      { path: "/distribution/airbnb/callback", element: <AirbnbConnectionCallbackPage /> },
       { path: "/locks", element: <LocksPage /> },
       { path: "/locks/nfc-sync", element: <NfcSyncPage /> },
       { path: "/locks/:id", element: <LockDetailPage /> },
-
       { path: "/reservations", element: <ReservationsPage /> },
       { path: "/reservations/:id", element: <ReservationDetailRoute /> },
-
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
-      {
-        path: "/organization/branding-review",
-        element: (
-          <OrganizationBrandReviewerRoute>
-            <OrganizationBrandingReviewPage />
-          </OrganizationBrandReviewerRoute>
-        ),
-      },
-      
+      { path: "/organization/branding-review", element: <OrganizationBrandReviewerRoute><OrganizationBrandingReviewPage /></OrganizationBrandReviewerRoute> },
       { path: "/health", element: <HealthCenterPage /> },
       { path: "/automation/history", element: <DeviceAutomationHistoryPage /> },
       { path: "/apms/decision-history", element: <ApmsDecisionHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
-      ...(reviewsE1Enabled
-        ? [{ path: "/reputation", element: <ReviewManagerRoute><ReviewRouteBoundary><ReputationPage /></ReviewRouteBoundary></ReviewManagerRoute> }]
-        : []),
-           
+      ...(reviewsE1Enabled ? [{ path: "/reputation", element: <ReviewManagerRoute><ReviewRouteBoundary><ReputationPage /></ReviewRouteBoundary></ReviewManagerRoute> }] : []),
       { path: "/billing", element: <BillingPage /> },
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
-
-      {
-        path: "/admin/branding",
-        element: (
-          <PlatformAdminRoute>
-            <AdminBrandingPage />
-          </PlatformAdminRoute>
-        ),
-      },
-      ...(reviewsE1Enabled
-        ? [{ path: "/admin/review-moderation", element: <PlatformAdminRoute><ReviewRouteBoundary><AdminReviewModerationPage /></ReviewRouteBoundary></PlatformAdminRoute> }]
-        : []),
-
-      {
-        path: "/integrations/pms",
-        element: shouldShowLegacyPmsUi() ? (
-          <PmsConnectionsPage />
-        ) : (
-          <Navigate to="/overview" replace />
-        ),
-      },
+      { path: "/admin/branding", element: <PlatformAdminRoute><AdminBrandingPage /></PlatformAdminRoute> },
+      ...(reviewsE1Enabled ? [{ path: "/admin/review-moderation", element: <PlatformAdminRoute><ReviewRouteBoundary><AdminReviewModerationPage /></ReviewRouteBoundary></PlatformAdminRoute> }] : []),
+      { path: "/integrations/pms", element: shouldShowLegacyPmsUi() ? <PmsConnectionsPage /> : <Navigate to="/overview" replace /> },
       { path: "/integrations/ttlock", element: <TtlockConnectPage /> },
       { path: "/integrations/tuya-premium", element: <TuyaIntegrationPremiumPage /> },
       { path: "/integrations/tuya", element: <TuyaIntegrationPage /> },
-      {
-        path: "/integrations/pms/listings-mapping",
-        element: shouldShowLegacyPmsUi() ? (
-          <ListingsMappingPage />
-        ) : (
-          <Navigate to="/overview" replace />
-        ),
-      },
+      { path: "/integrations/pms/listings-mapping", element: shouldShowLegacyPmsUi() ? <ListingsMappingPage /> : <Navigate to="/overview" replace /> },
     ],
   },
-
-{
-  path: "/admin/sales-followups",
-  element: (
-    <RequireAuth>
-      <PlatformAdminRoute>
-        <AdminSalesFollowupsPage />
-      </PlatformAdminRoute>
-    </RequireAuth>
-  ),
-},
-
- {
-  path: "/admin/demo-center",
-  element: (
-    <RequireAuth>
-      <PlatformAdminRoute>
-        <AdminDemoCenterPage />
-      </PlatformAdminRoute>
-    </RequireAuth>
-  ),
-},
-
-{
-    path: "/admin/financial",
-    element: (
-      <RequireAuth>
-        <PlatformAdminRoute>
-          <AdminFinancialPage />
-        </PlatformAdminRoute>
-      </RequireAuth>
-    ),
-  },
+  { path: "/admin/sales-followups", element: <RequireAuth><PlatformAdminRoute><AdminSalesFollowupsPage /></PlatformAdminRoute></RequireAuth> },
+  { path: "/admin/demo-center", element: <RequireAuth><PlatformAdminRoute><AdminDemoCenterPage /></PlatformAdminRoute></RequireAuth> },
+  { path: "/admin/financial", element: <RequireAuth><PlatformAdminRoute><AdminFinancialPage /></PlatformAdminRoute></RequireAuth> },
 ]);
