@@ -81,7 +81,8 @@ test("Airbnb callback is authenticated, strips OAuth artifacts, and verifies ser
 
 test("Airbnb callback never represents authorization as activation", () => {
   assert.match(callbackPage, /La activación del canal permanece separada de esta autorización/);
-  assert.match(callbackPage, /continuará con la preparación del mapeo antes de cualquier activación/);
+  assert.match(callbackPage, /Falta confirmar la cuenta consultando sus anuncios de Airbnb, antes de cualquier mapeo o activación/);
+  assert.doesNotMatch(callbackPage, /Autorización confirmada|Airbnb confirmó la autorización/);
   assert.doesNotMatch(callbackPage, /activar|activation endpoint/i);
 });
 

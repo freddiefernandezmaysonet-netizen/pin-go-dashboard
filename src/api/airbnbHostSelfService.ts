@@ -14,10 +14,11 @@ export type AirbnbHostConnectionLink = {
 
 export type AirbnbHostCallbackResult = {
   success: boolean;
-  propertyId: string;
+  propertyId: string | null;
   channelId: string | null;
   channelActive: boolean | null;
-  nextAction: "RETRY_AUTHORIZATION" | "MAPPING_REQUIRED";
+  airbnbAccountVerified: false;
+  nextAction: "RETRY_AUTHORIZATION" | "LISTING_DISCOVERY_REQUIRED";
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -114,10 +115,16 @@ export async function verifyAirbnbHostCallback(args: {
   const result = payload.result;
   if (
     typeof result.success !== "boolean" ||
-    typeof result.propertyId !== "string" ||
+    !(result.propertyId === null || typeof result.propertyId === "string") ||
     !(result.channelId === null || typeof result.channelId === "string") ||
     !(result.channelActive === null || typeof result.channelActive === "boolean") ||
-    (result.nextAction !== "RETRY_AUTHORIZATION" && result.nextAction !== "MAPPING_REQUIRED")
+    result.airbnbAccountVerified !== false ||
+    (result.success
+      ? result.nextAction !== "LISTING_DISCOVERY_REQUIRED" ||
+        typeof result.propertyId !== "string" || !result.propertyId ||
+        typeof result.channelId !== "string" || !result.channelId
+      : result.nextAction !== "RETRY_AUTHORIZATION" ||
+        result.propertyId !== null || result.channelId !== null || result.channelActive !== null)
   ) {
     throw new Error("INVALID_AIRBNB_CALLBACK_VERIFICATION_RESPONSE");
   }

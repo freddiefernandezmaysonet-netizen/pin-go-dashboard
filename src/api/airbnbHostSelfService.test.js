@@ -132,3 +132,46 @@ for (const status of [422, 503]) {
     assert.equal(calls.length, 1);
   });
 }
+
+// Internal Pin&Go DTOs for the documented callback + exact-resource-read phase.
+// These fields are NOT represented as fields returned by Channex.
+function pendingRead(overrides = {}) {
+  return { success: true, propertyId: "property-1", channelId: "716305c4-561a-4561-a187-7f5b8aeb5920",
+    channelActive: true, airbnbAccountVerified: false, nextAction: "LISTING_DISCOVERY_REQUIRED", ...overrides };
+}
+const callbackArgs = { success: "true", channelId: "716305c4-561a-4561-a187-7f5b8aeb5920", token: "test-only-signed-state" };
+
+test("callback client accepts only pending account verification after exact resource read", async () => {
+  const result = pendingRead(); const { api, calls } = client({ ok: true, result });
+  assert.deepEqual(await api.verifyAirbnbHostCallback(callbackArgs), result);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://api.example.test/api/dashboard/distribution/airbnb/callback/verify");
+  assert.equal(calls[0].options.credentials, "include");
+  assert.equal(calls[0].options.cache, "no-store");
+  assert.deepEqual(JSON.parse(calls[0].options.body), callbackArgs);
+});
+for (const [label, overrides] of [
+  ["premature mapping", { nextAction: "MAPPING_REQUIRED" }],
+  ["premature activation", { nextAction: "ACTIVE" }],
+  ["claimed account verification", { airbnbAccountVerified: true }],
+  ["absent verification marker", { airbnbAccountVerified: undefined }],
+  ["missing property", { propertyId: null }],
+  ["missing channel", { channelId: null }],
+  ["empty channel", { channelId: "" }],
+  ["incorrect active type", { channelActive: "true" }],
+]) {
+  test(`callback parser rejects incompatible phase evidence: ${label}`, async () => {
+    const { api } = client({ ok: true, result: pendingRead(overrides) });
+    await assert.rejects(() => api.verifyAirbnbHostCallback(callbackArgs), (e) => e.message === "INVALID_AIRBNB_CALLBACK_VERIFICATION_RESPONSE");
+  });
+}
+test("failure DTO cannot infer a property, channel or authorization", async () => {
+  const result = { success: false, propertyId: null, channelId: null, channelActive: null,
+    airbnbAccountVerified: false, nextAction: "RETRY_AUTHORIZATION" };
+  const { api } = client({ ok: true, result });
+  assert.deepEqual(await api.verifyAirbnbHostCallback({ success: "false", channelId: null, token: "" }), result);
+  for (const changed of [{ propertyId: "property-1" }, { channelId: "channel-1" }, { channelActive: true }, { nextAction: "LISTING_DISCOVERY_REQUIRED" }]) {
+    const { api: invalid } = client({ ok: true, result: { ...result, ...changed } });
+    await assert.rejects(() => invalid.verifyAirbnbHostCallback(callbackArgs), (e) => e.message === "INVALID_AIRBNB_CALLBACK_VERIFICATION_RESPONSE");
+  }
+});

@@ -1,0 +1,33 @@
+name: Airbnb Document-Exact Gate 2 (dashboard)
+
+on:
+  push:
+    branches:
+      - agent/airbnb-document-exact-closure
+
+permissions:
+  contents: read
+
+jobs:
+  callback-resource-read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact working branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run mocked client contracts and real callback component with isolated hooks
+        run: node --test src/api/distribution.contract.test.js src/pages/distribution/AirbnbConnectionCallbackPage.test.js
+      - name: Build static dashboard without deployment
+        run: npm run build
+      - name: Prove router auth frame policy and branch deploy veto unchanged
+        run: git diff --exit-code e131562aa5b83dbb68cadc5d9aa1112dc0c0fda6 -- src/auth src/app/routes/router.tsx src/lib/distributionFramePolicy.ts src/pages/distribution/ConnectionCenterPage.tsx vercel.json
