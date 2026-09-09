@@ -7,6 +7,7 @@ import {
   getDistributionConnectionCenter,
   issueDistributionConnectionSession,
   prepareDistributionChannel,
+  reconcileDistributionChannel,
   transitionDistributionConnectionSession,
   type DistributionConnectionCenter,
   type DistributionConnectionSession,
@@ -92,6 +93,49 @@ function ConnectionFrame(props: {
   );
 }
 
+function AirbnbExternalHandoff(props: {
+  propertyName: string;
+  session: DistributionConnectionSession;
+  onOpen(): void;
+  onComplete(): void;
+  onClose(): void;
+  completing: boolean;
+  ready: boolean;
+}) {
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="airbnb-handoff-title" style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(15,23,42,.65)", display: "grid", placeItems: "center", padding: 20 }}>
+      <section style={{ width: "min(620px, 100%)", background: "white", borderRadius: 18, overflow: "hidden" }}>
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px", borderBottom: "1px solid #e2e8f0" }}>
+          <div><strong id="airbnb-handoff-title">Conecta {props.propertyName} con Airbnb</strong><div style={{ color: "#64748b", fontSize: 13 }}>Autorización segura fuera de Pin&amp;Go</div></div>
+          <button type="button" onClick={props.onClose} aria-label="Cerrar conexión" style={{ border: 0, background: "transparent", cursor: "pointer" }}><X size={22} /></button>
+        </header>
+        <div style={{ display: "grid", gap: 16, padding: 24 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: 16, borderRadius: 14, background: "#f0fdf4", color: "#166534" }}>
+            <ShieldCheck size={22} style={{ flex: "0 0 auto", marginTop: 2 }} />
+            <div><strong>Tu contraseña permanece privada.</strong><div style={{ marginTop: 4, lineHeight: 1.5 }}>Airbnb abrirá en una página separada para que autorices la conexión directamente. Pin&amp;Go no recibe ni almacena tus credenciales de Airbnb.</div></div>
+          </div>
+          <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>Pulsa <strong>Continuar con Airbnb</strong>, completa la autorización en la nueva página y luego regresa a Pin&amp;Go para verificar el estado de la conexión.</p>
+          <a
+            href={props.session.launchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            referrerPolicy="no-referrer"
+            onClick={props.onOpen}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 44, padding: "0 18px", borderRadius: 10, background: "#111827", color: "white", textDecoration: "none", fontWeight: 700 }}
+          >
+            Continuar con Airbnb <ExternalLink size={17} />
+          </a>
+          <div style={{ color: "#64748b", fontSize: 13 }}>La sesión es temporal. Si expira antes de completar la autorización, Pin&amp;Go generará una nueva sesión.</div>
+        </div>
+        <footer style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: 16, borderTop: "1px solid #e2e8f0" }}>
+          <button type="button" onClick={props.onClose} disabled={props.completing}>Cancelar</button>
+          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready}>{props.completing ? "Verificando…" : props.ready ? "Ya terminé en Airbnb" : "Esperando autorización…"}</button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 export function ConnectionCenterPage() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -157,6 +201,15 @@ export function ConnectionCenterPage() {
     } catch { setError("La sesión abrió, pero no pudimos confirmar su estado."); }
   }
 
+  function markExternalOpened() {
+    if (!session) return;
+    setFrameReady(true);
+    if (simulated) return;
+    void transitionDistributionConnectionSession(session.value.sessionId, "opened").catch(() => {
+      setError("Airbnb abrió, pero no pudimos registrar el inicio de la sesión. Puedes regresar e intentarlo nuevamente si la autorización no se completa.");
+    });
+  }
+
   async function closeSession() {
     const current = session;
     setSession(null);
@@ -167,21 +220,32 @@ export function ConnectionCenterPage() {
 
   async function completeSession() {
     if (!session) return;
+    const completedProvider = session.provider;
     setCompleting(true);
     try {
-      if (!simulated) await transitionDistributionConnectionSession(session.value.sessionId, "completed");
+      if (!simulated) {
+        await transitionDistributionConnectionSession(session.value.sessionId, "completed");
+        if (completedProvider === "AIRBNB") {
+          await reconcileDistributionChannel(id, "AIRBNB");
+        }
+      }
       setSession(null);
       setFrameReady(false);
-      setNotice(simulated ? "Simulación completada. No se modificaron datos." : "Conexión enviada para validación.");
+      setNotice(simulated ? "Simulación completada. No se modificaron datos." : completedProvider === "AIRBNB" ? "Airbnb fue verificado contra el estado real del canal. Revisa el estado actualizado antes de continuar." : "Conexión enviada para validación.");
       await load();
-    } catch {
-      setError("No pudimos completar la sesión.");
+    } catch (caught) {
+      if (caught instanceof DistributionApiError && completedProvider === "AIRBNB") {
+        setError("Terminaste el paso en Airbnb, pero Pin&Go todavía no pudo verificar la conexión. No se marcará como activa hasta que la verificación sea satisfactoria.");
+      } else {
+        setError("No pudimos completar la sesión.");
+      }
     } finally {
       setCompleting(false);
     }
   }
 
   const providerName = center?.channels.find((channel) => channel.provider === session?.provider)?.name ?? "canal";
+  const useExternalAirbnbHandoff = Boolean(session && session.provider === "AIRBNB" && !simulated);
 
   return (
     <main style={PAGE_STYLE}>
@@ -215,7 +279,18 @@ export function ConnectionCenterPage() {
         </section>
       )}
 
-      {session && <ConnectionFrame providerName={providerName} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
+      {session && useExternalAirbnbHandoff && (
+        <AirbnbExternalHandoff
+          propertyName={center?.property.name ?? "tu propiedad"}
+          session={session.value}
+          onOpen={markExternalOpened}
+          onComplete={() => void completeSession()}
+          onClose={() => void closeSession()}
+          completing={completing}
+          ready={frameReady}
+        />
+      )}
+      {session && !useExternalAirbnbHandoff && <ConnectionFrame providerName={providerName} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
     </main>
   );
 }
