@@ -7,6 +7,7 @@ import {
   getDistributionConnectionCenter,
   issueDistributionConnectionSession,
   prepareDistributionChannel,
+  reconcileDistributionChannel,
   transitionDistributionConnectionSession,
   type DistributionConnectionCenter,
   type DistributionConnectionSession,
@@ -219,15 +220,25 @@ export function ConnectionCenterPage() {
 
   async function completeSession() {
     if (!session) return;
+    const completedProvider = session.provider;
     setCompleting(true);
     try {
-      if (!simulated) await transitionDistributionConnectionSession(session.value.sessionId, "completed");
+      if (!simulated) {
+        await transitionDistributionConnectionSession(session.value.sessionId, "completed");
+        if (completedProvider === "AIRBNB") {
+          await reconcileDistributionChannel(id, "AIRBNB");
+        }
+      }
       setSession(null);
       setFrameReady(false);
-      setNotice(simulated ? "Simulación completada. No se modificaron datos." : "Autorización recibida. Estamos verificando el estado real de la conexión.");
+      setNotice(simulated ? "Simulación completada. No se modificaron datos." : completedProvider === "AIRBNB" ? "Airbnb fue verificado contra el estado real del canal. Revisa el estado actualizado antes de continuar." : "Conexión enviada para validación.");
       await load();
-    } catch {
-      setError("No pudimos completar la sesión.");
+    } catch (caught) {
+      if (caught instanceof DistributionApiError && completedProvider === "AIRBNB") {
+        setError("Terminaste el paso en Airbnb, pero Pin&Go todavía no pudo verificar la conexión. No se marcará como activa hasta que la verificación sea satisfactoria.");
+      } else {
+        setError("No pudimos completar la sesión.");
+      }
     } finally {
       setCompleting(false);
     }
