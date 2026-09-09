@@ -1,0 +1,30 @@
+name: Airbnb Document-Exact Gate 1 (dashboard)
+
+on:
+  push:
+    branches:
+      - agent/airbnb-document-exact-closure
+
+permissions:
+  contents: read
+
+jobs:
+  document-exact-handoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact working branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run mocked document-derived handoff tests
+        run: npm run test:distribution-connection-center
+      - name: Build static dashboard without deployment
+        run: npm run build

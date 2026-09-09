@@ -1,10 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
-const ALLOWED_AUTHORIZATION_ORIGINS = new Set([
-  "https://app.channex.io",
-  "https://staging.channex.io",
-]);
-
 export class AirbnbHostSelfServiceApiError extends Error {
   constructor(readonly code: string, readonly status: number) {
     super(code);
@@ -58,7 +53,7 @@ async function post(path: string, action: string, body: unknown): Promise<unknow
 }
 
 function safeAuthorizationUrl(value: unknown): string {
-  if (typeof value !== "string" || value.length > 4096) {
+  if (typeof value !== "string") {
     throw new Error("INVALID_AIRBNB_CONNECTION_LINK_RESPONSE");
   }
   try {
@@ -66,12 +61,13 @@ function safeAuthorizationUrl(value: unknown): string {
     if (
       parsed.protocol !== "https:" ||
       parsed.username ||
-      parsed.password ||
-      !ALLOWED_AUTHORIZATION_ORIGINS.has(parsed.origin)
+      parsed.password
     ) {
       throw new Error("invalid");
     }
-    return parsed.toString();
+    // The backend relays Channex's authorization URL, not its API origin.
+    // Preserve it exactly for the existing top-level navigation.
+    return value;
   } catch {
     throw new Error("INVALID_AIRBNB_CONNECTION_LINK_RESPONSE");
   }

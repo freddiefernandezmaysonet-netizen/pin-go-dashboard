@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import "./airbnbHostSelfService.test.js";
+
 const source = readFileSync(new URL("./distribution.ts", import.meta.url), "utf8");
 const airbnbSource = readFileSync(new URL("./airbnbHostSelfService.ts", import.meta.url), "utf8");
 const framePolicy = readFileSync(new URL("../lib/distributionFramePolicy.ts", import.meta.url), "utf8");
@@ -59,10 +61,9 @@ test("Airbnb real flow uses connection-link and top-level navigation, never the 
   assert.doesNotMatch(connectionCenterPage, /reconcileDistributionChannel/);
 });
 
-test("Airbnb authorization URL is constrained to exact provider origins", () => {
-  assert.match(airbnbSource, /https:\/\/app\.channex\.io/);
-  assert.match(airbnbSource, /https:\/\/staging\.channex\.io/);
-  assert.match(airbnbSource, /ALLOWED_AUTHORIZATION_ORIGINS\.has\(parsed\.origin\)/);
+test("Airbnb authorization handoff remains credentialed and separate from frame policy", () => {
+  // Executable document-derived URL cases run in airbnbHostSelfService.test.js.
+  // Other channels retain the exact-origin frame policy asserted below.
   assert.match(airbnbSource, /credentials:\s*"include"/);
   assert.match(airbnbSource, /cache:\s*"no-store"/);
 });
