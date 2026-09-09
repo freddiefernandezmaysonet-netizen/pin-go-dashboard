@@ -1,0 +1,35 @@
+name: Airbnb Document-Exact Gate 4 (dashboard)
+
+on:
+  push:
+    branches:
+      - agent/airbnb-document-exact-closure
+
+permissions:
+  contents: read
+
+jobs:
+  mapping-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact working branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run prior contracts and mocked mapping preflight client and component tests
+        run: node --test src/api/distribution.contract.test.js src/pages/distribution/AirbnbConnectionCallbackPage.test.js src/api/airbnbMappingPlan.test.js src/pages/distribution/AirbnbMappingPlan.test.js
+      - name: Typecheck isolated Airbnb API client
+        run: ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --types vite/client --skipLibCheck src/api/airbnbHostSelfService.ts
+      - name: Build static dashboard without deployment
+        run: npm run build
+      - name: Prove existing authentication frame policy Connection Center and deploy veto unchanged
+        run: git diff --exit-code 137c8776e68a41422ad11c18c6fdfe1bb121802d -- src/auth src/app/routes/router.tsx src/lib/distributionFramePolicy.ts src/pages/distribution/ConnectionCenterPage.tsx vercel.json

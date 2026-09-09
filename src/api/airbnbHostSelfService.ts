@@ -174,3 +174,52 @@ export async function discoverAirbnbHostListings(
   });
   return { propertyId, channelId, airbnbAccountVerified: true, listings, nextAction: "MAPPING_REQUIRED" };
 }
+
+// Internal proposal only. This DTO never authorizes a provider write.
+export type AirbnbHostMappingPlan = {
+  propertyId: string;
+  channelId: string;
+  listing: AirbnbHostListingSummary;
+  ratePlan: { id: string; source: "PIN_GO_PRIMARY_RATE_PLAN" };
+  mappingRequest: { mapping: { rate_plan_id: string; settings: { listing_id: string } } };
+  executable: false;
+  nextAction: "MAPPING_EXECUTION_REQUIRES_APPROVAL";
+};
+
+export async function prepareAirbnbHostMappingPlan(
+  propertyId: string,
+  channelId: string,
+  listingId: string
+): Promise<AirbnbHostMappingPlan> {
+  const response = await fetch(
+    `${API_BASE}/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/${encodeURIComponent(channelId)}/mapping-plan?listingId=${encodeURIComponent(listingId)}`,
+    { method: "GET", credentials: "include", cache: "no-store" }
+  );
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const code = isRecord(payload) && typeof payload.error === "string"
+      ? payload.error : "OTA_AIRBNB_MAPPING_PLAN_FAILED";
+    throw new AirbnbHostSelfServiceApiError(code, response.status);
+  }
+  const invalid = (): never => { throw new Error("INVALID_AIRBNB_MAPPING_PLAN_RESPONSE"); };
+  if (!isRecord(payload) || payload.ok !== true || !isRecord(payload.result)) return invalid();
+  const result = payload.result;
+  if (result.propertyId !== propertyId || result.channelId !== channelId ||
+      result.executable !== false || result.nextAction !== "MAPPING_EXECUTION_REQUIRES_APPROVAL" ||
+      !isRecord(result.listing) || result.listing.id !== listingId || !listingId ||
+      typeof result.listing.title !== "string" || !result.listing.title ||
+      !isRecord(result.ratePlan) || typeof result.ratePlan.id !== "string" || !result.ratePlan.id ||
+      result.ratePlan.source !== "PIN_GO_PRIMARY_RATE_PLAN" || !isRecord(result.mappingRequest)) return invalid();
+  const request = result.mappingRequest;
+  const mapping = request.mapping;
+  if (Object.keys(request).length !== 1 || !isRecord(mapping) || Object.keys(mapping).length !== 2 ||
+      mapping.rate_plan_id !== result.ratePlan.id || !isRecord(mapping.settings) ||
+      Object.keys(mapping.settings).length !== 1 || mapping.settings.listing_id !== listingId) return invalid();
+  return {
+    propertyId, channelId,
+    listing: { id: listingId, title: result.listing.title },
+    ratePlan: { id: result.ratePlan.id, source: "PIN_GO_PRIMARY_RATE_PLAN" },
+    mappingRequest: { mapping: { rate_plan_id: result.ratePlan.id, settings: { listing_id: listingId } } },
+    executable: false, nextAction: "MAPPING_EXECUTION_REQUIRES_APPROVAL",
+  };
+}

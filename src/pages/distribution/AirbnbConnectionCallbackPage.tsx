@@ -7,6 +7,8 @@ import {
   verifyAirbnbHostCallback,
   discoverAirbnbHostListings,
   type AirbnbHostListingSummary,
+  prepareAirbnbHostMappingPlan,
+  type AirbnbHostMappingPlan,
 } from "../../api/airbnbHostSelfService";
 import { useAuth } from "../../auth/AuthProvider";
 
@@ -26,6 +28,12 @@ export function AirbnbConnectionCallbackPage() {
   const [discovering, setDiscovering] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const discoveryPending = useRef(false);
+  const [selectedListingId, setSelectedListingId] = useState("");
+  const [mappingPlan, setMappingPlan] = useState<AirbnbHostMappingPlan | null>(null);
+  const [mappingBusy, setMappingBusy] = useState(false);
+  const [mappingError, setMappingError] = useState<string | null>(null);
+  const mappingAttempt = useRef(0);
+  const mappingPending = useRef(false);
 
   useEffect(() => {
     if (!user || !ADMIN_ROLES.has(user.role) || started.current) return;
@@ -75,9 +83,43 @@ export function AirbnbConnectionCallbackPage() {
       });
   }, [searchParams, user]);
 
+  function resetMappingProposal(listingId = "") {
+    mappingAttempt.current += 1;
+    mappingPending.current = false;
+    setSelectedListingId(listingId);
+    setMappingPlan(null);
+    setMappingError(null);
+    setMappingBusy(false);
+  }
+
+  async function previewMapping() {
+    if (!user || !ADMIN_ROLES.has(user.role) || status !== "CHANNEL_READ" ||
+        !propertyId || !channelId || discovering || discoveryPending.current || mappingPending.current ||
+        !selectedListingId || !listings?.some(listing => listing.id === selectedListingId)) return;
+    const attempt = ++mappingAttempt.current;
+    mappingPending.current = true;
+    setMappingBusy(true);
+    setMappingPlan(null);
+    setMappingError(null);
+    try {
+      const plan = await prepareAirbnbHostMappingPlan(propertyId, channelId, selectedListingId);
+      if (mappingAttempt.current === attempt) setMappingPlan(plan);
+    } catch {
+      if (mappingAttempt.current === attempt) {
+        setMappingError("No pudimos preparar la propuesta. No se creó ningún mapeo ni se activó el canal.");
+      }
+    } finally {
+      if (mappingAttempt.current === attempt) {
+        mappingPending.current = false;
+        setMappingBusy(false);
+      }
+    }
+  }
+
   async function discoverListings() {
     if (!user || !ADMIN_ROLES.has(user.role) || status !== "CHANNEL_READ" ||
         !propertyId || !channelId || discoveryPending.current) return;
+    resetMappingProposal();
     discoveryPending.current = true;
     setDiscovering(true);
     setDiscoveryError(null);
@@ -131,6 +173,36 @@ export function AirbnbConnectionCallbackPage() {
                     <div style={{ color: "#64748b", fontSize: 13 }}>ID del anuncio: {listing.id}</div>
                   </article>
                 ))}
+                {listings.length > 0 && propertyId && channelId && (
+                  <section aria-label="Propuesta de mapeo" style={{ display: "grid", gap: 10 }}>
+                    <label htmlFor="airbnb-mapping-listing">Anuncio para revisar el mapeo</label>
+                    <select id="airbnb-mapping-listing" value={selectedListingId} disabled={mappingBusy}
+                      onChange={event => resetMappingProposal(event.currentTarget.value)}>
+                      <option value="">Selecciona un anuncio</option>
+                      {listings.map((listing, index) => (
+                        <option key={`${index}:${listing.id}`} value={listing.id}>{listing.title} — {listing.id}</option>
+                      ))}
+                    </select>
+                    <button type="button" disabled={!selectedListingId || mappingBusy || discovering}
+                      onClick={() => void previewMapping()}>
+                      {mappingBusy ? "Preparando propuesta…" : "Revisar propuesta de mapeo"}
+                    </button>
+                    {mappingError && <p role="alert">{mappingError}</p>}
+                    {mappingPlan && (
+                      <section aria-label="Mapeo propuesto, no creado" style={{ overflowWrap: "anywhere" }}>
+                        <h2 style={{ fontSize: 18 }}>Propuesta de mapeo — no ejecutada</h2>
+                        <p>Anuncio: {mappingPlan.listing.title} ({mappingPlan.listing.id})</p>
+                        <p>Plan principal registrado en Pin&amp;Go: {mappingPlan.ratePlan.id}</p>
+                        <p>Es el destino propuesto. Aún falta verificar el plan en Channex y los mapeos existentes antes de permitir la creación.</p>
+                        <details>
+                          <summary>Cuerpo propuesto para Channex</summary>
+                          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{JSON.stringify(mappingPlan.mappingRequest, null, 2)}</pre>
+                        </details>
+                        <p>Esta revisión no crea mapeos. La creación real enviaría el mapeo a Airbnb y desencadenaría sincronización ARI. La ejecución permanece deshabilitada.</p>
+                      </section>
+                    )}
+                  </section>
+                )}
                 <p style={{ margin: 0, color: "#475569" }}>El mapeo del anuncio a esta propiedad y la activación son pasos separados.</p>
               </>
             )}
