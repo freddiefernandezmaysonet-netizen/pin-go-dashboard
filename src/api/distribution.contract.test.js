@@ -74,12 +74,24 @@ test("Connection Center is routed from property detail and restricted to adminis
   assert.match(connectionCenterPage, /ADMIN_ROLES\.has\(user\.role\)/);
 });
 
-test("iframe is ephemeral, sandboxed and only rendered after a session exists", () => {
-  assert.match(connectionCenterPage, /\{session && <ConnectionFrame/);
+test("iframe fallback is ephemeral, sandboxed and excludes the live Airbnb handoff", () => {
+  assert.match(connectionCenterPage, /session && !useExternalAirbnbHandoff && <ConnectionFrame/);
   assert.match(connectionCenterPage, /sandbox="allow-forms allow-popups allow-scripts allow-same-origin"/);
   assert.match(connectionCenterPage, /referrerPolicy="no-referrer"/);
   assert.match(connectionCenterPage, /srcDoc=\{props\.simulated/);
   assert.doesNotMatch(connectionCenterPage, /localStorage|sessionStorage/);
+});
+
+test("Airbnb uses an explicit external secure handoff without leaking referrer or opener", () => {
+  assert.match(connectionCenterPage, /session\.provider === "AIRBNB" && !simulated/);
+  assert.match(connectionCenterPage, /<AirbnbExternalHandoff/);
+  assert.match(connectionCenterPage, /href=\{props\.session\.launchUrl\}/);
+  assert.match(connectionCenterPage, /target="_blank"/);
+  assert.match(connectionCenterPage, /rel="noopener noreferrer"/);
+  assert.match(connectionCenterPage, /referrerPolicy="no-referrer"/);
+  assert.match(connectionCenterPage, /Continuar con Airbnb/);
+  assert.match(connectionCenterPage, /Ya terminé en Airbnb/);
+  assert.match(connectionCenterPage, /Estamos verificando el estado real de la conexión/);
 });
 
 test("connection session is restricted to exact frame origins without a duplicated token field", () => {
