@@ -14,9 +14,13 @@ assert.equal((compiled.diagnostics ?? []).filter(d => d.category === ts.Diagnost
 const pending = { success: true, propertyId: "property-1", channelId: "716305c4-561a-4561-a187-7f5b8aeb5920",
   channelActive: true, airbnbAccountVerified: false, nextAction: "LISTING_DISCOVERY_REQUIRED" };
 const successQuery = "?success=true&channel_id=716305c4-561a-4561-a187-7f5b8aeb5920&token=test-only-state";
-function page(query, { result = pending, user = { role: "ORG_ADMIN" }, reject = false } = {}) {
+const discovered = { propertyId: pending.propertyId, channelId: pending.channelId, airbnbAccountVerified: true,
+  listings: [{ id: "42544559", title: "Test Property · Test Channex Property" }], nextAction: "MAPPING_REQUIRED" };
+function page(query, { result = pending, user = { role: "ORG_ADMIN" }, reject = false,
+  discoveryResult = discovered, discoveryReject = false, discoveryWait = null } = {}) {
   const effects = [], states = [], refs = [], calls = [], history = [], navigations = [];
   let stateIndex = 0, refIndex = 0, initialRender = true;
+  const listingCalls = [];
   const exports = {};
   const modules = {
     "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
@@ -30,6 +34,12 @@ function page(query, { result = pending, user = { role: "ORG_ADMIN" }, reject = 
     "../../auth/AuthProvider": { useAuth: () => ({ user }) },
     "../../api/airbnbHostSelfService": {
       AirbnbHostSelfServiceApiError: class extends Error {},
+      async discoverAirbnbHostListings(propertyId, channelId) {
+        listingCalls.push({ propertyId, channelId });
+        if (discoveryWait) await discoveryWait;
+        if (discoveryReject) throw new Error("SYNTHETIC_PRIVATE_ERROR");
+        return discoveryResult;
+      },
       async verifyAirbnbHostCallback(args) { calls.push(args); if (reject) throw new Error("test-only-state"); return result; },
     },
   };
@@ -38,18 +48,18 @@ function page(query, { result = pending, user = { role: "ORG_ADMIN" }, reject = 
     window: { history: { replaceState(...args) { history.push(args); } } }, document: { title: "Test callback" },
   }, { timeout: 1000 });
   function render() { stateIndex = 0; refIndex = 0; const node = exports.AirbnbConnectionCallbackPage(); initialRender = false; return node; }
-  return { render, effects, states, calls, history, navigations };
+  return { render, effects, states, calls, listingCalls, history, navigations };
 }
 function text(node) {
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join(" ");
   return node && typeof node === "object" ? text(node.props?.children) : "";
 }
-function button(node) {
+function button(node, pattern = /Volver/) {
   if (!node) return null;
-  if (Array.isArray(node)) return node.map(button).find(Boolean) ?? null;
-  if (node.type === "button") return node;
-  return button(node.props?.children);
+  if (Array.isArray(node)) return node.map(child => button(child, pattern)).find(Boolean) ?? null;
+  if (node.type === "button" && pattern.test(text(node))) return node;
+  return button(node.props?.children, pattern);
 }
 async function execute(p) { p.render(); for (const effect of p.effects) effect(); await new Promise(setImmediate); return p.render(); }
 
@@ -89,3 +99,61 @@ for (const user of [null, { role: "MEMBER" }]) {
     assert.equal(node.type, "Navigate"); assert.equal(node.props.to, user ? "/overview" : "/login"); assert.equal(p.calls.length, 0);
   });
 }
+
+// Gate 3 continues only after explicit host action; callback failures and
+// read-only callback verification do not initiate listings automatically.
+test("listing discovery is explicit after callback, never automatic", async () => {
+  const p = page(successQuery); const node = await execute(p);
+  assert.equal(p.listingCalls.length, 0);
+  assert.ok(button(node, /Consultar anuncios/));
+  assert.doesNotMatch(text(node), /Test Property · Test Channex Property/);
+  button(node, /Consultar anuncios/).props.onClick();
+  await new Promise(setImmediate); const read = p.render();
+  assert.deepEqual(p.listingCalls, [{ propertyId: pending.propertyId, channelId: pending.channelId }]);
+  assert.match(text(read), /42544559/); assert.match(text(read), /Test Property · Test Channex Property/);
+  assert.match(text(read), /no realizó mapeos ni activaciones/);
+  assert.doesNotMatch(text(read), /test-only-state|Autorización confirmada/);
+  assert.equal(p.calls.length, 1);
+});
+test("empty response is reported as no returned titled listings, not no Airbnb account", async () => {
+  const p = page(successQuery, { discoveryResult: { ...discovered, listings: [] } });
+  const node = await execute(p); button(node, /Consultar anuncios/).props.onClick();
+  await new Promise(setImmediate); const read = p.render();
+  assert.match(text(read), /no devolvió anuncios con título/);
+  assert.doesNotMatch(text(read), /cuenta no existe|No tienes anuncios/);
+});
+test("discovery failure keeps resource boundary and does not expose error or token", async () => {
+  const p = page(successQuery, { discoveryReject: true });
+  const node = await execute(p); button(node, /Consultar anuncios/).props.onClick();
+  await new Promise(setImmediate); const read = p.render();
+  assert.match(text(read), /No pudimos consultar/);
+  assert.doesNotMatch(text(read), /SYNTHETIC_PRIVATE_ERROR|test-only-state|42544559/);
+  assert.equal(p.listingCalls.length, 1);
+  assert.equal(button(read, /Consultar anuncios/).props.disabled, false);
+  assert.ok(button(read, /Volver al Centro/));
+});
+test("double click cannot duplicate in-flight listing retrieval", async () => {
+  let release;
+  const discoveryWait = new Promise(resolve => { release = resolve; });
+  const p = page(successQuery, { discoveryWait });
+  const node = await execute(p); const action = button(node, /Consultar anuncios/);
+  action.props.onClick(); action.props.onClick();
+  assert.equal(p.listingCalls.length, 1);
+  const busy = p.render(); assert.equal(button(busy, /Consultando anuncios/).props.disabled, true);
+  release(); await new Promise(setImmediate);
+  assert.equal(button(p.render(), /Consultar anuncios/).props.disabled, false);
+});
+for (const query of ["?success=false", "?success=true", ""]) {
+  test(`unverified callback has no listing-discovery control: ${query}`, async () => {
+    const p = page(query); const node = await execute(p);
+    assert.equal(button(node, /Consultar anuncios/), null);
+    assert.equal(p.listingCalls.length, 0);
+  });
+}
+test("provider title/id are React text nodes, not HTML or external navigation", async () => {
+  const title = "<img src=x onerror=alert(1)>";
+  const p = page(successQuery, { discoveryResult: { ...discovered, listings: [{ id: "001-id", title }, { id: "001-id", title: "Repeated ID" }] } });
+  const node = await execute(p); button(node, /Consultar anuncios/).props.onClick(); await new Promise(setImmediate);
+  const read = p.render(); assert.ok(text(read).includes(title)); assert.match(text(read), /Repeated ID/);
+  assert.doesNotMatch(JSON.stringify(read), /dangerouslySetInnerHTML|https:\/\/www.airbnb/);
+});

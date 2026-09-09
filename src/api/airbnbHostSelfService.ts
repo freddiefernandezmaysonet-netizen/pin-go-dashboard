@@ -130,3 +130,47 @@ export async function verifyAirbnbHostCallback(args: {
   }
   return result as AirbnbHostCallbackResult;
 }
+
+// Internal read-phase DTO. The marker records a valid Airbnb-specific listings
+// response; it is not proof of the host's identity, mapping or activation.
+export type AirbnbHostListingSummary = { id: string; title: string };
+export type AirbnbHostListingsResult = {
+  propertyId: string;
+  channelId: string;
+  airbnbAccountVerified: true;
+  listings: AirbnbHostListingSummary[];
+  nextAction: "MAPPING_REQUIRED";
+};
+
+export async function discoverAirbnbHostListings(
+  propertyId: string,
+  channelId: string
+): Promise<AirbnbHostListingsResult> {
+  const response = await fetch(
+    `${API_BASE}/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/${encodeURIComponent(channelId)}/listings`,
+    { method: "GET", credentials: "include", cache: "no-store" }
+  );
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const code = isRecord(payload) && typeof payload.error === "string"
+      ? payload.error : "OTA_AIRBNB_LISTINGS_DISCOVERY_FAILED";
+    throw new AirbnbHostSelfServiceApiError(code, response.status);
+  }
+  if (!isRecord(payload) || payload.ok !== true || !isRecord(payload.result)) {
+    throw new Error("INVALID_AIRBNB_LISTINGS_RESPONSE");
+  }
+  const result = payload.result;
+  if (result.propertyId !== propertyId || result.channelId !== channelId ||
+      result.airbnbAccountVerified !== true || result.nextAction !== "MAPPING_REQUIRED" ||
+      !Array.isArray(result.listings)) {
+    throw new Error("INVALID_AIRBNB_LISTINGS_RESPONSE");
+  }
+  const listings = result.listings.map((value): AirbnbHostListingSummary => {
+    if (!isRecord(value) || typeof value.id !== "string" || !value.id ||
+        typeof value.title !== "string" || !value.title) {
+      throw new Error("INVALID_AIRBNB_LISTINGS_RESPONSE");
+    }
+    return { id: value.id, title: value.title };
+  });
+  return { propertyId, channelId, airbnbAccountVerified: true, listings, nextAction: "MAPPING_REQUIRED" };
+}
