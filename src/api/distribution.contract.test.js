@@ -70,7 +70,7 @@ test("Airbnb authorization handoff remains credentialed and separate from frame 
 
 test("Airbnb callback is authenticated, strips OAuth artifacts, and verifies server-side", () => {
   assert.match(router, /distribution\/airbnb\/callback/);
-  assert.match(router, /<RequireAuth><AppShell/);
+  assert.match(router, /<RequireAuth>\s*<AppShell\s*\/>\s*<\/RequireAuth>/);
   assert.match(callbackPage, /searchParams\.get\("channel_id"\)/);
   assert.match(callbackPage, /searchParams\.get\("token"\)/);
   assert.match(callbackPage, /history\.replaceState/);
