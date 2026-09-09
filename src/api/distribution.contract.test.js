@@ -63,6 +63,7 @@ test("legacy property controls cannot bypass the commercial lifecycle", () => {
 test("mutations are tenant-route scoped and carry fresh idempotency keys", () => {
   assert.match(source, /channels\/\$\{encodeURIComponent\(provider\)\}\/prepare/);
   assert.match(source, /channels\/\$\{encodeURIComponent\(provider\)\}\/session/);
+  assert.match(source, /channels\/\$\{encodeURIComponent\(provider\)\}\/reconcile/);
   assert.match(source, /"Idempotency-Key":\s*createIdempotencyKey/);
   assert.match(source, /crypto\?\.randomUUID/);
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
@@ -91,7 +92,16 @@ test("Airbnb uses an explicit external secure handoff without leaking referrer o
   assert.match(connectionCenterPage, /referrerPolicy="no-referrer"/);
   assert.match(connectionCenterPage, /Continuar con Airbnb/);
   assert.match(connectionCenterPage, /Ya terminé en Airbnb/);
-  assert.match(connectionCenterPage, /Estamos verificando el estado real de la conexión/);
+});
+
+test("Airbnb completion is followed by canonical reconcile before the Connection Center reloads", () => {
+  assert.match(source, /export async function reconcileDistributionChannel/);
+  assert.match(connectionCenterPage, /await transitionDistributionConnectionSession\(session\.value\.sessionId, "completed"\)/);
+  assert.match(connectionCenterPage, /if \(completedProvider === "AIRBNB"\) \{\s*await reconcileDistributionChannel\(id, "AIRBNB"\);\s*\}/);
+  const reconcileIndex = connectionCenterPage.indexOf('await reconcileDistributionChannel(id, "AIRBNB")');
+  const loadIndex = connectionCenterPage.indexOf("await load();", reconcileIndex);
+  assert.ok(reconcileIndex >= 0 && loadIndex > reconcileIndex, "reconcile must precede Connection Center reload");
+  assert.match(connectionCenterPage, /No se marcará como activa hasta que la verificación sea satisfactoria/);
 });
 
 test("connection session is restricted to exact frame origins without a duplicated token field", () => {
