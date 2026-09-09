@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import "./airbnbHostSelfService.test.js";
+
 const source = readFileSync(new URL("./distribution.ts", import.meta.url), "utf8");
 const airbnbSource = readFileSync(new URL("./airbnbHostSelfService.ts", import.meta.url), "utf8");
 const framePolicy = readFileSync(new URL("../lib/distributionFramePolicy.ts", import.meta.url), "utf8");
@@ -59,17 +61,16 @@ test("Airbnb real flow uses connection-link and top-level navigation, never the 
   assert.doesNotMatch(connectionCenterPage, /reconcileDistributionChannel/);
 });
 
-test("Airbnb authorization URL is constrained to exact provider origins", () => {
-  assert.match(airbnbSource, /https:\/\/app\.channex\.io/);
-  assert.match(airbnbSource, /https:\/\/staging\.channex\.io/);
-  assert.match(airbnbSource, /ALLOWED_AUTHORIZATION_ORIGINS\.has\(parsed\.origin\)/);
+test("Airbnb authorization handoff remains credentialed and separate from frame policy", () => {
+  // Executable document-derived URL cases run in airbnbHostSelfService.test.js.
+  // Other channels retain the exact-origin frame policy asserted below.
   assert.match(airbnbSource, /credentials:\s*"include"/);
   assert.match(airbnbSource, /cache:\s*"no-store"/);
 });
 
 test("Airbnb callback is authenticated, strips OAuth artifacts, and verifies server-side", () => {
   assert.match(router, /distribution\/airbnb\/callback/);
-  assert.match(router, /<RequireAuth><AppShell/);
+  assert.match(router, /<RequireAuth>\s*<AppShell\s*\/>\s*<\/RequireAuth>/);
   assert.match(callbackPage, /searchParams\.get\("channel_id"\)/);
   assert.match(callbackPage, /searchParams\.get\("token"\)/);
   assert.match(callbackPage, /history\.replaceState/);
@@ -80,7 +81,8 @@ test("Airbnb callback is authenticated, strips OAuth artifacts, and verifies ser
 
 test("Airbnb callback never represents authorization as activation", () => {
   assert.match(callbackPage, /La activación del canal permanece separada de esta autorización/);
-  assert.match(callbackPage, /continuará con la preparación del mapeo antes de cualquier activación/);
+  assert.match(callbackPage, /esta verificación no modifica la sincronización existente/);
+  assert.doesNotMatch(callbackPage, /Autorización confirmada|Airbnb confirmó la autorización/);
   assert.doesNotMatch(callbackPage, /activar|activation endpoint/i);
 });
 
