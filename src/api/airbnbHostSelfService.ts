@@ -1,10 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
-const ALLOWED_AUTHORIZATION_ORIGINS = new Set([
-  "https://app.channex.io",
-  "https://staging.channex.io",
-]);
-
 export class AirbnbHostSelfServiceApiError extends Error {
   constructor(readonly code: string, readonly status: number) {
     super(code);
@@ -19,10 +14,11 @@ export type AirbnbHostConnectionLink = {
 
 export type AirbnbHostCallbackResult = {
   success: boolean;
-  propertyId: string;
+  propertyId: string | null;
   channelId: string | null;
   channelActive: boolean | null;
-  nextAction: "RETRY_AUTHORIZATION" | "MAPPING_REQUIRED";
+  airbnbAccountVerified: false;
+  nextAction: "RETRY_AUTHORIZATION" | "LISTING_DISCOVERY_REQUIRED";
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,7 +54,7 @@ async function post(path: string, action: string, body: unknown): Promise<unknow
 }
 
 function safeAuthorizationUrl(value: unknown): string {
-  if (typeof value !== "string" || value.length > 4096) {
+  if (typeof value !== "string") {
     throw new Error("INVALID_AIRBNB_CONNECTION_LINK_RESPONSE");
   }
   try {
@@ -66,12 +62,13 @@ function safeAuthorizationUrl(value: unknown): string {
     if (
       parsed.protocol !== "https:" ||
       parsed.username ||
-      parsed.password ||
-      !ALLOWED_AUTHORIZATION_ORIGINS.has(parsed.origin)
+      parsed.password
     ) {
       throw new Error("invalid");
     }
-    return parsed.toString();
+    // The backend relays Channex's authorization URL, not its API origin.
+    // Preserve it exactly for the existing top-level navigation.
+    return value;
   } catch {
     throw new Error("INVALID_AIRBNB_CONNECTION_LINK_RESPONSE");
   }
@@ -118,10 +115,16 @@ export async function verifyAirbnbHostCallback(args: {
   const result = payload.result;
   if (
     typeof result.success !== "boolean" ||
-    typeof result.propertyId !== "string" ||
+    !(result.propertyId === null || typeof result.propertyId === "string") ||
     !(result.channelId === null || typeof result.channelId === "string") ||
     !(result.channelActive === null || typeof result.channelActive === "boolean") ||
-    (result.nextAction !== "RETRY_AUTHORIZATION" && result.nextAction !== "MAPPING_REQUIRED")
+    result.airbnbAccountVerified !== false ||
+    (result.success
+      ? result.nextAction !== "LISTING_DISCOVERY_REQUIRED" ||
+        typeof result.propertyId !== "string" || !result.propertyId ||
+        typeof result.channelId !== "string" || !result.channelId
+      : result.nextAction !== "RETRY_AUTHORIZATION" ||
+        result.propertyId !== null || result.channelId !== null || result.channelActive !== null)
   ) {
     throw new Error("INVALID_AIRBNB_CALLBACK_VERIFICATION_RESPONSE");
   }

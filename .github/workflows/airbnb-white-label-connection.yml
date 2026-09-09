@@ -1,0 +1,42 @@
+name: Airbnb White Label Connection Only (dashboard)
+
+on:
+  push:
+    branches:
+      - agent/airbnb-white-label-connection-closure
+
+permissions:
+  contents: read
+
+jobs:
+  connection-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Freeze every file outside the explicit connection-only diff
+        run: git diff --exit-code df57c998b1fa32b347168a859014dd126e5fe20b HEAD -- . ':(exclude)src/api/airbnbHostSelfService.test.js' ':(exclude)src/api/airbnbHostSelfService.ts' ':(exclude)src/api/distribution.contract.test.js' ':(exclude)src/pages/distribution/AirbnbConnectionCallbackPage.test.js' ':(exclude)src/pages/distribution/AirbnbConnectionCallbackPage.tsx' ':(exclude).github/workflows/airbnb-white-label-connection.yml' ':(exclude)vercel.json'
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test connection-link and callback with simulated dependencies
+        run: node --test src/api/distribution.contract.test.js src/pages/distribution/AirbnbConnectionCallbackPage.test.js
+      - name: Typecheck isolated connection modules
+        run: ./node_modules/.bin/tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,DOM --types vite/client --skipLibCheck src/api/airbnbHostSelfService.ts
+      - name: Exclude listings and mapping implementation from this delivery
+        run: |
+          test ! -e src/distribution/airbnb-host-self-service.listings.service.ts
+          test ! -e src/distribution/airbnb-host-self-service.mapping-plan.service.ts
+          ! grep -E '/action/listings|/mappings|/activate|load_future_reservations' src/api/airbnbHostSelfService.ts src/pages/distribution/AirbnbConnectionCallbackPage.tsx
+      - name: Build dashboard without deployment
+        run: npm run build
+      - name: Verify this branch cannot request a Vercel Git deployment
+        run: node --input-type=commonjs -e 'const c=require("./vercel.json"); if(c.git.deploymentEnabled["agent/airbnb-white-label-connection-closure"]!==false) process.exit(1)'

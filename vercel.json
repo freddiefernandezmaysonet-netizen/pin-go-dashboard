@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "agent/airbnb-white-label-connection-closure": false
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
