@@ -70,6 +70,7 @@ export type DistributionConnectionCenter = {
     availability: DistributionAvailability;
     status: DistributionChannelStatus;
     nextAction: DistributionNextAction;
+    channelLinked: boolean;
     readiness: {
       authorization: DistributionReadinessStatus;
       mapping: DistributionReadinessStatus;
@@ -157,6 +158,7 @@ export function parseDistributionConnectionCenter(
       !isMember(DISTRIBUTION_AVAILABILITY, channel.availability) ||
       !isMember(DISTRIBUTION_CHANNEL_STATUSES, channel.status) ||
       !isMember(DISTRIBUTION_NEXT_ACTIONS, channel.nextAction) ||
+      typeof channel.channelLinked !== "boolean" ||
       !isRecord(channel.readiness) ||
       !Object.values(channel.readiness).every((value) =>
         isMember(DISTRIBUTION_READINESS_STATUSES, value)

@@ -24,10 +24,10 @@ const SIMULATED_CENTER: DistributionConnectionCenter = {
   status: "SETUP_REQUIRED",
   provisioningStatus: "NOT_PROVISIONED",
   channels: [
-    { provider: "AIRBNB", name: "Airbnb", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
-    { provider: "BOOKING_COM", name: "Booking.com", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
-    { provider: "EXPEDIA", name: "Expedia", availability: "PLANNED", status: "NOT_CONNECTED", nextAction: "CONNECT", readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
-    { provider: "VRBO", name: "Vrbo", availability: "ASSISTED_BETA", status: "NOT_CONNECTED", nextAction: "CONNECT", readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
+    { provider: "AIRBNB", name: "Airbnb", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
+    { provider: "BOOKING_COM", name: "Booking.com", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
+    { provider: "EXPEDIA", name: "Expedia", availability: "PLANNED", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
+    { provider: "VRBO", name: "Vrbo", availability: "ASSISTED_BETA", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
   ],
 };
 
@@ -149,12 +149,14 @@ export function ConnectionCenterPage() {
       {loading && <div role="status" style={CARD_STYLE}><LoaderCircle size={18} /> Cargando canales…</div>}
       {!loading && center && <section aria-label="Canales disponibles" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
         {center.channels.map((channel) => {
-          const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider);
+          const airbnbLinked = channel.provider === "AIRBNB" && channel.channelLinked && channel.status === "NOT_CONNECTED";
+          const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider) && !airbnbLinked;
           return <article key={channel.provider} style={CARD_STYLE}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><h2 style={{ margin: 0, fontSize: 20 }}>{channel.name}</h2><span>{availabilityLabel(channel.availability)}</span></div>
-            <p style={{ color: "#64748b" }}>Estado: {statusLabel(channel.status)}</p>
+            <p style={{ color: "#64748b" }}>Estado: {airbnbLinked ? "Canal enlazado" : statusLabel(channel.status)}</p>
+            {channel.provider === "AIRBNB" && airbnbLinked && <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>Airbnb autorizó el enlace y Pin&amp;Go verificó el canal. La activación y la sincronización permanecen separadas.</p>}
             {channel.provider === "AIRBNB" && canConnect && <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>Autoriza tu cuenta directamente. Pin&amp;Go no recibe ni almacena tu contraseña de Airbnb.</p>}
-            {canConnect ? <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")}>{busyProvider === channel.provider ? "Preparando…" : <><ExternalLink size={16} /> {channel.provider === "AIRBNB" ? "Conectar con Airbnb" : "Conectar"}</>}</button> : <p style={{ marginBottom: 0 }}>{channel.availability === "ASSISTED_BETA" ? "Solicita acompañamiento para configurar este canal." : "Disponible en una próxima etapa."}</p>}
+            {airbnbLinked ? <p style={{ marginBottom: 0 }}>No es necesario volver a autorizar esta conexión.</p> : canConnect ? <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")}>{busyProvider === channel.provider ? "Preparando…" : <><ExternalLink size={16} /> {channel.provider === "AIRBNB" ? "Conectar con Airbnb" : "Conectar"}</>}</button> : <p style={{ marginBottom: 0 }}>{channel.availability === "ASSISTED_BETA" ? "Solicita acompañamiento para configurar este canal." : "Disponible en una próxima etapa."}</p>}
           </article>;
         })}
       </section>}

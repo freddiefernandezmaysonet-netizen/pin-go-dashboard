@@ -1,0 +1,47 @@
+name: Airbnb Callback Persistence & Presentation (dashboard)
+
+on:
+  push:
+    branches:
+      - agent/airbnb-callback-persistence-presentation
+
+permissions:
+  contents: read
+
+jobs:
+  callback-presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run Connection Center contracts
+        run: node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js
+      - name: Build dashboard without deployment
+        run: npm run build
+      - name: Prove exact narrow diff allowlist
+        run: |
+          git diff --name-only 1b1eb74b95b75815ae87ff7ad06c810df300895d...HEAD | sort > "$RUNNER_TEMP/actual.txt"
+          cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
+          .github/workflows/airbnb-callback-persistence-presentation.yml
+          src/api/distribution.channel-linked.contract.test.js
+          src/api/distribution.ts
+          src/pages/distribution/ConnectionCenterPage.tsx
+          vercel.json
+          EOF
+          sort "$RUNNER_TEMP/expected.txt" -o "$RUNNER_TEMP/expected.txt"
+          diff -u "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/actual.txt"
+      - name: Prove auth router callback and existing frame policy remain untouched
+        run: git diff --exit-code 1b1eb74b95b75815ae87ff7ad06c810df300895d -- src/auth src/app/routes/router.tsx src/pages/distribution/AirbnbConnectionCallbackPage.tsx src/api/airbnbHostSelfService.ts src/lib/distributionFramePolicy.ts
+      - name: Prove branch deployment veto is present
+        run: node -e "const v=require('./vercel.json'); if(v.git?.deploymentEnabled?.['agent/airbnb-callback-persistence-presentation']!==false) process.exit(1)"
