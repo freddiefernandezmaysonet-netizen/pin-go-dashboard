@@ -22,8 +22,11 @@ test("Airbnb linked presentation is explicit and does not promote lifecycle stat
     /channel\.provider === "AIRBNB" && channel\.channelLinked && channel\.status === "NOT_CONNECTED"/
   );
   assert.match(page, /Estado: \{airbnbLinked \? "Canal enlazado" : statusLabel\(channel\.status\)\}/);
+  assert.match(page, /Pin&amp;Go tiene una referencia de canal Airbnb enlazada a esta propiedad/);
   assert.match(page, /La activación y la sincronización permanecen separadas/);
-  assert.match(page, /No es necesario volver a autorizar esta conexión/);
+  assert.match(page, /Este enlace todavía no significa que el canal esté activo/);
+  assert.doesNotMatch(page, /Airbnb autorizó el enlace y Pin&amp;Go verificó el canal/);
+  assert.doesNotMatch(page, /No es necesario volver a autorizar esta conexión/);
 });
 
 test("linked Airbnb suppresses a second connect action without affecting Booking.com", () => {
