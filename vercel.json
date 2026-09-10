@@ -1,7 +1,8 @@
 {
   "git": {
     "deploymentEnabled": {
-      "agent/airbnb-white-label-connection-closure": false
+      "agent/airbnb-white-label-connection-closure": false,
+      "agent/airbnb-callback-persistence-presentation": false
     }
   },
   "headers": [
