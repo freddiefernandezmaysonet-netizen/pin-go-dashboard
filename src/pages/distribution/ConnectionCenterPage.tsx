@@ -20,7 +20,7 @@ const SELF_SERVICE = new Set<DistributionProvider>(["AIRBNB", "BOOKING_COM"]);
 
 const SIMULATED_CENTER: DistributionConnectionCenter = {
   productName: "Distribution by Pin&Go",
-  property: { id: "simulation", name: "Propiedad de demostración" },
+  property: { id: "simulation", name: "Demo property" },
   status: "SETUP_REQUIRED",
   provisioningStatus: "NOT_PROVISIONED",
   channels: [
@@ -31,32 +31,86 @@ const SIMULATED_CENTER: DistributionConnectionCenter = {
   ],
 };
 
-const SIMULATED_IFRAME_DOCUMENT = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:system-ui,sans-serif;margin:0;padding:32px;background:#f8fafc;color:#172033}main{max-width:560px;margin:auto;background:white;border:1px solid #dbe3ef;border-radius:18px;padding:28px}span{display:inline-block;background:#e8f7ee;color:#147a42;padding:6px 10px;border-radius:999px;font-weight:700}h1{font-size:24px}p{line-height:1.6}</style></head><body><main><span>Simulación segura</span><h1>Autoriza tu canal</h1><p>Esta vista representa el flujo de autorización. No usa credenciales, no contacta una OTA y no modifica datos.</p></main></body></html>`;
-const PAGE_STYLE = { display: "grid", gap: 20, maxWidth: 1120, margin: "0 auto" } as const;
-const CARD_STYLE = { border: "1px solid #dbe3ef", borderRadius: 16, padding: 20, background: "#fff" } as const;
+const SIMULATED_IFRAME_DOCUMENT = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:system-ui,sans-serif;margin:0;padding:32px;background:#f8fafc;color:#111827}main{max-width:560px;margin:auto;background:white;border:1px solid #e5e7eb;border-radius:18px;padding:28px}span{display:inline-block;background:#ecfdf5;color:#065f46;padding:6px 10px;border-radius:999px;font-weight:700}h1{font-size:24px}p{line-height:1.6}</style></head><body><main><span>Safe simulation</span><h1>Authorize your channel</h1><p>This view represents the authorization flow. It does not use credentials, contact an OTA, or modify data.</p></main></body></html>`;
 
-function availabilityLabel(value: string) {
-  if (value === "AVAILABLE") return "Disponible";
-  if (value === "ASSISTED_BETA") return "Con asistencia";
-  return "Próximamente";
-}
+const PAGE_STYLE = { display: "grid", gap: 20, maxWidth: 1120, margin: "0 auto" } as const;
+const CARD_STYLE = { border: "1px solid #e5e7eb", borderRadius: 18, padding: 20, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" } as const;
+const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #111827", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 } as const;
+const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
+
 function statusLabel(value: string) {
-  const labels: Record<string, string> = { NOT_CONNECTED: "Sin conectar", AUTHORIZATION_REQUIRED: "Autorización requerida", MAPPING_REQUIRED: "Mapeo requerido", READINESS_CHECK: "Validando", ACTIVATION_PENDING: "Activación pendiente", ACTIVE: "Activo", DEGRADED: "Requiere atención", FAILED: "Error", DISCONNECTING: "Desconectando", DISCONNECTED: "Desconectado" };
+  const labels: Record<string, string> = {
+    NOT_CONNECTED: "Not connected",
+    AUTHORIZATION_REQUIRED: "Authorization required",
+    MAPPING_REQUIRED: "Setup required",
+    READINESS_CHECK: "Checking setup",
+    ACTIVATION_PENDING: "Activation pending",
+    ACTIVE: "Active",
+    DEGRADED: "Needs attention",
+    FAILED: "Error",
+    DISCONNECTING: "Disconnecting",
+    DISCONNECTED: "Disconnected",
+  };
   return labels[value] ?? value;
+}
+
+function statusBadgeStyle(tone: "neutral" | "progress" | "success" | "warning") {
+  if (tone === "success") return { background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46" } as const;
+  if (tone === "progress") return { background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8" } as const;
+  if (tone === "warning") return { background: "#fffbeb", border: "1px solid #fde68a", color: "#92400e" } as const;
+  return { background: "#f3f4f6", border: "1px solid #e5e7eb", color: "#4b5563" } as const;
+}
+
+function providerPresentation(channel: DistributionConnectionCenter["channels"][number], airbnbLinked: boolean) {
+  if (airbnbLinked) {
+    return {
+      status: "Setup in progress",
+      tone: "progress" as const,
+      description: "Pin&Go has linked this Airbnb channel to the property. Property setup and activation are still pending.",
+    };
+  }
+  if (channel.status === "ACTIVE") {
+    return {
+      status: "Active",
+      tone: "success" as const,
+      description: "This booking channel is active for the property.",
+    };
+  }
+  if (channel.availability === "PLANNED") {
+    return {
+      status: "Coming soon",
+      tone: "neutral" as const,
+      description: "This booking channel will be available in a future release.",
+    };
+  }
+  if (channel.availability === "ASSISTED_BETA") {
+    return {
+      status: "Assisted setup",
+      tone: "warning" as const,
+      description: "This channel is currently available with assisted setup.",
+    };
+  }
+  return {
+    status: statusLabel(channel.status),
+    tone: "neutral" as const,
+    description: channel.provider === "AIRBNB"
+      ? "Authorize your Airbnb account securely to begin setting up this property. Pin&Go never receives or stores your Airbnb password."
+      : "Connect your booking channel to begin setup for this property.",
+  };
 }
 
 function ConnectionFrame(props: { providerName: string; session: DistributionConnectionSession; simulated: boolean; onLoaded(): void; onComplete(): void; onClose(): void; completing: boolean; ready: boolean }) {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="connection-frame-title" style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(15,23,42,.65)", display: "grid", placeItems: "center", padding: 20 }}>
-      <section style={{ width: "min(920px, 100%)", height: "min(720px, 90vh)", background: "white", borderRadius: 18, overflow: "hidden", display: "grid", gridTemplateRows: "auto 1fr auto" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e2e8f0" }}>
-          <div><strong id="connection-frame-title">Conectar {props.providerName}</strong><div style={{ color: "#64748b", fontSize: 13 }}>Sesión temporal y protegida</div></div>
-          <button type="button" onClick={props.onClose} aria-label="Cerrar conexión" style={{ border: 0, background: "transparent", cursor: "pointer" }}><X size={22} /></button>
+      <section style={{ width: "min(920px, 100%)", height: "min(720px, 90vh)", background: "white", borderRadius: 18, overflow: "hidden", display: "grid", gridTemplateRows: "auto 1fr auto", boxShadow: "0 24px 60px rgba(15,23,42,.24)" }}>
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
+          <div><strong id="connection-frame-title">Connect {props.providerName}</strong><div style={{ color: "#6b7280", fontSize: 13, marginTop: 3 }}>Secure connection session</div></div>
+          <button type="button" onClick={props.onClose} aria-label="Close connection" style={{ border: 0, background: "transparent", cursor: "pointer", color: "#4b5563" }}><X size={22} /></button>
         </header>
-        <iframe title={`Conectar ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
-        <footer style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: 16, borderTop: "1px solid #e2e8f0" }}>
-          <button type="button" onClick={props.onClose} disabled={props.completing}>Cancelar</button>
-          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready}>{props.completing ? "Guardando…" : props.ready ? (props.simulated ? "Finalizar simulación" : "Finalizar conexión") : "Abriendo sesión…"}</button>
+        <iframe title={`Connect ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
+        <footer style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: 16, borderTop: "1px solid #e5e7eb" }}>
+          <button type="button" onClick={props.onClose} disabled={props.completing} style={{ ...SECONDARY_BUTTON_STYLE, opacity: props.completing ? 0.6 : 1 }}>Cancel</button>
+          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready} style={{ ...PRIMARY_BUTTON_STYLE, cursor: props.completing || !props.ready ? "not-allowed" : "pointer", opacity: props.completing || !props.ready ? 0.6 : 1 }}>{props.completing ? "Saving…" : props.ready ? (props.simulated ? "Finish simulation" : "Finish connection") : "Opening session…"}</button>
         </footer>
       </section>
     </div>
@@ -81,8 +135,8 @@ export function ConnectionCenterPage() {
     if (!id) return;
     setLoading(true);
     setError(null);
-    try { setCenter(simulated ? { ...SIMULATED_CENTER, property: { id, name: "Propiedad de demostración" } } : await getDistributionConnectionCenter(id)); }
-    catch { setError("No pudimos cargar el centro de conexiones."); }
+    try { setCenter(simulated ? { ...SIMULATED_CENTER, property: { id, name: "Demo property" } } : await getDistributionConnectionCenter(id)); }
+    catch { setError("We couldn't load booking channels for this property."); }
     finally { setLoading(false); }
   }, [id, simulated]);
   useEffect(() => { void load(); }, [load]);
@@ -107,8 +161,8 @@ export function ConnectionCenterPage() {
       setFrameReady(false);
       setSession({ provider, value: await issueDistributionConnectionSession(id, provider) });
     } catch (caught) {
-      if (caught instanceof DistributionApiError && caught.code === "OTA_CONNECTION_CENTER_RUNTIME_DISABLED") setNotice("Las conexiones se están preparando. Aún no se ha activado el acceso comercial.");
-      else setError("No fue posible iniciar la conexión. Intenta nuevamente.");
+      if (caught instanceof DistributionApiError && caught.code === "OTA_CONNECTION_CENTER_RUNTIME_DISABLED") setNotice("Booking channel connections are being prepared and are not yet available for commercial use.");
+      else setError("We couldn't start this connection. Please try again.");
     } finally { setBusyProvider(null); }
   }
 
@@ -116,7 +170,7 @@ export function ConnectionCenterPage() {
     if (!session) return;
     if (simulated) { setFrameReady(true); return; }
     try { await transitionDistributionConnectionSession(session.value.sessionId, "opened"); setFrameReady(true); }
-    catch { setError("La sesión abrió, pero no pudimos confirmar su estado."); }
+    catch { setError("The connection session opened, but Pin&Go couldn't confirm its state."); }
   }
   async function closeSession() {
     const current = session; setSession(null); setFrameReady(false);
@@ -129,37 +183,75 @@ export function ConnectionCenterPage() {
     try {
       if (!simulated) await transitionDistributionConnectionSession(session.value.sessionId, "completed");
       setSession(null); setFrameReady(false);
-      setNotice(simulated ? "Simulación completada. No se modificaron datos." : "Conexión enviada para validación.");
+      setNotice(simulated ? "Simulation complete. No data was changed." : "Connection submitted for validation.");
       await load();
-    } catch { setError("No pudimos completar la sesión."); }
+    } catch { setError("We couldn't complete the connection session."); }
     finally { setCompleting(false); }
   }
 
-  const providerName = center?.channels.find((channel) => channel.provider === session?.provider)?.name ?? "canal";
+  const providerName = center?.channels.find((channel) => channel.provider === session?.provider)?.name ?? "channel";
   return (
     <main style={PAGE_STYLE}>
-      <div><Link to={`/properties/${id}`}><ArrowLeft size={16} /> Volver a la propiedad</Link></div>
-      <header style={{ display: "flex", gap: 16, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
-        <div><p style={{ margin: 0, color: "#64748b" }}>Distribution by Pin&amp;Go</p><h1 style={{ margin: "6px 0" }}>Centro de conexiones</h1><p style={{ margin: 0, color: "#64748b" }}>Administra los canales de {center?.property.name ?? "tu propiedad"} desde un solo lugar.</p></div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", color: "#147a42" }}><ShieldCheck size={20} /> Autorización protegida</div>
-      </header>
-      {simulated && <div role="status" style={{ ...CARD_STYLE, borderColor: "#93c5fd", background: "#eff6ff" }}>Modo simulación: no se harán llamadas externas ni cambios de datos.</div>}
-      {notice && <div role="status" style={{ ...CARD_STYLE, borderColor: "#86efac", background: "#f0fdf4" }}>{notice}</div>}
-      {error && <div role="alert" style={{ ...CARD_STYLE, borderColor: "#fca5a5", background: "#fef2f2" }}>{error}</div>}
-      {loading && <div role="status" style={CARD_STYLE}><LoaderCircle size={18} /> Cargando canales…</div>}
-      {!loading && center && <section aria-label="Canales disponibles" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-        {center.channels.map((channel) => {
-          const airbnbLinked = channel.provider === "AIRBNB" && channel.channelLinked && channel.status === "NOT_CONNECTED";
-          const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider) && !airbnbLinked;
-          return <article key={channel.provider} style={CARD_STYLE}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><h2 style={{ margin: 0, fontSize: 20 }}>{channel.name}</h2><span>{availabilityLabel(channel.availability)}</span></div>
-            <p style={{ color: "#64748b" }}>Estado: {airbnbLinked ? "Canal enlazado" : statusLabel(channel.status)}</p>
-            {channel.provider === "AIRBNB" && airbnbLinked && <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>Pin&amp;Go tiene una referencia de canal Airbnb enlazada a esta propiedad. La activación y la sincronización permanecen separadas.</p>}
-            {channel.provider === "AIRBNB" && canConnect && <p style={{ color: "#64748b", fontSize: 14, lineHeight: 1.5 }}>Autoriza tu cuenta directamente. Pin&amp;Go no recibe ni almacena tu contraseña de Airbnb.</p>}
-            {airbnbLinked ? <p style={{ marginBottom: 0 }}>Este enlace todavía no significa que el canal esté activo.</p> : canConnect ? <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")}>{busyProvider === channel.provider ? "Preparando…" : <><ExternalLink size={16} /> {channel.provider === "AIRBNB" ? "Conectar con Airbnb" : "Conectar"}</>}</button> : <p style={{ marginBottom: 0 }}>{channel.availability === "ASSISTED_BETA" ? "Solicita acompañamiento para configurar este canal." : "Disponible en una próxima etapa."}</p>}
-          </article>;
-        })}
-      </section>}
+      <div>
+        <Link to={`/properties/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "#4b5563", textDecoration: "none", fontWeight: 600, fontSize: 14 }}>
+          <ArrowLeft size={16} /> Back to property
+        </Link>
+      </div>
+
+      <section style={{ display: "flex", gap: 18, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
+        <div style={{ maxWidth: 720 }}>
+          <h1 style={{ margin: 0, color: "#111827", fontSize: 28, lineHeight: 1.15, fontWeight: 750 }}>Booking channels</h1>
+          <p style={{ margin: "8px 0 0", color: "#6b7280", lineHeight: 1.6 }}>Connect and manage the booking channels for {center?.property.name ?? "this property"}.</p>
+        </div>
+        <div style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "8px 11px", borderRadius: 999, background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", fontSize: 13, fontWeight: 700 }}>
+          <ShieldCheck size={17} /> Secure connections
+        </div>
+      </section>
+
+      {simulated && <div role="status" style={{ ...CARD_STYLE, padding: 16, borderColor: "#bfdbfe", background: "#eff6ff", color: "#1d4ed8" }}>Simulation mode is active. No external calls or data changes will be made.</div>}
+      {notice && <div role="status" style={{ ...CARD_STYLE, padding: 16, borderColor: "#a7f3d0", background: "#ecfdf5", color: "#065f46" }}>{notice}</div>}
+      {error && <div role="alert" style={{ ...CARD_STYLE, padding: 16, borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>{error}</div>}
+      {loading && <div role="status" style={{ ...CARD_STYLE, display: "flex", alignItems: "center", gap: 10, color: "#6b7280" }}><LoaderCircle size={18} /> Loading booking channels…</div>}
+
+      {!loading && center && (
+        <section aria-label="Booking channels" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+          {center.channels.map((channel) => {
+            const airbnbLinked = channel.provider === "AIRBNB" && channel.channelLinked && channel.status === "NOT_CONNECTED";
+            const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider) && !airbnbLinked;
+            const presentation = providerPresentation(channel, airbnbLinked);
+            return (
+              <article key={channel.provider} style={{ ...CARD_STYLE, display: "grid", gap: 16, alignContent: "start", minHeight: 230 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                  <div>
+                    <div style={{ color: "#9ca3af", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Booking channel</div>
+                    <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.25, color: "#111827" }}>{channel.name}</h2>
+                  </div>
+                  <span style={{ ...statusBadgeStyle(presentation.tone), borderRadius: 999, padding: "6px 9px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{presentation.status}</span>
+                </div>
+
+                <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.65 }}>{presentation.description}</p>
+
+                <div style={{ marginTop: "auto", paddingTop: 4 }}>
+                  {airbnbLinked ? (
+                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14, color: "#4b5563", fontSize: 13, lineHeight: 1.55 }}>
+                      Pin&Go will continue the Airbnb setup from this linked channel. This status does not mean the channel is active.
+                    </div>
+                  ) : canConnect ? (
+                    <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
+                      {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
+                    </button>
+                  ) : (
+                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14, color: "#6b7280", fontSize: 13 }}>
+                      {channel.availability === "ASSISTED_BETA" ? "Contact Pin&Go support to configure this channel." : "No action is required right now."}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+
       {session && <ConnectionFrame providerName={providerName} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
     </main>
   );
