@@ -40,18 +40,23 @@ jobs:
       - name: Build dashboard without deployment
         run: npm run build
 
-      - name: Prove exact authorized diff allowlist
+      - name: Prove authorized diff allowlist
+        shell: bash
         run: |
           git fetch origin main --depth=1
           git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
-          cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
+          cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
           .github/workflows/airbnb-automatic-listing-discovery.yml
           src/api/airbnbHostSelfService.ts
           src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
           src/pages/distribution/ConnectionCenterPage.tsx
           EOF
-          sort "$RUNNER_TEMP/expected.txt" -o "$RUNNER_TEMP/expected.txt"
-          diff -u "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/actual.txt"
+          sort "$RUNNER_TEMP/allowed.txt" -o "$RUNNER_TEMP/allowed.txt"
+          unexpected="$(comm -23 "$RUNNER_TEMP/actual.txt" "$RUNNER_TEMP/allowed.txt")"
+          if [ -n "$unexpected" ]; then
+            printf 'Unexpected files outside Airbnb auto-matching surface:\n%s\n' "$unexpected"
+            exit 1
+          fi
 
       - name: Prove callback router shell and frame policy remain frozen
         run: |

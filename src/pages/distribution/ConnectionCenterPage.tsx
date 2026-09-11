@@ -123,11 +123,61 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
 }
 
 function listingMeta(listing: AirbnbHostListing): string | null {
-  const location = [listing.city, listing.countryCode].filter(Boolean).join(", ");
-  const occupancy = listing.occupancies?.length
-    ? `Up to ${Math.max(...listing.occupancies)} guests`
-    : null;
-  return [location || null, occupancy].filter(Boolean).join(" · ") || null;
+  return [listing.city, listing.countryCode].filter(Boolean).join(", ") || null;
+}
+
+function reviewReasonMessages(reasons: readonly string[]): string[] {
+  const messages: string[] = [];
+  const add = (message: string) => {
+    if (!messages.includes(message)) messages.push(message);
+  };
+  const detailsCountryConfirmed =
+    reasons.includes("POSTAL_CODE_MATCH") ||
+    reasons.includes("POSTAL_CODE_MISMATCH") ||
+    reasons.includes("POSTAL_CODE_UNKNOWN");
+
+  if (reasons.includes("AMBIGUOUS_RUNNER_UP")) {
+    add("More than one Airbnb property could match this Pin&Go property.");
+  }
+  if (reasons.includes("LISTING_CONFLICT")) {
+    add("This Airbnb property also appears to match another Pin&Go property.");
+  }
+  if (reasons.includes("DETAILS_UNAVAILABLE")) {
+    add("Airbnb property details could not be verified.");
+  }
+  if (reasons.includes("DETAILS_NAME_NOT_STRONG")) {
+    add("Property names are not similar enough for an automatic match.");
+  }
+  if (reasons.includes("POSTAL_CODE_MISMATCH")) {
+    add("ZIP / postal code differs between Pin&Go and Airbnb.");
+  } else if (reasons.includes("POSTAL_CODE_UNKNOWN")) {
+    add("ZIP / postal code could not be confirmed.");
+  }
+  if (reasons.includes("PERSON_CAPACITY_MISMATCH")) {
+    add("Guest capacity differs between Pin&Go and Airbnb.");
+  } else if (reasons.includes("PERSON_CAPACITY_UNKNOWN")) {
+    add("Airbnb did not provide an exact guest capacity.");
+  }
+  if (reasons.includes("DETAILS_COUNTRY_MISMATCH")) {
+    add("Country information differs between Pin&Go and Airbnb.");
+  } else if (reasons.includes("DETAILS_COUNTRY_UNKNOWN")) {
+    add("Country information could not be confirmed.");
+  } else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_MISMATCH")) {
+    add("Country information differs between Pin&Go and Airbnb.");
+  } else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_UNKNOWN")) {
+    add("Country information could not be confirmed.");
+  }
+  if (reasons.includes("NAME_PARTIAL") || reasons.includes("NAME_WEAK")) {
+    add("Property names are not similar enough for an automatic match.");
+  }
+
+  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) {
+    add("Airbnb uses a different city or locality name for this property.");
+  } else if (messages.length === 0 && reasons.includes("CITY_UNKNOWN")) {
+    add("City or locality information could not be confirmed.");
+  }
+
+  return messages;
 }
 
 function AirbnbListingsPanel(props: {
@@ -175,6 +225,7 @@ function AirbnbListingsPanel(props: {
   }
 
   if (match.status === "REVIEW_REQUIRED") {
+    const reviewMessages = reviewReasonMessages(match.reasons);
     return (
       <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -185,6 +236,14 @@ function AirbnbListingsPanel(props: {
           <div style={{ border: "1px solid #fde68a", borderRadius: 12, padding: "10px 12px", background: "#fffbeb" }}>
             <div style={{ color: "#111827", fontSize: 14, fontWeight: 600 }}>{candidate.title ?? "Possible Airbnb property"}</div>
             {meta && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>{meta}</div>}
+          </div>
+        )}
+        {reviewMessages.length > 0 && (
+          <div style={{ border: "1px solid #fde68a", borderRadius: 10, padding: "9px 11px", background: "#fffdf5" }}>
+            <div style={{ color: "#92400e", fontSize: 12, fontWeight: 700 }}>Why Pin&Go needs review</div>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>
+              {reviewMessages.map((message) => <li key={message}>{message}</li>)}
+            </ul>
           </div>
         )}
         <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a possible match, but it must be reviewed before mapping. No changes were made.</div>
