@@ -15,7 +15,7 @@
     .brand img { width: 38px; height: 38px; object-fit: contain; border-radius: 9px; }
     .brand strong { font-size: 20px; line-height: 1.15; }
     nav { display: grid; gap: 8px; }
-    .nav-item { padding: 10px 12px; border-radius: 12px; color: #6b7280; font-weight: 500; text-decoration: none; }
+    .nav-item { padding: 10px 12px; border-radius: 12px; color: #6b7280; font-weight: 500; }
     .nav-item.active { color: #fff; background: #2563eb; font-weight: 600; }
     .sidebar-spacer { flex: 1; }
     .sidebar-user { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
@@ -29,26 +29,23 @@
     .org-name { font-size: 14px; font-weight: 700; }
     .avatar { width: 38px; height: 38px; border-radius: 999px; background: #2563eb; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
     .page-wrap { padding: 24px; }
-    .page { display: grid; gap: 20px; max-width: 1120px; margin: 0 auto; }
-    .back { display: inline-flex; align-items: center; gap: 7px; color: #4b5563; text-decoration: none; font-weight: 600; font-size: 14px; }
-    .intro { display: flex; gap: 18px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
-    .intro h1 { margin: 0; font-size: 28px; line-height: 1.15; font-weight: 750; }
-    .intro p { margin: 8px 0 0; color: #6b7280; line-height: 1.6; max-width: 720px; }
-    .secure { display: inline-flex; gap: 8px; align-items: center; padding: 8px 11px; border-radius: 999px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 13px; font-weight: 700; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
-    .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 20px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); display: grid; gap: 16px; align-content: start; min-height: 230px; }
-    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .eyebrow { color: #9ca3af; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-    .card h2 { margin: 0; font-size: 21px; line-height: 1.25; }
-    .card p { margin: 0; color: #6b7280; font-size: 14px; line-height: 1.65; }
-    .badge { border-radius: 999px; padding: 6px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .page { display: grid; gap: 18px; max-width: 1120px; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 7px; color: #4b5563; font-weight: 600; font-size: 14px; }
+    .intro { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .intro h1 { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 700; }
+    .intro p { margin: 6px 0 0; color: #6b7280; line-height: 1.55; max-width: 720px; }
+    .secure { display: inline-flex; gap: 7px; align-items: center; padding: 6px 9px; border-radius: 999px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 12px; font-weight: 700; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 18px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.04); display: grid; gap: 12px; align-content: start; min-height: 168px; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .card h2 { margin: 0; font-size: 20px; line-height: 1.25; }
+    .card p { margin: 0; color: #6b7280; font-size: 14px; line-height: 1.55; }
+    .badge { border-radius: 999px; padding: 5px 8px; font-size: 12px; font-weight: 700; white-space: nowrap; }
     .progress { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
     .neutral { background: #f3f4f6; border: 1px solid #e5e7eb; color: #4b5563; }
     .warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
-    .success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
-    .card-footer { margin-top: auto; padding-top: 4px; }
-    .note { border-top: 1px solid #e5e7eb; padding-top: 14px; color: #4b5563; font-size: 13px; line-height: 1.55; }
     .button { min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .subtle { margin-top: auto; color: #6b7280; font-size: 13px; }
     .preview-label { position: fixed; right: 14px; bottom: 14px; z-index: 30; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 999px; background: rgba(255,255,255,.94); color: #475569; font-size: 11px; font-weight: 700; box-shadow: 0 4px 14px rgba(15,23,42,.08); }
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; }
@@ -57,8 +54,9 @@
       .topbar { padding: 0 16px; }
       .page-wrap { padding: 18px 14px 70px; }
       .org-name { display: none; }
-      .intro h1 { font-size: 26px; }
-      .secure { width: 100%; justify-content: center; }
+      .intro { align-items: flex-start; }
+      .secure { width: auto; }
+      .card { min-height: 0; }
     }
   </style>
 </head>
@@ -95,47 +93,34 @@
 
           <section class="intro">
             <div>
-              <h1>Booking channels</h1>
-              <p>Connect and manage the booking channels for Demo Property.</p>
+              <h1>Demo Property</h1>
+              <p>Manage where this property receives reservations.</p>
             </div>
             <div class="secure">✓ Secure connections</div>
           </section>
 
           <section class="grid" aria-label="Booking channels">
             <article class="card">
-              <div class="card-head">
-                <div><div class="eyebrow">Booking channel</div><h2>Airbnb</h2></div>
-                <span class="badge progress">Setup in progress</span>
-              </div>
-              <p>Pin&Go has linked this Airbnb channel to the property. Property setup and activation are still pending.</p>
-              <div class="card-footer"><div class="note">Pin&Go will continue the Airbnb setup from this linked channel. This status does not mean the channel is active.</div></div>
+              <div class="card-head"><h2>Airbnb</h2><span class="badge progress">Setup in progress</span></div>
+              <p>Airbnb is linked to this property. Additional setup is required before the channel becomes active.</p>
             </article>
 
             <article class="card">
-              <div class="card-head">
-                <div><div class="eyebrow">Booking channel</div><h2>Booking.com</h2></div>
-                <span class="badge neutral">Not connected</span>
-              </div>
-              <p>Connect your booking channel to begin setup for this property.</p>
-              <div class="card-footer"><span class="button">↗ Connect Booking.com</span></div>
+              <div class="card-head"><h2>Booking.com</h2><span class="badge neutral">Not connected</span></div>
+              <p>Connect this channel to begin setup for the property.</p>
+              <div><span class="button">↗ Connect Booking.com</span></div>
             </article>
 
             <article class="card">
-              <div class="card-head">
-                <div><div class="eyebrow">Booking channel</div><h2>Expedia</h2></div>
-                <span class="badge neutral">Coming soon</span>
-              </div>
-              <p>This booking channel will be available in a future release.</p>
-              <div class="card-footer"><div class="note">No action is required right now.</div></div>
+              <div class="card-head"><h2>Expedia</h2><span class="badge neutral">Coming soon</span></div>
+              <p>Self-service connection is not available yet.</p>
+              <div class="subtle">Self-service connection is not available yet.</div>
             </article>
 
             <article class="card">
-              <div class="card-head">
-                <div><div class="eyebrow">Booking channel</div><h2>Vrbo</h2></div>
-                <span class="badge warning">Assisted setup</span>
-              </div>
-              <p>This channel is currently available with assisted setup.</p>
-              <div class="card-footer"><div class="note">Contact Pin&Go support to configure this channel.</div></div>
+              <div class="card-head"><h2>Vrbo</h2><span class="badge warning">Assisted setup</span></div>
+              <p>This channel currently requires assisted setup.</p>
+              <div class="subtle">Contact Pin&Go support for setup.</div>
             </article>
           </section>
         </div>
