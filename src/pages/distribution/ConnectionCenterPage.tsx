@@ -33,8 +33,8 @@ const SIMULATED_CENTER: DistributionConnectionCenter = {
 
 const SIMULATED_IFRAME_DOCUMENT = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:system-ui,sans-serif;margin:0;padding:32px;background:#f8fafc;color:#111827}main{max-width:560px;margin:auto;background:white;border:1px solid #e5e7eb;border-radius:18px;padding:28px}span{display:inline-block;background:#ecfdf5;color:#065f46;padding:6px 10px;border-radius:999px;font-weight:700}h1{font-size:24px}p{line-height:1.6}</style></head><body><main><span>Safe simulation</span><h1>Authorize your channel</h1><p>This view represents the authorization flow. It does not use credentials, contact an OTA, or modify data.</p></main></body></html>`;
 
-const PAGE_STYLE = { display: "grid", gap: 20, maxWidth: 1120, margin: "0 auto" } as const;
-const CARD_STYLE = { border: "1px solid #e5e7eb", borderRadius: 18, padding: 20, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" } as const;
+const PAGE_STYLE = { display: "grid", gap: 18, maxWidth: 1120, margin: "0 auto" } as const;
+const CARD_STYLE = { border: "1px solid #e5e7eb", borderRadius: 18, padding: 18, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" } as const;
 const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #111827", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 } as const;
 const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
 
@@ -66,7 +66,7 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
     return {
       status: "Setup in progress",
       tone: "progress" as const,
-      description: "Pin&Go has linked this Airbnb channel to the property. Property setup and activation are still pending.",
+      description: "Airbnb is linked to this property. Additional setup is required before the channel becomes active.",
     };
   }
   if (channel.status === "ACTIVE") {
@@ -80,22 +80,22 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
     return {
       status: "Coming soon",
       tone: "neutral" as const,
-      description: "This booking channel will be available in a future release.",
+      description: "Self-service connection is not available yet.",
     };
   }
   if (channel.availability === "ASSISTED_BETA") {
     return {
       status: "Assisted setup",
       tone: "warning" as const,
-      description: "This channel is currently available with assisted setup.",
+      description: "This channel currently requires assisted setup.",
     };
   }
   return {
     status: statusLabel(channel.status),
     tone: "neutral" as const,
     description: channel.provider === "AIRBNB"
-      ? "Authorize your Airbnb account securely to begin setting up this property. Pin&Go never receives or stores your Airbnb password."
-      : "Connect your booking channel to begin setup for this property.",
+      ? "Authorize your Airbnb account to begin setup. Pin&Go never receives or stores your Airbnb password."
+      : "Connect this channel to begin setup for the property.",
   };
 }
 
@@ -198,54 +198,47 @@ export function ConnectionCenterPage() {
         </Link>
       </div>
 
-      <section style={{ display: "flex", gap: 18, alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap" }}>
+      <section style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
         <div style={{ maxWidth: 720 }}>
-          <h1 style={{ margin: 0, color: "#111827", fontSize: 28, lineHeight: 1.15, fontWeight: 750 }}>Booking channels</h1>
-          <p style={{ margin: "8px 0 0", color: "#6b7280", lineHeight: 1.6 }}>Connect and manage the booking channels for {center?.property.name ?? "this property"}.</p>
+          <h1 style={{ margin: 0, color: "#111827", fontSize: 26, lineHeight: 1.15, fontWeight: 700 }}>{center?.property.name ?? "Property"}</h1>
+          <p style={{ margin: "6px 0 0", color: "#6b7280", lineHeight: 1.55 }}>Manage where this property receives reservations.</p>
         </div>
-        <div style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "8px 11px", borderRadius: 999, background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", fontSize: 13, fontWeight: 700 }}>
-          <ShieldCheck size={17} /> Secure connections
+        <div style={{ display: "inline-flex", gap: 7, alignItems: "center", padding: "6px 9px", borderRadius: 999, background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", fontSize: 12, fontWeight: 700 }}>
+          <ShieldCheck size={15} /> Secure connections
         </div>
       </section>
 
-      {simulated && <div role="status" style={{ ...CARD_STYLE, padding: 16, borderColor: "#bfdbfe", background: "#eff6ff", color: "#1d4ed8" }}>Simulation mode is active. No external calls or data changes will be made.</div>}
-      {notice && <div role="status" style={{ ...CARD_STYLE, padding: 16, borderColor: "#a7f3d0", background: "#ecfdf5", color: "#065f46" }}>{notice}</div>}
-      {error && <div role="alert" style={{ ...CARD_STYLE, padding: 16, borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>{error}</div>}
+      {simulated && <div role="status" style={{ ...CARD_STYLE, padding: 14, borderColor: "#bfdbfe", background: "#eff6ff", color: "#1d4ed8" }}>Simulation mode is active. No external calls or data changes will be made.</div>}
+      {notice && <div role="status" style={{ ...CARD_STYLE, padding: 14, borderColor: "#a7f3d0", background: "#ecfdf5", color: "#065f46" }}>{notice}</div>}
+      {error && <div role="alert" style={{ ...CARD_STYLE, padding: 14, borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>{error}</div>}
       {loading && <div role="status" style={{ ...CARD_STYLE, display: "flex", alignItems: "center", gap: 10, color: "#6b7280" }}><LoaderCircle size={18} /> Loading booking channels…</div>}
 
       {!loading && center && (
-        <section aria-label="Booking channels" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+        <section aria-label="Booking channels" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
           {center.channels.map((channel) => {
             const airbnbLinked = channel.provider === "AIRBNB" && channel.channelLinked && channel.status === "NOT_CONNECTED";
             const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider) && !airbnbLinked;
             const presentation = providerPresentation(channel, airbnbLinked);
             return (
-              <article key={channel.provider} style={{ ...CARD_STYLE, display: "grid", gap: 16, alignContent: "start", minHeight: 230 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                  <div>
-                    <div style={{ color: "#9ca3af", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Booking channel</div>
-                    <h2 style={{ margin: 0, fontSize: 21, lineHeight: 1.25, color: "#111827" }}>{channel.name}</h2>
-                  </div>
-                  <span style={{ ...statusBadgeStyle(presentation.tone), borderRadius: 999, padding: "6px 9px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{presentation.status}</span>
+              <article key={channel.provider} style={{ ...CARD_STYLE, display: "grid", gap: 12, alignContent: "start", minHeight: 168 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <h2 style={{ margin: 0, fontSize: 20, lineHeight: 1.25, color: "#111827" }}>{channel.name}</h2>
+                  <span style={{ ...statusBadgeStyle(presentation.tone), borderRadius: 999, padding: "5px 8px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{presentation.status}</span>
                 </div>
 
-                <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.65 }}>{presentation.description}</p>
+                <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
 
-                <div style={{ marginTop: "auto", paddingTop: 4 }}>
-                  {airbnbLinked ? (
-                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14, color: "#4b5563", fontSize: 13, lineHeight: 1.55 }}>
-                      Pin&Go will continue the Airbnb setup from this linked channel. This status does not mean the channel is active.
-                    </div>
-                  ) : canConnect ? (
+                {canConnect ? (
+                  <div style={{ marginTop: "auto", paddingTop: 2 }}>
                     <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
                       {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
                     </button>
-                  ) : (
-                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14, color: "#6b7280", fontSize: 13 }}>
-                      {channel.availability === "ASSISTED_BETA" ? "Contact Pin&Go support to configure this channel." : "No action is required right now."}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ) : channel.availability === "ASSISTED_BETA" ? (
+                  <div style={{ marginTop: "auto", color: "#6b7280", fontSize: 13 }}>Contact Pin&Go support for setup.</div>
+                ) : channel.availability === "PLANNED" ? (
+                  <div style={{ marginTop: "auto", color: "#6b7280", fontSize: 13 }}>Self-service connection is not available yet.</div>
+                ) : null}
               </article>
             );
           })}
