@@ -55,6 +55,7 @@ function SideItem({ to, label }: { to: string; label: string }) {
 
 function getPageTitle(pathname: string) {
   if (pathname.startsWith("/overview")) return "Overview";
+  if (/^\/properties\/[^/]+\/distribution(?:\/|$)/.test(pathname)) return "Booking channels";
   if (pathname.startsWith("/properties")) return "Properties";
   if (pathname.startsWith("/locks")) return "Locks";
   if (pathname.startsWith("/reservations")) return "Reservations";
