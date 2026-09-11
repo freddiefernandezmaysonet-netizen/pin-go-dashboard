@@ -34,7 +34,9 @@ test("dashboard shell gives distribution its own page title before generic Prope
   assert.notEqual(bookingChannelsIndex, -1);
   assert.notEqual(propertiesIndex, -1);
   assert.ok(bookingChannelsIndex < propertiesIndex);
-  assert.match(shell, /\/properties\\\/\\[\^\/\]\+\\\/distribution/);
+  assert.ok(
+    shell.includes('if (/^\\/properties\\/[^/]+\\/distribution(?:\\/|$)/.test(pathname)) return "Booking channels";')
+  );
 });
 
 test("Airbnb linked state is presented as setup in progress, never active", () => {
