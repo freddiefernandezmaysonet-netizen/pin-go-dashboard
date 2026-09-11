@@ -40,7 +40,11 @@ test("Airbnb listing client uses the authenticated read-only dashboard GET contr
 });
 
 test("Airbnb listing response parser is exact and does not expose a provider channel id", () => {
-  assert.match(api, /export type AirbnbHostListing = \{/);
+  const listingType = between(
+    api,
+    "export type AirbnbHostListing = {",
+    "function isRecord"
+  );
   for (const field of [
     "id: string",
     "title: string | null",
@@ -51,10 +55,10 @@ test("Airbnb listing response parser is exact and does not expose a provider cha
     "countryCode: string | null",
     "qualityStatus: string | null",
   ]) {
-    assert.ok(api.includes(field), `missing listing field ${field}`);
+    assert.ok(listingType.includes(field), `missing listing field ${field}`);
   }
+  assert.doesNotMatch(listingType, /channelId:/);
   assert.match(api, /typeof value\.id !== "string" \|\| !value\.id/);
-  assert.doesNotMatch(api, /AirbnbHostListing[\s\S]*channelId:/);
 });
 
 test("successful Airbnb callback returns automatically to the property booking channels", () => {
