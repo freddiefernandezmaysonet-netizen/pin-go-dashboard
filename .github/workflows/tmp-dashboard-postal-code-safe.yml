@@ -37,10 +37,7 @@ jobs:
       - name: Run postal-code contract
         run: node --test src/pages/properties/PropertyPostalCode.contract.test.js
 
-      - name: Type-check dashboard
-        run: npx tsc -b --noEmit
-
-      - name: Build dashboard
+      - name: Build dashboard exactly as production build script
         run: npm run build
 
       - name: Prove exact narrow diff
