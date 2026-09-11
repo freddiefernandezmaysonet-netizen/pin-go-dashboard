@@ -3,6 +3,8 @@ import { ArrowLeft, ExternalLink, LoaderCircle, ShieldCheck, X } from "lucide-re
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
+  AirbnbHostSelfServiceApiError,
+  confirmAirbnbHostMapping,
   issueAirbnbHostConnectionLink,
   listAirbnbHostListings,
   type AirbnbHostListing,
@@ -49,6 +51,7 @@ const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 1
 const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
 
 type ListingDiscoveryStatus = "IDLE" | "LOADING" | "LOADED" | "FAILED";
+type AirbnbMappingStatus = "IDLE" | "SUBMITTING" | "SUBMITTED" | "ALREADY_MAPPED";
 
 function isAirbnbListingDiscoveryEligible(
   channel: DistributionConnectionCenter["channels"][number] | undefined
@@ -136,46 +139,22 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
     reasons.includes("POSTAL_CODE_MISMATCH") ||
     reasons.includes("POSTAL_CODE_UNKNOWN");
 
-  if (reasons.includes("AMBIGUOUS_RUNNER_UP")) {
-    add("More than one Airbnb property could match this Pin&Go property.");
-  }
-  if (reasons.includes("LISTING_CONFLICT")) {
-    add("This Airbnb property also appears to match another Pin&Go property.");
-  }
-  if (reasons.includes("DETAILS_UNAVAILABLE")) {
-    add("Airbnb property details could not be verified.");
-  }
-  if (reasons.includes("DETAILS_NAME_NOT_STRONG")) {
-    add("Property names are not similar enough for an automatic match.");
-  }
-  if (reasons.includes("POSTAL_CODE_MISMATCH")) {
-    add("ZIP / postal code differs between Pin&Go and Airbnb.");
-  } else if (reasons.includes("POSTAL_CODE_UNKNOWN")) {
-    add("ZIP / postal code could not be confirmed.");
-  }
-  if (reasons.includes("PERSON_CAPACITY_MISMATCH")) {
-    add("Guest capacity differs between Pin&Go and Airbnb.");
-  } else if (reasons.includes("PERSON_CAPACITY_UNKNOWN")) {
-    add("Airbnb did not provide an exact guest capacity.");
-  }
-  if (reasons.includes("DETAILS_COUNTRY_MISMATCH")) {
-    add("Country information differs between Pin&Go and Airbnb.");
-  } else if (reasons.includes("DETAILS_COUNTRY_UNKNOWN")) {
-    add("Country information could not be confirmed.");
-  } else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_MISMATCH")) {
-    add("Country information differs between Pin&Go and Airbnb.");
-  } else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_UNKNOWN")) {
-    add("Country information could not be confirmed.");
-  }
-  if (reasons.includes("NAME_PARTIAL") || reasons.includes("NAME_WEAK")) {
-    add("Property names are not similar enough for an automatic match.");
-  }
+  if (reasons.includes("AMBIGUOUS_RUNNER_UP")) add("More than one Airbnb property could match this Pin&Go property.");
+  if (reasons.includes("LISTING_CONFLICT")) add("This Airbnb property also appears to match another Pin&Go property.");
+  if (reasons.includes("DETAILS_UNAVAILABLE")) add("Airbnb property details could not be verified.");
+  if (reasons.includes("DETAILS_NAME_NOT_STRONG")) add("Property names are not similar enough for an automatic match.");
+  if (reasons.includes("POSTAL_CODE_MISMATCH")) add("ZIP / postal code differs between Pin&Go and Airbnb.");
+  else if (reasons.includes("POSTAL_CODE_UNKNOWN")) add("ZIP / postal code could not be confirmed.");
+  if (reasons.includes("PERSON_CAPACITY_MISMATCH")) add("Guest capacity differs between Pin&Go and Airbnb.");
+  else if (reasons.includes("PERSON_CAPACITY_UNKNOWN")) add("Airbnb did not provide an exact guest capacity.");
+  if (reasons.includes("DETAILS_COUNTRY_MISMATCH")) add("Country information differs between Pin&Go and Airbnb.");
+  else if (reasons.includes("DETAILS_COUNTRY_UNKNOWN")) add("Country information could not be confirmed.");
+  else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_MISMATCH")) add("Country information differs between Pin&Go and Airbnb.");
+  else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_UNKNOWN")) add("Country information could not be confirmed.");
+  if (reasons.includes("NAME_PARTIAL") || reasons.includes("NAME_WEAK")) add("Property names are not similar enough for an automatic match.");
 
-  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) {
-    add("Airbnb uses a different city or locality name for this property.");
-  } else if (messages.length === 0 && reasons.includes("CITY_UNKNOWN")) {
-    add("City or locality information could not be confirmed.");
-  }
+  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) add("Airbnb uses a different city or locality name for this property.");
+  else if (messages.length === 0 && reasons.includes("CITY_UNKNOWN")) add("City or locality information could not be confirmed.");
 
   return messages;
 }
@@ -183,6 +162,8 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
 function AirbnbListingsPanel(props: {
   status: ListingDiscoveryStatus;
   discovery: AirbnbHostListingDiscovery | null;
+  mappingStatus: AirbnbMappingStatus;
+  onConfirm(listingId: string): void;
 }) {
   if (props.status === "LOADING") {
     return (
@@ -205,6 +186,42 @@ function AirbnbListingsPanel(props: {
     ? listings.find((listing) => listing.id === match.candidateListingId) ?? null
     : null;
   const meta = candidate ? listingMeta(candidate) : null;
+  const canConfirm = Boolean(
+    candidate &&
+      match.status !== "UNMATCHED" &&
+      !match.reasons.includes("LISTING_CONFLICT")
+  );
+  const mappingFinished =
+    props.mappingStatus === "SUBMITTED" || props.mappingStatus === "ALREADY_MAPPED";
+
+  const confirmationControl = canConfirm && candidate ? (
+    <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
+      <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>
+        Confirm only if this is the Airbnb property that belongs to this Pin&Go property. This submits the property mapping only. It does not activate Airbnb or import reservations.
+      </div>
+      {mappingFinished ? (
+        <div role="status" style={{ border: "1px solid #a7f3d0", borderRadius: 10, padding: "10px 12px", background: "#ecfdf5", color: "#065f46", fontSize: 12, lineHeight: 1.5 }}>
+          {props.mappingStatus === "ALREADY_MAPPED"
+            ? "This Airbnb property was already mapped. No duplicate mapping was created. Airbnb is not activated by this action."
+            : "Mapping submitted. Airbnb is not active yet. Activation and reservation import have not been performed."}
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={props.mappingStatus === "SUBMITTING"}
+          onClick={() => props.onConfirm(candidate.id)}
+          style={{
+            ...PRIMARY_BUTTON_STYLE,
+            width: "fit-content",
+            cursor: props.mappingStatus === "SUBMITTING" ? "not-allowed" : "pointer",
+            opacity: props.mappingStatus === "SUBMITTING" ? 0.65 : 1,
+          }}
+        >
+          {props.mappingStatus === "SUBMITTING" ? "Confirming property…" : "Yes, this is my Airbnb property"}
+        </button>
+      )}
+    </div>
+  ) : null;
 
   if (match.status === "AUTO_MATCH") {
     return (
@@ -219,7 +236,8 @@ function AirbnbListingsPanel(props: {
             {meta && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>{meta}</div>}
           </div>
         )}
-        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>High-confidence match detected. No mapping has been performed yet.</div>
+        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a high-confidence match. Host confirmation is required before mapping.</div>
+        {confirmationControl}
       </div>
     );
   }
@@ -246,7 +264,8 @@ function AirbnbListingsPanel(props: {
             </ul>
           </div>
         )}
-        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a possible match, but it must be reviewed before mapping. No changes were made.</div>
+        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a possible match. Review it and explicitly confirm it before mapping.</div>
+        {confirmationControl}
       </div>
     );
   }
@@ -292,6 +311,7 @@ export function ConnectionCenterPage() {
   const [error, setError] = useState<string | null>(null);
   const [airbnbDiscovery, setAirbnbDiscovery] = useState<AirbnbHostListingDiscovery | null>(null);
   const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
+  const [airbnbMappingStatus, setAirbnbMappingStatus] = useState<AirbnbMappingStatus>("IDLE");
   const listingDiscoveryStartedFor = useRef<string | null>(null);
 
   const load = useCallback(async () => {
@@ -313,6 +333,7 @@ export function ConnectionCenterPage() {
     listingDiscoveryStartedFor.current = id;
     setAirbnbListingStatus("LOADING");
     setAirbnbDiscovery(null);
+    setAirbnbMappingStatus("IDLE");
     void listAirbnbHostListings(id)
       .then((discovery) => {
         setAirbnbDiscovery(discovery);
@@ -347,6 +368,37 @@ export function ConnectionCenterPage() {
       if (caught instanceof DistributionApiError && caught.code === "OTA_CONNECTION_CENTER_RUNTIME_DISABLED") setNotice("Booking channel connections are being prepared and are not yet available for commercial use.");
       else setError("We couldn't start this connection. Please try again.");
     } finally { setBusyProvider(null); }
+  }
+
+  async function confirmAirbnbCandidate(listingId: string) {
+    setError(null);
+    setNotice(null);
+    setAirbnbMappingStatus("SUBMITTING");
+    try {
+      const result = await confirmAirbnbHostMapping({ propertyId: id, listingId });
+      setAirbnbMappingStatus(result.outcome === "ALREADY_MAPPED" ? "ALREADY_MAPPED" : "SUBMITTED");
+    } catch (caught) {
+      setAirbnbMappingStatus("IDLE");
+      if (caught instanceof AirbnbHostSelfServiceApiError) {
+        if (caught.code.includes("CONFIRMATION_MISMATCH")) {
+          setError("The Airbnb property match changed before confirmation. Refresh this page and review the property again. No mapping was created by this attempt.");
+          return;
+        }
+        if (caught.code.includes("CONFLICT")) {
+          setError("This Airbnb property or Pin&Go rate plan is already mapped differently. No changes were made.");
+          return;
+        }
+        if (caught.code.includes("CHANNEL_STATE_INVALID") || caught.code.includes("CONTEXT_NOT_ELIGIBLE")) {
+          setError("The Airbnb connection changed before confirmation. Refresh this page before continuing. No mapping was created by this attempt.");
+          return;
+        }
+        if (caught.code.includes("RECONCILIATION_REQUIRED") || caught.code.includes("RESPONSE_INVALID") || caught.code.includes("RESPONSE_TOO_LARGE")) {
+          setError("Pin&Go could not verify the mapping result. Airbnb was not activated. Refresh the page before attempting another action.");
+          return;
+        }
+      }
+      setError("We couldn't submit this Airbnb property mapping. Airbnb was not activated and reservations were not imported.");
+    }
   }
 
   async function markOpened() {
@@ -413,7 +465,12 @@ export function ConnectionCenterPage() {
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
 
                 {airbnbDiscoveryEligible && (
-                  <AirbnbListingsPanel status={airbnbListingStatus} discovery={airbnbDiscovery} />
+                  <AirbnbListingsPanel
+                    status={airbnbListingStatus}
+                    discovery={airbnbDiscovery}
+                    mappingStatus={airbnbMappingStatus}
+                    onConfirm={(listingId) => void confirmAirbnbCandidate(listingId)}
+                  />
                 )}
 
                 {canConnect ? (
