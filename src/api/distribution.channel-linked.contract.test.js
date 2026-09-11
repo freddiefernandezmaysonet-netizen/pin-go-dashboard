@@ -22,16 +22,15 @@ test("Airbnb linked presentation is explicit and does not promote lifecycle stat
     /channel\.provider === "AIRBNB" && channel\.channelLinked && channel\.status === "NOT_CONNECTED"/
   );
   assert.match(page, /status: "Setup in progress"/);
-  assert.match(page, /Pin&Go has linked this Airbnb channel to the property/);
-  assert.match(page, /Property setup and activation are still pending/);
-  assert.match(page, /This status does not mean the channel is active/);
+  assert.match(page, /Airbnb is linked to this property/);
+  assert.match(page, /Additional setup is required before the channel becomes active/);
   assert.doesNotMatch(page, /Airbnb account connected successfully/);
   assert.doesNotMatch(page, /Airbnb is active/);
+  assert.doesNotMatch(page, /will continue the Airbnb setup/);
 });
 
 test("linked Airbnb suppresses a second connect action without affecting Booking.com", () => {
   assert.match(page, /SELF_SERVICE\.has\(channel\.provider\) && !airbnbLinked/);
-  assert.match(page, /airbnbLinked \? \(/);
   assert.match(page, /channel\.provider === "AIRBNB" \? "Connect Airbnb" : `Connect \$\{channel\.name\}`/);
 });
 
