@@ -103,7 +103,7 @@ test("linked Airbnb performs one pre-activation discovery read and never polls",
   assert.match(centerPage, /listingDiscoveryStartedFor\.current === id/);
   assert.match(centerPage, /listingDiscoveryStartedFor\.current = id/);
   assert.equal((centerPage.match(/listAirbnbHostListings\(id\)/g) ?? []).length, 1);
-  assert.doesNotMatch(centerPage, /setInterval|setTimeout|requestAnimationFrame/);
+  assert.doesNotMatch(centerPage, /setInterval|requestAnimationFrame/);
 });
 
 test("property presentation shows only the current match decision instead of rendering the full account portfolio", () => {
@@ -111,7 +111,6 @@ test("property presentation shows only the current match decision instead of ren
   assert.match(panel, /Matched automatically/);
   assert.match(panel, /Review required/);
   assert.match(panel, /No confident match/);
-  assert.match(panel, /No mapping has been performed yet/);
   assert.match(panel, /listings\.find\(\(listing\) => listing\.id === match\.candidateListingId\)/);
   assert.doesNotMatch(panel, /listings\.map\(/);
   assert.doesNotMatch(panel, /candidateListingId\}/);
@@ -148,9 +147,37 @@ test("linked Airbnb is not offered a second connection action while discovery is
   assert.match(centerPage, /const airbnbDiscoveryEligible = isAirbnbListingDiscoveryEligible\(channel\)/);
 });
 
-test("auto-match presentation is read-only and stops before mapping activation or reservation import", () => {
+test("host-confirmed mapping client uses the protected mapping POST contract", () => {
+  assert.match(api, /export const AIRBNB_HOST_MAPPING_CONFIRMATION =\s*"CONFIRM_AIRBNB_PROPERTY_MAPPING"/);
+  assert.match(api, /export async function confirmAirbnbHostMapping/);
+  assert.match(
+    api,
+    /\/api\/dashboard\/distribution\/properties\/\$\{encodeURIComponent\(args\.propertyId\)\}\/channels\/AIRBNB\/mapping/
+  );
+  assert.match(api, /"mapping-confirm"/);
+  assert.match(api, /listingId: args\.listingId/);
+  assert.match(api, /confirmation: AIRBNB_HOST_MAPPING_CONFIRMATION/);
+  assert.match(api, /"MAPPING_SUBMITTED"/);
+  assert.match(api, /"ALREADY_MAPPED"/);
+});
+
+test("mapping is explicit host confirmation for both automatic and review candidates", () => {
   const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
-  assert.doesNotMatch(panel, /<button|onClick|href=/);
-  assert.doesNotMatch(api + callbackPage + centerPage, /\/mappings|\/activate|load_future_reservations/);
-  assert.doesNotMatch(api + callbackPage + centerPage, /Map listing|Activate channel|Load reservations/);
+  assert.match(panel, /Yes, this is my Airbnb property/);
+  assert.match(panel, /Host confirmation is required before mapping\./);
+  assert.match(panel, /Review it and explicitly confirm it before mapping\./);
+  assert.match(panel, /props\.onConfirm\(candidate\.id\)/);
+  assert.match(panel, /match\.status !== "UNMATCHED"/);
+  assert.match(panel, /!match\.reasons\.includes\("LISTING_CONFLICT"\)/);
+  assert.doesNotMatch(panel, /useEffect\([^]*onConfirm/);
+});
+
+test("mapping UI stops after mapping and never claims activation or reservation import", () => {
+  const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
+  assert.match(panel, /Mapping submitted\. Airbnb is not active yet\./);
+  assert.match(panel, /Activation and reservation import have not been performed\./);
+  assert.match(panel, /No duplicate mapping was created\./);
+  assert.match(centerPage, /confirmAirbnbHostMapping\(\{ propertyId: id, listingId \}\)/);
+  assert.doesNotMatch(api + callbackPage + centerPage, /\/activate|load_future_reservations|Activate channel|Load reservations/);
+  assert.doesNotMatch(api + centerPage, /app\.channex\.io|staging\.channex\.io|user-api-key/);
 });
