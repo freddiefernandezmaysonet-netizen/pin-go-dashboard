@@ -6,6 +6,10 @@ const page = readFileSync(
   new URL("./ConnectionCenterPage.tsx", import.meta.url),
   "utf8"
 );
+const shell = readFileSync(
+  new URL("../../app/layout/AppShell.tsx", import.meta.url),
+  "utf8"
+);
 const airbnbClient = readFileSync(
   new URL("../../api/airbnbHostSelfService.ts", import.meta.url),
   "utf8"
@@ -22,6 +26,15 @@ test("Connection Center uses the established Pin&Go dashboard visual language", 
   assert.match(page, /Booking channels/);
   assert.match(page, /Secure connections/);
   assert.match(page, /Back to property/);
+});
+
+test("dashboard shell gives distribution its own page title before generic Properties", () => {
+  const bookingChannelsIndex = shell.indexOf('return "Booking channels"');
+  const propertiesIndex = shell.indexOf('return "Properties"');
+  assert.notEqual(bookingChannelsIndex, -1);
+  assert.notEqual(propertiesIndex, -1);
+  assert.ok(bookingChannelsIndex < propertiesIndex);
+  assert.match(shell, /\/properties\\\/\\[\^\/\]\+\\\/distribution/);
 });
 
 test("Airbnb linked state is presented as setup in progress, never active", () => {
