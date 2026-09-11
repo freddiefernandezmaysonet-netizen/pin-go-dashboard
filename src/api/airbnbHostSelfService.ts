@@ -1,5 +1,8 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
+export const AIRBNB_HOST_MAPPING_CONFIRMATION =
+  "CONFIRM_AIRBNB_PROPERTY_MAPPING";
+
 export class AirbnbHostSelfServiceApiError extends Error {
   constructor(readonly code: string, readonly status: number) {
     super(code);
@@ -53,6 +56,11 @@ export type AirbnbPropertyMatchDecision = {
 export type AirbnbHostListingDiscovery = {
   listings: AirbnbHostListing[];
   match: AirbnbPropertyMatchDecision;
+};
+
+export type AirbnbHostConfirmedMappingResult = {
+  outcome: "MAPPING_SUBMITTED" | "ALREADY_MAPPED";
+  listingId: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -235,6 +243,35 @@ export async function listAirbnbHostListings(
   return {
     listings: payload.listings.map(parseListing),
     match: parseMatch(payload.match),
+  };
+}
+
+export async function confirmAirbnbHostMapping(args: {
+  propertyId: string;
+  listingId: string;
+}): Promise<AirbnbHostConfirmedMappingResult> {
+  const payload = await post(
+    `/api/dashboard/distribution/properties/${encodeURIComponent(args.propertyId)}/channels/AIRBNB/mapping`,
+    "mapping-confirm",
+    {
+      listingId: args.listingId,
+      confirmation: AIRBNB_HOST_MAPPING_CONFIRMATION,
+    }
+  );
+  if (
+    !isRecord(payload) ||
+    payload.ok !== true ||
+    !isRecord(payload.mapping) ||
+    (payload.mapping.outcome !== "MAPPING_SUBMITTED" &&
+      payload.mapping.outcome !== "ALREADY_MAPPED") ||
+    typeof payload.mapping.listingId !== "string" ||
+    !payload.mapping.listingId
+  ) {
+    throw new Error("INVALID_AIRBNB_MAPPING_RESPONSE");
+  }
+  return {
+    outcome: payload.mapping.outcome,
+    listingId: payload.mapping.listingId,
   };
 }
 
