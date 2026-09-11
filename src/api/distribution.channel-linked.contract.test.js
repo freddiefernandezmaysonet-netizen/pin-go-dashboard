@@ -21,26 +21,25 @@ test("Airbnb linked presentation is explicit and does not promote lifecycle stat
     page,
     /channel\.provider === "AIRBNB" && channel\.channelLinked && channel\.status === "NOT_CONNECTED"/
   );
-  assert.match(page, /Estado: \{airbnbLinked \? "Canal enlazado" : statusLabel\(channel\.status\)\}/);
-  assert.match(page, /Pin&amp;Go tiene una referencia de canal Airbnb enlazada a esta propiedad/);
-  assert.match(page, /La activación y la sincronización permanecen separadas/);
-  assert.match(page, /Este enlace todavía no significa que el canal esté activo/);
-  assert.doesNotMatch(page, /Airbnb autorizó el enlace y Pin&amp;Go verificó el canal/);
-  assert.doesNotMatch(page, /No es necesario volver a autorizar esta conexión/);
+  assert.match(page, /status: "Setup in progress"/);
+  assert.match(page, /Airbnb is linked to this property/);
+  assert.match(page, /Additional setup is required before the channel becomes active/);
+  assert.doesNotMatch(page, /Airbnb account connected successfully/);
+  assert.doesNotMatch(page, /Airbnb is active/);
+  assert.doesNotMatch(page, /will continue the Airbnb setup/);
 });
 
 test("linked Airbnb suppresses a second connect action without affecting Booking.com", () => {
   assert.match(page, /SELF_SERVICE\.has\(channel\.provider\) && !airbnbLinked/);
-  assert.match(page, /airbnbLinked \? <p/);
-  assert.match(page, /channel\.provider === "AIRBNB" \? "Conectar con Airbnb" : "Conectar"/);
+  assert.match(page, /channel\.provider === "AIRBNB" \? "Connect Airbnb" : `Connect \$\{channel\.name\}`/);
 });
 
 test("presentation patch does not add mapping activation or provider execution controls", () => {
   assert.doesNotMatch(page, /\/mappings|\/activate|load_future_reservations/);
-  assert.doesNotMatch(page, /Crear mapeo|Activar canal|Ejecutar sincronización/);
+  assert.doesNotMatch(page, /Map listing|Activate channel|Load reservations/);
 });
 
-test("new dashboard branch is deployment-vetoed before publication", () => {
+test("previous callback-presentation branch deployment veto remains present", () => {
   assert.equal(
     vercel.git?.deploymentEnabled?.["agent/airbnb-callback-persistence-presentation"],
     false

@@ -1,0 +1,65 @@
+name: Connection Center Enterprise Surface
+
+on:
+  push:
+    branches:
+      - agent/connection-center-enterprise-surface
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  enterprise-surface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run Connection Center presentation contracts
+        run: node --test src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js src/api/distribution.channel-linked.contract.test.js
+
+      - name: Build dashboard without deployment
+        run: npm run build
+
+      - name: Prove exact presentation-only diff allowlist
+        run: |
+          git diff --name-only 238a10f09101ae4c9a0bcd7f3d169b071bf13251...HEAD | sort > "$RUNNER_TEMP/actual.txt"
+          cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
+          .github/workflows/connection-center-enterprise-surface.yml
+          src/api/distribution.channel-linked.contract.test.js
+          src/app/layout/AppShell.tsx
+          src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js
+          src/pages/distribution/ConnectionCenterPage.tsx
+          EOF
+          sort "$RUNNER_TEMP/expected.txt" -o "$RUNNER_TEMP/expected.txt"
+          diff -u "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/actual.txt"
+
+      - name: Prove behavior and provider contracts remain frozen
+        run: |
+          git diff --exit-code 238a10f09101ae4c9a0bcd7f3d169b071bf13251 -- \
+            src/api \
+            ':(exclude)src/api/distribution.channel-linked.contract.test.js' \
+            src/app/routes/router.tsx \
+            src/pages/distribution/AirbnbConnectionCallbackPage.tsx \
+            src/lib/distributionFramePolicy.ts \
+            vercel.json
+
+      - name: Prove no listing discovery mapping or activation was introduced
+        run: |
+          ! grep -E '/channels/AIRBNB/listings|/mappings|/activate|load_future_reservations|listAirbnbHostListings|listAirbnbListings' src/pages/distribution/ConnectionCenterPage.tsx src/app/layout/AppShell.tsx
