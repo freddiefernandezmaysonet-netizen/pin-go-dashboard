@@ -32,6 +32,29 @@ export type AirbnbHostListing = {
   qualityStatus: string | null;
 };
 
+export type AirbnbPropertyMatchStatus =
+  | "AUTO_MATCH"
+  | "REVIEW_REQUIRED"
+  | "UNMATCHED";
+
+export type AirbnbPropertyMatchConfidence = "HIGH" | "MEDIUM" | "LOW";
+
+export type AirbnbPropertyMatchDecision = {
+  propertyId: string;
+  status: AirbnbPropertyMatchStatus;
+  confidence: AirbnbPropertyMatchConfidence;
+  candidateListingId: string | null;
+  candidateTitle: string | null;
+  score: number;
+  runnerUpScore: number | null;
+  reasons: string[];
+};
+
+export type AirbnbHostListingDiscovery = {
+  listings: AirbnbHostListing[];
+  match: AirbnbPropertyMatchDecision;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -94,8 +117,6 @@ function safeAuthorizationUrl(value: unknown): string {
     ) {
       throw new Error("invalid");
     }
-    // The backend relays Channex's authorization URL, not its API origin.
-    // Preserve it exactly for the existing top-level navigation.
     return value;
   } catch {
     throw new Error("INVALID_AIRBNB_CONNECTION_LINK_RESPONSE");
@@ -105,6 +126,12 @@ function safeAuthorizationUrl(value: unknown): string {
 function nullableText(value: unknown): string | null {
   if (value === null) return null;
   if (typeof value === "string") return value;
+  throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+}
+
+function nullableNumber(value: unknown): number | null {
+  if (value === null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
   throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
 }
 
@@ -135,6 +162,42 @@ function parseListing(value: unknown): AirbnbHostListing {
   };
 }
 
+function parseMatchStatus(value: unknown): AirbnbPropertyMatchStatus {
+  if (value === "AUTO_MATCH" || value === "REVIEW_REQUIRED" || value === "UNMATCHED") {
+    return value;
+  }
+  throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+}
+
+function parseMatchConfidence(value: unknown): AirbnbPropertyMatchConfidence {
+  if (value === "HIGH" || value === "MEDIUM" || value === "LOW") return value;
+  throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+}
+
+function parseMatch(value: unknown): AirbnbPropertyMatchDecision {
+  if (
+    !isRecord(value) ||
+    typeof value.propertyId !== "string" ||
+    !value.propertyId ||
+    typeof value.score !== "number" ||
+    !Number.isFinite(value.score) ||
+    !Array.isArray(value.reasons) ||
+    value.reasons.some((reason) => typeof reason !== "string")
+  ) {
+    throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+  }
+  return {
+    propertyId: value.propertyId,
+    status: parseMatchStatus(value.status),
+    confidence: parseMatchConfidence(value.confidence),
+    candidateListingId: nullableText(value.candidateListingId),
+    candidateTitle: nullableText(value.candidateTitle),
+    score: value.score,
+    runnerUpScore: nullableNumber(value.runnerUpScore),
+    reasons: [...value.reasons] as string[],
+  };
+}
+
 export async function issueAirbnbHostConnectionLink(
   propertyId: string
 ): Promise<AirbnbHostConnectionLink> {
@@ -158,14 +221,21 @@ export async function issueAirbnbHostConnectionLink(
 
 export async function listAirbnbHostListings(
   propertyId: string
-): Promise<AirbnbHostListing[]> {
+): Promise<AirbnbHostListingDiscovery> {
   const payload = await get(
     `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/listings`
   );
-  if (!isRecord(payload) || payload.ok !== true || !Array.isArray(payload.listings)) {
+  if (
+    !isRecord(payload) ||
+    payload.ok !== true ||
+    !Array.isArray(payload.listings)
+  ) {
     throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
   }
-  return payload.listings.map(parseListing);
+  return {
+    listings: payload.listings.map(parseListing),
+    match: parseMatch(payload.match),
+  };
 }
 
 export async function verifyAirbnbHostCallback(args: {
