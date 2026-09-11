@@ -65,6 +65,7 @@ test("Airbnb discovery parser accepts listing and match evidence but no provider
   );
   assert.match(api, /candidateListingId: nullableText\(value\.candidateListingId\)/);
   assert.match(api, /match: parseMatch\(payload\.match\)/);
+  assert.match(api, /reasons: \[\.\.\.value\.reasons\] as string\[\]/);
 });
 
 test("successful Airbnb callback returns automatically to the property booking channels", () => {
@@ -114,6 +115,28 @@ test("property presentation shows only the current match decision instead of ren
   assert.match(panel, /listings\.find\(\(listing\) => listing\.id === match\.candidateListingId\)/);
   assert.doesNotMatch(panel, /listings\.map\(/);
   assert.doesNotMatch(panel, /candidateListingId\}/);
+});
+
+test("review-required presentation explains host-facing blockers without exposing raw reason codes", () => {
+  const reasons = between(centerPage, "function reviewReasonMessages", "function AirbnbListingsPanel");
+  const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
+
+  assert.match(panel, /reviewReasonMessages\(match\.reasons\)/);
+  assert.match(panel, /Why Pin&Go needs review/);
+  assert.match(reasons, /Guest capacity differs between Pin&Go and Airbnb\./);
+  assert.match(reasons, /ZIP \/ postal code differs between Pin&Go and Airbnb\./);
+  assert.match(reasons, /Airbnb property details could not be verified\./);
+  assert.match(reasons, /More than one Airbnb property could match this Pin&Go property\./);
+  assert.match(reasons, /This Airbnb property also appears to match another Pin&Go property\./);
+  assert.match(reasons, /Airbnb uses a different city or locality name for this property\./);
+  assert.doesNotMatch(panel, /\{match\.reasons\}|\{reason\}/);
+});
+
+test("listing metadata does not infer guest capacity from Airbnb occupancy options", () => {
+  const meta = between(centerPage, "function listingMeta", "function reviewReasonMessages");
+  assert.match(meta, /listing\.city/);
+  assert.match(meta, /listing\.countryCode/);
+  assert.doesNotMatch(meta, /occupancies|Math\.max|Up to|guests/);
 });
 
 test("linked Airbnb is not offered a second connection action while discovery is pending", () => {
