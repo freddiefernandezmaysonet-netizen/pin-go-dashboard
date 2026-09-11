@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ExternalLink, LoaderCircle, ShieldCheck, X } from "lucide-react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
-import { issueAirbnbHostConnectionLink } from "../../api/airbnbHostSelfService";
+import {
+  issueAirbnbHostConnectionLink,
+  listAirbnbHostListings,
+  type AirbnbHostListing,
+} from "../../api/airbnbHostSelfService";
 import {
   DistributionApiError,
   getDistributionConnectionCenter,
@@ -37,6 +41,8 @@ const PAGE_STYLE = { display: "grid", gap: 18, maxWidth: 1120, margin: "0 auto" 
 const CARD_STYLE = { border: "1px solid #e5e7eb", borderRadius: 18, padding: 18, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" } as const;
 const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #111827", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 } as const;
 const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
+
+type ListingDiscoveryStatus = "IDLE" | "LOADING" | "LOADED" | "FAILED";
 
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
@@ -99,6 +105,48 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
   };
 }
 
+function listingMeta(listing: AirbnbHostListing): string | null {
+  const location = [listing.city, listing.countryCode].filter(Boolean).join(", ");
+  const occupancy = listing.occupancies?.length
+    ? `Up to ${Math.max(...listing.occupancies)} guests`
+    : null;
+  return [location || null, occupancy].filter(Boolean).join(" · ") || null;
+}
+
+function AirbnbListingsPanel(props: {
+  status: ListingDiscoveryStatus;
+  listings: AirbnbHostListing[];
+}) {
+  if (props.status === "LOADING") {
+    return (
+      <div role="status" style={{ display: "flex", alignItems: "center", gap: 8, color: "#4b5563", fontSize: 13 }}>
+        <LoaderCircle size={16} /> Preparing your Airbnb properties…
+      </div>
+    );
+  }
+  if (props.status === "FAILED") {
+    return <div role="alert" style={{ color: "#6b7280", fontSize: 13 }}>We couldn't load Airbnb properties. No changes were made.</div>;
+  }
+  if (props.status !== "LOADED") return null;
+  if (props.listings.length === 0) {
+    return <div style={{ color: "#6b7280", fontSize: 13 }}>No Airbnb properties were returned for this account.</div>;
+  }
+  return (
+    <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
+      <div style={{ color: "#374151", fontSize: 13, fontWeight: 700 }}>Airbnb properties</div>
+      {props.listings.map((listing) => {
+        const meta = listingMeta(listing);
+        return (
+          <div key={listing.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: "10px 12px", background: "#f8fafc" }}>
+            <div style={{ color: "#111827", fontSize: 14, fontWeight: 600 }}>{listing.title ?? "Airbnb listing"}</div>
+            {meta && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>{meta}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ConnectionFrame(props: { providerName: string; session: DistributionConnectionSession; simulated: boolean; onLoaded(): void; onComplete(): void; onClose(): void; completing: boolean; ready: boolean }) {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="connection-frame-title" style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(15,23,42,.65)", display: "grid", placeItems: "center", padding: 20 }}>
@@ -130,6 +178,9 @@ export function ConnectionCenterPage() {
   const [frameReady, setFrameReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [airbnbListings, setAirbnbListings] = useState<AirbnbHostListing[]>([]);
+  const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
+  const listingDiscoveryStartedFor = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -140,6 +191,28 @@ export function ConnectionCenterPage() {
     finally { setLoading(false); }
   }, [id, simulated]);
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (!id || simulated || !center) return;
+    const airbnb = center.channels.find((channel) => channel.provider === "AIRBNB");
+    const shouldDiscover = Boolean(
+      airbnb?.channelLinked && airbnb.status === "NOT_CONNECTED"
+    );
+    if (!shouldDiscover || listingDiscoveryStartedFor.current === id) return;
+
+    listingDiscoveryStartedFor.current = id;
+    setAirbnbListingStatus("LOADING");
+    setAirbnbListings([]);
+    void listAirbnbHostListings(id)
+      .then((listings) => {
+        setAirbnbListings(listings);
+        setAirbnbListingStatus("LOADED");
+      })
+      .catch(() => {
+        setAirbnbListings([]);
+        setAirbnbListingStatus("FAILED");
+      });
+  }, [center, id, simulated]);
 
   if (!id) return <Navigate to="/properties" replace />;
   if (!user || !ADMIN_ROLES.has(user.role)) return <Navigate to={`/properties/${id}`} replace />;
@@ -227,6 +300,10 @@ export function ConnectionCenterPage() {
                 </div>
 
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
+
+                {airbnbLinked && (
+                  <AirbnbListingsPanel status={airbnbListingStatus} listings={airbnbListings} />
+                )}
 
                 {canConnect ? (
                   <div style={{ marginTop: "auto", paddingTop: 2 }}>
