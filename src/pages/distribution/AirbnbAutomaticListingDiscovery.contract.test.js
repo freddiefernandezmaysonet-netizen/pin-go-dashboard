@@ -71,9 +71,30 @@ test("successful Airbnb callback returns automatically to the property booking c
   assert.doesNotMatch(callbackPage, /listAirbnbHostListings/);
 });
 
-test("linked Airbnb performs one automatic listing read per mounted property and never polls", () => {
+test("linked Airbnb discovers listings once in the documented pre-activation states and never polls", () => {
+  const discoveryStatuses = between(
+    centerPage,
+    "const AIRBNB_LISTING_DISCOVERY_STATUSES = new Set([",
+    "]);"
+  );
+  for (const status of ["NOT_CONNECTED", "AUTHORIZATION_REQUIRED", "MAPPING_REQUIRED"]) {
+    assert.ok(discoveryStatuses.includes(`"${status}"`), `missing eligible status ${status}`);
+  }
+  for (const status of [
+    "READINESS_CHECK",
+    "ACTIVATION_PENDING",
+    "ACTIVE",
+    "DEGRADED",
+    "FAILED",
+    "DISCONNECTING",
+    "DISCONNECTED",
+  ]) {
+    assert.ok(!discoveryStatuses.includes(`"${status}"`), `unexpected eligible status ${status}`);
+  }
+
+  assert.match(centerPage, /channel\.channelLinked &&\s*AIRBNB_LISTING_DISCOVERY_STATUSES\.has\(channel\.status\)/);
+  assert.doesNotMatch(centerPage, /channelLinked &&\s*airbnb\.status === "NOT_CONNECTED"/);
   assert.match(centerPage, /useRef<string \| null>\(null\)/);
-  assert.match(centerPage, /airbnb\?\.channelLinked && airbnb\.status === "NOT_CONNECTED"/);
   assert.match(centerPage, /listingDiscoveryStartedFor\.current === id/);
   assert.match(centerPage, /listingDiscoveryStartedFor\.current = id/);
   assert.equal((centerPage.match(/listAirbnbHostListings\(id\)/g) ?? []).length, 1);
@@ -81,6 +102,15 @@ test("linked Airbnb performs one automatic listing read per mounted property and
   assert.match(centerPage, /Preparing your Airbnb properties…/);
   assert.match(centerPage, /Airbnb properties/);
   assert.match(centerPage, /No Airbnb properties were returned for this account/);
+});
+
+test("linked Airbnb is not offered a second connection action while discovery is pending", () => {
+  assert.match(
+    centerPage,
+    /const airbnbChannelLinked = channel\.provider === "AIRBNB" && channel\.channelLinked/
+  );
+  assert.match(centerPage, /const canConnect = [^;]+&& !airbnbChannelLinked/);
+  assert.match(centerPage, /const airbnbDiscoveryEligible = isAirbnbListingDiscoveryEligible\(channel\)/);
 });
 
 test("listing presentation is read-only and stops before mapping activation or reservation import", () => {
