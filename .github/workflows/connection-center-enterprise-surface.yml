@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   enterprise-surface:
+    if: github.event_name == 'push' || github.head_ref == 'agent/connection-center-enterprise-surface'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
