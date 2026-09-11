@@ -42,6 +42,7 @@ jobs:
           git diff --name-only 238a10f09101ae4c9a0bcd7f3d169b071bf13251...HEAD | sort > "$RUNNER_TEMP/actual.txt"
           cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
           .github/workflows/connection-center-enterprise-surface.yml
+          public/connection-center-preview.html
           src/api/distribution.channel-linked.contract.test.js
           src/app/layout/AppShell.tsx
           src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js
@@ -62,4 +63,10 @@ jobs:
 
       - name: Prove no listing discovery mapping or activation was introduced
         run: |
-          ! grep -E '/channels/AIRBNB/listings|/mappings|/activate|load_future_reservations|listAirbnbHostListings|listAirbnbListings' src/pages/distribution/ConnectionCenterPage.tsx src/app/layout/AppShell.tsx
+          ! grep -E '/channels/AIRBNB/listings|/mappings|/activate|load_future_reservations|listAirbnbHostListings|listAirbnbListings' src/pages/distribution/ConnectionCenterPage.tsx src/app/layout/AppShell.tsx public/connection-center-preview.html
+
+      - name: Prove visual preview is static and network-isolated
+        run: |
+          ! grep -Ei '<script|fetch\(|XMLHttpRequest|WebSocket|EventSource|<form|method=|action=' public/connection-center-preview.html
+          grep -F 'Visual preview · simulated data · no backend' public/connection-center-preview.html
+          grep -F '<meta name="robots" content="noindex,nofollow,noarchive" />' public/connection-center-preview.html
