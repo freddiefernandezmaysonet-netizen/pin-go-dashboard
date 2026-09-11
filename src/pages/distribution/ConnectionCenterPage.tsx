@@ -236,8 +236,6 @@ export function ConnectionCenterPage() {
                   </div>
                 ) : channel.availability === "ASSISTED_BETA" ? (
                   <div style={{ marginTop: "auto", color: "#6b7280", fontSize: 13 }}>Contact Pin&Go support for setup.</div>
-                ) : channel.availability === "PLANNED" ? (
-                  <div style={{ marginTop: "auto", color: "#6b7280", fontSize: 13 }}>Self-service connection is not available yet.</div>
                 ) : null}
               </article>
             );
