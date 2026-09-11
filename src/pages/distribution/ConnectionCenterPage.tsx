@@ -131,6 +131,10 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
   const add = (message: string) => {
     if (!messages.includes(message)) messages.push(message);
   };
+  const detailsCountryConfirmed =
+    reasons.includes("POSTAL_CODE_MATCH") ||
+    reasons.includes("POSTAL_CODE_MISMATCH") ||
+    reasons.includes("POSTAL_CODE_UNKNOWN");
 
   if (reasons.includes("AMBIGUOUS_RUNNER_UP")) {
     add("More than one Airbnb property could match this Pin&Go property.");
@@ -140,6 +144,9 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
   }
   if (reasons.includes("DETAILS_UNAVAILABLE")) {
     add("Airbnb property details could not be verified.");
+  }
+  if (reasons.includes("DETAILS_NAME_NOT_STRONG")) {
+    add("Property names are not similar enough for an automatic match.");
   }
   if (reasons.includes("POSTAL_CODE_MISMATCH")) {
     add("ZIP / postal code differs between Pin&Go and Airbnb.");
@@ -151,17 +158,23 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
   } else if (reasons.includes("PERSON_CAPACITY_UNKNOWN")) {
     add("Airbnb did not provide an exact guest capacity.");
   }
-  if (reasons.includes("DETAILS_COUNTRY_MISMATCH") || reasons.includes("COUNTRY_MISMATCH")) {
+  if (reasons.includes("DETAILS_COUNTRY_MISMATCH")) {
     add("Country information differs between Pin&Go and Airbnb.");
-  } else if (reasons.includes("DETAILS_COUNTRY_UNKNOWN") || reasons.includes("COUNTRY_UNKNOWN")) {
+  } else if (reasons.includes("DETAILS_COUNTRY_UNKNOWN")) {
+    add("Country information could not be confirmed.");
+  } else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_MISMATCH")) {
+    add("Country information differs between Pin&Go and Airbnb.");
+  } else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_UNKNOWN")) {
     add("Country information could not be confirmed.");
   }
-  if (reasons.includes("DETAILS_NAME_NOT_STRONG") || reasons.includes("NAME_WEAK")) {
+  if (reasons.includes("NAME_PARTIAL") || reasons.includes("NAME_WEAK")) {
     add("Property names are not similar enough for an automatic match.");
   }
 
   if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) {
     add("Airbnb uses a different city or locality name for this property.");
+  } else if (messages.length === 0 && reasons.includes("CITY_UNKNOWN")) {
+    add("City or locality information could not be confirmed.");
   }
 
   return messages;
