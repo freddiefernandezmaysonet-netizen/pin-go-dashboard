@@ -6,6 +6,7 @@ import {
   issueAirbnbHostConnectionLink,
   listAirbnbHostListings,
   type AirbnbHostListing,
+  type AirbnbHostListingDiscovery,
 } from "../../api/airbnbHostSelfService";
 import {
   DistributionApiError,
@@ -131,34 +132,70 @@ function listingMeta(listing: AirbnbHostListing): string | null {
 
 function AirbnbListingsPanel(props: {
   status: ListingDiscoveryStatus;
-  listings: AirbnbHostListing[];
+  discovery: AirbnbHostListingDiscovery | null;
 }) {
   if (props.status === "LOADING") {
     return (
       <div role="status" style={{ display: "flex", alignItems: "center", gap: 8, color: "#4b5563", fontSize: 13 }}>
-        <LoaderCircle size={16} /> Preparing your Airbnb properties…
+        <LoaderCircle size={16} /> Finding the matching Airbnb property…
       </div>
     );
   }
   if (props.status === "FAILED") {
-    return <div role="alert" style={{ color: "#6b7280", fontSize: 13 }}>We couldn't load Airbnb properties. No changes were made.</div>;
+    return <div role="alert" style={{ color: "#6b7280", fontSize: 13 }}>We couldn't evaluate the Airbnb property match. No changes were made.</div>;
   }
-  if (props.status !== "LOADED") return null;
-  if (props.listings.length === 0) {
+  if (props.status !== "LOADED" || !props.discovery) return null;
+
+  const { listings, match } = props.discovery;
+  if (listings.length === 0) {
     return <div style={{ color: "#6b7280", fontSize: 13 }}>No Airbnb properties were returned for this account.</div>;
   }
-  return (
-    <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
-      <div style={{ color: "#374151", fontSize: 13, fontWeight: 700 }}>Airbnb properties</div>
-      {props.listings.map((listing) => {
-        const meta = listingMeta(listing);
-        return (
-          <div key={listing.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: "10px 12px", background: "#f8fafc" }}>
-            <div style={{ color: "#111827", fontSize: 14, fontWeight: 600 }}>{listing.title ?? "Airbnb listing"}</div>
+
+  const candidate = match.candidateListingId
+    ? listings.find((listing) => listing.id === match.candidateListingId) ?? null
+    : null;
+  const meta = candidate ? listingMeta(candidate) : null;
+
+  if (match.status === "AUTO_MATCH") {
+    return (
+      <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ color: "#374151", fontSize: 13, fontWeight: 700 }}>Airbnb property match</div>
+          <span style={{ ...statusBadgeStyle("success"), borderRadius: 999, padding: "4px 7px", fontSize: 11, fontWeight: 700 }}>Matched automatically</span>
+        </div>
+        {candidate && (
+          <div style={{ border: "1px solid #bbf7d0", borderRadius: 12, padding: "10px 12px", background: "#f0fdf4" }}>
+            <div style={{ color: "#111827", fontSize: 14, fontWeight: 600 }}>{candidate.title ?? "Airbnb listing"}</div>
             {meta && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>{meta}</div>}
           </div>
-        );
-      })}
+        )}
+        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>High-confidence match detected. No mapping has been performed yet.</div>
+      </div>
+    );
+  }
+
+  if (match.status === "REVIEW_REQUIRED") {
+    return (
+      <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ color: "#374151", fontSize: 13, fontWeight: 700 }}>Airbnb property match</div>
+          <span style={{ ...statusBadgeStyle("warning"), borderRadius: 999, padding: "4px 7px", fontSize: 11, fontWeight: 700 }}>Review required</span>
+        </div>
+        {candidate && (
+          <div style={{ border: "1px solid #fde68a", borderRadius: 12, padding: "10px 12px", background: "#fffbeb" }}>
+            <div style={{ color: "#111827", fontSize: 14, fontWeight: 600 }}>{candidate.title ?? "Possible Airbnb property"}</div>
+            {meta && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>{meta}</div>}
+          </div>
+        )}
+        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a possible match, but it must be reviewed before mapping. No changes were made.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 5, paddingTop: 2 }}>
+      <div style={{ color: "#374151", fontSize: 13, fontWeight: 700 }}>Airbnb property match</div>
+      <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>No confident match was found for this Pin&Go property. No changes were made.</div>
     </div>
   );
 }
@@ -194,7 +231,7 @@ export function ConnectionCenterPage() {
   const [frameReady, setFrameReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [airbnbListings, setAirbnbListings] = useState<AirbnbHostListing[]>([]);
+  const [airbnbDiscovery, setAirbnbDiscovery] = useState<AirbnbHostListingDiscovery | null>(null);
   const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
   const listingDiscoveryStartedFor = useRef<string | null>(null);
 
@@ -216,14 +253,14 @@ export function ConnectionCenterPage() {
 
     listingDiscoveryStartedFor.current = id;
     setAirbnbListingStatus("LOADING");
-    setAirbnbListings([]);
+    setAirbnbDiscovery(null);
     void listAirbnbHostListings(id)
-      .then((listings) => {
-        setAirbnbListings(listings);
+      .then((discovery) => {
+        setAirbnbDiscovery(discovery);
         setAirbnbListingStatus("LOADED");
       })
       .catch(() => {
-        setAirbnbListings([]);
+        setAirbnbDiscovery(null);
         setAirbnbListingStatus("FAILED");
       });
   }, [center, id, simulated]);
@@ -317,7 +354,7 @@ export function ConnectionCenterPage() {
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
 
                 {airbnbDiscoveryEligible && (
-                  <AirbnbListingsPanel status={airbnbListingStatus} listings={airbnbListings} />
+                  <AirbnbListingsPanel status={airbnbListingStatus} discovery={airbnbDiscovery} />
                 )}
 
                 {canConnect ? (
