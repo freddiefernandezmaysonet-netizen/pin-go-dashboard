@@ -23,9 +23,11 @@ test("Connection Center uses the established Pin&Go dashboard visual language", 
   assert.match(page, /border: "1px solid #e5e7eb"/);
   assert.match(page, /borderRadius: 18/);
   assert.match(page, /background: "#fff"/);
-  assert.match(page, /Booking channels/);
+  assert.match(page, /Manage where this property receives reservations/);
   assert.match(page, /Secure connections/);
   assert.match(page, /Back to property/);
+  assert.doesNotMatch(page, />Booking channels<\/h1>/);
+  assert.doesNotMatch(page, />Booking channel<\/div>/);
 });
 
 test("dashboard shell gives distribution its own page title before generic Properties", () => {
@@ -39,14 +41,16 @@ test("dashboard shell gives distribution its own page title before generic Prope
   );
 });
 
-test("Airbnb linked state is presented as setup in progress, never active", () => {
+test("Airbnb linked state is honest about pending setup and never promises automation", () => {
   assert.match(
     page,
     /channel\.provider === "AIRBNB" && channel\.channelLinked && channel\.status === "NOT_CONNECTED"/
   );
   assert.match(page, /status: "Setup in progress"/);
-  assert.match(page, /Property setup and activation are still pending/);
-  assert.match(page, /This status does not mean the channel is active/);
+  assert.match(page, /Airbnb is linked to this property/);
+  assert.match(page, /Additional setup is required before the channel becomes active/);
+  assert.doesNotMatch(page, /will continue the Airbnb setup/);
+  assert.doesNotMatch(page, /Preparing your Airbnb/);
 });
 
 test("existing Airbnb and Booking.com connection execution remains in place", () => {
@@ -57,6 +61,13 @@ test("existing Airbnb and Booking.com connection execution remains in place", ()
   assert.match(page, /transitionDistributionConnectionSession\(session\.value\.sessionId, "opened"\)/);
   assert.match(page, /transitionDistributionConnectionSession\(current\.value\.sessionId, "cancelled"\)/);
   assert.match(page, /transitionDistributionConnectionSession\(session\.value\.sessionId, "completed"\)/);
+});
+
+test("Expedia and Vrbo presentation remains truthful to current availability contracts", () => {
+  assert.match(page, /channel\.availability === "PLANNED"/);
+  assert.match(page, /status: "Coming soon"/);
+  assert.match(page, /channel\.availability === "ASSISTED_BETA"/);
+  assert.match(page, /status: "Assisted setup"/);
 });
 
 test("presentation-only redesign does not introduce listing discovery, mapping or activation", () => {
