@@ -21,6 +21,17 @@ export type AirbnbHostCallbackResult = {
   nextAction: "RETRY_AUTHORIZATION" | "LISTING_DISCOVERY_REQUIRED";
 };
 
+export type AirbnbHostListing = {
+  id: string;
+  title: string | null;
+  type: string | null;
+  occupancies: number[] | null;
+  synchronizationCategory: string | null;
+  city: string | null;
+  countryCode: string | null;
+  qualityStatus: string | null;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -53,6 +64,23 @@ async function post(path: string, action: string, body: unknown): Promise<unknow
   return payload;
 }
 
+async function get(path: string): Promise<unknown> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const code = isRecord(payload) && typeof payload.error === "string"
+      ? payload.error
+      : "OTA_AIRBNB_HOST_SELF_SERVICE_REQUEST_FAILED";
+    throw new AirbnbHostSelfServiceApiError(code, response.status);
+  }
+  return payload;
+}
+
 function safeAuthorizationUrl(value: unknown): string {
   if (typeof value !== "string") {
     throw new Error("INVALID_AIRBNB_CONNECTION_LINK_RESPONSE");
@@ -74,6 +102,39 @@ function safeAuthorizationUrl(value: unknown): string {
   }
 }
 
+function nullableText(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value === "string") return value;
+  throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+}
+
+function nullableOccupancies(value: unknown): number[] | null {
+  if (value === null) return null;
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== "number" || !Number.isInteger(item))
+  ) {
+    throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+  }
+  return [...value];
+}
+
+function parseListing(value: unknown): AirbnbHostListing {
+  if (!isRecord(value) || typeof value.id !== "string" || !value.id) {
+    throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+  }
+  return {
+    id: value.id,
+    title: nullableText(value.title),
+    type: nullableText(value.type),
+    occupancies: nullableOccupancies(value.occupancies),
+    synchronizationCategory: nullableText(value.synchronizationCategory),
+    city: nullableText(value.city),
+    countryCode: nullableText(value.countryCode),
+    qualityStatus: nullableText(value.qualityStatus),
+  };
+}
+
 export async function issueAirbnbHostConnectionLink(
   propertyId: string
 ): Promise<AirbnbHostConnectionLink> {
@@ -93,6 +154,18 @@ export async function issueAirbnbHostConnectionLink(
     authorizationUrl: safeAuthorizationUrl(payload.authorizationUrl),
     expiresAt: payload.expiresAt,
   };
+}
+
+export async function listAirbnbHostListings(
+  propertyId: string
+): Promise<AirbnbHostListing[]> {
+  const payload = await get(
+    `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/listings`
+  );
+  if (!isRecord(payload) || payload.ok !== true || !Array.isArray(payload.listings)) {
+    throw new Error("INVALID_AIRBNB_LISTING_DISCOVERY_RESPONSE");
+  }
+  return payload.listings.map(parseListing);
 }
 
 export async function verifyAirbnbHostCallback(args: {
