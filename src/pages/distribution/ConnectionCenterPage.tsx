@@ -21,6 +21,11 @@ import { useAuth } from "../../auth/AuthProvider";
 
 const ADMIN_ROLES = new Set(["ORG_ADMIN", "ADMIN", "PLATFORM_ADMIN"]);
 const SELF_SERVICE = new Set<DistributionProvider>(["AIRBNB", "BOOKING_COM"]);
+const AIRBNB_LISTING_DISCOVERY_STATUSES = new Set([
+  "NOT_CONNECTED",
+  "AUTHORIZATION_REQUIRED",
+  "MAPPING_REQUIRED",
+]);
 
 const SIMULATED_CENTER: DistributionConnectionCenter = {
   productName: "Distribution by Pin&Go",
@@ -43,6 +48,17 @@ const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 1
 const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
 
 type ListingDiscoveryStatus = "IDLE" | "LOADING" | "LOADED" | "FAILED";
+
+function isAirbnbListingDiscoveryEligible(
+  channel: DistributionConnectionCenter["channels"][number] | undefined
+) {
+  return Boolean(
+    channel &&
+      channel.provider === "AIRBNB" &&
+      channel.channelLinked &&
+      AIRBNB_LISTING_DISCOVERY_STATUSES.has(channel.status)
+  );
+}
 
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
@@ -67,8 +83,8 @@ function statusBadgeStyle(tone: "neutral" | "progress" | "success" | "warning") 
   return { background: "#f3f4f6", border: "1px solid #e5e7eb", color: "#4b5563" } as const;
 }
 
-function providerPresentation(channel: DistributionConnectionCenter["channels"][number], airbnbLinked: boolean) {
-  if (airbnbLinked) {
+function providerPresentation(channel: DistributionConnectionCenter["channels"][number], airbnbSetupLinked: boolean) {
+  if (airbnbSetupLinked) {
     return {
       status: "Setup in progress",
       tone: "progress" as const,
@@ -195,9 +211,7 @@ export function ConnectionCenterPage() {
   useEffect(() => {
     if (!id || simulated || !center) return;
     const airbnb = center.channels.find((channel) => channel.provider === "AIRBNB");
-    const shouldDiscover = Boolean(
-      airbnb?.channelLinked && airbnb.status === "NOT_CONNECTED"
-    );
+    const shouldDiscover = isAirbnbListingDiscoveryEligible(airbnb);
     if (!shouldDiscover || listingDiscoveryStartedFor.current === id) return;
 
     listingDiscoveryStartedFor.current = id;
@@ -289,9 +303,10 @@ export function ConnectionCenterPage() {
       {!loading && center && (
         <section aria-label="Booking channels" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
           {center.channels.map((channel) => {
-            const airbnbLinked = channel.provider === "AIRBNB" && channel.channelLinked && channel.status === "NOT_CONNECTED";
-            const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider) && !airbnbLinked;
-            const presentation = providerPresentation(channel, airbnbLinked);
+            const airbnbChannelLinked = channel.provider === "AIRBNB" && channel.channelLinked;
+            const airbnbDiscoveryEligible = isAirbnbListingDiscoveryEligible(channel);
+            const canConnect = channel.availability === "AVAILABLE" && SELF_SERVICE.has(channel.provider) && !airbnbChannelLinked;
+            const presentation = providerPresentation(channel, airbnbDiscoveryEligible);
             return (
               <article key={channel.provider} style={{ ...CARD_STYLE, display: "grid", gap: 12, alignContent: "start", minHeight: 168 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -301,7 +316,7 @@ export function ConnectionCenterPage() {
 
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
 
-                {airbnbLinked && (
+                {airbnbDiscoveryEligible && (
                   <AirbnbListingsPanel status={airbnbListingStatus} listings={airbnbListings} />
                 )}
 
