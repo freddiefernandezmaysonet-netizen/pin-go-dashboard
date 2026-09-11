@@ -19,6 +19,7 @@ export type CreatePropertyInput = {
   city?: string;
   region?: string;
   country?: string;
+  postalCode?: string;
   timezone?: string;
   checkInTime: "15:00" | "16:00";
   cleaningStartOffsetMinutes?: number;
