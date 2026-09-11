@@ -1,19 +1,21 @@
-name: Airbnb Listing Discovery Status Gate Fix
+name: Airbnb Property Auto-Matching V1 Certification
 
 on:
-  push:
-    branches:
-      - agent/airbnb-listing-discovery-status-gate-fix
   pull_request:
     branches:
       - main
+    paths:
+      - 'src/api/airbnbHostSelfService.ts'
+      - 'src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js'
+      - 'src/pages/distribution/ConnectionCenterPage.tsx'
+      - '.github/workflows/airbnb-automatic-listing-discovery.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  listing-discovery-status-gate:
-    if: github.event_name == 'push' || github.head_ref == 'agent/airbnb-listing-discovery-status-gate-fix'
+  airbnb-property-auto-matching:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -32,7 +34,7 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Run Airbnb listing discovery status-gate contracts
+      - name: Run Airbnb auto-matching contracts
         run: node --test src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
 
       - name: Build dashboard without deployment
@@ -40,31 +42,40 @@ jobs:
 
       - name: Prove exact authorized diff allowlist
         run: |
-          git diff --name-only a80ed9b40d822b035a7c15af9895e6ac5f915d45...HEAD | sort > "$RUNNER_TEMP/actual.txt"
+          git fetch origin main --depth=1
+          git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
           cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
           .github/workflows/airbnb-automatic-listing-discovery.yml
+          src/api/airbnbHostSelfService.ts
           src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
           src/pages/distribution/ConnectionCenterPage.tsx
           EOF
           sort "$RUNNER_TEMP/expected.txt" -o "$RUNNER_TEMP/expected.txt"
           diff -u "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/actual.txt"
 
-      - name: Prove backend-facing client callback router and shell remain frozen
+      - name: Prove callback router shell and frame policy remain frozen
         run: |
-          git diff --exit-code a80ed9b40d822b035a7c15af9895e6ac5f915d45 -- \
-            src/api \
+          git diff --exit-code origin/main...HEAD -- \
             src/pages/distribution/AirbnbConnectionCallbackPage.tsx \
             src/app/routes/router.tsx \
             src/app/layout/AppShell.tsx \
             src/lib/distributionFramePolicy.ts \
             vercel.json
 
-      - name: Prove read-only listing discovery stops before mapping activation and reservation import
+      - name: Prove one read-only discovery call and no portfolio rendering
+        run: |
+          test "$(grep -c 'listAirbnbHostListings(id)' src/pages/distribution/ConnectionCenterPage.tsx)" -eq 1
+          ! grep -E 'listings\.map\(' src/pages/distribution/ConnectionCenterPage.tsx
+          ! grep -E 'setInterval|setTimeout|requestAnimationFrame' src/pages/distribution/ConnectionCenterPage.tsx
+
+      - name: Prove auto-matching stops before mapping activation and reservation import
         run: |
           ! grep -E '/mappings|/activate|load_future_reservations|Map listing|Activate channel|Load reservations' \
+            src/api/airbnbHostSelfService.ts \
             src/pages/distribution/ConnectionCenterPage.tsx
 
-      - name: Prove no polling or direct Channex access was introduced
+      - name: Prove no direct Channex access was introduced
         run: |
-          ! grep -E 'setInterval|setTimeout|requestAnimationFrame|app\.channex\.io|staging\.channex\.io|user-api-key' \
+          ! grep -E 'app\.channex\.io|staging\.channex\.io|user-api-key' \
+            src/api/airbnbHostSelfService.ts \
             src/pages/distribution/ConnectionCenterPage.tsx
