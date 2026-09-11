@@ -59,7 +59,10 @@ test("Airbnb discovery parser accepts listing and match evidence but no provider
     assert.ok(listingType.includes(field), `missing listing field ${field}`);
   }
   assert.doesNotMatch(listingType, /channelId:/);
-  assert.match(api, /"AUTO_MATCH" \| value === "REVIEW_REQUIRED" \|\| value === "UNMATCHED"/);
+  assert.match(
+    api,
+    /value === "AUTO_MATCH" \|\| value === "REVIEW_REQUIRED" \|\| value === "UNMATCHED"/
+  );
   assert.match(api, /candidateListingId: nullableText\(value\.candidateListingId\)/);
   assert.match(api, /match: parseMatch\(payload\.match\)/);
 });
