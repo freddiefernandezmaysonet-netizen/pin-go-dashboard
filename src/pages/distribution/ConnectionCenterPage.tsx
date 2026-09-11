@@ -124,10 +124,34 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
 
 function listingMeta(listing: AirbnbHostListing): string | null {
   const location = [listing.city, listing.countryCode].filter(Boolean).join(", ");
-  const occupancy = listing.occupancies?.length
-    ? `Up to ${Math.max(...listing.occupancies)} guests`
-    : null;
-  return [location || null, occupancy].filter(Boolean).join(" · ") || null;
+  return location || null;
+}
+
+const AIRBNB_REVIEW_REASON_MESSAGES: Readonly<Record<string, string>> = {
+  PERSON_CAPACITY_MISMATCH: "Guest capacity differs between Pin&Go and Airbnb.",
+  POSTAL_CODE_MISMATCH: "ZIP / postal code differs between Pin&Go and Airbnb.",
+  DETAILS_COUNTRY_MISMATCH: "Country information differs between Pin&Go and Airbnb.",
+  COUNTRY_MISMATCH: "Country information differs between Pin&Go and Airbnb.",
+  AMBIGUOUS_RUNNER_UP: "More than one Airbnb property could match this Pin&Go property.",
+  LISTING_CONFLICT: "This Airbnb property also appears to match another Pin&Go property.",
+  DETAILS_UNAVAILABLE: "Airbnb property details could not be verified.",
+  PERSON_CAPACITY_UNKNOWN: "Airbnb did not provide an exact guest capacity.",
+  POSTAL_CODE_UNKNOWN: "ZIP / postal code could not be confirmed.",
+  DETAILS_COUNTRY_UNKNOWN: "Country information could not be confirmed.",
+  DETAILS_NAME_NOT_STRONG: "The Airbnb property name is not a strong enough match.",
+  NAME_PARTIAL: "The property name is not an exact match.",
+  CITY_MISMATCH: "Airbnb uses a different city or locality name for this property.",
+  CITY_UNKNOWN: "City or locality information could not be confirmed.",
+  COUNTRY_UNKNOWN: "Country information could not be confirmed.",
+};
+
+function airbnbReviewMessages(reasons: readonly string[]): string[] {
+  const messages: string[] = [];
+  for (const reason of reasons) {
+    const message = AIRBNB_REVIEW_REASON_MESSAGES[reason];
+    if (message && !messages.includes(message)) messages.push(message);
+  }
+  return messages;
 }
 
 function AirbnbListingsPanel(props: {
@@ -175,6 +199,7 @@ function AirbnbListingsPanel(props: {
   }
 
   if (match.status === "REVIEW_REQUIRED") {
+    const reviewMessages = airbnbReviewMessages(match.reasons);
     return (
       <div style={{ display: "grid", gap: 8, paddingTop: 2 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -187,7 +212,18 @@ function AirbnbListingsPanel(props: {
             {meta && <div style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>{meta}</div>}
           </div>
         )}
-        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a possible match, but it must be reviewed before mapping. No changes were made.</div>
+        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Pin&Go found a possible match, but it must be reviewed before mapping.</div>
+        <div style={{ border: "1px solid #fde68a", borderRadius: 10, padding: "9px 10px", background: "#fffdf5" }}>
+          <div style={{ color: "#92400e", fontSize: 12, fontWeight: 700 }}>Why Pin&Go needs review</div>
+          {reviewMessages.length > 0 ? (
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>
+              {reviewMessages.map((message) => <li key={message}>{message}</li>)}
+            </ul>
+          ) : (
+            <div style={{ marginTop: 6, color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>Some property details could not be confirmed automatically.</div>
+          )}
+        </div>
+        <div style={{ color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>No changes were made.</div>
       </div>
     );
   }

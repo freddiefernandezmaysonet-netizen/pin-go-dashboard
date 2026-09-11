@@ -116,6 +116,39 @@ test("property presentation shows only the current match decision instead of ren
   assert.doesNotMatch(panel, /candidateListingId\}/);
 });
 
+test("review presentation explains host-facing blockers without treating occupancy options as exact capacity", () => {
+  const listingMeta = between(
+    centerPage,
+    "function listingMeta",
+    "const AIRBNB_REVIEW_REASON_MESSAGES"
+  );
+  assert.match(listingMeta, /listing\.city/);
+  assert.match(listingMeta, /listing\.countryCode/);
+  assert.doesNotMatch(listingMeta, /occupancies|Math\.max|Up to .*guests/);
+
+  const reviewMessages = between(
+    centerPage,
+    "const AIRBNB_REVIEW_REASON_MESSAGES",
+    "function AirbnbListingsPanel"
+  );
+  for (const [reason, message] of [
+    ["PERSON_CAPACITY_MISMATCH", "Guest capacity differs between Pin&Go and Airbnb."],
+    ["POSTAL_CODE_MISMATCH", "ZIP / postal code differs between Pin&Go and Airbnb."],
+    ["DETAILS_UNAVAILABLE", "Airbnb property details could not be verified."],
+    ["AMBIGUOUS_RUNNER_UP", "More than one Airbnb property could match this Pin&Go property."],
+    ["LISTING_CONFLICT", "This Airbnb property also appears to match another Pin&Go property."],
+  ]) {
+    assert.ok(reviewMessages.includes(reason), `missing reason ${reason}`);
+    assert.ok(reviewMessages.includes(message), `missing host message for ${reason}`);
+  }
+
+  const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
+  assert.match(panel, /airbnbReviewMessages\(match\.reasons\)/);
+  assert.match(panel, /Why Pin&Go needs review/);
+  assert.match(panel, /reviewMessages\.map\(\(message\)/);
+  assert.doesNotMatch(panel, /match\.reasons\.map/);
+});
+
 test("linked Airbnb is not offered a second connection action while discovery is pending", () => {
   assert.match(
     centerPage,
