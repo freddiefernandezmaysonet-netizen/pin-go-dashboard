@@ -36,14 +36,15 @@ test("Airbnb listing client uses the authenticated read-only dashboard GET contr
     api,
     /\/api\/dashboard\/distribution\/properties\/\$\{encodeURIComponent\(propertyId\)\}\/channels\/AIRBNB\/listings/
   );
-  assert.match(api, /payload\.ok !== true \|\| !Array\.isArray\(payload\.listings\)/);
+  assert.match(api, /payload\.ok !== true/);
+  assert.match(api, /!Array\.isArray\(payload\.listings\)/);
 });
 
-test("Airbnb listing response parser is exact and does not expose a provider channel id", () => {
+test("Airbnb discovery parser accepts listing and match evidence but no provider channel id", () => {
   const listingType = between(
     api,
     "export type AirbnbHostListing = {",
-    "function isRecord"
+    "export type AirbnbPropertyMatchStatus"
   );
   for (const field of [
     "id: string",
@@ -58,7 +59,9 @@ test("Airbnb listing response parser is exact and does not expose a provider cha
     assert.ok(listingType.includes(field), `missing listing field ${field}`);
   }
   assert.doesNotMatch(listingType, /channelId:/);
-  assert.match(api, /typeof value\.id !== "string" \|\| !value\.id/);
+  assert.match(api, /"AUTO_MATCH" \| value === "REVIEW_REQUIRED" \|\| value === "UNMATCHED"/);
+  assert.match(api, /candidateListingId: nullableText\(value\.candidateListingId\)/);
+  assert.match(api, /match: parseMatch\(payload\.match\)/);
 });
 
 test("successful Airbnb callback returns automatically to the property booking channels", () => {
@@ -71,7 +74,7 @@ test("successful Airbnb callback returns automatically to the property booking c
   assert.doesNotMatch(callbackPage, /listAirbnbHostListings/);
 });
 
-test("linked Airbnb discovers listings once in the documented pre-activation states and never polls", () => {
+test("linked Airbnb performs one pre-activation discovery read and never polls", () => {
   const discoveryStatuses = between(
     centerPage,
     "const AIRBNB_LISTING_DISCOVERY_STATUSES = new Set([",
@@ -93,15 +96,21 @@ test("linked Airbnb discovers listings once in the documented pre-activation sta
   }
 
   assert.match(centerPage, /channel\.channelLinked &&\s*AIRBNB_LISTING_DISCOVERY_STATUSES\.has\(channel\.status\)/);
-  assert.doesNotMatch(centerPage, /channelLinked &&\s*airbnb\.status === "NOT_CONNECTED"/);
-  assert.match(centerPage, /useRef<string \| null>\(null\)/);
   assert.match(centerPage, /listingDiscoveryStartedFor\.current === id/);
   assert.match(centerPage, /listingDiscoveryStartedFor\.current = id/);
   assert.equal((centerPage.match(/listAirbnbHostListings\(id\)/g) ?? []).length, 1);
   assert.doesNotMatch(centerPage, /setInterval|setTimeout|requestAnimationFrame/);
-  assert.match(centerPage, /Preparing your Airbnb properties…/);
-  assert.match(centerPage, /Airbnb properties/);
-  assert.match(centerPage, /No Airbnb properties were returned for this account/);
+});
+
+test("property presentation shows only the current match decision instead of rendering the full account portfolio", () => {
+  const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
+  assert.match(panel, /Matched automatically/);
+  assert.match(panel, /Review required/);
+  assert.match(panel, /No confident match/);
+  assert.match(panel, /No mapping has been performed yet/);
+  assert.match(panel, /listings\.find\(\(listing\) => listing\.id === match\.candidateListingId\)/);
+  assert.doesNotMatch(panel, /listings\.map\(/);
+  assert.doesNotMatch(panel, /candidateListingId\}/);
 });
 
 test("linked Airbnb is not offered a second connection action while discovery is pending", () => {
@@ -113,7 +122,7 @@ test("linked Airbnb is not offered a second connection action while discovery is
   assert.match(centerPage, /const airbnbDiscoveryEligible = isAirbnbListingDiscoveryEligible\(channel\)/);
 });
 
-test("listing presentation is read-only and stops before mapping activation or reservation import", () => {
+test("auto-match presentation is read-only and stops before mapping activation or reservation import", () => {
   const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
   assert.doesNotMatch(panel, /<button|onClick|href=/);
   assert.doesNotMatch(api + callbackPage + centerPage, /\/mappings|\/activate|load_future_reservations/);
