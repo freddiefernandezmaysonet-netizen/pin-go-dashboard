@@ -109,6 +109,7 @@ export default function CreatePropertyPage() {
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [country, setCountry] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [timezone, setTimezone] = useState("America/Puerto_Rico");
   const [checkInTime, setCheckInTime] = useState<"15:00" | "16:00">("15:00");
   const [cleaningStartOffsetMinutes, setCleaningStartOffsetMinutes] = useState("30");
@@ -187,12 +188,14 @@ export default function CreatePropertyPage() {
               componentValue("administrative_area_level_2");
             const nextRegion = componentValue("administrative_area_level_1");
             const nextCountry = componentValue("country");
+            const nextPostalCode = componentValue("postal_code");
 
             if (place.formattedAddress) {
               setAddress1(place.formattedAddress);
             }
 
             setCity(nextCity);
+            setPostalCode(nextPostalCode);
 
             if (nextCountry) {
               setCountry(nextCountry);
@@ -387,6 +390,7 @@ export default function CreatePropertyPage() {
         city,
         region,
         country,
+        postalCode,
         timezone,
         checkInTime,
         cleaningStartOffsetMinutes: Number(cleaningStartOffsetMinutes),
@@ -587,6 +591,17 @@ export default function CreatePropertyPage() {
                 style={inputStyle}
               />
             </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>ZIP / Postal Code</label>
+            <input
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              autoComplete="postal-code"
+              placeholder="00771"
+              style={inputStyle}
+            />
           </div>
 
           <div style={twoColGridStyle}>

@@ -88,6 +88,7 @@ type PropertyItem = {
   city?: string | null;
   region?: string | null;
   country?: string | null;
+  postalCode?: string | null;
   timezone?: string | null;
   status: string;
   cleaningDurationMinutes: number;
@@ -203,6 +204,7 @@ export function PropertyEditPage() {
     city: "",
     region: "",
     country: "",
+    postalCode: "",
     timezone: "",
     cleaningDurationMinutes: 180,
     cleaningStartOffsetMinutes: 30,
@@ -296,6 +298,7 @@ fetch(`${API_BASE}/api/dashboard/properties/${id}/holiday-pricing`, {
           city: p.city ?? "",
           region: p.region ?? "",
           country: p.country ?? "",
+          postalCode: p.postalCode ?? "",
           timezone: p.timezone ?? "",
           cleaningDurationMinutes: p.cleaningDurationMinutes ?? 180,
           cleaningStartOffsetMinutes: p.cleaningStartOffsetMinutes ?? 30,
@@ -446,6 +449,7 @@ cleaningFee:
           city: form.city,
           region: form.region,
           country: form.country,
+          postalCode: form.postalCode,
           timezone: form.timezone,
           publicTitle: form.publicTitle,
           publicDescription: form.publicDescription,
@@ -1254,6 +1258,19 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                 style={inputStyle}
               />
             </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={labelStyle}>ZIP / Postal Code</div>
+            <input
+              value={form.postalCode}
+              onChange={(e) =>
+                setForm((s) => ({ ...s, postalCode: e.target.value }))
+              }
+              autoComplete="postal-code"
+              placeholder="00771"
+              style={inputStyle}
+            />
           </div>
 
           <div style={responsiveGridStyle}>
