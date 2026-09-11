@@ -44,12 +44,9 @@ jobs:
         shell: bash
         run: |
           git diff --check
-          git diff --name-only f932bdda5c7ebcaf10becf43df9dd3b967a59809 -- \
-            src/api/properties.ts \
-            src/pages/onboarding/CreatePropertyPage.tsx \
-            src/pages/properties/PropertyEditPage.tsx \
-            src/pages/properties/PropertyPostalCode.contract.test.js
-          test "$(git diff --name-only f932bdda5c7ebcaf10becf43df9dd3b967a59809 -- src/api/properties.ts src/pages/onboarding/CreatePropertyPage.tsx src/pages/properties/PropertyEditPage.tsx src/pages/properties/PropertyPostalCode.contract.test.js | wc -l | tr -d ' ')" = "4"
+          test "$(git diff --name-only f932bdda5c7ebcaf10becf43df9dd3b967a59809 -- src/api/properties.ts src/pages/onboarding/CreatePropertyPage.tsx src/pages/properties/PropertyEditPage.tsx | wc -l | tr -d ' ')" = "3"
+          test -f src/pages/properties/PropertyPostalCode.contract.test.js
+          test "$(git status --short -- src/pages/properties/PropertyPostalCode.contract.test.js | sed -n '1p')" = "?? src/pages/properties/PropertyPostalCode.contract.test.js"
           grep -F 'componentValue("postal_code")' src/pages/onboarding/CreatePropertyPage.tsx
           grep -F 'postalCode: form.postalCode' src/pages/properties/PropertyEditPage.tsx
           ! grep -R -E '/mappings|/activate|load_future_reservations' \
