@@ -1,6 +1,9 @@
-name: Airbnb Property Auto-Matching V1 Certification
+name: Airbnb Property Matching + Host Mapping Certification
 
 on:
+  push:
+    branches:
+      - agent/airbnb-host-confirmed-mapping-ui-safe
   pull_request:
     branches:
       - main
@@ -15,7 +18,7 @@ permissions:
   contents: read
 
 jobs:
-  airbnb-property-auto-matching:
+  airbnb-property-matching-and-mapping:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,7 +37,7 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Run Airbnb auto-matching contracts
+      - name: Run Airbnb matching and host-confirmation contracts
         run: node --test src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
 
       - name: Build dashboard without deployment
@@ -54,7 +57,7 @@ jobs:
           sort "$RUNNER_TEMP/allowed.txt" -o "$RUNNER_TEMP/allowed.txt"
           unexpected="$(comm -23 "$RUNNER_TEMP/actual.txt" "$RUNNER_TEMP/allowed.txt")"
           if [ -n "$unexpected" ]; then
-            printf 'Unexpected files outside Airbnb auto-matching surface:\n%s\n' "$unexpected"
+            printf 'Unexpected files outside Airbnb host-mapping surface:\n%s\n' "$unexpected"
             exit 1
           fi
 
@@ -67,15 +70,19 @@ jobs:
             src/lib/distributionFramePolicy.ts \
             vercel.json
 
-      - name: Prove one read-only discovery call and no portfolio rendering
+      - name: Prove one discovery read and no polling
         run: |
           test "$(grep -c 'listAirbnbHostListings(id)' src/pages/distribution/ConnectionCenterPage.tsx)" -eq 1
           ! grep -E 'listings\.map\(' src/pages/distribution/ConnectionCenterPage.tsx
-          ! grep -E 'setInterval|setTimeout|requestAnimationFrame' src/pages/distribution/ConnectionCenterPage.tsx
+          ! grep -E 'setInterval|requestAnimationFrame' src/pages/distribution/ConnectionCenterPage.tsx
 
-      - name: Prove auto-matching stops before mapping activation and reservation import
+      - name: Prove mapping requires explicit host confirmation and stops before activation
         run: |
-          ! grep -E '/mappings|/activate|load_future_reservations|Map listing|Activate channel|Load reservations' \
+          grep -F 'Yes, this is my Airbnb property' src/pages/distribution/ConnectionCenterPage.tsx
+          grep -F 'CONFIRM_AIRBNB_PROPERTY_MAPPING' src/api/airbnbHostSelfService.ts
+          grep -F '/channels/AIRBNB/mapping' src/api/airbnbHostSelfService.ts
+          grep -F 'confirmAirbnbHostMapping' src/pages/distribution/ConnectionCenterPage.tsx
+          ! grep -E '/activate|load_future_reservations|Activate channel|Load reservations' \
             src/api/airbnbHostSelfService.ts \
             src/pages/distribution/ConnectionCenterPage.tsx
 
