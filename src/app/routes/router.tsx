@@ -13,6 +13,7 @@ import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPa
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
 import { ConnectionCenterPage } from "../../pages/distribution/ConnectionCenterPage";
+import { ConnectionCenterFullSyncControl } from "../../components/distribution/ConnectionCenterFullSyncControl";
 import { AirbnbConnectionCallbackPage } from "../../pages/distribution/AirbnbConnectionCallbackPage";
 import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
 import { LockDetailPage } from "../../pages/lock-detail/LockDetailPage";
@@ -73,7 +74,6 @@ function ReviewRouteBoundary({ children }: { children: ReactNode }) {
     </Suspense>
   );
 }
-
 
 function RootRedirect() {
   const host = window.location.hostname;
@@ -162,6 +162,15 @@ function PropertyCalendarRoute() {
     <div style={{ display: "grid", gap: 20 }}>
       <PropertyCalendarStayRestrictionsPanel />
       <PropertyCalendarPage />
+    </div>
+  );
+}
+
+function ConnectionCenterRoute() {
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <ConnectionCenterPage />
+      <ConnectionCenterFullSyncControl />
     </div>
   );
 }
@@ -281,7 +290,7 @@ export const router = createBrowserRouter([
       { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
       { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
-      { path: "/properties/:id/distribution", element: <ConnectionCenterPage /> },
+      { path: "/properties/:id/distribution", element: <ConnectionCenterRoute /> },
       { path: "/distribution/airbnb/callback", element: <AirbnbConnectionCallbackPage /> },
      
       { path: "/locks", element: <LocksPage /> },
