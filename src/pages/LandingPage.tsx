@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import OnboardingBookingModal from "../components/OnboardingBookingModal";
 import HaasConfigurator from "../components/HaasConfigurator";
 
@@ -15,26 +15,36 @@ export default function LandingPage() {
       ? {
           navLogin: "Iniciar sesión",
           navSignup: "Crear cuenta",
-          heroBadge: "Automatización inteligente para rentas a corto plazo",
-          heroTitle: "Automatiza tus propiedades y elimina problemas de acceso",
+          navHosts: "Administrar propiedades",
+          navGuests: "Buscar alojamiento",
+          metaTitle: "Pin&Go APMS | Operación y hardware bajo tu control",
+          metaDescription:
+            "Pin&Go es un APMS que coordina reservas, acceso inteligente, huéspedes y automatización con hardware compatible.",
+          heroBadge: "APMS para rentas a corto plazo",
+          heroTitle: "Pin&Go opera tu propiedad. Tú mantienes el control.",
           heroSubtitle:
-            "Convierte cada cerradura en una operación automática: menos llamadas, menos errores y una mejor experiencia para tus huéspedes.",
+            "Coordina reservas, accesos, huéspedes y automatizaciones desde un solo sistema. Pin&Go ejecuta la rutina dentro de tus reglas y te involucra cuando una excepción requiere criterio.",
+          heroOutcomes: [
+            ["Reserva a acción", "Coordina el trabajo operativo sin pasos sueltos."],
+            ["Acceso y hardware", "Conecta cerraduras, NFC y dispositivos compatibles."],
+            ["Control por excepción", "Intervienes cuando realmente hace falta."],
+          ],
           heroPricePrefix: "Desde",
           heroPriceLocks: "$14.99 / cerradura / mes",
           heroPriceSmart: "$14.99 / propiedad inteligente / mes",
           heroCtaPrimary: "Empezar ahora",
           heroCtaSecondary: "Iniciar sesión",
-          heroTrust: " • Configuración en minutos",
+          heroTrust: "Hardware compatible • Configuración guiada",
 
-          slogan: "Secure Access Made Simple",
+          slogan: "Autonomous Property Management",
 
-          sectionBenefitsTitle: "Todo en una sola plataforma",
+          sectionBenefitsTitle: "La operación y el hardware, coordinados",
           benefit1Title: "🔐 Control de acceso ",
           benefit1Text:
             "Códigos automáticos por reserva, NFC y revocación automática al check-out.",
-          benefit2Title: "🏨 Sincronización con PMS",
+          benefit2Title: "🏨 Reservas e integraciones",
           benefit2Text:
-            "Integración con Guesty, Hostaway y Lodgify para operar sin trabajo manual.",
+            "Opera reservas directas y conecta PMS compatibles cuando tu propiedad lo necesite.",
           benefit3Title: "🤖 Automatización inteligente",
           benefit3Text:
             "Automatiza aire acondicionado, luces y alarmas según la reserva.",
@@ -42,9 +52,9 @@ export default function LandingPage() {
           benefit4Text:
             "Mensajes automáticos pre-check-in, check-in y check-out para el huésped.",
 
-          sectionDifferentiationTitle: "Más que códigos: control operativo real",
+          sectionDifferentiationTitle: "Un APMS, no solo otra herramienta",
           sectionDifferentiationText:
-            "Pin&Go no solo envía contraseña. Administra el ciclo completo de acceso, soporta tarjetas NFC y conecta control de acceso, PMS y automatización en una sola experiencia.",
+            "Pin&Go convierte reservas y reglas en acciones verificables. Coordina el ciclo de acceso, tarjetas NFC, hardware inteligente, mensajes y automatizaciones sin exigir otro PMS para comenzar.",
 
           sectionPainTitle: "Diseñado para resolver problemas reales",
           pain1: "Huéspedes que no pueden entrar a la propiedad",
@@ -52,14 +62,14 @@ export default function LandingPage() {
           pain3: "Check-ins manuales y operaciones desorganizadas",
           pain4: "Múltiples herramientas que no se comunican entre sí",
 
-          sectionPricingTitle: "Tarifas simples diseñadas para ti",
+          sectionPricingTitle: "Hardware y automatización que crecen contigo",
           pricingLocksTitle: "🔐 Access Control",
           pricingLocksPrice: "$14.99",
           pricingLocksPeriod: "/ cerradura / mes",
           pricingLocksFeature1: "Códigos automáticos por reserva",
           pricingLocksFeature2: " Acceso tarjeta NFC",
           pricingLocksFeature3: "Check-in / check-out automático",
-          pricingLocksFeature4: "Integración con PMS",
+          pricingLocksFeature4: "Coordinación con reservas",
           pricingLocksFeature5: "Reduce llamadas de huéspedes",
           pricingLocksCta: "Activar",
 
@@ -82,42 +92,52 @@ export default function LandingPage() {
           faq1Q: "¿Necesito hardware especial?",
           faq1A:
             "Pin&Go está diseñado para integrarse con cerraduras inteligentes y flujos de acceso compatibles con TTLock.",
-          faq2Q: "¿Puedo usarlo con mi PMS?",
+          faq2Q: "¿Necesito otro PMS?",
           faq2A:
-            "Sí. Pin&Go está diseñado para trabajar con integraciones PMS como Guesty, Hostaway y Lodgify.",
+            "No para comenzar. Pin&Go puede operar directamente y también conectarse con integraciones PMS compatibles cuando ya forman parte de tu operación.",
           faq3Q: "¿Puedo cancelar cuando quiera?",
           faq3A: "Sí. Puedes ajustar o cancelar tu servicio según tu operación.",
           faq4Q: "¿Es difícil configurarlo?",
           faq4A: "No. El flujo está pensado para una configuración rápida y fácil de operar.",
-          finalTitle: "Empieza hoy con Pin&Go",
+          finalTitle: "Pon tu operación en modo APMS",
           finalSubtitle:
-            "Haz tus operaciones más simples, más seguras y más profesionales.",
+            "Automatiza la rutina sin renunciar al control, al acceso inteligente ni al hardware de tu propiedad.",
           finalCta: "Crear cuenta",
-          footerText: "© Pin&Go. Smart access for modern property operations.",
+          footerText: "© Pin&Go. APMS y hardware inteligente para operaciones modernas.",
         }
       : {
           navLogin: "Log in",
           navSignup: "Create account",
-          heroBadge: "Smart automation for short-term rentals",
-          heroTitle: "Automate your properties and eliminate access issues",
+          navHosts: "Manage properties",
+          navGuests: "Find a stay",
+          metaTitle: "Pin&Go APMS | Operations and hardware under your control",
+          metaDescription:
+            "Pin&Go is an APMS that coordinates reservations, smart access, guests, and automation with compatible hardware.",
+          heroBadge: "APMS for short-term rentals",
+          heroTitle: "Pin&Go runs your property. You stay in control.",
           heroSubtitle:
-            "Turn every lock into an automated operation: fewer calls, fewer errors, and a better guest experience.",
+            "Coordinate reservations, access, guests, and automations from one system. Pin&Go runs the routine within your rules and brings you in when an exception requires judgment.",
+          heroOutcomes: [
+            ["Reservation to action", "Coordinate operational work without disconnected steps."],
+            ["Access and hardware", "Connect compatible locks, NFC, and smart devices."],
+            ["Human by exception", "Step in only when judgment is actually needed."],
+          ],
           heroPricePrefix: "Starting at",
           heroPriceLocks: "$14.99 / lock / month",
           heroPriceSmart: "$14.99 / smart property / month",
           heroCtaPrimary: "Get started",
           heroCtaSecondary: "Log in",
-          heroTrust: " • Setup in minutes",
+          heroTrust: "Compatible hardware • Guided setup",
 
-          slogan: "Secure Access Made Simple",
+          slogan: "Autonomous Property Management",
 
-          sectionBenefitsTitle: "Everything in one platform",
+          sectionBenefitsTitle: "Operations and hardware, coordinated",
           benefit1Title: "🔐 Access Control",
           benefit1Text:
             "Automatic reservation-based codes, NFC, and automatic checkout revocation.",
-          benefit2Title: "🏨 PMS Sync",
+          benefit2Title: "🏨 Reservations and integrations",
           benefit2Text:
-            "Integrates with Guesty, Hostaway, and Lodgify to reduce manual work.",
+            "Run direct reservations and connect compatible PMS integrations when your property needs them.",
           benefit3Title: "🤖 Smart Automation",
           benefit3Text:
             "Automate AC, lights, and alarms based on reservation activity.",
@@ -125,9 +145,9 @@ export default function LandingPage() {
           benefit4Text:
             "Automatic pre-check-in, check-in, and checkout messaging for guests.",
 
-          sectionDifferentiationTitle: "More than codes: real operational control",
+          sectionDifferentiationTitle: "An APMS, not just another tool",
           sectionDifferentiationText:
-            "Pin&Go does more than send passwords. It manages the full access lifecycle, supports NFC, and connects access control, PMS, and automation in one experience.",
+            "Pin&Go turns reservations and rules into verifiable actions. It coordinates access, NFC cards, smart hardware, messages, and automations without requiring another PMS to get started.",
 
           sectionPainTitle: "Built to solve real problems",
           pain1: "Guests unable to enter the property",
@@ -135,14 +155,14 @@ export default function LandingPage() {
           pain3: "Manual check-ins and disorganized operations",
           pain4: "Multiple disconnected tools",
 
-          sectionPricingTitle: "Simple rates designed for you",
+          sectionPricingTitle: "Hardware and automation that grow with you",
           pricingLocksTitle: "🔐 Access Control",
           pricingLocksPrice: "$14.99",
           pricingLocksPeriod: "/ lock / month",
           pricingLocksFeature1: "Automatic reservation-based codes",
           pricingLocksFeature2: "NFC access",
           pricingLocksFeature3: "Automatic check-in / check-out flow",
-          pricingLocksFeature4: "PMS integration",
+          pricingLocksFeature4: "Reservation coordination",
           pricingLocksFeature5: "Reduce guest support calls",
           pricingLocksCta: "Start now",
 
@@ -165,21 +185,34 @@ export default function LandingPage() {
           faq1Q: "Do I need special hardware?",
           faq1A:
             "Pin&Go is designed to integrate with smart lock workflows compatible with TTLock.",
-          faq2Q: "Can I use it with my PMS?",
+          faq2Q: "Do I need another PMS?",
           faq2A:
-            "Yes. Pin&Go is designed to work with PMS integrations like Guesty, Hostaway, and Lodgify.",
+            "Not to get started. Pin&Go can operate directly and can also connect compatible PMS integrations when they are already part of your operation.",
           faq3Q: "Can I cancel anytime?",
           faq3A: "Yes. You can adjust or cancel your service based on your operation.",
           faq4Q: "Is setup difficult?",
           faq4A: "No. The flow is designed for fast setup and easy operation.",
 
-          finalTitle: "Start with Pin&Go today",
+          finalTitle: "Put your operation in APMS mode",
           finalSubtitle:
-            "Make your operations simpler, safer, and more professional.",
+            "Automate the routine without giving up control, smart access, or your property's hardware.",
           finalCta: "Create account",
-          footerText: "© Pin&Go. Smart access for modern property operations.",
+          footerText: "© Pin&Go. APMS and smart hardware for modern operations.",
         };
   }, [lang]);
+
+  const isVisualPreview =
+    import.meta.env.DEV ||
+    (typeof window !== "undefined" &&
+      window.location.hostname.endsWith(".vercel.app"));
+
+  useEffect(() => {
+    document.title = t.metaTitle;
+    const description = document.querySelector<HTMLMetaElement>(
+      'meta[name="description"]',
+    );
+    if (description) description.content = t.metaDescription;
+  }, [t.metaDescription, t.metaTitle]);
 
   return (
     <div style={styles.page}>
@@ -199,6 +232,15 @@ export default function LandingPage() {
               <div style={styles.slogan}>{t.slogan}</div>
             </div>
           </div>
+
+          <nav style={styles.audienceNav} aria-label={lang === "es" ? "Tipo de visita" : "Visit type"}>
+            <Link to="/home" style={{ ...styles.audienceLink, ...styles.audienceLinkActive }} aria-current="page">
+              {t.navHosts}
+            </Link>
+            <Link to="/stays" style={styles.audienceLink}>
+              {t.navGuests}
+            </Link>
+          </nav>
 
           <div style={styles.headerActions}>
             <div style={styles.langSwitcher}>
@@ -243,6 +285,15 @@ export default function LandingPage() {
             <h1 style={styles.heroTitle}>{t.heroTitle}</h1>
 
             <p style={styles.heroSubtitle}>{t.heroSubtitle}</p>
+
+            <div style={styles.heroOutcomeGrid} aria-label={t.heroBadge}>
+              {t.heroOutcomes.map(([title, text]) => (
+                <div key={title} style={styles.heroOutcomeCard}>
+                  <strong style={styles.heroOutcomeTitle}>{title}</strong>
+                  <span style={styles.heroOutcomeText}>{text}</span>
+                </div>
+              ))}
+            </div>
 
             <div style={styles.priceGroup}>
               <div style={styles.priceLine}>
@@ -299,22 +350,8 @@ export default function LandingPage() {
                 }}
               >
                 {lang === "es"
-                  ? "¿No tienes Plataforma de Conectividad y Reservas?"
-                  : "Don’t have a Connectivity and Booking Platform?"}{" "}
-                <a
-                  href="https://app.lodgify.com/signup/"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    color: "#2563eb",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                  }}
-                >
-                  {lang === "es"
-                    ? "Crea tu cuenta en Lodgify"
-                    : "Create a Lodgify account"}
-                </a>
+                  ? "Puedes comenzar directamente con Pin&Go o conectar un PMS compatible si ya lo utilizas."
+                  : "Start directly with Pin&Go or connect a compatible PMS if you already use one."}
               </div>
             </div>
 
@@ -342,8 +379,8 @@ export default function LandingPage() {
 
             <p style={styles.sectionText}>
               {lang === "es"
-                ? "Si no deseas hacerlo por tu cuenta, nuestro equipo puede ayudarte a conectar tu PMS, TTLock, propiedades, dispositivos inteligentes y automatizaciones en una sesión guiada."
-                : "If you prefer not to set it up yourself, our team can help you connect your PMS, TTLock, properties, smart devices, and automations in a guided session."}
+                ? "Nuestro equipo puede ayudarte a configurar Pin&Go, TTLock, propiedades, dispositivos inteligentes, automatizaciones y cualquier integración compatible que ya utilices."
+                : "Our team can help configure Pin&Go, TTLock, properties, smart devices, automations, and any compatible integration you already use."}
             </p>
 
              <div
@@ -375,9 +412,9 @@ export default function LandingPage() {
   {lang === "es"
     ? "Agendar llamada"
     : "Book call"}
-</button> 
+</button>
 </div>
- 
+
          </div>
         </section>
 
@@ -482,14 +519,14 @@ export default function LandingPage() {
     </div>
   </div>
 </section>
-       
+
       <HaasConfigurator
   lang={lang}
   onScheduleCall={() => {
     setBookingType("demo");
     setOpenBooking(true);
   }}
-/>  
+/>
          <section style={styles.sectionAlt}>
           <div style={styles.containerNarrow}>
             <h2 style={styles.sectionTitle}>{t.faqTitle}</h2>
@@ -574,11 +611,21 @@ export default function LandingPage() {
     onClose={() => setOpenBooking(false)}
     lang={lang}
     bookingType={bookingType}
+    initialTopic={
+      bookingType === "demo"
+        ? lang === "es"
+          ? "Demostración de Pin&Go APMS y hardware"
+          : "Pin&Go APMS and hardware demonstration"
+        : lang === "es"
+          ? "Configuración de Pin&Go, TTLock y hardware"
+          : "Pin&Go, TTLock, and hardware setup"
+    }
+    previewOnly={isVisualPreview}
   />
 </footer>
      </div>
   );
-}    
+}
 function FeatureCard({ title, text }: { title: string; text: string }) {
   return (
     <div style={styles.featureCard}>
@@ -659,6 +706,29 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
     flexWrap: "wrap",
   },
+  audienceNav: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    padding: 4,
+    border: "1px solid #e2e8f0",
+    borderRadius: 12,
+    background: "#f8fafc",
+  },
+  audienceLink: {
+    padding: "9px 13px",
+    borderRadius: 9,
+    color: "#475569",
+    fontSize: 14,
+    fontWeight: 700,
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+  },
+  audienceLinkActive: {
+    background: "#ffffff",
+    color: "#0f172a",
+    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.08)",
+  },
   langSwitcher: {
     display: "flex",
     border: "1px solid #cbd5e1",
@@ -724,6 +794,33 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 19,
     lineHeight: 1.7,
     color: "#475569",
+  },
+  heroOutcomeGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+    gap: 12,
+    marginTop: 28,
+    textAlign: "left",
+  },
+  heroOutcomeCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    border: "1px solid #dbe5eb",
+    borderRadius: 14,
+    background: "rgba(255, 255, 255, 0.82)",
+    padding: "16px 18px",
+    boxShadow: "0 10px 28px rgba(15, 23, 42, 0.045)",
+  },
+  heroOutcomeTitle: {
+    color: "#0f766e",
+    fontSize: 15,
+    fontWeight: 800,
+  },
+  heroOutcomeText: {
+    color: "#475569",
+    fontSize: 14,
+    lineHeight: 1.55,
   },
   priceGroup: {
     marginTop: 28,
