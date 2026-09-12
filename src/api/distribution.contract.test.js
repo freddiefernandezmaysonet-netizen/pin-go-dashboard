@@ -5,12 +5,15 @@ import test from "node:test";
 import "./airbnbHostSelfService.test.js";
 
 const source = readFileSync(new URL("./distribution.ts", import.meta.url), "utf8");
+const fullSyncSource = readFileSync(new URL("./distributionFullSync.ts", import.meta.url), "utf8");
 const airbnbSource = readFileSync(new URL("./airbnbHostSelfService.ts", import.meta.url), "utf8");
 const framePolicy = readFileSync(new URL("../lib/distributionFramePolicy.ts", import.meta.url), "utf8");
 const vercel = JSON.parse(readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"));
 const propertyEditor = readFileSync(new URL("../pages/properties/PropertyEditPage.tsx", import.meta.url), "utf8");
 const router = readFileSync(new URL("../app/routes/router.tsx", import.meta.url), "utf8");
-const connectionCenterPage = readFileSync(new URL("../pages/distribution/ConnectionCenterPage.tsx", import.meta.url), "utf8");
+const connectionCenterWrapper = readFileSync(new URL("../pages/distribution/ConnectionCenterPage.tsx", import.meta.url), "utf8");
+const connectionCenterPage = readFileSync(new URL("../pages/distribution/ConnectionCenterPageBase.tsx", import.meta.url), "utf8");
+const fullSyncControl = readFileSync(new URL("../components/distribution/ConnectionCenterFullSyncControl.tsx", import.meta.url), "utf8");
 const callbackPage = readFileSync(new URL("../pages/distribution/AirbnbConnectionCallbackPage.tsx", import.meta.url), "utf8");
 const propertyDetail = readFileSync(new URL("../pages/property-detail/PropertyDetailPage.tsx", import.meta.url), "utf8");
 
@@ -35,12 +38,42 @@ test("legacy property controls cannot bypass the commercial lifecycle", () => {
   assert.doesNotMatch(propertyEditor, /\/channex\/(?:provision|sync-availability)/i);
   assert.doesNotMatch(propertyEditor, /distributionEnabled:\s*form\.distributionEnabled/);
   assert.doesNotMatch(router, /ChannexFullSyncPanel/);
+  assert.doesNotMatch(propertyDetail, /ChannexFullSyncPanel|sync-availability/i);
 });
 
 test("Connection Center is routed from property detail and restricted to administrators", () => {
   assert.match(router, /properties\/:id\/distribution/);
   assert.match(propertyDetail, /Abrir centro de conexiones/);
   assert.match(connectionCenterPage, /ADMIN_ROLES\.has\(user\.role\)/);
+});
+
+test("certified Full Sync is restored only inside Connection Center", () => {
+  assert.match(connectionCenterWrapper, /ConnectionCenterBasePage/);
+  assert.match(connectionCenterWrapper, /<ConnectionCenterFullSyncControl\s*\/>/);
+  assert.match(fullSyncControl, /Availability & rates sync/);
+  assert.match(fullSyncControl, /Distribution by Pin&Go/);
+  assert.match(fullSyncControl, /does not map or activate any OTA channel/);
+  assert.match(fullSyncControl, /center\?\.provisioningStatus === "READY"/);
+  assert.match(fullSyncControl, /runtimeState\?\.distributionEnabled === true/);
+  assert.match(fullSyncControl, /distributionStatus\.toUpperCase\(\) === "ACTIVE"/);
+  assert.match(fullSyncControl, /searchParams\.get\("simulation"\) === "1"/);
+});
+
+test("Full Sync client reuses the certified authenticated backend route", () => {
+  assert.match(fullSyncSource, /\/api\/dashboard\/properties\/\$\{encodeURIComponent\(id\)\}\/channex\/sync-availability/);
+  assert.match(fullSyncSource, /method:\s*"POST"/);
+  assert.match(fullSyncSource, /credentials:\s*"include"/);
+  assert.match(fullSyncSource, /cache:\s*"no-store"/);
+  assert.match(fullSyncSource, /AVAILABILITY/);
+  assert.match(fullSyncSource, /RATES_RESTRICTIONS/);
+  assert.doesNotMatch(fullSyncSource, /channels\/.*(?:mapping|activate)|mappingTransport|activation/i);
+});
+
+test("Full Sync readiness preserves the certified distribution runtime gate", () => {
+  assert.match(fullSyncSource, /\/api\/dashboard\/properties\/\$\{encodeURIComponent\(id\)\}/);
+  assert.match(fullSyncSource, /distributionEnabled/);
+  assert.match(fullSyncSource, /distributionStatus/);
+  assert.match(fullSyncControl, /Distribution setup and runtime must both be active/);
 });
 
 test("Booking.com session fallback remains sandboxed", () => {
@@ -62,8 +95,6 @@ test("Airbnb real flow uses connection-link and top-level navigation, never the 
 });
 
 test("Airbnb authorization handoff remains credentialed and separate from frame policy", () => {
-  // Executable document-derived URL cases run in airbnbHostSelfService.test.js.
-  // Other channels retain the exact-origin frame policy asserted below.
   assert.match(airbnbSource, /credentials:\s*"include"/);
   assert.match(airbnbSource, /cache:\s*"no-store"/);
 });
@@ -98,4 +129,5 @@ test("connection session remains restricted to exact frame origins", () => {
 test("simulation remains explicit and makes no external calls or data changes", () => {
   assert.match(connectionCenterPage, /searchParams\.get\("simulation"\) === "1"/);
   assert.match(connectionCenterPage, /no se harán llamadas externas ni cambios de datos/i);
+  assert.match(fullSyncControl, /Safe simulation: no Full Sync request will be sent/);
 });
