@@ -21,7 +21,7 @@ const CARD_STYLE = {
   boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
   maxWidth: 1120,
   width: "100%",
-  margin: "18px auto 0",
+  margin: "0 auto",
 } as const;
 
 function latestConfirmedAt(center: DistributionConnectionCenter | null): string | null {
@@ -95,11 +95,11 @@ export function ConnectionCenterFullSyncControl() {
   const ready = Boolean(center?.provisioningStatus === "READY" && runtimeActive);
   const canRequest = Boolean(id && isAdmin && !simulated && ready && !running && !queued);
 
-  if (!isAdmin) return null;
+  if (!id || !isAdmin) return null;
   if (!simulated && loading) return null;
 
   async function runFullSync() {
-    if (!id || !canRequest) return;
+    if (!canRequest) return;
     try {
       setRunning(true);
       setError(null);
