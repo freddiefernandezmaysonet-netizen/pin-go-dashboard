@@ -1,9 +1,9 @@
-name: Booking.com White Label Validation (dashboard)
+name: Booking.com Integrated Closure
 
 on:
   push:
     branches:
-      - agent/booking-com-white-label-safe
+      - agent/booking-com-integrated-closure
 
 permissions:
   contents: read
@@ -13,16 +13,20 @@ defaults:
     shell: bash
 
 concurrency:
-  group: booking-com-dashboard-${{ github.ref }}
+  group: booking-com-integrated-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
+  BOOKING_SHA: 280292a27bf76713c73b14debb5f7cb50659e090
+  CLEANUP_SHA: e1fa564425ef8033d7582a1dc088e22c0fcbd5b5
+  TYPES_SHA: 1d462bf27ac1172a57d01c7101d49471d8d33448
+  VITE_API_BASE: http://127.0.0.1:4173
+
 jobs:
-  build-and-test:
+  integrated-core:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      VITE_API_BASE: http://127.0.0.1:4173
-      BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,128 +36,131 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - name: Verify isolated branch and explicit file scope
+      - name: Verify exact source provenance, full diff scope and deployment veto
         run: |
           mkdir -p evidence
-          test "$GITHUB_REF_NAME" = agent/booking-com-white-label-safe
-          git diff --name-only "$BASELINE_SHA" HEAD | tee evidence/changed-files.txt
-          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/pages/distribution/ConnectionCenterPage.tsx' ':(exclude)src/pages/distribution/BookingComConnectionFlow.test.js' ':(exclude)vercel.json' ':(exclude).github/workflows/booking-com-white-label-safe.yml' ':(exclude).github/scripts/booking-com-browser-check.py'
-          node -e 'const c=require("./vercel.json"); if(c.git?.deploymentEnabled?.["agent/booking-com-white-label-safe"]!==false) process.exit(1)'
-          git diff "$BASELINE_SHA" HEAD > evidence/candidate.patch
+          test "$GITHUB_REF_NAME" = agent/booking-com-integrated-closure
+          python3 <<'PY' | tee evidence/source-provenance.txt
+          import json,os,subprocess
+          from pathlib import Path
+          groups={
+            os.environ['BOOKING_SHA']:[
+              'src/pages/distribution/ConnectionCenterPage.tsx',
+              'src/pages/distribution/BookingComConnectionFlow.test.js',
+              '.github/scripts/booking-com-browser-check.py'],
+            os.environ['CLEANUP_SHA']:[
+              'src/api/distribution.contract.test.js',
+              'src/pages/distribution/AirbnbConnectionCallbackPage.test.js',
+              'src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js'],
+            os.environ['TYPES_SHA']:[
+              'src/api/adminBranding.ts', 'src/api/airbnbHostSelfService.ts',
+              'src/api/distribution.ts', 'src/api/distributionFullSync.ts',
+              'src/api/properties.ts', 'src/auth/RequireGuest.tsx',
+              'src/pages/dashboard/locks/TtlockConnectPage.tsx',
+              'src/pages/integrations/TtlockConnectPage.tsx',
+              'src/pages/property-detail/PropertyDetailPage.tsx',
+              '.github/scripts/dashboard-typescript-zero.test.mjs']}
+          expected={'vercel.json','.github/workflows/booking-com-white-label-safe.yml'}
+          for ref,paths in groups.items():
+              for path in paths:
+                  assert Path(path).read_bytes()==subprocess.check_output(['git','show',f'{ref}:{path}']),f'Unreviewed source change: {path}'
+                  expected.add(path)
+                  print(f'EXACT {ref} {path}')
+          base=os.environ['BASELINE_SHA']
+          actual=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
+          assert actual==expected,{'unexpected':sorted(actual-expected),'missing':sorted(expected-actual)}
+          before=json.loads(subprocess.check_output(['git','show',f'{base}:vercel.json']))
+          before['git']['deploymentEnabled']['agent/booking-com-white-label-safe']=False
+          before['git']['deploymentEnabled']['agent/booking-com-integrated-closure']=False
+          assert json.loads(Path('vercel.json').read_text())==before,'Unexpected Vercel settings change'
+          Path('evidence/changed-files.txt').write_text('\n'.join(sorted(actual))+'\n')
+          print(f'PASS: {len(actual)} exact paths; all source files match reviewed commits; headers/rewrites unchanged')
+          PY
+          git diff "$BASELINE_SHA" HEAD > evidence/integrated.patch
           git rev-parse HEAD > evidence/candidate-sha.txt
       - name: Install unchanged locked dependencies without lifecycle scripts
-        id: install
-        run: npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee evidence/install.txt
-      - name: Preserve existing Airbnb source functions byte for byte
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
-          node --input-type=module <<'JS' | tee evidence/airbnb-source-freeze.txt
-          import assert from 'node:assert/strict';
-          import {execFileSync} from 'node:child_process';
-          import {readFileSync} from 'node:fs';
-          import ts from 'typescript';
-          const path='src/pages/distribution/ConnectionCenterPage.tsx';
-          const before=execFileSync('git',['show',`${process.env.BASELINE_SHA}:${path}`],{encoding:'utf8'});
-          const after=readFileSync(path,'utf8');
-          function functions(text) {
-            const ast=ts.createSourceFile(path,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-            const found=new Map();
-            function visit(n) { if(ts.isFunctionDeclaration(n)&&n.name) found.set(n.name.text,n.getText(ast)); ts.forEachChild(n,visit); }
-            visit(ast); return found;
-          }
-          const a=functions(before),b=functions(after);
-          for(const name of ['isAirbnbListingDiscoveryEligible','AirbnbListingsPanel','listingMeta','reviewReasonMessages','confirmAirbnbCandidate']) {
-            assert.equal(b.get(name),a.get(name),`Out-of-scope change: ${name}`);
-            console.log(`${name}: unchanged`);
-          }
-          JS
-      - name: Run new Booking.com behavior tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: node --test src/pages/distribution/BookingComConnectionFlow.test.js 2>&1 | tee evidence/booking-tests.txt
-      - name: Run the complete existing connection regression set without hiding failures
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests.txt
-      - name: Compare the same regressions and static checks with unchanged main
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        id: comparison
+          npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee evidence/install.txt
+          node --version > evidence/versions.txt
+          ./node_modules/.bin/tsc --version >> evidence/versions.txt
+      - name: Full application and referenced-project TypeScript validation
         run: |
-          git worktree add --detach "$RUNNER_TEMP/booking-baseline" "$BASELINE_SHA"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/booking-baseline/node_modules"
-          set +e
-          (cd "$RUNNER_TEMP/booking-baseline" && node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js) > evidence/tests-baseline.txt 2>&1
-          baseline_tests=$?
-          ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false > evidence/types-candidate.txt 2>&1
-          candidate_types=$?
-          (cd "$RUNNER_TEMP/booking-baseline" && ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false) > evidence/types-baseline.txt 2>&1
-          baseline_types=$?
-          ./node_modules/.bin/eslint src/pages/distribution/ConnectionCenterPage.tsx --format json > evidence/lint-candidate.json 2>&1
-          candidate_lint=$?
-          (cd "$RUNNER_TEMP/booking-baseline" && ./node_modules/.bin/eslint src/pages/distribution/ConnectionCenterPage.tsx --format json) > evidence/lint-baseline.json 2>&1
-          baseline_lint=$?
-          printf 'baseline_tests=%s\nbaseline_types=%s\ncandidate_types=%s\nbaseline_lint=%s\ncandidate_lint=%s\n' "$baseline_tests" "$baseline_types" "$candidate_types" "$baseline_lint" "$candidate_lint" | tee evidence/static-check-status.txt
-          set -e
+          ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false 2>&1 | tee evidence/types-app.txt
+          ./node_modules/.bin/tsc -b --pretty false 2>&1 | tee evidence/types-build.txt
+      - name: Run all selected connection regressions and type-fix runtime parity
+        run: |
+          node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests.txt
+          node --test .github/scripts/dashboard-typescript-zero.test.mjs 2>&1 | tee evidence/runtime-parity.txt
           python3 <<'PY'
           import json,re
           from pathlib import Path
-          p=Path('evidence')
-          failures=lambda name:sorted(re.findall(r'^not ok \d+ - (.+)$',(p/name).read_text(),re.M))
-          baseline=failures('tests-baseline.txt');candidate=failures('tests.txt')
-          tb=(p/'types-baseline.txt').read_text();tc=(p/'types-candidate.txt').read_text()
-          result={'baselineFailedTests':baseline,'candidateFailedTests':candidate,'sameFailedTests':baseline==candidate,'sameTypeDiagnostics':tb==tc,'baselineTypeCount':len(re.findall('error TS',tb)),'candidateTypeCount':len(re.findall('error TS',tc))}
-          (p/'baseline-comparison.json').write_text(json.dumps(result,indent=2))
-          print(json.dumps(result,indent=2))
-          assert baseline==candidate,'New regression failures'
-          assert tb==tc,'Changed TypeScript diagnostics'
+          summaries={}
+          for name,expected in [('tests.txt',168),('runtime-parity.txt',31)]:
+              text=Path('evidence',name).read_text()
+              summary={k:int(re.search(r'^# '+k+r' (\d+)$',text,re.M).group(1)) for k in ['tests','pass','fail','cancelled','skipped','todo']}
+              assert summary['tests']==summary['pass']==expected,summary
+              assert all(summary[k]==0 for k in ['fail','cancelled','skipped','todo']),summary
+              summaries[name]=summary
+          Path('evidence/test-summary.json').write_text(json.dumps(summaries,indent=2))
+          print(json.dumps(summaries,indent=2))
           PY
-      - name: Build the full dashboard with local-only API base
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        id: build
+      - name: Build the complete integrated dashboard
         run: npm run build 2>&1 | tee evidence/build.txt
-      - name: Build unchanged main for mobile layout comparison
-        if: ${{ !cancelled() && steps.comparison.outcome == 'success' }}
-        run: cd "$RUNNER_TEMP/booking-baseline" && npm run build 2>&1 | tee "$GITHUB_WORKSPACE/evidence/build-baseline.txt"
-      - name: Prepare browser tools outside project dependencies
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        id: browser_tools
-        run: |
-          npm install --prefix "$RUNNER_TEMP/booking-browser-tools" --no-audit --no-fund agent-browser@0.27.0
-          python3 -m venv "$RUNNER_TEMP/booking-browser-python"
-          "$RUNNER_TEMP/booking-browser-python/bin/pip" install playwright==1.57.0
-          npm ls --prefix "$RUNNER_TEMP/booking-browser-tools" --depth=0 > evidence/browser-tool-versions.txt
-          "$RUNNER_TEMP/booking-browser-python/bin/pip" freeze >> evidence/browser-tool-versions.txt
-      - name: Verify compiled dashboard in browser with only synthetic local responses
-        if: ${{ !cancelled() && steps.browser_tools.outcome == 'success' }}
-        run: |
-          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
-          export AGENT_BROWSER_BIN="$RUNNER_TEMP/booking-browser-tools/node_modules/.bin/agent-browser"
-          export BASELINE_DIR="$RUNNER_TEMP/booking-baseline"
-          "$RUNNER_TEMP/booking-browser-python/bin/python" .github/scripts/booking-com-browser-check.py 2>&1 | tee evidence/browser-run.txt
-      - name: Preserve exact source and unchanged dependency evidence
-        if: ${{ !cancelled() }}
-        run: |
-          git archive --format=tar HEAD src public index.html package.json package-lock.json tsconfig.json tsconfig.app.json tsconfig.node.json vercel.json .github/workflows/booking-com-white-label-safe.yml .github/scripts/booking-com-browser-check.py > evidence/source.tar
-          if test -d dist; then tar -czf evidence/compiled-dashboard.tar.gz dist; fi
-          git diff --exit-code -- package.json package-lock.json
-      - name: Preserve all results including failed checks
-        if: ${{ !cancelled() }}
+      - name: Ensure validation did not change tracked files
+        if: always()
+        run: git diff --exit-code HEAD -- .
+      - name: Upload exact-commit core evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: booking-com-dashboard-validation
+          name: booking-com-integrated-core
           path: evidence/
-          retention-days: 7
+          retention-days: 14
           if-no-files-found: error
 
-  full-types:
+  browser-acceptance:
+    needs: integrated-core
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Keep full application TypeScript validation explicit
-        run: ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false
+      - name: Build integrated candidate and unchanged main for browser comparison
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/candidate-sha.txt
+          npm run build 2>&1 | tee evidence/build-browser.txt
+          git worktree add --detach "$RUNNER_TEMP/booking-baseline" "$BASELINE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/booking-baseline/node_modules"
+          (cd "$RUNNER_TEMP/booking-baseline" && npm run build) 2>&1 | tee evidence/build-baseline.txt
+      - name: Prepare browser tools outside project dependencies
+        run: |
+          npm install --prefix "$RUNNER_TEMP/booking-browser-tools" --no-audit --no-fund agent-browser@0.27.0
+          python3 -m venv "$RUNNER_TEMP/booking-browser-python"
+          "$RUNNER_TEMP/booking-browser-python/bin/pip" install playwright==1.57.0
+          npm ls --prefix "$RUNNER_TEMP/booking-browser-tools" --depth=0 > evidence/browser-versions.txt
+          "$RUNNER_TEMP/booking-browser-python/bin/pip" freeze >> evidence/browser-versions.txt
+      - name: Run compiled-dashboard browser acceptance with synthetic responses only
+        run: |
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          export AGENT_BROWSER_BIN="$RUNNER_TEMP/booking-browser-tools/node_modules/.bin/agent-browser"
+          export BASELINE_DIR="$RUNNER_TEMP/booking-baseline"
+          "$RUNNER_TEMP/booking-browser-python/bin/python" .github/scripts/booking-com-browser-check.py 2>&1 | tee evidence/browser-run.txt
+      - name: Ensure tracked source stayed unchanged
+        if: always()
+        run: git diff --exit-code HEAD -- .
+      - name: Upload browser evidence including failed mobile acceptance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: booking-com-integrated-browser
+          path: evidence/
+          retention-days: 14
+          if-no-files-found: warn

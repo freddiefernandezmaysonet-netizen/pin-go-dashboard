@@ -1,7 +1,8 @@
+import type { ReactElement } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 
-export function RequireGuest({ children }: { children: JSX.Element }) {
+export function RequireGuest({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth();
 
   if (loading) {
