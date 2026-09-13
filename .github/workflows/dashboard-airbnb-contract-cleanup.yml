@@ -1,0 +1,132 @@
+name: Airbnb contract cleanup - tests only
+
+on:
+  push:
+    branches:
+      - agent/dashboard-airbnb-contract-cleanup
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: airbnb-contract-cleanup-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
+  BOOKING_SHA: 280292a27bf76713c73b14debb5f7cb50659e090
+
+jobs:
+  contracts-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Freeze application code and all files outside the exact test-only scope
+        run: |
+          mkdir -p evidence
+          test "$GITHUB_REF_NAME" = agent/dashboard-airbnb-contract-cleanup
+          git rev-parse HEAD > evidence/candidate-sha.txt
+          git diff --name-only "$BASELINE_SHA" HEAD | tee evidence/changed-files.txt
+          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/api/distribution.contract.test.js' ':(exclude)src/pages/distribution/AirbnbConnectionCallbackPage.test.js' ':(exclude)src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js' ':(exclude)vercel.json' ':(exclude).github/workflows/dashboard-airbnb-contract-cleanup.yml'
+          git diff "$BASELINE_SHA" HEAD > evidence/candidate.patch
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {execFileSync} from 'node:child_process';
+          import {readFileSync} from 'node:fs';
+          const before=JSON.parse(execFileSync('git',['show',`${process.env.BASELINE_SHA}:vercel.json`],{encoding:'utf8'}));
+          const after=JSON.parse(readFileSync('vercel.json','utf8'));
+          before.git.deploymentEnabled['agent/dashboard-airbnb-contract-cleanup']=false;
+          assert.deepEqual(after,before,'Only the exact cleanup-branch deployment veto may change');
+          JS
+          echo 'PASS: all application source, dependencies, lockfile, headers and rewrites unchanged' | tee evidence/application-freeze.txt
+      - name: Install locked dependencies without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee evidence/install.txt
+          node --version > evidence/tool-versions.txt
+          ./node_modules/.bin/tsc --version >> evidence/tool-versions.txt
+      - name: Run complete Connection Center and Airbnb regression selection
+        run: node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests-cleanup.txt
+      - name: Build full unchanged application
+        run: npm run build 2>&1 | tee evidence/build-cleanup.txt
+      - name: Reproduce baseline failures and compare full TypeScript diagnostics
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/contracts-baseline" "$BASELINE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/contracts-baseline/node_modules"
+          set +e
+          (cd "$RUNNER_TEMP/contracts-baseline" && node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js) > evidence/tests-baseline.txt 2>&1
+          baseline_tests=$?
+          ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false > evidence/types-cleanup.txt 2>&1
+          candidate_types=$?
+          (cd "$RUNNER_TEMP/contracts-baseline" && ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false) > evidence/types-baseline.txt 2>&1
+          baseline_types=$?
+          printf 'baseline_tests=%s\nbaseline_types=%s\ncandidate_types=%s\n' "$baseline_tests" "$baseline_types" "$candidate_types" | tee evidence/baseline-exit-codes.txt
+          set -e
+          python3 <<'PY'
+          import json,re
+          from pathlib import Path
+          p=Path('evidence')
+          def summary(name):
+              text=(p/name).read_text()
+              return {key:int(re.search(r'^# '+key+r' (\d+)$',text,re.M).group(1)) for key in ['tests','pass','fail','cancelled','skipped','todo']}
+          baseline=summary('tests-baseline.txt');candidate=summary('tests-cleanup.txt')
+          a=(p/'types-baseline.txt').read_bytes();b=(p/'types-cleanup.txt').read_bytes()
+          result={'baseline':baseline,'candidate':candidate,'baselineFailedTests':re.findall(r'^not ok \d+ - (.+)$',(p/'tests-baseline.txt').read_text(),re.M),'typeDiagnosticsUnchanged':a==b,'fullTypecheckPassed':not b,'typeDiagnosticCount':len(re.findall(rb'error TS\d+',b))}
+          (p/'comparison.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          assert candidate['fail']==0 and candidate['skipped']==0 and candidate['cancelled']==0 and candidate['todo']==0
+          assert a==b,'Application TypeScript diagnostics unexpectedly changed'
+          PY
+      - name: Verify updated tests against the frozen Booking.com candidate without moving its branch
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/contracts-booking" "$BOOKING_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/contracts-booking/node_modules"
+          for path in src/api/distribution.contract.test.js src/pages/distribution/AirbnbConnectionCallbackPage.test.js src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js; do
+            cp "$GITHUB_WORKSPACE/$path" "$RUNNER_TEMP/contracts-booking/$path"
+          done
+          (cd "$RUNNER_TEMP/contracts-booking" && node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js) 2>&1 | tee evidence/tests-booking-combination.txt
+          (cd "$RUNNER_TEMP/contracts-booking" && npm run build) 2>&1 | tee evidence/build-booking-combination.txt
+          git -C "$RUNNER_TEMP/contracts-booking" diff --exit-code -- . ':(exclude)src/api/distribution.contract.test.js' ':(exclude)src/pages/distribution/AirbnbConnectionCallbackPage.test.js' ':(exclude)src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js'
+          printf 'Frozen Booking.com head: %s\nOnly three test files overlaid in a disposable worktree; no branch update.\n' "$BOOKING_SHA" | tee evidence/booking-combination-scope.txt
+      - name: Preserve exact modified test files
+        if: always()
+        run: |
+          mkdir -p evidence/modified-tests
+          cp src/api/distribution.contract.test.js evidence/modified-tests/
+          cp src/pages/distribution/AirbnbConnectionCallbackPage.test.js evidence/modified-tests/
+          cp src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js evidence/modified-tests/
+          git diff --exit-code -- src package.json package-lock.json
+      - name: Upload evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: airbnb-contract-cleanup-evidence
+          path: evidence/
+          retention-days: 14
+          if-no-files-found: error
+
+  full-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Keep repository-wide TypeScript status explicit - no waiver or skipped check
+        run: ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false

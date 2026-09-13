@@ -81,9 +81,10 @@ test("Airbnb callback is authenticated, strips OAuth artifacts, and verifies ser
 
 test("Airbnb callback never represents authorization as activation", () => {
   assert.match(callbackPage, /La activación del canal permanece separada de esta autorización/);
-  assert.match(callbackPage, /esta verificación no modifica la sincronización existente/);
-  assert.doesNotMatch(callbackPage, /Autorización confirmada|Airbnb confirmó la autorización/);
-  assert.doesNotMatch(callbackPage, /activar|activation endpoint/i);
+  assert.match(callbackPage, /No se realizó ninguna activación/);
+  assert.match(callbackPage, /Pin&Go no ha activado el canal/);
+  assert.doesNotMatch(callbackPage, /Autorización confirmada|Airbnb confirmó la autorización|Airbnb está activo/);
+  assert.doesNotMatch(callbackPage, /activateAirbnbForHost|verifyAirbnbActivationForHost|CONFIRM_AIRBNB_ACTIVATION/);
 });
 
 test("connection session remains restricted to exact frame origins", () => {
@@ -97,5 +98,6 @@ test("connection session remains restricted to exact frame origins", () => {
 
 test("simulation remains explicit and makes no external calls or data changes", () => {
   assert.match(connectionCenterPage, /searchParams\.get\("simulation"\) === "1"/);
-  assert.match(connectionCenterPage, /no se harán llamadas externas ni cambios de datos/i);
+  assert.match(connectionCenterPage, /Simulation mode is active\. No external calls or data changes will be made\./);
+  assert.match(connectionCenterPage, /if \(simulated\) \{\s*setFrameReady\(false\)/);
 });
