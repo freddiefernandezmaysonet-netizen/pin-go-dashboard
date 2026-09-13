@@ -63,6 +63,57 @@ export type AirbnbHostConfirmedMappingResult = {
   listingId: string;
 };
 
+export type AirbnbActivationState = {
+  status: "READY" | "ACTIVE" | "NOT_READY" | "CHECK_REQUIRED";
+  reason: string | null;
+  channelId: string;
+  mappingId: string | null;
+  listingId: string | null;
+};
+
+export const AIRBNB_HOST_ACTIVATION_VERIFICATION =
+  "VERIFY_AIRBNB_ACTIVATION";
+
+export async function inspectAirbnbActivation(propertyId: string): Promise<AirbnbActivationState> {
+  const payload = await get(`/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/activation`);
+  const a = isRecord(payload) && payload.ok === true ? payload.activation : null;
+  if (!isRecord(a) || !["READY", "ACTIVE", "NOT_READY", "CHECK_REQUIRED"].includes(String(a.status)) ||
+      typeof a.channelId !== "string" || !a.channelId ||
+      !(a.reason === null || typeof a.reason === "string") ||
+      !(a.mappingId === null || typeof a.mappingId === "string") ||
+      !(a.listingId === null || typeof a.listingId === "string") ||
+      (a.status !== "NOT_READY" && (!a.mappingId || !a.listingId))) throw new Error("INVALID_AIRBNB_ACTIVATION_RESPONSE");
+  return a as AirbnbActivationState;
+}
+
+export async function activateAirbnbForHost(propertyId: string, state: AirbnbActivationState): Promise<{ channelActive: true; readinessChecked: boolean }> {
+  if (state.status !== "READY" || !state.channelId || !state.mappingId || !state.listingId) throw new Error("AIRBNB_ACTIVATION_NOT_READY");
+  const payload = await post(`/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/activate`, "activate", {
+    channelId: state.channelId, mappingId: state.mappingId, listingId: state.listingId,
+    confirmation: "CONFIRM_AIRBNB_ACTIVATION",
+  });
+  const a = isRecord(payload) && payload.ok === true ? payload.activation : null;
+  if (!isRecord(a) || !["ACTIVATED", "ALREADY_ACTIVE"].includes(String(a.outcome)) ||
+      a.channelActive !== true || typeof a.readinessChecked !== "boolean") throw new Error("INVALID_AIRBNB_ACTIVATION_RESPONSE");
+  return { channelActive: true, readinessChecked: a.readinessChecked };
+}
+
+export async function verifyAirbnbActivationForHost(propertyId: string, state: AirbnbActivationState): Promise<{ channelActive: true; readinessChecked: boolean }> {
+  if (state.status !== "CHECK_REQUIRED" || !state.channelId || !state.mappingId || !state.listingId) {
+    throw new Error("AIRBNB_ACTIVATION_VERIFICATION_NOT_READY");
+  }
+  const payload = await post(`/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/activation/verify`, "activation-verify", {
+    channelId: state.channelId, mappingId: state.mappingId, listingId: state.listingId,
+    confirmation: AIRBNB_HOST_ACTIVATION_VERIFICATION,
+  });
+  const a = isRecord(payload) && payload.ok === true ? payload.activation : null;
+  if (!isRecord(a) || a.outcome !== "VERIFIED" ||
+      a.channelActive !== true || typeof a.readinessChecked !== "boolean") {
+    throw new Error("INVALID_AIRBNB_ACTIVATION_VERIFICATION_RESPONSE");
+  }
+  return { channelActive: true, readinessChecked: a.readinessChecked };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
