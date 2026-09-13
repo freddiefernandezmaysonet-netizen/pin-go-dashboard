@@ -455,7 +455,7 @@ export async function searchEnterpriseBrandingOrganizations(
       });
     }
 
-    return { name, slug, propertyCount, brandStatus };
+    return { name, slug, propertyCount, brandStatus: brandStatus as BrandProfileStatus | null };
   });
 }
 
