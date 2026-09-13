@@ -182,7 +182,7 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
   else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_UNKNOWN")) add("Country information could not be confirmed.");
   if (reasons.includes("NAME_PARTIAL") || reasons.includes("NAME_WEAK")) add("Property names are not similar enough for an automatic match.");
 
-  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) add("City or locality information differs between Pin&Go and Airbnb.");
+  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) add("Airbnb uses a different city or locality name for this property.");
   else if (messages.length === 0 && reasons.includes("CITY_UNKNOWN")) add("City or locality information could not be confirmed.");
 
   return messages;
