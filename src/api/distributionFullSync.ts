@@ -14,11 +14,13 @@ export type DistributionFullSyncResult = {
 };
 
 export class DistributionFullSyncApiError extends Error {
-  constructor(
-    readonly status: number,
-    readonly providerMessage: string
-  ) {
+  readonly status: number;
+  readonly providerMessage: string;
+
+  constructor(status: number, providerMessage: string) {
     super(providerMessage);
+    this.status = status;
+    this.providerMessage = providerMessage;
     this.name = "DistributionFullSyncApiError";
   }
 }

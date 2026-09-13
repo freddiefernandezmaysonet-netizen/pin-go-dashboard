@@ -1,0 +1,148 @@
+name: Dashboard TypeScript closure
+
+on:
+  push:
+    branches:
+      - agent/dashboard-typescript-zero
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: dashboard-typescript-zero-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
+  BOOKING_SHA: 280292a27bf76713c73b14debb5f7cb50659e090
+  CLEANUP_SHA: e1fa564425ef8033d7582a1dc088e22c0fcbd5b5
+
+jobs:
+  typecheck-build-and-combination:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Freeze everything outside the nine source files and validation controls
+        run: |
+          test "$GITHUB_REF" = refs/heads/agent/dashboard-typescript-zero
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/candidate-sha.txt
+          git diff --name-only "$BASELINE_SHA" HEAD | tee evidence/changed-files.txt
+          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/api/adminBranding.ts' ':(exclude)src/api/airbnbHostSelfService.ts' ':(exclude)src/api/distribution.ts' ':(exclude)src/api/distributionFullSync.ts' ':(exclude)src/api/properties.ts' ':(exclude)src/auth/RequireGuest.tsx' ':(exclude)src/pages/dashboard/locks/TtlockConnectPage.tsx' ':(exclude)src/pages/integrations/TtlockConnectPage.tsx' ':(exclude)src/pages/property-detail/PropertyDetailPage.tsx' ':(exclude)vercel.json' ':(exclude).github/scripts/dashboard-typescript-zero.test.mjs' ':(exclude).github/workflows/dashboard-typescript-zero.yml'
+          test ! -e .github/scripts/dashboard-typescript-zero.patch
+          git diff --name-only "$BASELINE_SHA" HEAD -- src > evidence/application-files.txt
+          test "$(wc -l < evidence/application-files.txt)" -eq 9
+          git diff "$BASELINE_SHA" HEAD -- src > evidence/application.patch
+          git diff --check "$BASELINE_SHA" HEAD
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {execFileSync} from 'node:child_process';
+          import {readFileSync} from 'node:fs';
+          const base=JSON.parse(execFileSync('git',['show',`${process.env.BASELINE_SHA}:vercel.json`],{encoding:'utf8'}));
+          base.git.deploymentEnabled['agent/dashboard-typescript-zero']=false;
+          assert.deepEqual(JSON.parse(readFileSync('vercel.json','utf8')),base);
+          JS
+      - name: Install unchanged locked dependencies without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee evidence/install.txt
+          node --version > evidence/versions.txt
+          ./node_modules/.bin/tsc --version >> evidence/versions.txt
+      - name: Full application typecheck on the actual commit
+        run: ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false 2>&1 | tee evidence/types-candidate.txt
+      - name: Validate every referenced TypeScript project including Vite configuration
+        run: ./node_modules/.bin/tsc -b --pretty false 2>&1 | tee evidence/types-project-build.txt
+      - name: Runtime parity and validation probes
+        run: node --test .github/scripts/dashboard-typescript-zero.test.mjs 2>&1 | tee evidence/runtime-tests.txt
+      - name: Build complete dashboard
+        run: npm run build 2>&1 | tee evidence/build-candidate.txt
+      - name: Reproduce baseline diagnostics without changing compiler options
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/type-baseline" "$BASELINE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/type-baseline/node_modules"
+          set +e
+          (cd "$RUNNER_TEMP/type-baseline" && ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false) > evidence/types-baseline.txt 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          python3 <<'PY'
+          import json,re
+          from pathlib import Path
+          p=Path('evidence')
+          counts={name:len(re.findall(r'error TS\d+', (p/filename).read_text())) for name,filename in [('baseline', 'types-baseline.txt'),('candidate','types-candidate.txt'),('projectBuild','types-project-build.txt')]}
+          assert counts=={'baseline':13,'candidate':0,'projectBuild':0},counts
+          (p/'type-comparison.json').write_text(json.dumps(counts,indent=2));print(json.dumps(counts,indent=2))
+          PY
+      - name: Verify frozen Booking.com plus cleanup plus type corrections without moving branches
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/type-booking" "$BOOKING_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/type-booking/node_modules"
+          while IFS= read -r path; do
+            git diff --exit-code "$BASELINE_SHA" "$BOOKING_SHA" -- "$path"
+            cp "$GITHUB_WORKSPACE/$path" "$RUNNER_TEMP/type-booking/$path"
+          done < evidence/application-files.txt
+          for path in src/api/distribution.contract.test.js src/pages/distribution/AirbnbConnectionCallbackPage.test.js src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js; do
+            git show "$CLEANUP_SHA:$path" > "$RUNNER_TEMP/type-booking/$path"
+          done
+          (cd "$RUNNER_TEMP/type-booking" && node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js) 2>&1 | tee evidence/tests-booking-combined.txt
+          (cd "$RUNNER_TEMP/type-booking" && ./node_modules/.bin/tsc -b --pretty false) 2>&1 | tee evidence/types-booking-combined.txt
+          (cd "$RUNNER_TEMP/type-booking" && npm run build) 2>&1 | tee evidence/build-booking-combined.txt
+          git -C "$RUNNER_TEMP/type-booking" diff --name-only > evidence/combination-files.txt
+          printf 'Booking=%s\nCleanup=%s\nTypes=%s\nNo source branch updated.\n' "$BOOKING_SHA" "$CLEANUP_SHA" "$GITHUB_SHA" > evidence/combination-refs.txt
+          python3 <<'PY'
+          import re,json
+          from pathlib import Path
+          p=Path('evidence');s=(p/'tests-booking-combined.txt').read_text()
+          counts={k:int(re.search(r'^# '+k+r' (\d+)$',s,re.M).group(1)) for k in ['tests','pass','fail','cancelled','skipped','todo']}
+          assert counts=={'tests':168,'pass':168,'fail':0,'cancelled':0,'skipped':0,'todo':0},counts
+          (p/'combined-test-summary.json').write_text(json.dumps(counts,indent=2));print(json.dumps(counts,indent=2))
+          PY
+      - name: Record exact modified sources and ensure validation did not mutate them
+        if: always()
+        run: |
+          while IFS= read -r path; do
+            mkdir -p "evidence/modified-source/$(dirname "$path")"
+            cp "$path" "evidence/modified-source/$path"
+          done < evidence/application-files.txt
+          git diff --exit-code -- src package.json package-lock.json tsconfig.json tsconfig.app.json tsconfig.node.json vercel.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-typescript-zero-final
+          path: evidence/
+          retention-days: 14
+          if-no-files-found: error
+
+  inherited-contracts-without-PR77:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Keep inherited failures explicit until the separate test cleanup is integrated
+        run: |
+          mkdir -p legacy-evidence
+          node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee legacy-evidence/tests-without-cleanup.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-typescript-inherited-contracts
+          path: legacy-evidence/
+          retention-days: 14
