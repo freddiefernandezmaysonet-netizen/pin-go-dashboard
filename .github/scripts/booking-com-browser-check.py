@@ -3,7 +3,6 @@ import asyncio
 import json
 import os
 import re
-import shutil
 import sys
 import threading
 from datetime import datetime, timedelta, timezone
@@ -64,7 +63,10 @@ def connection_center():
 async def intercept(route):
     request = route.request
     url = urlparse(request.url)
-    path = url.path
+    raw_path = url.path
+    # vite.config.ts defines the build-time API base as /backend. The local
+    # static server has no Vercel proxy; both forms are fulfilled here only.
+    path = raw_path.removeprefix("/backend")
     payload = None
     status = 200
     if url.hostname == "app.channex.io":
@@ -77,11 +79,11 @@ async def intercept(route):
         STATE["unexpected"].append(request.url)
         await route.abort()
         return
-    if path == "/backend/api/public/brand-context":
+    if path == "/api/public/brand-context":
         payload = {"ok": True, "data": {"kind": "PIN_GO_STANDARD", "displayName": "Pin&Go", "logoUrl": None, "faviconUrl": None, "primaryColor": None, "onPrimaryColor": None, "organizationSlug": None, "version": None, "poweredByPinGo": True}}
     elif path == "/auth/me":
         payload = {"user": None if STATE["role"] == "NONE" else {"id": "test-user", "email": "test@example.invalid", "orgId": "test-org", "role": STATE["role"], "organizationName": "LOCAL VERIFICATION"}}
-    elif path == "/backend/api/org/branding/review":
+    elif path == "/api/org/branding/review":
         payload = {"ok": True, "profile": None, "pendingRevisions": []}
     elif path == "/api/dashboard/distribution/properties/local-property":
         payload = connection_center()
@@ -100,12 +102,12 @@ async def intercept(route):
     elif re.fullmatch("/api/dashboard/distribution/sessions/local-session/(opened|completed|cancelled)", path) and request.method == "POST":
         payload = {"ok": True}
     elif request.resource_type in ("fetch", "xhr"):
-        STATE["unexpected"].append(request.method + " " + path)
+        STATE["unexpected"].append(request.method + " " + raw_path)
         status, payload = 400, {"ok": False, "error": "NO_LOCAL_FIXTURE"}
     if payload is None:
         await route.continue_()
         return
-    STATE["calls"].append({"method": request.method, "path": path, "idempotency": bool(request.headers.get("idempotency-key"))})
+    STATE["calls"].append({"method": request.method, "path": raw_path, "normalizedPath": path, "idempotency": bool(request.headers.get("idempotency-key"))})
     await route.fulfill(status=status, content_type="application/json", body=json.dumps(payload))
 
 
@@ -236,12 +238,13 @@ async def main():
             await browser.close()
     except Exception as error:
         RESULTS.append({"case": "runner", "passed": False, "error": str(error)})
-        if page and not page.is_closed():
-            try:
-                await page.screenshot(path=str(OUTPUT / "failure.png"), full_page=True)
-                (OUTPUT / "failure-body.txt").write_text(await page.locator("body").inner_text())
-            except Exception:
-                pass
+        # agent-browser owns an independent CDP connection, so it can capture
+        # the existing page even after the Python Playwright context exits.
+        try:
+            await agent("snapshot", "-i")
+            await agent("screenshot", str(OUTPUT / "failure.png"), "--full")
+        except Exception:
+            pass
     finally:
         report = {"candidate": os.environ["GITHUB_SHA"], "results": RESULTS, "console": STATE["console"], "unexpectedRequests": STATE["unexpected"], "requests": STATE["calls"]}
         (OUTPUT / "results.json").write_text(json.dumps(report, indent=2))
