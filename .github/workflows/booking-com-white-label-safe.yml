@@ -1,0 +1,93 @@
+name: Booking.com White Label Validation (dashboard)
+
+on:
+  push:
+    branches:
+      - agent/booking-com-white-label-safe
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      VITE_API_BASE: http://127.0.0.1:4173
+      BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Verify isolated branch and explicit file scope
+        run: |
+          mkdir -p evidence
+          test "$GITHUB_REF_NAME" = agent/booking-com-white-label-safe
+          git diff --name-only "$BASELINE_SHA" HEAD | tee evidence/changed-files.txt
+          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/pages/distribution/ConnectionCenterPage.tsx' ':(exclude)src/pages/distribution/BookingComConnectionFlow.test.js' ':(exclude)src/api/distribution.channel-linked.contract.test.js' ':(exclude)vercel.json' ':(exclude).github/workflows/booking-com-white-label-safe.yml'
+          node -e 'const c=require("./vercel.json"); if(c.git?.deploymentEnabled?.["agent/booking-com-white-label-safe"]!==false) process.exit(1)'
+          git diff "$BASELINE_SHA" HEAD -- src vercel.json > evidence/candidate.patch
+          git rev-parse HEAD > evidence/candidate-sha.txt
+      - name: Install unchanged locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee evidence/install.txt
+      - name: Test Booking.com, Connection Center and Airbnb regressions
+        run: |
+          node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests.txt
+      - name: Build the full dashboard with local-only API base
+        run: npm run build 2>&1 | tee evidence/build.txt
+      - name: Compare lint and TypeScript to the unchanged baseline
+        if: always()
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/booking-baseline" "$BASELINE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/booking-baseline/node_modules"
+          set +e
+          ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false > evidence/types-candidate.txt 2>&1
+          candidate_types=$?
+          (cd "$RUNNER_TEMP/booking-baseline" && ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false) > evidence/types-baseline.txt 2>&1
+          baseline_types=$?
+          ./node_modules/.bin/eslint src/pages/distribution/ConnectionCenterPage.tsx --format json > evidence/lint-candidate.json 2>&1
+          candidate_lint=$?
+          (cd "$RUNNER_TEMP/booking-baseline" && ./node_modules/.bin/eslint src/pages/distribution/ConnectionCenterPage.tsx --format json) > evidence/lint-baseline.json 2>&1
+          baseline_lint=$?
+          printf 'baseline_types=%s\ncandidate_types=%s\nbaseline_lint=%s\ncandidate_lint=%s\n' "$baseline_types" "$candidate_types" "$baseline_lint" "$candidate_lint" | tee evidence/static-check-status.txt
+          exit 0
+      - name: Package the exact source and compiled app for offline browser verification
+        if: always()
+        run: |
+          git archive --format=tar HEAD src public index.html package.json package-lock.json tsconfig.json tsconfig.app.json tsconfig.node.json vercel.json > evidence/source.tar
+          if test -d dist; then tar -czf evidence/compiled-dashboard.tar.gz dist; fi
+          git diff --exit-code -- package.json package-lock.json
+      - name: Prepare isolated browser verification tools without changing project dependencies
+        if: always()
+        run: |
+          npm install --prefix "$RUNNER_TEMP/booking-browser-tools" --no-audit --no-fund agent-browser
+          npm ls --prefix "$RUNNER_TEMP/booking-browser-tools" --depth=0 > evidence/browser-tool-versions.txt
+          tar -czf evidence/browser-tools.tar.gz -C "$RUNNER_TEMP/booking-browser-tools" package.json package-lock.json node_modules
+      - name: Preserve build, test and browser verification inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: booking-com-dashboard-validation
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: error
+
+  full-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Keep full application TypeScript validation explicit
+        run: ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false
