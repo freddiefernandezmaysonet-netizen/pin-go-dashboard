@@ -86,7 +86,9 @@ test("verified callback immediately returns to this property's Booking channels 
   assert.equal(p.history[0][2], "/distribution/airbnb/callback");
   assert.equal(p.navigations.length, 1);
   assert.equal(p.navigations[0][0], "/properties/property-1/distribution");
-  assert.deepEqual(p.navigations[0][1], { replace: true });
+  // Options originate in the VM: verify their contents without comparing realm prototypes.
+  assert.equal(p.navigations[0][1].replace, true);
+  assert.deepEqual(Object.keys(p.navigations[0][1]), ["replace"]);
   assert.equal(p.states[0], "VERIFYING");
   assert.doesNotMatch(text(node), /Autorización confirmada|Airbnb confirmó|test-only-state|Airbnb está activo/);
   assert.match(text(node), /La activación del canal permanece separada de esta autorización/);
