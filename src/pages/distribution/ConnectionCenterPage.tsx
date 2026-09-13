@@ -65,6 +65,15 @@ function isAirbnbListingDiscoveryEligible(
   );
 }
 
+function isBookingComConnectionExisting(
+  channel: DistributionConnectionCenter["channels"][number] | undefined
+): boolean {
+  return Boolean(
+    channel?.provider === "BOOKING_COM" &&
+      (channel.channelLinked || channel.status === "ACTIVE")
+  );
+}
+
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
     NOT_CONNECTED: "Not connected",
@@ -123,6 +132,17 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
       status: "Assisted setup",
       tone: "warning" as const,
       description: "This channel currently requires assisted setup.",
+    };
+  }
+  if (channel.provider === "BOOKING_COM") {
+    const existing = isBookingComConnectionExisting(channel);
+    const needsAttention = channel.status === "DEGRADED" || channel.status === "FAILED";
+    return {
+      status: statusLabel(channel.status),
+      tone: needsAttention ? "warning" as const : existing ? "progress" as const : "neutral" as const,
+      description: existing
+        ? "Booking.com is linked to this property. Review the existing channel setup and its activation status."
+        : "Request connectivity in Booking.com, then complete this property's setup in the secure window.",
     };
   }
   return {
@@ -287,18 +307,37 @@ function AirbnbListingsPanel(props: {
   );
 }
 
-function ConnectionFrame(props: { providerName: string; session: DistributionConnectionSession; simulated: boolean; onLoaded(): void; onComplete(): void; onClose(): void; completing: boolean; ready: boolean }) {
+function BookingComConnectionGuide(props: { simulated: boolean }) {
+  return (
+    <section aria-label="Before connecting Booking.com" style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14, background: "#f8fafc", color: "#374151", fontSize: 13, lineHeight: 1.55 }}>
+      <strong>Before connecting Booking.com</strong>
+      <ol style={{ margin: "8px 0", paddingLeft: 20, display: "grid", gap: 6 }}>
+        <li>In the Booking.com extranet, open Account → Connectivity Provider. Search for Channex and select Channex.io, Pin&amp;Go's connectivity provider.</li>
+        <li>Submit the connection request and accept the agreement in Booking.com. Mapping can begin while the request is pending; activation must wait for acceptance.</li>
+        <li>Keep the Hotel ID shown next to your property's name. Enter it in the secure setup window, test the connection, and map the available rooms and rates.</li>
+      </ol>
+      {props.simulated ? (
+        <span>Extranet navigation is disabled in simulation.</span>
+      ) : (
+        <a href="https://account.booking.com/" target="_blank" rel="noopener noreferrer" style={{ color: "#1d4ed8", fontWeight: 600 }}>Open Booking.com extranet</a>
+      )}
+      <p style={{ margin: "8px 0 0", color: "#6b7280", fontSize: 12 }}>Use your password and verification code only on Booking.com. Review rates and restrictions before activating the channel.</p>
+    </section>
+  );
+}
+
+function ConnectionFrame(props: { providerName: string; bookingCom?: boolean; session: DistributionConnectionSession; simulated: boolean; onLoaded(): void; onComplete(): void; onClose(): void; completing: boolean; ready: boolean }) {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="connection-frame-title" style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(15,23,42,.65)", display: "grid", placeItems: "center", padding: 20 }}>
       <section style={{ width: "min(920px, 100%)", height: "min(720px, 90vh)", background: "white", borderRadius: 18, overflow: "hidden", display: "grid", gridTemplateRows: "auto 1fr auto", boxShadow: "0 24px 60px rgba(15,23,42,.24)" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
-          <div><strong id="connection-frame-title">Connect {props.providerName}</strong><div style={{ color: "#6b7280", fontSize: 13, marginTop: 3 }}>Secure connection session</div></div>
+          <div><strong id="connection-frame-title">{props.bookingCom ? "Booking.com setup" : <>Connect {props.providerName}</>}</strong><div style={{ color: "#6b7280", fontSize: 13, marginTop: 3 }}>{props.bookingCom ? "Closing this window does not undo changes saved here or confirm activation." : "Secure connection session"}</div></div>
           <button type="button" onClick={props.onClose} aria-label="Close connection" style={{ border: 0, background: "transparent", cursor: "pointer", color: "#4b5563" }}><X size={22} /></button>
         </header>
-        <iframe title={`Connect ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
+        <iframe title={props.bookingCom ? "Booking.com setup" : `Connect ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
         <footer style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: 16, borderTop: "1px solid #e5e7eb" }}>
-          <button type="button" onClick={props.onClose} disabled={props.completing} style={{ ...SECONDARY_BUTTON_STYLE, opacity: props.completing ? 0.6 : 1 }}>Cancel</button>
-          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready} style={{ ...PRIMARY_BUTTON_STYLE, cursor: props.completing || !props.ready ? "not-allowed" : "pointer", opacity: props.completing || !props.ready ? 0.6 : 1 }}>{props.completing ? "Saving…" : props.ready ? (props.simulated ? "Finish simulation" : "Finish connection") : "Opening session…"}</button>
+          <button type="button" onClick={props.onClose} disabled={props.completing} style={{ ...SECONDARY_BUTTON_STYLE, opacity: props.completing ? 0.6 : 1 }}>{props.bookingCom ? "Close window" : "Cancel"}</button>
+          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready} style={{ ...PRIMARY_BUTTON_STYLE, cursor: props.completing || !props.ready ? "not-allowed" : "pointer", opacity: props.completing || !props.ready ? 0.6 : 1 }}>{props.completing ? "Saving…" : props.ready ? (props.simulated ? "Finish simulation" : props.bookingCom ? "Close and refresh" : "Finish connection") : "Opening session…"}</button>
         </footer>
       </section>
     </div>
@@ -318,8 +357,8 @@ export function ConnectionCenterPage() {
   const [frameReady, setFrameReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [airbnbDiscovery, setAirbnbDiscovery] = useState<AirbnbHostListingDiscovery | null>(null);
   const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
+  const [airbnbDiscovery, setAirbnbDiscovery] = useState<AirbnbHostListingDiscovery | null>(null);
   const [airbnbMappingStatus, setAirbnbMappingStatus] = useState<AirbnbMappingStatus>("IDLE");
   const [airbnbMappedPropertyId, setAirbnbMappedPropertyId] = useState<string | null>(null);
   const listingDiscoveryStartedFor = useRef<string | null>(null);
@@ -366,7 +405,10 @@ export function ConnectionCenterPage() {
         setSession({ provider, value: { sessionId: `simulation-${provider}`, launchUrl: "https://simulation.invalid/connect", expiresAt: new Date(Date.now() + 10 * 60_000).toISOString() } });
         return;
       }
-      await prepareDistributionChannel(id, provider);
+      const existingBookingCom = provider === "BOOKING_COM" && isBookingComConnectionExisting(
+        center?.channels.find((channel) => channel.provider === "BOOKING_COM")
+      );
+      if (!existingBookingCom) await prepareDistributionChannel(id, provider);
       if (provider === "AIRBNB") {
         const link = await issueAirbnbHostConnectionLink(id);
         window.location.assign(link.authorizationUrl);
@@ -399,7 +441,7 @@ export function ConnectionCenterPage() {
           return;
         }
         if (caught.code.includes("CHANNEL_STATE_INVALID") || caught.code.includes("CONTEXT_NOT_ELIGIBLE")) {
-          setError("The Airbnb connection changed before confirmation. Refresh this page before continuing. No mapping was created by this attempt.");
+          setError("The Airbnb connection changed before confirmation. Refresh this page before continuing. No changes were made by this attempt.");
           return;
         }
         if (caught.code.includes("RECONCILIATION_REQUIRED") || caught.code.includes("RESPONSE_INVALID") || caught.code.includes("RESPONSE_TOO_LARGE")) {
@@ -428,7 +470,9 @@ export function ConnectionCenterPage() {
     try {
       if (!simulated) await transitionDistributionConnectionSession(session.value.sessionId, "completed");
       setSession(null); setFrameReady(false);
-      setNotice(simulated ? "Simulation complete. No data was changed." : "Connection submitted for validation.");
+      setNotice(simulated ? "Simulation complete. No data was changed." : session.provider === "BOOKING_COM"
+        ? "Setup window closed. The displayed channel status comes from the latest saved verification; closing does not confirm activation."
+        : "Connection submitted for validation.");
       await load();
     } catch { setError("We couldn't complete the connection session."); }
     finally { setCompleting(false); }
@@ -474,6 +518,10 @@ export function ConnectionCenterPage() {
 
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
 
+                {canConnect && channel.provider === "BOOKING_COM" && !isBookingComConnectionExisting(channel) && (
+                  <BookingComConnectionGuide simulated={simulated} />
+                )}
+
                 {airbnbDiscoveryEligible && airbnbMappedPropertyId !== id && (
                   <AirbnbListingsPanel
                     status={airbnbListingStatus}
@@ -491,7 +539,7 @@ export function ConnectionCenterPage() {
                 {canConnect ? (
                   <div style={{ marginTop: "auto", paddingTop: 2 }}>
                     <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
-                      {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
+                      {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {isBookingComConnectionExisting(channel) ? "Manage Booking.com" : channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
                     </button>
                   </div>
                 ) : channel.availability === "ASSISTED_BETA" ? (
@@ -503,7 +551,7 @@ export function ConnectionCenterPage() {
         </section>
       )}
 
-      {session && <ConnectionFrame providerName={providerName} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
+      {session && <ConnectionFrame providerName={providerName} bookingCom={session.provider === "BOOKING_COM"} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
     </main>
   );
 }
