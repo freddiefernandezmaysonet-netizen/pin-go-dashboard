@@ -88,10 +88,15 @@ export function AppShell() {
   const location = useLocation();
   const { user } = useAuth();
   const { brand, isCustomBrand } = useBrand();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [canReviewOrganizationBrand, setCanReviewOrganizationBrand] =
     useState(false);
   const logoUrl =
     brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (user?.role !== "ORG_ADMIN" && user?.role !== "ADMIN") {
@@ -163,14 +168,122 @@ const nav =
 
   return (
     <div
+      className="pin-go-app-shell"
       style={{
         minHeight: "100vh",
         background: "#f8fafc",
         display: "grid",
-        gridTemplateColumns: "240px 1fr",
+        gridTemplateColumns: "240px minmax(0, 1fr)",
+        overflowX: "hidden",
       }}
     >
+      <style>{`
+        .pin-go-app-shell__mobile-menu,
+        .pin-go-app-shell__mobile-close,
+        .pin-go-app-shell__backdrop {
+          display: none;
+        }
+
+        @media (max-width: 720px) {
+          .pin-go-app-shell {
+            grid-template-columns: minmax(0, 1fr) !important;
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .pin-go-app-shell__sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: min(320px, 86vw);
+            max-width: 86vw;
+            height: 100dvh;
+            box-sizing: border-box;
+            overflow-y: auto;
+            z-index: 50;
+            transform: translateX(-105%);
+            transition: transform 180ms ease;
+            box-shadow: 12px 0 32px rgba(15, 23, 42, 0.16);
+          }
+
+          .pin-go-app-shell__sidebar.is-open {
+            transform: translateX(0);
+          }
+
+          .pin-go-app-shell__mobile-menu,
+          .pin-go-app-shell__mobile-close {
+            display: inline-grid !important;
+            place-items: center;
+            flex: 0 0 auto;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #111827;
+            cursor: pointer;
+            font-size: 22px;
+            line-height: 1;
+          }
+
+          .pin-go-app-shell__mobile-close {
+            margin-left: auto;
+          }
+
+          .pin-go-app-shell__backdrop {
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+            border: 0;
+            padding: 0;
+            background: rgba(15, 23, 42, 0.42);
+          }
+
+          .pin-go-app-shell__content {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+          }
+
+          .pin-go-app-shell__header {
+            min-height: 72px;
+            height: auto !important;
+            padding: 10px 16px !important;
+            gap: 12px;
+            box-sizing: border-box;
+          }
+
+          .pin-go-app-shell__title-row {
+            min-width: 0;
+          }
+
+          .pin-go-app-shell__main {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            padding: 16px !important;
+          }
+
+          .pin-go-app-shell__org-name {
+            display: none;
+          }
+        }
+      `}</style>
+
+      {mobileNavOpen ? (
+        <button
+          type="button"
+          className="pin-go-app-shell__backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      ) : null}
+
       <aside
+        id="pin-go-primary-navigation"
+        className={`pin-go-app-shell__sidebar${mobileNavOpen ? " is-open" : ""}`}
         style={{
           borderRight: "1px solid #e5e7eb",
           background: "#ffffff",
@@ -212,6 +325,15 @@ const nav =
           >
             {brand.displayName}
           </div>
+
+          <button
+            type="button"
+            className="pin-go-app-shell__mobile-close"
+            aria-label="Close navigation"
+            onClick={() => setMobileNavOpen(false)}
+          >
+            ×
+          </button>
         </div>
 
         <nav style={{ display: "grid", gap: 8 }}>
@@ -270,8 +392,12 @@ const nav =
         </div>
       </aside>
 
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div
+        className="pin-go-app-shell__content"
+        style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+      >
         <header
+          className="pin-go-app-shell__header"
           style={{
             height: 72,
             borderBottom: "1px solid #e5e7eb",
@@ -286,26 +412,42 @@ const nav =
             zIndex: 10,
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: 22,
-                fontWeight: 800,
-                color: "#111827",
-                lineHeight: 1.1,
-              }}
+          <div
+            className="pin-go-app-shell__title-row"
+            style={{ display: "flex", alignItems: "center", gap: 10 }}
+          >
+            <button
+              type="button"
+              className="pin-go-app-shell__mobile-menu"
+              aria-label="Open navigation"
+              aria-controls="pin-go-primary-navigation"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen(true)}
             >
-              {pageTitle}
-            </div>
+              ☰
+            </button>
 
-            <div
-              style={{
-                fontSize: 13,
-                color: "#6b7280",
-                marginTop: 4,
-              }}
-            >
-              {brand.displayName} Dashboard
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: "#111827",
+                  lineHeight: 1.1,
+                }}
+              >
+                {pageTitle}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#6b7280",
+                  marginTop: 4,
+                }}
+              >
+                {brand.displayName} Dashboard
+              </div>
             </div>
           </div>
 
@@ -314,9 +456,10 @@ const nav =
               display: "flex",
               alignItems: "center",
               gap: 12,
+              flex: "0 0 auto",
             }}
           >
-            <div style={{ textAlign: "right" }}>
+            <div className="pin-go-app-shell__org-name" style={{ textAlign: "right" }}>
               <div
                 style={{
                   fontSize: 14,
@@ -347,7 +490,7 @@ const nav =
           </div>
         </header>
 
-        <main style={{ padding: 24 }}>
+        <main className="pin-go-app-shell__main" style={{ padding: 24 }}>
           <Outlet />
         </main>
       </div>
