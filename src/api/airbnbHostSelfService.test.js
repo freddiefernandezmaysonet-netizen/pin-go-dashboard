@@ -175,3 +175,87 @@ test("failure DTO cannot infer a property, channel or authorization", async () =
     await assert.rejects(() => invalid.verifyAirbnbHostCallback(callbackArgs), (e) => e.message === "INVALID_AIRBNB_CALLBACK_VERIFICATION_RESPONSE");
   }
 });
+
+
+const activationState = { status: "READY", reason: null, channelId: "channel-1", mappingId: "mapping-1", listingId: "551126434553599406" };
+test("activation inspection is GET-only and preserves the confirmed identity", async () => {
+  const { api, calls } = client({ ok: true, activation: activationState });
+  const result = await api.inspectAirbnbActivation("property/1");
+  assert.equal(result.channelId, activationState.channelId);
+  assert.equal(result.mappingId, activationState.mappingId);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.method, "GET");
+  assert.equal(calls[0].options.credentials, "include");
+  assert.match(calls[0].url, /property%2F1\/channels\/AIRBNB\/activation$/);
+});
+
+test("activation POST carries explicit host confirmation and exact inspected mapping", async () => {
+  const { api, calls } = client({ ok: true, activation: { outcome: "ACTIVATED", channelActive: true, readinessChecked: false } });
+  const result = await api.activateAirbnbForHost("property/1", activationState);
+  assert.equal(result.channelActive, true);
+  assert.equal(result.readinessChecked, false);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /property%2F1\/channels\/AIRBNB\/activate$/);
+  assert.equal(calls[0].options.method, "POST");
+  assert.deepEqual(JSON.parse(calls[0].options.body), {
+    channelId: activationState.channelId, mappingId: activationState.mappingId, listingId: activationState.listingId,
+    confirmation: "CONFIRM_AIRBNB_ACTIVATION",
+  });
+});
+
+test("non-ready activation state cannot issue a POST", async () => {
+  for (const status of ["ACTIVE", "NOT_READY", "CHECK_REQUIRED", "unknown"]) {
+    const { api, calls } = client({});
+    await assert.rejects(() => api.activateAirbnbForHost("property-1", { ...activationState, status }));
+    assert.equal(calls.length, 0);
+  }
+});
+
+test("malformed activation success is rejected without retrying", async () => {
+  for (const activation of [null, {}, { outcome: "ACTIVATED", channelActive: false, readinessChecked: true }, { outcome: "ACTIVATED", channelActive: true }]) {
+    const { api, calls } = client({ ok: true, activation });
+    await assert.rejects(() => api.activateAirbnbForHost("property-1", activationState), /INVALID_AIRBNB_ACTIVATION_RESPONSE/);
+    assert.equal(calls.length, 1);
+  }
+});
+
+test("activation verification POST carries the inspected identity and cannot repeat activation", async () => {
+  const checkRequired = { ...activationState, status: "CHECK_REQUIRED" };
+  const { api, calls } = client({ ok: true, activation: { outcome: "VERIFIED", channelActive: true, readinessChecked: true } });
+  const result = await api.verifyAirbnbActivationForHost("property/1", checkRequired);
+  assert.equal(result.channelActive, true);
+  assert.equal(result.readinessChecked, true);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /property%2F1\/channels\/AIRBNB\/activation\/verify$/);
+  assert.equal(calls[0].options.method, "POST");
+  assert.match(calls[0].options.headers["Idempotency-Key"], /^ota\.airbnb\.activation-verify:/);
+  assert.deepEqual(JSON.parse(calls[0].options.body), {
+    channelId: checkRequired.channelId, mappingId: checkRequired.mappingId, listingId: checkRequired.listingId,
+    confirmation: "VERIFY_AIRBNB_ACTIVATION",
+  });
+  assert.doesNotMatch(calls[0].url, /\/channels\/AIRBNB\/activate$/);
+});
+
+test("activation verification is available only after CHECK_REQUIRED inspection", async () => {
+  for (const status of ["READY", "ACTIVE", "NOT_READY", "unknown"]) {
+    const { api, calls } = client({});
+    await assert.rejects(() => api.verifyAirbnbActivationForHost("property-1", { ...activationState, status }));
+    assert.equal(calls.length, 0);
+  }
+});
+
+test("malformed activation verification is rejected without another request", async () => {
+  const checkRequired = { ...activationState, status: "CHECK_REQUIRED" };
+  for (const activation of [null, {}, { outcome: "ACTIVATED", channelActive: true, readinessChecked: true }, { outcome: "VERIFIED", channelActive: false, readinessChecked: true }]) {
+    const { api, calls } = client({ ok: true, activation });
+    await assert.rejects(() => api.verifyAirbnbActivationForHost("property-1", checkRequired), /INVALID_AIRBNB_ACTIVATION_VERIFICATION_RESPONSE/);
+    assert.equal(calls.length, 1);
+  }
+});
+
+test("activation inspector rejects incomplete identities and unknown status", async () => {
+  for (const changed of [{ mappingId: null }, { listingId: "" }, { channelId: "" }, { status: "UNKNOWN" }]) {
+    const { api } = client({ ok: true, activation: { ...activationState, ...changed } });
+    await assert.rejects(() => api.inspectAirbnbActivation("property-1"), /INVALID_AIRBNB_ACTIVATION_RESPONSE/);
+  }
+});

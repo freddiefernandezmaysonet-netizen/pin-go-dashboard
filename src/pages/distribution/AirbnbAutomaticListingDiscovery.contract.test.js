@@ -14,6 +14,10 @@ const centerPage = readFileSync(
   new URL("./ConnectionCenterPage.tsx", import.meta.url),
   "utf8"
 );
+const activationPanel = readFileSync(
+  new URL("./AirbnbActivationPanel.tsx", import.meta.url),
+  "utf8"
+);
 
 function between(source, start, end) {
   const from = source.indexOf(start);
@@ -172,12 +176,17 @@ test("mapping is explicit host confirmation for both automatic and review candid
   assert.doesNotMatch(panel, /useEffect\([^]*onConfirm/);
 });
 
-test("mapping UI stops after mapping and never claims activation or reservation import", () => {
+test("mapping remains separate from the dedicated host activation surface", () => {
   const panel = between(centerPage, "function AirbnbListingsPanel", "function ConnectionFrame");
   assert.match(panel, /Mapping submitted\. Airbnb is not active yet\./);
   assert.match(panel, /Activation and reservation import have not been performed\./);
   assert.match(panel, /No duplicate mapping was created\./);
   assert.match(centerPage, /confirmAirbnbHostMapping\(\{ propertyId: id, listingId \}\)/);
-  assert.doesNotMatch(api + callbackPage + centerPage, /\/activate|load_future_reservations|Activate channel|Load reservations/);
+  assert.doesNotMatch(panel + callbackPage, /\/activate|activateAirbnbForHost|verifyAirbnbActivationForHost|load_future_reservations|Activate channel|Load reservations/);
+  assert.match(activationPanel, /activateAirbnbForHost/);
+  assert.match(activationPanel, /verifyAirbnbActivationForHost/);
+  assert.match(api, /channels\/AIRBNB\/activate/);
+  assert.match(api, /channels\/AIRBNB\/activation\/verify/);
+  assert.match(api, /VERIFY_AIRBNB_ACTIVATION/);
   assert.doesNotMatch(api + centerPage, /app\.channex\.io|staging\.channex\.io|user-api-key/);
 });

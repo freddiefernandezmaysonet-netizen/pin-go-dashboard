@@ -1,4 +1,4 @@
-name: Airbnb Property Matching + Host Mapping Certification
+name: Airbnb Property Matching + Host Activation Certification
 
 on:
   push:
@@ -8,7 +8,11 @@ on:
     branches:
       - main
     paths:
+      - 'src/api/airbnbHostSelfService.test.js'
       - 'src/api/airbnbHostSelfService.ts'
+      - 'src/api/distribution.channel-linked.contract.test.js'
+      - 'src/pages/distribution/AirbnbActivationPanel.test.js'
+      - 'src/pages/distribution/AirbnbActivationPanel.tsx'
       - 'src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js'
       - 'src/pages/distribution/ConnectionCenterPage.tsx'
       - '.github/workflows/airbnb-automatic-listing-discovery.yml'
@@ -37,8 +41,13 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Run Airbnb matching and host-confirmation contracts
-        run: node --test src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
+      - name: Run Airbnb mapping and host-activation contracts
+        run: |
+          node --test \
+            src/api/airbnbHostSelfService.test.js \
+            src/api/distribution.channel-linked.contract.test.js \
+            src/pages/distribution/AirbnbActivationPanel.test.js \
+            src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
 
       - name: Build dashboard without deployment
         run: npm run build
@@ -50,7 +59,11 @@ jobs:
           git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
           cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
           .github/workflows/airbnb-automatic-listing-discovery.yml
+          src/api/airbnbHostSelfService.test.js
           src/api/airbnbHostSelfService.ts
+          src/api/distribution.channel-linked.contract.test.js
+          src/pages/distribution/AirbnbActivationPanel.test.js
+          src/pages/distribution/AirbnbActivationPanel.tsx
           src/pages/distribution/AirbnbAutomaticListingDiscovery.contract.test.js
           src/pages/distribution/ConnectionCenterPage.tsx
           EOF
@@ -76,18 +89,33 @@ jobs:
           ! grep -E 'listings\.map\(' src/pages/distribution/ConnectionCenterPage.tsx
           ! grep -E 'setInterval|requestAnimationFrame' src/pages/distribution/ConnectionCenterPage.tsx
 
-      - name: Prove mapping requires explicit host confirmation and stops before activation
+      - name: Prove mapping and activation remain separate explicit host actions
         run: |
+          sed -n '/function AirbnbListingsPanel/,/function ConnectionFrame/p' \
+            src/pages/distribution/ConnectionCenterPage.tsx > "$RUNNER_TEMP/airbnb-mapping-panel.txt"
           grep -F 'Yes, this is my Airbnb property' src/pages/distribution/ConnectionCenterPage.tsx
           grep -F 'CONFIRM_AIRBNB_PROPERTY_MAPPING' src/api/airbnbHostSelfService.ts
           grep -F '/channels/AIRBNB/mapping' src/api/airbnbHostSelfService.ts
           grep -F 'confirmAirbnbHostMapping' src/pages/distribution/ConnectionCenterPage.tsx
-          ! grep -E '/activate|load_future_reservations|Activate channel|Load reservations' \
+          ! grep -E '/activate|activateAirbnbForHost|verifyAirbnbActivationForHost|Activate Airbnb|load_future_reservations' \
+            "$RUNNER_TEMP/airbnb-mapping-panel.txt"
+          grep -F 'Activate Airbnb' src/pages/distribution/AirbnbActivationPanel.tsx
+          grep -F 'activateAirbnbForHost' src/pages/distribution/AirbnbActivationPanel.tsx
+          grep -F '/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/activate' \
+            src/api/airbnbHostSelfService.ts
+          grep -F 'CONFIRM_AIRBNB_ACTIVATION' src/api/airbnbHostSelfService.ts
+          grep -F 'verifyAirbnbActivationForHost' src/pages/distribution/AirbnbActivationPanel.tsx
+          grep -F '/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/AIRBNB/activation/verify' \
+            src/api/airbnbHostSelfService.ts
+          grep -F 'VERIFY_AIRBNB_ACTIVATION' src/api/airbnbHostSelfService.ts
+          ! grep -E 'load_future_reservations|Load reservations' \
             src/api/airbnbHostSelfService.ts \
-            src/pages/distribution/ConnectionCenterPage.tsx
+            src/pages/distribution/ConnectionCenterPage.tsx \
+            src/pages/distribution/AirbnbActivationPanel.tsx
 
       - name: Prove no direct Channex access was introduced
         run: |
           ! grep -E 'app\.channex\.io|staging\.channex\.io|user-api-key' \
             src/api/airbnbHostSelfService.ts \
-            src/pages/distribution/ConnectionCenterPage.tsx
+            src/pages/distribution/ConnectionCenterPage.tsx \
+            src/pages/distribution/AirbnbActivationPanel.tsx

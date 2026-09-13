@@ -21,6 +21,7 @@ import {
   type DistributionProvider,
 } from "../../api/distribution";
 import { useAuth } from "../../auth/AuthProvider";
+import AirbnbActivationPanel from "./AirbnbActivationPanel";
 
 const ADMIN_ROLES = new Set(["ORG_ADMIN", "ADMIN", "PLATFORM_ADMIN"]);
 const SELF_SERVICE = new Set<DistributionProvider>(["AIRBNB", "BOOKING_COM"]);
@@ -88,11 +89,19 @@ function statusBadgeStyle(tone: "neutral" | "progress" | "success" | "warning") 
 }
 
 function providerPresentation(channel: DistributionConnectionCenter["channels"][number], airbnbSetupLinked: boolean) {
-  if (airbnbSetupLinked) {
+  if (channel.provider === "AIRBNB" && channel.channelLinked && channel.status !== "ACTIVE") {
+    const needsAttention = channel.status === "DEGRADED" || channel.status === "FAILED";
+    const description = channel.status === "ACTIVATION_PENDING"
+      ? "Airbnb is linked to this property. Pin&Go is verifying activation and commercial readiness."
+      : channel.status === "READINESS_CHECK"
+        ? "Airbnb is linked to this property. Pin&Go is checking the remaining setup requirements."
+        : needsAttention
+          ? "Airbnb remains linked to this property, but the connection needs attention before it can become active."
+          : "Airbnb is linked to this property. Additional setup is required before the channel becomes active.";
     return {
-      status: "Setup in progress",
-      tone: "progress" as const,
-      description: "Airbnb is linked to this property. Additional setup is required before the channel becomes active.",
+      status: airbnbSetupLinked ? "Setup in progress" : statusLabel(channel.status),
+      tone: needsAttention ? "warning" as const : "progress" as const,
+      description,
     };
   }
   if (channel.status === "ACTIVE") {
@@ -312,6 +321,7 @@ export function ConnectionCenterPage() {
   const [airbnbDiscovery, setAirbnbDiscovery] = useState<AirbnbHostListingDiscovery | null>(null);
   const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
   const [airbnbMappingStatus, setAirbnbMappingStatus] = useState<AirbnbMappingStatus>("IDLE");
+  const [airbnbMappedPropertyId, setAirbnbMappedPropertyId] = useState<string | null>(null);
   const listingDiscoveryStartedFor = useRef<string | null>(null);
 
   const load = useCallback(async () => {
@@ -464,13 +474,18 @@ export function ConnectionCenterPage() {
 
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
 
-                {airbnbDiscoveryEligible && (
+                {airbnbDiscoveryEligible && airbnbMappedPropertyId !== id && (
                   <AirbnbListingsPanel
                     status={airbnbListingStatus}
                     discovery={airbnbDiscovery}
                     mappingStatus={airbnbMappingStatus}
                     onConfirm={(listingId) => void confirmAirbnbCandidate(listingId)}
                   />
+                )}
+
+                {airbnbChannelLinked && !simulated && (
+                  <AirbnbActivationPanel key={id} propertyId={id} mappingRevision={airbnbMappingStatus}
+                    onMapped={setAirbnbMappedPropertyId} onActivated={load} />
                 )}
 
                 {canConnect ? (
