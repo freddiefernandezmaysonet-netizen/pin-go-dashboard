@@ -182,7 +182,7 @@ function reviewReasonMessages(reasons: readonly string[]): string[] {
   else if (!detailsCountryConfirmed && reasons.includes("COUNTRY_UNKNOWN")) add("Country information could not be confirmed.");
   if (reasons.includes("NAME_PARTIAL") || reasons.includes("NAME_WEAK")) add("Property names are not similar enough for an automatic match.");
 
-  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) add("Airbnb uses a different city or locality name for this property.");
+  if (messages.length === 0 && reasons.includes("CITY_MISMATCH")) add("City or locality information differs between Pin&Go and Airbnb.");
   else if (messages.length === 0 && reasons.includes("CITY_UNKNOWN")) add("City or locality information could not be confirmed.");
 
   return messages;
@@ -357,8 +357,8 @@ export function ConnectionCenterPage() {
   const [frameReady, setFrameReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
   const [airbnbDiscovery, setAirbnbDiscovery] = useState<AirbnbHostListingDiscovery | null>(null);
+  const [airbnbListingStatus, setAirbnbListingStatus] = useState<ListingDiscoveryStatus>("IDLE");
   const [airbnbMappingStatus, setAirbnbMappingStatus] = useState<AirbnbMappingStatus>("IDLE");
   const [airbnbMappedPropertyId, setAirbnbMappedPropertyId] = useState<string | null>(null);
   const listingDiscoveryStartedFor = useRef<string | null>(null);
@@ -441,7 +441,7 @@ export function ConnectionCenterPage() {
           return;
         }
         if (caught.code.includes("CHANNEL_STATE_INVALID") || caught.code.includes("CONTEXT_NOT_ELIGIBLE")) {
-          setError("The Airbnb connection changed before confirmation. Refresh this page before continuing. No changes were made by this attempt.");
+          setError("The Airbnb connection changed before confirmation. Refresh this page before continuing. No mapping was created by this attempt.");
           return;
         }
         if (caught.code.includes("RECONCILIATION_REQUIRED") || caught.code.includes("RESPONSE_INVALID") || caught.code.includes("RESPONSE_TOO_LARGE")) {
