@@ -1,0 +1,124 @@
+diff --git a/src/api/adminBranding.ts b/src/api/adminBranding.ts
+--- a/src/api/adminBranding.ts
++++ b/src/api/adminBranding.ts
+@@ -455,7 +455,7 @@
+       });
+     }
+ 
+-    return { name, slug, propertyCount, brandStatus };
++    return { name, slug, propertyCount, brandStatus: brandStatus as BrandProfileStatus | null };
+   });
+ }
+ 
+diff --git a/src/api/airbnbHostSelfService.ts b/src/api/airbnbHostSelfService.ts
+--- a/src/api/airbnbHostSelfService.ts
++++ b/src/api/airbnbHostSelfService.ts
+@@ -4,8 +4,13 @@
+   "CONFIRM_AIRBNB_PROPERTY_MAPPING";
+ 
+ export class AirbnbHostSelfServiceApiError extends Error {
+-  constructor(readonly code: string, readonly status: number) {
++  readonly code: string;
++  readonly status: number;
++
++  constructor(code: string, status: number) {
+     super(code);
++    this.code = code;
++    this.status = status;
+     this.name = "AirbnbHostSelfServiceApiError";
+   }
+ }
+diff --git a/src/api/distribution.ts b/src/api/distribution.ts
+--- a/src/api/distribution.ts
++++ b/src/api/distribution.ts
+@@ -93,8 +93,13 @@
+ };
+ 
+ export class DistributionApiError extends Error {
+-  constructor(readonly code: string, readonly status: number) {
++  readonly code: string;
++  readonly status: number;
++
++  constructor(code: string, status: number) {
+     super(code);
++    this.code = code;
++    this.status = status;
+     this.name = "DistributionApiError";
+   }
+ }
+diff --git a/src/api/distributionFullSync.ts b/src/api/distributionFullSync.ts
+--- a/src/api/distributionFullSync.ts
++++ b/src/api/distributionFullSync.ts
+@@ -14,11 +14,13 @@
+ };
+ 
+ export class DistributionFullSyncApiError extends Error {
+-  constructor(
+-    readonly status: number,
+-    readonly providerMessage: string
+-  ) {
++  readonly status: number;
++  readonly providerMessage: string;
++
++  constructor(status: number, providerMessage: string) {
+     super(providerMessage);
++    this.status = status;
++    this.providerMessage = providerMessage;
+     this.name = "DistributionFullSyncApiError";
+   }
+ }
+diff --git a/src/api/properties.ts b/src/api/properties.ts
+--- a/src/api/properties.ts
++++ b/src/api/properties.ts
+@@ -21,6 +21,8 @@
+   country?: string;
+   postalCode?: string;
+   timezone?: string;
++  latitude?: number | null;
++  longitude?: number | null;
+   checkInTime: "15:00" | "16:00";
+   cleaningStartOffsetMinutes?: number;
+ };
+diff --git a/src/auth/RequireGuest.tsx b/src/auth/RequireGuest.tsx
+--- a/src/auth/RequireGuest.tsx
++++ b/src/auth/RequireGuest.tsx
+@@ -1,7 +1,8 @@
++import type { ReactElement } from "react";
+ import { Navigate } from "react-router-dom";
+ import { useAuth } from "./AuthProvider";
+ 
+-export function RequireGuest({ children }: { children: JSX.Element }) {
++export function RequireGuest({ children }: { children: ReactElement }) {
+   const { user, loading } = useAuth();
+ 
+   if (loading) {
+diff --git a/src/pages/dashboard/locks/TtlockConnectPage.tsx b/src/pages/dashboard/locks/TtlockConnectPage.tsx
+--- a/src/pages/dashboard/locks/TtlockConnectPage.tsx
++++ b/src/pages/dashboard/locks/TtlockConnectPage.tsx
+@@ -1,4 +1,4 @@
+-import { FormEvent, useState } from "react";
++import { type FormEvent, useState } from "react";
+ import { useNavigate } from "react-router-dom";
+ 
+ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+diff --git a/src/pages/integrations/TtlockConnectPage.tsx b/src/pages/integrations/TtlockConnectPage.tsx
+--- a/src/pages/integrations/TtlockConnectPage.tsx
++++ b/src/pages/integrations/TtlockConnectPage.tsx
+@@ -1,4 +1,4 @@
+-import { FormEvent, useState } from "react";
++import { type FormEvent, useState } from "react";
+ import { useNavigate } from "react-router-dom";
+ import { useAuth } from "../../auth/AuthProvider";
+ 
+diff --git a/src/pages/property-detail/PropertyDetailPage.tsx b/src/pages/property-detail/PropertyDetailPage.tsx
+--- a/src/pages/property-detail/PropertyDetailPage.tsx
++++ b/src/pages/property-detail/PropertyDetailPage.tsx
+@@ -237,7 +237,7 @@
+   let background = "#f3f4f6";
+   let color = "#4b5563";
+   let border = "1px solid #e5e7eb";
+-  let label = status;
++  let label: string = status;
+ 
+   if (status === "UPCOMING") {
+     background = "#eff6ff";
