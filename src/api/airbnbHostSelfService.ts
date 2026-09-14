@@ -4,8 +4,13 @@ export const AIRBNB_HOST_MAPPING_CONFIRMATION =
   "CONFIRM_AIRBNB_PROPERTY_MAPPING";
 
 export class AirbnbHostSelfServiceApiError extends Error {
-  constructor(readonly code: string, readonly status: number) {
+  readonly code: string;
+  readonly status: number;
+
+  constructor(code: string, status: number) {
     super(code);
+    this.code = code;
+    this.status = status;
     this.name = "AirbnbHostSelfServiceApiError";
   }
 }

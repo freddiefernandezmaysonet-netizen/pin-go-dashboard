@@ -1,0 +1,123 @@
+name: Booking.com Integrated Closure
+on:
+  push:
+    branches:
+      - agent/booking-com-integrated-closure
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: booking-com-integrated-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
+  BROWSER_BASELINE_SHA: 9c78a70502d889f5d504efeb722701c93f3efeb5
+  VITE_API_BASE: http://127.0.0.1:4173
+jobs:
+  integrated-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Verify exact integrated source and responsive scope
+        run: |
+          mkdir -p evidence
+          test "$GITHUB_REF_NAME" = agent/booking-com-integrated-closure
+          python3 .github/scripts/verify-booking-com-integrated-scope.py | tee evidence/source-provenance.txt
+          git diff --name-only "$BASELINE_SHA" HEAD > evidence/changed-files.txt
+          git diff "$BASELINE_SHA" HEAD > evidence/integrated.patch
+          git rev-parse HEAD > evidence/candidate-sha.txt
+      - name: Install unchanged locked dependencies without lifecycle scripts
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee evidence/install.txt
+          node --version > evidence/versions.txt
+          ./node_modules/.bin/tsc --version >> evidence/versions.txt
+      - name: Full application and referenced-project TypeScript validation
+        run: |
+          ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false 2>&1 | tee evidence/types-app.txt
+          ./node_modules/.bin/tsc -b --pretty false 2>&1 | tee evidence/types-build.txt
+      - name: Run unchanged connection and parity tests plus responsive guards
+        run: |
+          node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests.txt
+          node --test .github/scripts/dashboard-typescript-zero.test.mjs 2>&1 | tee evidence/runtime-parity.txt
+          node --test .github/scripts/booking-com-responsive.contract.test.mjs 2>&1 | tee evidence/responsive-tests.txt
+          python3 <<'PY'
+          import json,re
+          from pathlib import Path
+          summaries={}
+          for name,expected in [('tests.txt',168),('runtime-parity.txt',31),('responsive-tests.txt',6)]:
+              text=Path('evidence',name).read_text()
+              summary={k:int(re.search(r'^# '+k+r' (\d+)$',text,re.M).group(1)) for k in ['tests','pass','fail','cancelled','skipped','todo']}
+              assert summary['tests']==summary['pass']==expected,summary
+              assert all(summary[k]==0 for k in ['fail','cancelled','skipped','todo']),summary
+              summaries[name]=summary
+          Path('evidence/test-summary.json').write_text(json.dumps(summaries,indent=2))
+          PY
+      - name: Build the complete integrated dashboard
+        run: npm run build 2>&1 | tee evidence/build.txt
+      - name: Ensure validation did not change tracked files
+        if: always()
+        run: git diff --exit-code HEAD -- .
+      - name: Upload exact-commit core evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: booking-com-integrated-core
+          path: evidence/
+          retention-days: 14
+          if-no-files-found: error
+  browser-acceptance:
+    needs: integrated-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build candidate and frozen pre-responsive baseline
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/candidate-sha.txt
+          npm run build 2>&1 | tee evidence/build-browser.txt
+          git worktree add --detach "$RUNNER_TEMP/booking-baseline" "$BROWSER_BASELINE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/booking-baseline/node_modules"
+          (cd "$RUNNER_TEMP/booking-baseline" && npm run build) 2>&1 | tee evidence/build-baseline.txt
+      - name: Prepare browser tools outside project dependencies
+        run: |
+          npm install --prefix "$RUNNER_TEMP/booking-browser-tools" --no-audit --no-fund agent-browser@0.27.0
+          python3 -m venv "$RUNNER_TEMP/booking-browser-python"
+          "$RUNNER_TEMP/booking-browser-python/bin/pip" install playwright==1.57.0
+          npm ls --prefix "$RUNNER_TEMP/booking-browser-tools" --depth=0 > evidence/browser-versions.txt
+      - name: Original browser acceptance plus unclipped layouts and navigation
+        run: |
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          export AGENT_BROWSER_BIN="$RUNNER_TEMP/booking-browser-tools/node_modules/.bin/agent-browser"
+          export BASELINE_DIR="$RUNNER_TEMP/booking-baseline"
+          "$RUNNER_TEMP/booking-browser-python/bin/python" .github/scripts/booking-com-browser-check.py 2>&1 | tee evidence/browser-run.txt
+          "$RUNNER_TEMP/booking-browser-python/bin/python" .github/scripts/booking-com-responsive-browser-check.py 2>&1 | tee evidence/responsive-browser-run.txt
+      - name: Ensure tracked source stayed unchanged
+        if: always()
+        run: git diff --exit-code HEAD -- .
+      - name: Upload browser evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: booking-com-integrated-browser
+          path: evidence/
+          retention-days: 14
+          if-no-files-found: error

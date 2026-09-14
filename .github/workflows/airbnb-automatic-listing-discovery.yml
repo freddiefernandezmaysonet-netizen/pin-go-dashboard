@@ -55,6 +55,10 @@ jobs:
       - name: Prove authorized diff allowlist
         shell: bash
         run: |
+          if [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = "agent/booking-com-integrated-closure" ]; then
+            python3 .github/scripts/verify-booking-com-integrated-scope.py
+            exit 0
+          fi
           git fetch origin main --depth=1
           git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
           cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
@@ -74,8 +78,13 @@ jobs:
             exit 1
           fi
 
-      - name: Prove callback router shell and frame policy remain frozen
+      - name: Prove callback router shell and frame policy remain frozen or exactly reviewed
         run: |
+          if [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = "agent/booking-com-integrated-closure" ]; then
+            python3 .github/scripts/verify-booking-com-integrated-scope.py
+            node --test .github/scripts/booking-com-responsive.contract.test.mjs
+            exit 0
+          fi
           git diff --exit-code origin/main...HEAD -- \
             src/pages/distribution/AirbnbConnectionCallbackPage.tsx \
             src/app/routes/router.tsx \

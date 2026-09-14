@@ -237,7 +237,7 @@ function operationalBadge(status: ReservationRow["operationalStatus"]) {
   let background = "#f3f4f6";
   let color = "#4b5563";
   let border = "1px solid #e5e7eb";
-  let label = status;
+  let label: string = status;
 
   if (status === "UPCOMING") {
     background = "#eff6ff";

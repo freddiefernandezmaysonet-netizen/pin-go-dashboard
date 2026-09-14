@@ -93,8 +93,13 @@ export type DistributionConnectionSession = {
 };
 
 export class DistributionApiError extends Error {
-  constructor(readonly code: string, readonly status: number) {
+  readonly code: string;
+  readonly status: number;
+
+  constructor(code: string, status: number) {
     super(code);
+    this.code = code;
+    this.status = status;
     this.name = "DistributionApiError";
   }
 }
