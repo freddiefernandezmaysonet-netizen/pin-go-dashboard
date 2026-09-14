@@ -27,9 +27,9 @@ GROUPS = {
     ],
 }
 REVIEWED = {
-    "src/app/layout/AppShell.tsx": "8106cffe9f3d4f8f297153bbec21a9385ab6e4d4",
+    "src/app/layout/AppShell.tsx": "ccd21438114f88f96f0682d9e13e8e6cd5150f38",
     ".github/scripts/booking-com-responsive.contract.test.mjs": "9b501017abaa5bb81dcffd38cc7e0dbd8890d2c0",
-    ".github/scripts/booking-com-responsive-browser-check.py": "32987d77c552f99af707138ac841a628eb9efb58"
+    ".github/scripts/booking-com-responsive-browser-check.py": "1037a13234d7bda7cbdcb38bef3630fb4c4a277b"
 }
 CONTROLS = {
     "vercel.json",
