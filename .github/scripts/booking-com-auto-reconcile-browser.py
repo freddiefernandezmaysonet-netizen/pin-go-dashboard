@@ -53,14 +53,20 @@ async def intercept(route):
 async def run():
     server = ThreadingHTTPServer(("127.0.0.1", 4173), base.StaticHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    browser = None
-    page = None
+    chrome = await asyncio.create_subprocess_exec(base.CHROME, "--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-background-networking", "--no-first-run", "--disable-sync", "--remote-debugging-port=9222", f"--user-data-dir={os.environ['RUNNER_TEMP']}/booking-reconcile-browser", "about:blank", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
     try:
         async with async_playwright() as playwright:
-            browser = await playwright.chromium.launch(executable_path=base.CHROME, headless=True, args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-background-networking", "--remote-debugging-port=9222"])
-            context = await browser.new_context(service_workers="block")
+            for _ in range(80):
+                try:
+                    browser = await playwright.chromium.connect_over_cdp("http://127.0.0.1:9222")
+                    break
+                except Exception:
+                    await asyncio.sleep(0.1)
+            else:
+                raise RuntimeError("Browser startup failed")
+            context = browser.contexts[0]
             await context.route("**/*", intercept)
-            page = await context.new_page()
+            page = context.pages[0]
             page.set_default_timeout(12000)
             errors = []
             console = []
@@ -115,22 +121,25 @@ async def run():
                     await page.screenshot(path=str(OUTPUT / f"{width}-{mode}.png"), full_page=True)
                     results.append({"case": mode, "width": width, "passed": True, "posts": base.posts(), "geometry": geometry})
                     requests_by_case.append({"case": mode, "width": width, "requests": list(base.STATE["calls"])})
-            # Use agent-browser against the same isolated browser for an independent snapshot.
+            # Both clients inspect the same persistent context and the same app page.
+            assert "Booking channels" in await page.locator("body").inner_text()
             await base.agent("snapshot", "-i")
             await base.agent("screenshot", str(OUTPUT / "agent-browser-verification.png"), "--full")
             (OUTPUT / "console.json").write_text(json.dumps({"pageErrors": errors, "console": console, "note": "HTTP 409/503 errors are intentionally injected negative cases."}, indent=2))
+            await browser.close()
     except Exception as error:
         results.append({"case": "runner", "passed": False, "error": str(error)})
-        if page is not None:
-            try:
-                await page.screenshot(path=str(OUTPUT / "failure.png"), full_page=True)
-            except Exception:
-                pass
+        try:
+            await base.agent("snapshot", "-i")
+            await base.agent("screenshot", str(OUTPUT / "failure.png"), "--full")
+        except Exception:
+            pass
     finally:
         (OUTPUT / "results.json").write_text(json.dumps({"head": os.environ["GITHUB_SHA"], "results": results, "cases": requests_by_case, "liveProviderCalls": False}, indent=2))
         print(json.dumps(results, indent=2))
-        if browser:
-            await browser.close()
+        if chrome.returncode is None:
+            chrome.terminate()
+            await chrome.wait()
         server.shutdown()
     return len(results) == 10 and all(item["passed"] for item in results)
 
