@@ -1,28 +1,20 @@
 name: Booking.com Integrated Closure
-
 on:
   push:
     branches:
       - agent/booking-com-integrated-closure
-
 permissions:
   contents: read
-
 defaults:
   run:
     shell: bash
-
 concurrency:
   group: booking-com-integrated-${{ github.ref }}
   cancel-in-progress: true
-
 env:
   BASELINE_SHA: 8b3e210eefb44f02553a86a2b6fabc3a860fb9b9
-  BOOKING_SHA: 280292a27bf76713c73b14debb5f7cb50659e090
-  CLEANUP_SHA: e1fa564425ef8033d7582a1dc088e22c0fcbd5b5
-  TYPES_SHA: 1d462bf27ac1172a57d01c7101d49471d8d33448
+  BROWSER_BASELINE_SHA: 9c78a70502d889f5d504efeb722701c93f3efeb5
   VITE_API_BASE: http://127.0.0.1:4173
-
 jobs:
   integrated-core:
     runs-on: ubuntu-latest
@@ -36,46 +28,12 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - name: Verify exact source provenance, full diff scope and deployment veto
+      - name: Verify exact integrated source and responsive scope
         run: |
           mkdir -p evidence
           test "$GITHUB_REF_NAME" = agent/booking-com-integrated-closure
-          python3 <<'PY' | tee evidence/source-provenance.txt
-          import json,os,subprocess
-          from pathlib import Path
-          groups={
-            os.environ['BOOKING_SHA']:[
-              'src/pages/distribution/ConnectionCenterPage.tsx',
-              'src/pages/distribution/BookingComConnectionFlow.test.js',
-              '.github/scripts/booking-com-browser-check.py'],
-            os.environ['CLEANUP_SHA']:[
-              'src/api/distribution.contract.test.js',
-              'src/pages/distribution/AirbnbConnectionCallbackPage.test.js',
-              'src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js'],
-            os.environ['TYPES_SHA']:[
-              'src/api/adminBranding.ts', 'src/api/airbnbHostSelfService.ts',
-              'src/api/distribution.ts', 'src/api/distributionFullSync.ts',
-              'src/api/properties.ts', 'src/auth/RequireGuest.tsx',
-              'src/pages/dashboard/locks/TtlockConnectPage.tsx',
-              'src/pages/integrations/TtlockConnectPage.tsx',
-              'src/pages/property-detail/PropertyDetailPage.tsx',
-              '.github/scripts/dashboard-typescript-zero.test.mjs']}
-          expected={'vercel.json','.github/workflows/booking-com-white-label-safe.yml'}
-          for ref,paths in groups.items():
-              for path in paths:
-                  assert Path(path).read_bytes()==subprocess.check_output(['git','show',f'{ref}:{path}']),f'Unreviewed source change: {path}'
-                  expected.add(path)
-                  print(f'EXACT {ref} {path}')
-          base=os.environ['BASELINE_SHA']
-          actual=set(subprocess.check_output(['git','diff','--name-only',base,'HEAD'],text=True).splitlines())
-          assert actual==expected,{'unexpected':sorted(actual-expected),'missing':sorted(expected-actual)}
-          before=json.loads(subprocess.check_output(['git','show',f'{base}:vercel.json']))
-          before['git']['deploymentEnabled']['agent/booking-com-white-label-safe']=False
-          before['git']['deploymentEnabled']['agent/booking-com-integrated-closure']=False
-          assert json.loads(Path('vercel.json').read_text())==before,'Unexpected Vercel settings change'
-          Path('evidence/changed-files.txt').write_text('\n'.join(sorted(actual))+'\n')
-          print(f'PASS: {len(actual)} exact paths; all source files match reviewed commits; headers/rewrites unchanged')
-          PY
+          python3 .github/scripts/verify-booking-com-integrated-scope.py | tee evidence/source-provenance.txt
+          git diff --name-only "$BASELINE_SHA" HEAD > evidence/changed-files.txt
           git diff "$BASELINE_SHA" HEAD > evidence/integrated.patch
           git rev-parse HEAD > evidence/candidate-sha.txt
       - name: Install unchanged locked dependencies without lifecycle scripts
@@ -87,22 +45,22 @@ jobs:
         run: |
           ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false 2>&1 | tee evidence/types-app.txt
           ./node_modules/.bin/tsc -b --pretty false 2>&1 | tee evidence/types-build.txt
-      - name: Run all selected connection regressions and type-fix runtime parity
+      - name: Run unchanged connection and parity tests plus responsive guards
         run: |
           node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests.txt
           node --test .github/scripts/dashboard-typescript-zero.test.mjs 2>&1 | tee evidence/runtime-parity.txt
+          node --test .github/scripts/booking-com-responsive.contract.test.mjs 2>&1 | tee evidence/responsive-tests.txt
           python3 <<'PY'
           import json,re
           from pathlib import Path
           summaries={}
-          for name,expected in [('tests.txt',168),('runtime-parity.txt',31)]:
+          for name,expected in [('tests.txt',168),('runtime-parity.txt',31),('responsive-tests.txt',6)]:
               text=Path('evidence',name).read_text()
               summary={k:int(re.search(r'^# '+k+r' (\d+)$',text,re.M).group(1)) for k in ['tests','pass','fail','cancelled','skipped','todo']}
               assert summary['tests']==summary['pass']==expected,summary
               assert all(summary[k]==0 for k in ['fail','cancelled','skipped','todo']),summary
               summaries[name]=summary
           Path('evidence/test-summary.json').write_text(json.dumps(summaries,indent=2))
-          print(json.dumps(summaries,indent=2))
           PY
       - name: Build the complete integrated dashboard
         run: npm run build 2>&1 | tee evidence/build.txt
@@ -117,7 +75,6 @@ jobs:
           path: evidence/
           retention-days: 14
           if-no-files-found: error
-
   browser-acceptance:
     needs: integrated-core
     runs-on: ubuntu-latest
@@ -132,12 +89,12 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Build integrated candidate and unchanged main for browser comparison
+      - name: Build candidate and frozen pre-responsive baseline
         run: |
           mkdir -p evidence
           git rev-parse HEAD > evidence/candidate-sha.txt
           npm run build 2>&1 | tee evidence/build-browser.txt
-          git worktree add --detach "$RUNNER_TEMP/booking-baseline" "$BASELINE_SHA"
+          git worktree add --detach "$RUNNER_TEMP/booking-baseline" "$BROWSER_BASELINE_SHA"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/booking-baseline/node_modules"
           (cd "$RUNNER_TEMP/booking-baseline" && npm run build) 2>&1 | tee evidence/build-baseline.txt
       - name: Prepare browser tools outside project dependencies
@@ -146,21 +103,21 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/booking-browser-python"
           "$RUNNER_TEMP/booking-browser-python/bin/pip" install playwright==1.57.0
           npm ls --prefix "$RUNNER_TEMP/booking-browser-tools" --depth=0 > evidence/browser-versions.txt
-          "$RUNNER_TEMP/booking-browser-python/bin/pip" freeze >> evidence/browser-versions.txt
-      - name: Run compiled-dashboard browser acceptance with synthetic responses only
+      - name: Original browser acceptance plus unclipped layouts and navigation
         run: |
           export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
           export AGENT_BROWSER_BIN="$RUNNER_TEMP/booking-browser-tools/node_modules/.bin/agent-browser"
           export BASELINE_DIR="$RUNNER_TEMP/booking-baseline"
           "$RUNNER_TEMP/booking-browser-python/bin/python" .github/scripts/booking-com-browser-check.py 2>&1 | tee evidence/browser-run.txt
+          "$RUNNER_TEMP/booking-browser-python/bin/python" .github/scripts/booking-com-responsive-browser-check.py 2>&1 | tee evidence/responsive-browser-run.txt
       - name: Ensure tracked source stayed unchanged
         if: always()
         run: git diff --exit-code HEAD -- .
-      - name: Upload browser evidence including failed mobile acceptance
+      - name: Upload browser evidence including failures
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: booking-com-integrated-browser
           path: evidence/
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
