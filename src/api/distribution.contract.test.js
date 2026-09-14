@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import ts from "typescript";
 
 import "./airbnbHostSelfService.test.js";
 
@@ -13,6 +14,18 @@ const router = readFileSync(new URL("../app/routes/router.tsx", import.meta.url)
 const connectionCenterPage = readFileSync(new URL("../pages/distribution/ConnectionCenterPage.tsx", import.meta.url), "utf8");
 const callbackPage = readFileSync(new URL("../pages/distribution/AirbnbConnectionCallbackPage.tsx", import.meta.url), "utf8");
 const propertyDetail = readFileSync(new URL("../pages/property-detail/PropertyDetailPage.tsx", import.meta.url), "utf8");
+
+function pageFunction(name) {
+  const ast = ts.createSourceFile("ConnectionCenterPage.tsx", connectionCenterPage, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let found;
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === name) found = node;
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  assert.ok(found, `Missing page function ${name}`);
+  return found.getText(ast);
+}
 
 test("Connection Center client is property-scoped and credentialed", () => {
   assert.match(source, /\/api\/dashboard\/distribution\/properties\/\$\{encodeURIComponent\(propertyId\)\}/);
@@ -58,7 +71,9 @@ test("Airbnb real flow uses connection-link and top-level navigation, never the 
   assert.match(connectionCenterPage, /window\.location\.assign\(link\.authorizationUrl\)/);
   assert.doesNotMatch(connectionCenterPage, /AirbnbExternalHandoff/);
   assert.doesNotMatch(connectionCenterPage, /Ya terminé en Airbnb/);
-  assert.doesNotMatch(connectionCenterPage, /reconcileDistributionChannel/);
+  // Booking.com completion can reconcile; the unchanged Airbnb handoff cannot.
+  assert.doesNotMatch(pageFunction("connect"), /reconcileDistributionChannel/);
+  assert.doesNotMatch(callbackPage, /reconcileDistributionChannel/);
 });
 
 test("Airbnb authorization handoff remains credentialed and separate from frame policy", () => {

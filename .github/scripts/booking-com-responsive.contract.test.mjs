@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -47,8 +48,17 @@ test('organization-branding request effect is unchanged', () => {
   assert.equal(brandingEffect(shell), brandingEffect(original));
 });
 
-test('Connection Center source including all authorization handlers remains byte-identical', () => {
-  assert.equal(page, before(pagePath));
+test('reviewed completion patch preserves Connection Center layout, authorization and provider presentation', () => {
+  const originalPage = before(pagePath);
+  // The exact reviewed whole-file hash bounds the permitted completion changes;
+  // protected functions/layout are also compared directly to their previous source.
+  const bytes = Buffer.from(page);
+  assert.equal(createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'), '1fc458fd54d3c02f0907194dc31704ae3c6e0769');
+  for (const name of ['ADMIN_ROLES', 'SELF_SERVICE', 'AIRBNB_LISTING_DISCOVERY_STATUSES', 'SIMULATED_CENTER', 'SIMULATED_IFRAME_DOCUMENT', 'PAGE_STYLE', 'CARD_STYLE', 'PRIMARY_BUTTON_STYLE', 'SECONDARY_BUTTON_STYLE', 'isAirbnbListingDiscoveryEligible', 'isBookingComConnectionExisting', 'statusLabel', 'statusBadgeStyle', 'providerPresentation', 'listingMeta', 'reviewReasonMessages', 'AirbnbListingsPanel', 'BookingComConnectionGuide', 'connect', 'confirmAirbnbCandidate', 'markOpened', 'load']) {
+    assert.equal(declaration(page, name), declaration(originalPage, name), name);
+  }
+  const frame = declaration(page, 'ConnectionFrame');
+  assert.equal(frame.replace('onClick={props.onClose} disabled={props.completing} aria-label="Close connection"', 'onClick={props.onClose} aria-label="Close connection"'), declaration(originalPage, 'ConnectionFrame'));
 });
 
 test('responsive widths do not conceal overflow by clipping application content', () => {

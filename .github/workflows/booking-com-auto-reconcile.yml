@@ -1,0 +1,166 @@
+name: Booking.com completion reconciliation
+on:
+  push:
+    branches: [agent/booking-com-auto-reconcile]
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: booking-com-auto-reconcile-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  BASELINE_SHA: 6b6d23a7637237f7d6637d0a47b9f2f288bca880
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Freeze scope, original APIs and validated page
+        run: |
+          mkdir -p evidence
+          test "$GITHUB_REF_NAME" = agent/booking-com-auto-reconcile
+          git rev-parse HEAD > evidence/head.txt
+          git diff --name-only "$BASELINE_SHA" HEAD | tee evidence/changed-files.txt
+          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/pages/distribution/ConnectionCenterPage.tsx' ':(exclude)src/pages/distribution/BookingComConnectionFlow.test.js' ':(exclude)src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js' ':(exclude)src/api/distribution.contract.test.js' ':(exclude)vercel.json' ':(exclude).github/scripts/booking-com-responsive.contract.test.mjs' ':(exclude).github/scripts/booking-com-auto-reconcile-browser.py' ':(exclude).github/workflows/booking-com-auto-reconcile.yml' ':(exclude).github/workflows/airbnb-automatic-listing-discovery.yml'
+          python3 <<'PY'
+          import subprocess,json,hashlib
+          from pathlib import Path
+          p=Path('src/pages/distribution/ConnectionCenterPage.tsx'); b=p.read_bytes()
+          assert hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()=='1fc458fd54d3c02f0907194dc31704ae3c6e0769'
+          before=json.loads(subprocess.check_output(['git','show','6b6d23a7637237f7d6637d0a47b9f2f288bca880:vercel.json']))
+          before['git']['deploymentEnabled']['agent/booking-com-auto-reconcile']=False
+          assert json.loads(Path('vercel.json').read_text())==before
+          print('Exact page hash and all existing Vercel configuration preserved; only branch deploy veto added.')
+          PY
+          git diff "$BASELINE_SHA" HEAD > evidence/candidate.patch
+      - name: Locked dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --version > evidence/versions.txt
+          ./node_modules/.bin/tsc --version >> evidence/versions.txt
+      - name: Full TypeScript
+        run: |
+          ./node_modules/.bin/tsc -p tsconfig.app.json --noEmit --pretty false 2>&1 | tee evidence/types-app.txt
+          ./node_modules/.bin/tsc -b --pretty false 2>&1 | tee evidence/types-build.txt
+      - name: Connection, error, concurrency, Airbnb and unchanged runtime regressions
+        run: |
+          node --test src/api/distribution.contract.test.js src/api/distribution.channel-linked.contract.test.js src/api/airbnbHostSelfService.test.js src/pages/distribution/*.test.js 2>&1 | tee evidence/tests.txt
+          node --test .github/scripts/dashboard-typescript-zero.test.mjs 2>&1 | tee evidence/parity.txt
+          node --test .github/scripts/booking-com-responsive.contract.test.mjs 2>&1 | tee evidence/responsive.txt
+          python3 <<'PY'
+          import re,json
+          from pathlib import Path
+          result={}
+          for file in ['tests.txt','parity.txt','responsive.txt']:
+              text=Path('evidence',file).read_text()
+              summary={key:int(re.search(r'^# '+key+r' (\d+)$',text,re.M).group(1)) for key in ['tests','pass','fail','skipped','cancelled','todo']}
+              assert summary['tests']==summary['pass'] and summary['pass']>0,summary
+              assert all(summary[k]==0 for k in ['fail','skipped','cancelled','todo']),summary
+              result[file]=summary
+          Path('evidence/tests-summary.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          PY
+      - name: Full build
+        run: npm run build 2>&1 | tee evidence/build.txt
+      - name: Verify tracked source remains unchanged
+        if: always()
+        run: git diff --exit-code HEAD -- .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: booking-auto-reconcile-core
+          path: evidence/
+          retention-days: 14
+  browser:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+      - name: Browser tools isolated from project lockfile
+        run: |
+          npm install --prefix "$RUNNER_TEMP/browser-tools" --no-audit --no-fund agent-browser@0.27.0
+          python3 -m venv "$RUNNER_TEMP/browser-python"
+          "$RUNNER_TEMP/browser-python/bin/pip" install playwright==1.57.0
+      - name: Compiled desktop and mobile, only local fixtures
+        run: |
+          mkdir -p evidence
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          export AGENT_BROWSER_BIN="$RUNNER_TEMP/browser-tools/node_modules/.bin/agent-browser"
+          export BASELINE_DIR="$RUNNER_TEMP/no-live-baseline"
+          "$RUNNER_TEMP/browser-python/bin/python" .github/scripts/booking-com-auto-reconcile-browser.py 2>&1 | tee evidence/browser-log.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: booking-auto-reconcile-browser
+          path: evidence/
+          retention-days: 14
+  backend-policy-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://test:test@127.0.0.1:5432/test
+      CHANNEX_API_KEY: TEST_ONLY
+      CHANNEX_API_BASE_URL: https://staging.channex.io
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: freddiefernandezmaysonet-netizen/pin-go-backend
+          ref: e5da4e3db36f82843ac1281a27040e7f39087fcc
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Reproduce current Booking.com commercial gate with pure functions only
+        run: |
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/backend-head.txt
+          node --import tsx --input-type=module <<'JS' | tee evidence/policy-boundary.txt
+          import assert from 'node:assert/strict';
+          import {deriveChannexBookingComTransportReadiness} from './src/distribution/channex-booking-com-transport-readiness.policy.ts';
+          import {planCanonicalOtaActivation} from './src/distribution/ota-commercial-lifecycle.policy.ts';
+          const currentCommercialReadiness={paymentReadiness:'NOT_STARTED',taxReadiness:'NOT_STARTED',contentReadiness:'NOT_STARTED'};
+          const policy=deriveChannexBookingComTransportReadiness({provider:'BOOKING_COM',expectedExternalConnectionId:'test-channel',expectedExternalChannelCode:'BDC',observedChannel:{id:'test-channel',channelCode:'BDC',isActive:true},mapping:{verified:true,reason:'VERIFIED'},currentCommercialReadiness});
+          assert.equal(policy.applied,true);
+          assert.equal(policy.reason,'POLICY_APPLIED');
+          assert.deepEqual(policy.readiness,currentCommercialReadiness);
+          assert.equal(policy.metadata.otaAcceptanceVerified,false);
+          const evidence={distributionPropertyStatus:'READY',externalConnectionId:'test-channel',authorizationReadiness:'READY',mappingReadiness:'READY',distributionReadiness:'IN_PROGRESS',...policy.readiness,lastFullSyncConfirmedAt:null,fullSyncRequiredAfterAt:null};
+          const next=planCanonicalOtaActivation({current:'AUTHORIZATION_REQUIRED',evidence});
+          assert.equal(next.next,'READINESS_CHECK');
+          assert.ok(next.blockers.includes('FULL_SYNC_NOT_CONFIRMED'));
+          assert.ok(next.blockers.includes('PAYMENT_NOT_READY'));
+          assert.ok(next.blockers.includes('TAX_NOT_READY'));
+          assert.ok(next.blockers.includes('CONTENT_NOT_READY'));
+          const allTransportEvidence=planCanonicalOtaActivation({current:'AUTHORIZATION_REQUIRED',evidence:{...evidence,distributionReadiness:'READY',lastFullSyncConfirmedAt:new Date('2026-09-13T02:00:00Z'),fullSyncRequiredAfterAt:new Date('2026-09-13T01:00:00Z')}});
+          assert.equal(allTransportEvidence.next,'ACTIVATION_PENDING');
+          assert.equal(allTransportEvidence.blockers.includes('FULL_SYNC_NOT_CONFIRMED'),false);
+          console.log(JSON.stringify({backendPolicyApplied:policy.applied,reason:policy.reason,commercialReadinessPreserved:policy.readiness,otaAcceptanceVerified:policy.metadata.otaAcceptanceVerified,withoutFullSync:next,withFullSyncStillBlocked:allTransportEvidence,releaseClosure:false,note:'Pure regression fixtures: no provider, database, ARI or booking operation executed.'},null,2));
+          JS
+          git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: booking-auto-reconcile-backend-boundary
+          path: evidence/
+          retention-days: 14
