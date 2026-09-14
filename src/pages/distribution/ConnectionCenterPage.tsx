@@ -15,6 +15,7 @@ import {
   getDistributionConnectionCenter,
   issueDistributionConnectionSession,
   prepareDistributionChannel,
+  reconcileDistributionChannel,
   transitionDistributionConnectionSession,
   type DistributionConnectionCenter,
   type DistributionConnectionSession,
@@ -51,7 +52,7 @@ const CARD_STYLE = { border: "1px solid #e5e7eb", borderRadius: 18, padding: 18,
 const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #111827", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 } as const;
 const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
 
-type ListingDiscoveryStatus = "IDLE" | "LOADING" | "LOADED" | "FAILED";
+type ListingDiscoveryStatus = "IDLE" | "LOADING";
 type AirbnbMappingStatus = "IDLE" | "SUBMITTING" | "SUBMITTED" | "ALREADY_MAPPED";
 
 function isAirbnbListingDiscoveryEligible(
@@ -332,7 +333,7 @@ function ConnectionFrame(props: { providerName: string; bookingCom?: boolean; se
       <section style={{ width: "min(920px, 100%)", height: "min(720px, 90vh)", background: "white", borderRadius: 18, overflow: "hidden", display: "grid", gridTemplateRows: "auto 1fr auto", boxShadow: "0 24px 60px rgba(15,23,42,.24)" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
           <div><strong id="connection-frame-title">{props.bookingCom ? "Booking.com setup" : <>Connect {props.providerName}</>}</strong><div style={{ color: "#6b7280", fontSize: 13, marginTop: 3 }}>{props.bookingCom ? "Closing this window does not undo changes saved here or confirm activation." : "Secure connection session"}</div></div>
-          <button type="button" onClick={props.onClose} aria-label="Close connection" style={{ border: 0, background: "transparent", cursor: "pointer", color: "#4b5563" }}><X size={22} /></button>
+          <button type="button" onClick={props.onClose} disabled={props.completing} aria-label="Close connection" style={{ border: 0, background: "transparent", cursor: "pointer", color: "#4b5563" }}><X size={22} /></button>
         </header>
         <iframe title={props.bookingCom ? "Booking.com setup" : `Connect ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
         <footer style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: 16, borderTop: "1px solid #e5e7eb" }}>
@@ -354,6 +355,7 @@ export function ConnectionCenterPage() {
   const [busyProvider, setBusyProvider] = useState<DistributionProvider | null>(null);
   const [session, setSession] = useState<{ provider: DistributionProvider; value: DistributionConnectionSession } | null>(null);
   const [completing, setCompleting] = useState(false);
+  const sessionCompletionInFlight = useRef(false);
   const [frameReady, setFrameReady] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -460,22 +462,44 @@ export function ConnectionCenterPage() {
     catch { setError("The connection session opened, but Pin&Go couldn't confirm its state."); }
   }
   async function closeSession() {
+    if (sessionCompletionInFlight.current) return;
     const current = session; setSession(null); setFrameReady(false);
     if (!current || simulated) return;
     try { await transitionDistributionConnectionSession(current.value.sessionId, "cancelled"); } catch { /* safe no-op */ }
   }
   async function completeSession() {
-    if (!session) return;
+    if (!session || sessionCompletionInFlight.current) return;
+    sessionCompletionInFlight.current = true;
+    const current = session;
     setCompleting(true);
+    setError(null);
+    setNotice(null);
     try {
-      if (!simulated) await transitionDistributionConnectionSession(session.value.sessionId, "completed");
+      if (!simulated) await transitionDistributionConnectionSession(current.value.sessionId, "completed");
       setSession(null); setFrameReady(false);
-      setNotice(simulated ? "Simulation complete. No data was changed." : session.provider === "BOOKING_COM"
-        ? "Setup window closed. The displayed channel status comes from the latest saved verification; closing does not confirm activation."
-        : "Connection submitted for validation.");
+      let verificationFailed = false;
+      if (!simulated && current.provider === "BOOKING_COM") {
+        setBusyProvider("BOOKING_COM");
+        try {
+          await reconcileDistributionChannel(id, "BOOKING_COM");
+        } catch {
+          verificationFailed = true;
+        }
+      }
       await load();
+      if (verificationFailed) {
+        setError("Setup window closed, but Pin&Go couldn't refresh Booking.com's verified status. Changes saved in Channex are not undone. Reopen Manage Booking.com and use Close and refresh to try again.");
+      } else {
+        setNotice(simulated ? "Simulation complete. No data was changed." : current.provider === "BOOKING_COM"
+          ? "Booking.com status verification completed. The card shows the latest saved status; closing does not confirm activation."
+          : "Connection submitted for validation.");
+      }
     } catch { setError("We couldn't complete the connection session."); }
-    finally { setCompleting(false); }
+    finally {
+      sessionCompletionInFlight.current = false;
+      setBusyProvider(null);
+      setCompleting(false);
+    }
   }
 
   const providerName = center?.channels.find((channel) => channel.provider === session?.provider)?.name ?? "channel";
