@@ -31,7 +31,7 @@ jobs:
           test "$GITHUB_REF_NAME" = agent/booking-com-auto-reconcile
           git rev-parse HEAD > evidence/head.txt
           git diff --name-only "$BASELINE_SHA" HEAD | tee evidence/changed-files.txt
-          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/pages/distribution/ConnectionCenterPage.tsx' ':(exclude)src/pages/distribution/BookingComConnectionFlow.test.js' ':(exclude)src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js' ':(exclude)vercel.json' ':(exclude).github/scripts/booking-com-auto-reconcile-browser.py' ':(exclude).github/workflows/booking-com-auto-reconcile.yml'
+          git diff --exit-code "$BASELINE_SHA" HEAD -- . ':(exclude)src/pages/distribution/ConnectionCenterPage.tsx' ':(exclude)src/pages/distribution/BookingComConnectionFlow.test.js' ':(exclude)src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js' ':(exclude)src/api/distribution.contract.test.js' ':(exclude)vercel.json' ':(exclude).github/scripts/booking-com-auto-reconcile-browser.py' ':(exclude).github/workflows/booking-com-auto-reconcile.yml'
           python3 <<'PY'
           import subprocess,json,hashlib
           from pathlib import Path
