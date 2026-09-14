@@ -52,7 +52,7 @@ const CARD_STYLE = { border: "1px solid #e5e7eb", borderRadius: 18, padding: 18,
 const PRIMARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #111827", background: "#111827", color: "#fff", cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 } as const;
 const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer", fontWeight: 600 } as const;
 
-type ListingDiscoveryStatus = "IDLE" | "LOADING";
+type ListingDiscoveryStatus = "IDLE" | "LOADING" | "LOADED" | "FAILED";
 type AirbnbMappingStatus = "IDLE" | "SUBMITTING" | "SUBMITTED" | "ALREADY_MAPPED";
 
 function isAirbnbListingDiscoveryEligible(
