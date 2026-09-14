@@ -74,22 +74,39 @@ function connectHarness(currentChannel, { simulated = false, prepareError, sessi
   return { connect, calls, state };
 }
 
-function completionHarness({ simulated = false, provider = "BOOKING_COM" } = {}) {
+function completionHarness({ simulated = false, provider = "BOOKING_COM", fault, waitForReconcile, sessionMissing = false, savedStatus = "READINESS_CHECK" } = {}) {
   const calls = [];
   const state = {};
-  const { completeSession } = loadFunctions(["completeSession"], {
+  const sessionCompletionInFlight = { current: false };
+  const { completeSession, closeSession } = loadFunctions(["completeSession", "closeSession"], {
+    id: "property-test",
     simulated,
-    session: { provider, value: { sessionId: "test-session" } },
+    sessionCompletionInFlight,
+    session: sessionMissing ? null : { provider, value: { sessionId: "test-session" } },
     setCompleting: value => { state.completing = value; },
+    setBusyProvider: value => { state.busy = value; },
     setSession: value => { state.session = value; },
     setFrameReady: value => { state.ready = value; },
     setNotice: value => { state.notice = value; },
     setError: value => { state.error = value; },
     setCenter: () => { throw new Error("Must not promote channel state in the browser"); },
-    transitionDistributionConnectionSession: async (id, next) => { calls.push(["transition", id, next]); },
-    load: async () => { calls.push(["reload"]); },
+    transitionDistributionConnectionSession: async (id, next) => {
+      calls.push(["transition", id, next]);
+      if (fault === "transition") throw new Error("test transition failure");
+    },
+    reconcileDistributionChannel: async (id, provider) => {
+      calls.push(["reconcile", id, provider]);
+      if (waitForReconcile) await waitForReconcile;
+      if (fault === "reconcile") throw new Error("test reconcile failure");
+    },
+    load: async () => {
+      calls.push(["reload"]);
+      state.error = null; // The actual load clears old errors; reconciliation failures must survive it.
+      if (fault === "reload") throw new Error("test reload failure");
+      state.savedStatus = savedStatus;
+    },
   });
-  return { completeSession, calls, state };
+  return { completeSession, closeSession, calls, state, sessionCompletionInFlight };
 }
 
 test("ConnectionCenterPage TSX transpiles without syntax diagnostics", () => {
@@ -201,11 +218,12 @@ test("runtime disabled remains an explicit unavailable notice", async () => {
   assert.equal(h.state.session, null);
 });
 
-test("closing Booking.com completes only the local session then reloads saved status", async () => {
+test("closing Booking.com completes the local session, reconciles exactly that property, then reloads saved status", async () => {
   const h = completionHarness();
   await h.completeSession();
-  assert.deepEqual(h.calls, [["transition", "test-session", "completed"], ["reload"]]);
+  assert.deepEqual(h.calls, [["transition", "test-session", "completed"], ["reconcile", "property-test", "BOOKING_COM"], ["reload"]]);
   assert.match(h.state.notice, /closing does not confirm activation/);
+  assert.equal(h.state.savedStatus, "READINESS_CHECK");
   assert.equal(h.state.session, null);
   assert.equal(h.state.completing, false);
 });
@@ -217,10 +235,11 @@ test("simulation completion still changes no remote session", async () => {
   assert.equal(h.state.notice, "Simulation complete. No data was changed.");
 });
 
-test("non-Booking completion retains its existing notice", async () => {
+test("non-Booking completion retains its existing notice and does not reconcile", async () => {
   const h = completionHarness({ provider: "AIRBNB" });
   await h.completeSession();
   assert.equal(h.state.notice, "Connection submitted for validation.");
+  assert.deepEqual(h.calls, [["transition", "test-session", "completed"], ["reload"]]);
 });
 
 test("Booking.com frame labels do not imply activation or rollback", () => {
@@ -238,4 +257,85 @@ test("tenant-admin guards and the existing Airbnb-only activation surface remain
   assert.match(page, /airbnbChannelLinked && !simulated/);
   assert.match(page, /<AirbnbActivationPanel/);
   assert.doesNotMatch(page, /\/mappings|\/activate|load_future_reservations/);
+});
+
+test("failed reconciliation still reloads persisted status and leaves a visible failure without retrying", async () => {
+  const h = completionHarness({ fault: "reconcile" });
+  await h.completeSession();
+  assert.deepEqual(h.calls, [["transition", "test-session", "completed"], ["reconcile", "property-test", "BOOKING_COM"], ["reload"]]);
+  assert.match(h.state.error, /couldn't refresh Booking.com/);
+  assert.match(h.state.error, /not undone/);
+  assert.equal(h.state.notice, null);
+  assert.equal(h.state.completing, false);
+  assert.equal(h.state.busy, null);
+});
+
+test("failed session completion never starts reconciliation or reloading", async () => {
+  const h = completionHarness({ fault: "transition" });
+  await h.completeSession();
+  assert.deepEqual(h.calls, [["transition", "test-session", "completed"]]);
+  assert.match(h.state.error, /couldn't complete/);
+  assert.equal(h.state.notice, null);
+  assert.equal(h.sessionCompletionInFlight.current, false);
+});
+
+test("no session causes no operation", async () => {
+  const h = completionHarness({ sessionMissing: true });
+  await h.completeSession();
+  assert.deepEqual(h.calls, []);
+});
+
+test("duplicate clicks cannot duplicate completion or reconciliation and Close cannot race them", async () => {
+  let release;
+  const waitForReconcile = new Promise(resolve => { release = resolve; });
+  const h = completionHarness({ waitForReconcile });
+  const first = h.completeSession();
+  await new Promise(setImmediate);
+  assert.equal(h.sessionCompletionInFlight.current, true);
+  await h.completeSession();
+  await h.closeSession();
+  assert.deepEqual(h.calls, [["transition", "test-session", "completed"], ["reconcile", "property-test", "BOOKING_COM"]]);
+  release();
+  await first;
+  assert.deepEqual(h.calls.at(-1), ["reload"]);
+  assert.equal(h.sessionCompletionInFlight.current, false);
+});
+
+test("ordinary Close window only closes the session, never reconciles or deactivates", async () => {
+  const h = completionHarness();
+  await h.closeSession();
+  assert.deepEqual(h.calls, [["transition", "test-session", "cancelled"]]);
+});
+
+test("simulation Close window has no remote effects", async () => {
+  const h = completionHarness({ simulated: true });
+  await h.closeSession();
+  assert.deepEqual(h.calls, []);
+});
+
+test("all returned lifecycle states remain server-owned after completion", async () => {
+  for (const savedStatus of ["NOT_CONNECTED", "AUTHORIZATION_REQUIRED", "MAPPING_REQUIRED", "READINESS_CHECK", "ACTIVATION_PENDING", "ACTIVE", "DEGRADED", "FAILED", "DISCONNECTED"]) {
+    const h = completionHarness({ savedStatus });
+    await h.completeSession();
+    assert.equal(h.state.savedStatus, savedStatus);
+    assert.match(h.state.notice, /closing does not confirm activation/);
+  }
+});
+
+test("close button is disabled while completion is running", () => {
+  assert.match(functionSource("ConnectionFrame"), /onClick=\{props\.onClose\} disabled=\{props\.completing\} aria-label="Close connection"/);
+});
+
+test("completion has no provisioning, activation, sync, booking import or polling operation", () => {
+  const source = functionSource("completeSession");
+  assert.doesNotMatch(source, /prepareDistributionChannel|issueDistributionConnectionSession|confirmAirbnbHostMapping|activateAirbnb|FullSync|load_future_reservations|setInterval|setTimeout|\bfetch\(/);
+  assert.equal((source.match(/await reconcileDistributionChannel\(/g) || []).length, 1);
+});
+
+test("reload failure is not presented as successful completion", async () => {
+  const h = completionHarness({ fault: "reload" });
+  await h.completeSession();
+  assert.ok(h.state.error);
+  assert.equal(h.state.notice, null);
+  assert.equal(h.state.completing, false);
 });
