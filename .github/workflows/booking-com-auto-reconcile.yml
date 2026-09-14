@@ -124,7 +124,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: freddiefernandezmaysonet-netizen/pin-go-backend
-          ref: f818b6578729c744f1f626f64c314b92a118f776
+          ref: e5da4e3db36f82843ac1281a27040e7f39087fcc
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -137,11 +137,14 @@ jobs:
           git rev-parse HEAD > evidence/backend-head.txt
           node --import tsx --input-type=module <<'JS' | tee evidence/policy-boundary.txt
           import assert from 'node:assert/strict';
-          import {deriveChannexAirbnbTransportReadiness} from './src/distribution/channex-airbnb-transport-readiness.policy.ts';
+          import {deriveChannexBookingComTransportReadiness} from './src/distribution/channex-booking-com-transport-readiness.policy.ts';
           import {planCanonicalOtaActivation} from './src/distribution/ota-commercial-lifecycle.policy.ts';
-          const policy=deriveChannexAirbnbTransportReadiness({provider:'BOOKING_COM',expectedExternalConnectionId:'test-channel',expectedExternalChannelCode:'BDC',observedChannel:{id:'test-channel',channelCode:'BDC',isActive:true},mapping:{verified:true,reason:'VERIFIED'}});
-          assert.equal(policy.applied,false);
-          assert.equal(policy.reason,'PROVIDER_NOT_SUPPORTED');
+          const currentCommercialReadiness={paymentReadiness:'NOT_STARTED',taxReadiness:'NOT_STARTED',contentReadiness:'NOT_STARTED'};
+          const policy=deriveChannexBookingComTransportReadiness({provider:'BOOKING_COM',expectedExternalConnectionId:'test-channel',expectedExternalChannelCode:'BDC',observedChannel:{id:'test-channel',channelCode:'BDC',isActive:true},mapping:{verified:true,reason:'VERIFIED'},currentCommercialReadiness});
+          assert.equal(policy.applied,true);
+          assert.equal(policy.reason,'POLICY_APPLIED');
+          assert.deepEqual(policy.readiness,currentCommercialReadiness);
+          assert.equal(policy.metadata.otaAcceptanceVerified,false);
           const evidence={distributionPropertyStatus:'READY',externalConnectionId:'test-channel',authorizationReadiness:'READY',mappingReadiness:'READY',distributionReadiness:'IN_PROGRESS',...policy.readiness,lastFullSyncConfirmedAt:null,fullSyncRequiredAfterAt:null};
           const next=planCanonicalOtaActivation({current:'AUTHORIZATION_REQUIRED',evidence});
           assert.equal(next.next,'READINESS_CHECK');
@@ -152,7 +155,7 @@ jobs:
           const allTransportEvidence=planCanonicalOtaActivation({current:'AUTHORIZATION_REQUIRED',evidence:{...evidence,distributionReadiness:'READY',lastFullSyncConfirmedAt:new Date('2026-09-13T02:00:00Z'),fullSyncRequiredAfterAt:new Date('2026-09-13T01:00:00Z')}});
           assert.equal(allTransportEvidence.next,'ACTIVATION_PENDING');
           assert.equal(allTransportEvidence.blockers.includes('FULL_SYNC_NOT_CONFIRMED'),false);
-          console.log(JSON.stringify({backendPolicyApplied:policy.applied,reason:policy.reason,withoutFullSync:next,withFullSyncStillBlocked:allTransportEvidence,releaseClosure:false,note:'Pure regression fixtures: no provider, database, ARI or booking operation executed.'},null,2));
+          console.log(JSON.stringify({backendPolicyApplied:policy.applied,reason:policy.reason,commercialReadinessPreserved:policy.readiness,otaAcceptanceVerified:policy.metadata.otaAcceptanceVerified,withoutFullSync:next,withFullSyncStillBlocked:allTransportEvidence,releaseClosure:false,note:'Pure regression fixtures: no provider, database, ARI or booking operation executed.'},null,2));
           JS
           git diff --exit-code
       - uses: actions/upload-artifact@v4
