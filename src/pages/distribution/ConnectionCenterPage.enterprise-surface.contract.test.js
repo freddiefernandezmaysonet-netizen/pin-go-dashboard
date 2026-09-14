@@ -97,9 +97,13 @@ test("existing Airbnb and Booking.com connection execution remains in place", ()
   assert.match(completion, /transitionDistributionConnectionSession\(current\.value\.sessionId, "completed"\)/);
 });
 
-test("Expedia and Vrbo presentation remains truthful to current availability contracts", () => {
+test("Expedia remains planned and Vrbo exposes the documented secure self-service", () => {
   assert.equal(presentation.providerPresentation({ provider: "EXPEDIA", availability: "PLANNED", status: "NOT_CONNECTED", channelLinked: false }, false).status, "Coming soon");
-  assert.equal(presentation.providerPresentation({ provider: "VRBO", availability: "ASSISTED_BETA", status: "NOT_CONNECTED", channelLinked: false }, false).status, "Assisted setup");
+  assert.equal(presentation.providerPresentation({ provider: "VRBO", availability: "AVAILABLE", status: "NOT_CONNECTED", channelLinked: false }, false).status, "Not connected");
+  assert.match(page, /SELF_SERVICE.*"VRBO"/);
+  assert.match(page, /Remove every iCal connection/);
+  assert.match(page, /Pin&amp;Go does not receive or store them/);
+  assert.match(page, /Vrbo messages and reviews are not supported/);
 });
 
 test("presentation and mapping remain separate from explicit host activation and reservation import", () => {
