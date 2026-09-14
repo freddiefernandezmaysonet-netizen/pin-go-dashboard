@@ -51,7 +51,7 @@ async def main():
                 await page.wait_for_timeout(80)
                 metrics = await page.evaluate("""() => {
                   const main=document.querySelector('.pin-go-app-shell__main');
-                  const targets=[...document.querySelectorAll('article, article h2, article button, article a, .pin-go-app-shell__header')];
+                  const targets=[...document.querySelectorAll('article, article h2, article button, article a, .pin-go-app-shell__header, section[aria-labelledby="distribution-full-sync-title"], section[aria-labelledby="distribution-full-sync-title"] button')];
                   const outside=targets.filter(el=>{const b=el.getBoundingClientRect();return b.width && (b.left < -1 || b.right > innerWidth+1)}).map(el=>el.tagName+': '+el.textContent.slice(0,50));
                   return {viewport:innerWidth,documentWidth:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScrollWidth:main.scrollWidth,outside,
                     clipping:[document.documentElement,document.body,document.querySelector('.pin-go-app-shell'),main].some(el=>['hidden','clip'].includes(getComputedStyle(el).overflowX))};
