@@ -55,12 +55,29 @@ jobs:
       - name: Prove authorized diff allowlist
         shell: bash
         run: |
-          if [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = "agent/booking-com-integrated-closure" ]; then
+          head_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$head_branch" = "agent/booking-com-integrated-closure" ]; then
             python3 .github/scripts/verify-booking-com-integrated-scope.py
             exit 0
           fi
           git fetch origin main --depth=1
           git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
+          if [ "$head_branch" = "agent/booking-com-auto-reconcile" ]; then
+            cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
+          .github/scripts/booking-com-auto-reconcile-browser.py
+          .github/scripts/booking-com-responsive.contract.test.mjs
+          .github/workflows/airbnb-automatic-listing-discovery.yml
+          .github/workflows/booking-com-auto-reconcile.yml
+          src/api/distribution.contract.test.js
+          src/pages/distribution/BookingComConnectionFlow.test.js
+          src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js
+          src/pages/distribution/ConnectionCenterPage.tsx
+          vercel.json
+          EOF
+            sort "$RUNNER_TEMP/allowed.txt" -o "$RUNNER_TEMP/allowed.txt"
+            diff -u "$RUNNER_TEMP/allowed.txt" "$RUNNER_TEMP/actual.txt"
+            exit 0
+          fi
           cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
           .github/workflows/airbnb-automatic-listing-discovery.yml
           src/api/airbnbHostSelfService.test.js
@@ -80,9 +97,27 @@ jobs:
 
       - name: Prove callback router shell and frame policy remain frozen or exactly reviewed
         run: |
-          if [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = "agent/booking-com-integrated-closure" ]; then
+          head_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [ "$head_branch" = "agent/booking-com-integrated-closure" ]; then
             python3 .github/scripts/verify-booking-com-integrated-scope.py
             node --test .github/scripts/booking-com-responsive.contract.test.mjs
+            exit 0
+          fi
+          if [ "$head_branch" = "agent/booking-com-auto-reconcile" ]; then
+            git diff --exit-code origin/main...HEAD -- \
+              src/pages/distribution/AirbnbConnectionCallbackPage.tsx \
+              src/app/routes/router.tsx \
+              src/app/layout/AppShell.tsx \
+              src/lib/distributionFramePolicy.ts
+            node <<'NODE'
+          const {execFileSync}=require('node:child_process');
+          const fs=require('node:fs');
+          const base=JSON.parse(execFileSync('git',['show','origin/main:vercel.json'],{encoding:'utf8'}));
+          const current=JSON.parse(fs.readFileSync('vercel.json','utf8'));
+          if (current.git?.deploymentEnabled?.['agent/booking-com-auto-reconcile'] !== false) process.exit(1);
+          delete current.git.deploymentEnabled['agent/booking-com-auto-reconcile'];
+          if (JSON.stringify(current) !== JSON.stringify(base)) process.exit(1);
+          NODE
             exit 0
           fi
           git diff --exit-code origin/main...HEAD -- \
