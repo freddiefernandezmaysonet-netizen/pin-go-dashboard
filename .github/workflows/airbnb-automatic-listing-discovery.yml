@@ -62,6 +62,17 @@ jobs:
           fi
           git fetch origin main --depth=1
           git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
+          if [ "$head_branch" = "agent/vrbo-self-service-connection-center" ]; then
+            cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
+          .github/workflows/airbnb-automatic-listing-discovery.yml
+          src/api/distribution.ts
+          src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js
+          src/pages/distribution/ConnectionCenterPage.tsx
+          EOF
+            sort "$RUNNER_TEMP/allowed.txt" -o "$RUNNER_TEMP/allowed.txt"
+            diff -u "$RUNNER_TEMP/allowed.txt" "$RUNNER_TEMP/actual.txt"
+            exit 0
+          fi
           if [ "$head_branch" = "agent/booking-com-auto-reconcile" ]; then
             cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
           .github/scripts/booking-com-auto-reconcile-browser.py

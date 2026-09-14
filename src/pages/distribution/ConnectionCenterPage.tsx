@@ -25,7 +25,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import AirbnbActivationPanel from "./AirbnbActivationPanel";
 
 const ADMIN_ROLES = new Set(["ORG_ADMIN", "ADMIN", "PLATFORM_ADMIN"]);
-const SELF_SERVICE = new Set<DistributionProvider>(["AIRBNB", "BOOKING_COM"]);
+const SELF_SERVICE = new Set<DistributionProvider>(["AIRBNB", "BOOKING_COM", "VRBO"]);
 const AIRBNB_LISTING_DISCOVERY_STATUSES = new Set([
   "NOT_CONNECTED",
   "AUTHORIZATION_REQUIRED",
@@ -41,7 +41,7 @@ const SIMULATED_CENTER: DistributionConnectionCenter = {
     { provider: "AIRBNB", name: "Airbnb", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
     { provider: "BOOKING_COM", name: "Booking.com", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
     { provider: "EXPEDIA", name: "Expedia", availability: "PLANNED", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
-    { provider: "VRBO", name: "Vrbo", availability: "ASSISTED_BETA", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
+    { provider: "VRBO", name: "Vrbo", availability: "AVAILABLE", status: "NOT_CONNECTED", nextAction: "CONNECT", channelLinked: false, readiness: { authorization: "REQUIRED", mapping: "NOT_STARTED", distribution: "NOT_STARTED", payment: "NOT_STARTED", tax: "NOT_STARTED", content: "NOT_STARTED" }, lastReadinessCheckedAt: null, lastFullSyncConfirmedAt: null, activatedAt: null, attentionCode: null },
   ],
 };
 
@@ -327,18 +327,32 @@ function BookingComConnectionGuide(props: { simulated: boolean }) {
   );
 }
 
-function ConnectionFrame(props: { providerName: string; bookingCom?: boolean; session: DistributionConnectionSession; simulated: boolean; onLoaded(): void; onComplete(): void; onClose(): void; completing: boolean; ready: boolean }) {
+function VrboConnectionGuide() {
+  return (
+    <section aria-label="Before connecting Vrbo" style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 14, background: "#f8fafc", color: "#374151", fontSize: 13, lineHeight: 1.55 }}>
+      <strong>Before connecting Vrbo</strong>
+      <ol style={{ margin: "8px 0", paddingLeft: 20, display: "grid", gap: 6 }}>
+        <li>Disconnect this Vrbo account from any previous PMS or channel manager.</li>
+        <li>Remove every iCal connection for the listing; iCal can overwrite availability sent through this connection.</li>
+        <li>In the secure setup window, sign in to Vrbo, complete SMS verification if requested, test the connection, then map and activate the listing.</li>
+      </ol>
+      <p style={{ margin: 0, color: "#6b7280", fontSize: 12 }}>Enter your Vrbo password and SMS code only inside the secure window. Pin&amp;Go does not receive or store them. Vrbo messages and reviews are not supported through this connection.</p>
+    </section>
+  );
+}
+
+function ConnectionFrame(props: { providerName: string; managedSetup?: boolean; session: DistributionConnectionSession; simulated: boolean; onLoaded(): void; onComplete(): void; onClose(): void; completing: boolean; ready: boolean }) {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="connection-frame-title" style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(15,23,42,.65)", display: "grid", placeItems: "center", padding: 20 }}>
       <section style={{ width: "min(920px, 100%)", height: "min(720px, 90vh)", background: "white", borderRadius: 18, overflow: "hidden", display: "grid", gridTemplateRows: "auto 1fr auto", boxShadow: "0 24px 60px rgba(15,23,42,.24)" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e5e7eb" }}>
-          <div><strong id="connection-frame-title">{props.bookingCom ? "Booking.com setup" : <>Connect {props.providerName}</>}</strong><div style={{ color: "#6b7280", fontSize: 13, marginTop: 3 }}>{props.bookingCom ? "Closing this window does not undo changes saved here or confirm activation." : "Secure connection session"}</div></div>
+          <div><strong id="connection-frame-title">{props.managedSetup ? `${props.providerName} setup` : <>Connect {props.providerName}</>}</strong><div style={{ color: "#6b7280", fontSize: 13, marginTop: 3 }}>{props.managedSetup ? "Closing this window does not undo changes saved here or confirm activation." : "Secure connection session"}</div></div>
           <button type="button" onClick={props.onClose} disabled={props.completing} aria-label="Close connection" style={{ border: 0, background: "transparent", cursor: "pointer", color: "#4b5563" }}><X size={22} /></button>
         </header>
-        <iframe title={props.bookingCom ? "Booking.com setup" : `Connect ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
+        <iframe title={props.managedSetup ? `${props.providerName} setup` : `Connect ${props.providerName}`} src={props.simulated ? undefined : props.session.launchUrl} srcDoc={props.simulated ? SIMULATED_IFRAME_DOCUMENT : undefined} sandbox="allow-forms allow-popups allow-scripts allow-same-origin" referrerPolicy="no-referrer" onLoad={props.onLoaded} style={{ width: "100%", height: "100%", border: 0 }} />
         <footer style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: 16, borderTop: "1px solid #e5e7eb" }}>
-          <button type="button" onClick={props.onClose} disabled={props.completing} style={{ ...SECONDARY_BUTTON_STYLE, opacity: props.completing ? 0.6 : 1 }}>{props.bookingCom ? "Close window" : "Cancel"}</button>
-          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready} style={{ ...PRIMARY_BUTTON_STYLE, cursor: props.completing || !props.ready ? "not-allowed" : "pointer", opacity: props.completing || !props.ready ? 0.6 : 1 }}>{props.completing ? "Saving…" : props.ready ? (props.simulated ? "Finish simulation" : props.bookingCom ? "Close and refresh" : "Finish connection") : "Opening session…"}</button>
+          <button type="button" onClick={props.onClose} disabled={props.completing} style={{ ...SECONDARY_BUTTON_STYLE, opacity: props.completing ? 0.6 : 1 }}>{props.managedSetup ? "Close window" : "Cancel"}</button>
+          <button type="button" onClick={props.onComplete} disabled={props.completing || !props.ready} style={{ ...PRIMARY_BUTTON_STYLE, cursor: props.completing || !props.ready ? "not-allowed" : "pointer", opacity: props.completing || !props.ready ? 0.6 : 1 }}>{props.completing ? "Saving…" : props.ready ? (props.simulated ? "Finish simulation" : props.managedSetup ? "Close and refresh" : "Finish connection") : "Opening session…"}</button>
         </footer>
       </section>
     </div>
@@ -399,7 +413,7 @@ export function ConnectionCenterPage() {
   if (!id) return <Navigate to="/properties" replace />;
   if (!user || !ADMIN_ROLES.has(user.role)) return <Navigate to={`/properties/${id}`} replace />;
 
-  async function connect(provider: "AIRBNB" | "BOOKING_COM") {
+  async function connect(provider: "AIRBNB" | "BOOKING_COM" | "VRBO") {
     setBusyProvider(provider); setError(null); setNotice(null);
     try {
       if (simulated) {
@@ -546,6 +560,10 @@ export function ConnectionCenterPage() {
                   <BookingComConnectionGuide simulated={simulated} />
                 )}
 
+                {canConnect && channel.provider === "VRBO" && !channel.channelLinked && (
+                  <VrboConnectionGuide />
+                )}
+
                 {airbnbDiscoveryEligible && airbnbMappedPropertyId !== id && (
                   <AirbnbListingsPanel
                     status={airbnbListingStatus}
@@ -562,7 +580,7 @@ export function ConnectionCenterPage() {
 
                 {canConnect ? (
                   <div style={{ marginTop: "auto", paddingTop: 2 }}>
-                    <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
+                    <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM" | "VRBO")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
                       {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {isBookingComConnectionExisting(channel) ? "Manage Booking.com" : channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
                     </button>
                   </div>
@@ -575,7 +593,7 @@ export function ConnectionCenterPage() {
         </section>
       )}
 
-      {session && <ConnectionFrame providerName={providerName} bookingCom={session.provider === "BOOKING_COM"} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
+      {session && <ConnectionFrame providerName={providerName} managedSetup={session.provider === "BOOKING_COM" || session.provider === "VRBO"} session={session.value} simulated={simulated} onLoaded={() => void markOpened()} onComplete={() => void completeSession()} onClose={() => void closeSession()} completing={completing} ready={frameReady} />}
     </main>
   );
 }
