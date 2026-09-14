@@ -92,7 +92,9 @@ test("existing Airbnb and Booking.com connection execution remains in place", ()
   assert.match(page, /issueDistributionConnectionSession\(id, provider\)/);
   assert.match(page, /transitionDistributionConnectionSession\(session\.value\.sessionId, "opened"\)/);
   assert.match(page, /transitionDistributionConnectionSession\(current\.value\.sessionId, "cancelled"\)/);
-  assert.match(page, /transitionDistributionConnectionSession\(session\.value\.sessionId, "completed"\)/);
+  const completion = declaration(page, "completeSession");
+  assert.match(completion, /const current = session;/);
+  assert.match(completion, /transitionDistributionConnectionSession\(current\.value\.sessionId, "completed"\)/);
 });
 
 test("Expedia and Vrbo presentation remains truthful to current availability contracts", () => {
