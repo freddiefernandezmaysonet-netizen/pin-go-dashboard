@@ -233,6 +233,9 @@ const nav =
         .pin-go-app-shell__mobile-menu,
         .pin-go-app-shell__mobile-close,
         .pin-go-app-shell__backdrop { display: none; }
+        .pin-go-app-shell section[aria-labelledby="distribution-full-sync-title"] {
+          box-sizing: border-box; min-width: 0;
+        }
         @media (max-width: 720px) {
           .pin-go-app-shell { grid-template-columns: minmax(0, 1fr) !important; }
           .pin-go-app-shell__sidebar {
