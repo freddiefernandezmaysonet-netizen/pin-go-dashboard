@@ -4,7 +4,8 @@
       "agent/airbnb-white-label-connection-closure": false,
       "agent/airbnb-callback-persistence-presentation": false,
       "agent/booking-com-white-label-safe": false,
-      "agent/booking-com-integrated-closure": false
+      "agent/booking-com-integrated-closure": false,
+      "agent/booking-com-auto-reconcile": false
     }
   },
   "headers": [
