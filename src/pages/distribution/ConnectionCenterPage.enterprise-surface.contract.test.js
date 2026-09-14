@@ -25,7 +25,7 @@ function declaration(source, name) {
   return found.getText(ast);
 }
 
-const helpers = ["AIRBNB_LISTING_DISCOVERY_STATUSES", "isAirbnbListingDiscoveryEligible", "statusLabel", "providerPresentation"];
+const helpers = ["AIRBNB_LISTING_DISCOVERY_STATUSES", "isAirbnbListingDiscoveryEligible", "isExpediaConnectionExisting", "statusLabel", "providerPresentation"];
 const compiled = ts.transpileModule(helpers.map(name => declaration(page, name)).join("\n"), {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }, reportDiagnostics: true,
 });
@@ -97,8 +97,9 @@ test("existing Airbnb and Booking.com connection execution remains in place", ()
   assert.match(completion, /transitionDistributionConnectionSession\(current\.value\.sessionId, "completed"\)/);
 });
 
-test("Expedia remains planned and Vrbo exposes the documented secure self-service", () => {
-  assert.equal(presentation.providerPresentation({ provider: "EXPEDIA", availability: "PLANNED", status: "NOT_CONNECTED", channelLinked: false }, false).status, "Coming soon");
+test("Expedia and Vrbo expose truthful secure self-service", () => {
+  assert.equal(presentation.providerPresentation({ provider: "EXPEDIA", availability: "AVAILABLE", status: "NOT_CONNECTED", channelLinked: false }, false).status, "Not connected");
+  assert.match(presentation.providerPresentation({ provider: "EXPEDIA", availability: "AVAILABLE", status: "NOT_CONNECTED", channelLinked: false }, false).description, /Select Channex for connectivity in Expedia/);
   assert.equal(presentation.providerPresentation({ provider: "VRBO", availability: "AVAILABLE", status: "NOT_CONNECTED", channelLinked: false }, false).status, "Not connected");
   assert.match(page, /SELF_SERVICE.*"VRBO"/);
   assert.match(page, /Remove every iCal connection/);
