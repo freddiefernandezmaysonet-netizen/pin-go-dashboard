@@ -73,6 +73,18 @@ jobs:
             diff -u "$RUNNER_TEMP/allowed.txt" "$RUNNER_TEMP/actual.txt"
             exit 0
           fi
+          if [ "$head_branch" = "agent/expedia-connection-center-dashboard" ]; then
+            cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
+          .github/workflows/airbnb-automatic-listing-discovery.yml
+          src/pages/distribution/BookingComConnectionFlow.test.js
+          src/pages/distribution/ConnectionCenterPage.enterprise-surface.contract.test.js
+          src/pages/distribution/ConnectionCenterPage.tsx
+          vercel.json
+          EOF
+            sort "$RUNNER_TEMP/allowed.txt" -o "$RUNNER_TEMP/allowed.txt"
+            diff -u "$RUNNER_TEMP/allowed.txt" "$RUNNER_TEMP/actual.txt"
+            exit 0
+          fi
           if [ "$head_branch" = "agent/booking-com-auto-reconcile" ]; then
             cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
           .github/scripts/booking-com-auto-reconcile-browser.py
@@ -127,6 +139,23 @@ jobs:
           const current=JSON.parse(fs.readFileSync('vercel.json','utf8'));
           if (current.git?.deploymentEnabled?.['agent/booking-com-auto-reconcile'] !== false) process.exit(1);
           delete current.git.deploymentEnabled['agent/booking-com-auto-reconcile'];
+          if (JSON.stringify(current) !== JSON.stringify(base)) process.exit(1);
+          NODE
+            exit 0
+          fi
+          if [ "$head_branch" = "agent/expedia-connection-center-dashboard" ]; then
+            git diff --exit-code origin/main...HEAD -- \
+              src/pages/distribution/AirbnbConnectionCallbackPage.tsx \
+              src/app/routes/router.tsx \
+              src/app/layout/AppShell.tsx \
+              src/lib/distributionFramePolicy.ts
+            node <<'NODE'
+          const {execFileSync}=require('node:child_process');
+          const fs=require('node:fs');
+          const base=JSON.parse(execFileSync('git',['show','origin/main:vercel.json'],{encoding:'utf8'}));
+          const current=JSON.parse(fs.readFileSync('vercel.json','utf8'));
+          if (current.git?.deploymentEnabled?.['agent/expedia-connection-center-dashboard'] !== false) process.exit(1);
+          delete current.git.deploymentEnabled['agent/expedia-connection-center-dashboard'];
           if (JSON.stringify(current) !== JSON.stringify(base)) process.exit(1);
           NODE
             exit 0

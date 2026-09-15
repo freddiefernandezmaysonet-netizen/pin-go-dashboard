@@ -37,7 +37,7 @@ function channel(overrides = {}) {
   return { provider: "BOOKING_COM", name: "Booking.com", status: "NOT_CONNECTED", channelLinked: false, availability: "AVAILABLE", ...overrides };
 }
 
-const pure = loadFunctions(["isBookingComConnectionExisting", "statusLabel", "providerPresentation"]);
+const pure = loadFunctions(["isBookingComConnectionExisting", "isExpediaConnectionExisting", "statusLabel", "providerPresentation"]);
 
 function connectHarness(currentChannel, { simulated = false, prepareError, sessionError } = {}) {
   const calls = [];
@@ -70,7 +70,7 @@ function connectHarness(currentChannel, { simulated = false, prepareError, sessi
     },
     window: { location: { assign: url => { calls.push(["redirect", url]); } } },
   };
-  const { connect } = loadFunctions(["isBookingComConnectionExisting", "connect"], globals);
+  const { connect } = loadFunctions(["isBookingComConnectionExisting", "isExpediaConnectionExisting", "connect"], globals);
   return { connect, calls, state };
 }
 
@@ -184,6 +184,35 @@ test("Booking.com simulation issues no API call or external navigation", async (
   assert.equal(h.state.session.value.sessionId, "simulation-BOOKING_COM");
 });
 
+test("new Expedia connection prepares then requests one secure session", async () => {
+  const h = connectHarness(channel({ provider: "EXPEDIA", name: "Expedia" }));
+  await h.connect("EXPEDIA");
+  assert.deepEqual(h.calls, [["prepare", "property-test", "EXPEDIA"], ["session", "property-test", "EXPEDIA"]]);
+  assert.equal(h.state.session.provider, "EXPEDIA");
+});
+
+test("linked Expedia opens management without repeating preparation", async () => {
+  const h = connectHarness(channel({ provider: "EXPEDIA", name: "Expedia", channelLinked: true, status: "MAPPING_REQUIRED" }));
+  await h.connect("EXPEDIA");
+  assert.deepEqual(h.calls, [["session", "property-test", "EXPEDIA"]]);
+});
+
+test("closing Expedia reconciles once and reloads only persisted status", async () => {
+  const h = completionHarness({ provider: "EXPEDIA" });
+  await h.completeSession();
+  assert.deepEqual(h.calls, [["transition", "test-session", "completed"], ["reconcile", "property-test", "EXPEDIA"], ["reload"]]);
+  assert.match(h.state.notice, /does not confirm activation/);
+});
+
+test("Expedia guide follows Partner Central connectivity steps without operational actions", () => {
+  const guide = functionSource("ExpediaConnectionGuide");
+  assert.match(guide, /Rooms and Rates → Connectivity Settings/);
+  assert.match(guide, /Channex/);
+  assert.match(guide, /Expedia Hotel ID/);
+  assert.match(guide, /minimum-stay type/i);
+  assert.doesNotMatch(guide, /full.?sync|import.*reservation|fetch\(|axios\./i);
+});
+
 test("Airbnb retains preparation, provider authorization link and redirect", async () => {
   const h = connectHarness(channel({ provider: "AIRBNB" }));
   await h.connect("AIRBNB");
@@ -244,10 +273,10 @@ test("non-Booking completion retains its existing notice and does not reconcile"
 
 test("Booking.com frame labels do not imply activation or rollback", () => {
   const frame = functionSource("ConnectionFrame");
-  assert.match(frame, /props\.bookingCom \? "Close and refresh" : "Finish connection"/);
-  assert.match(frame, /props\.bookingCom \? "Close window" : "Cancel"/);
+  assert.match(frame, /props\.managedSetup \? "Close and refresh" : "Finish connection"/);
+  assert.match(frame, /props\.managedSetup \? "Close window" : "Cancel"/);
   assert.match(frame, /does not undo changes saved here or confirm activation/);
-  assert.match(page, /bookingCom=\{session\.provider === "BOOKING_COM"\}/);
+  assert.match(page, /managedSetup=\{session\.provider === "BOOKING_COM" \|\| session\.provider === "EXPEDIA" \|\| session\.provider === "VRBO"\}/);
   assert.match(frame, /sandbox="allow-forms allow-popups allow-scripts allow-same-origin"/);
 });
 

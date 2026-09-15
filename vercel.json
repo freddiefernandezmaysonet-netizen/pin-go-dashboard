@@ -5,7 +5,8 @@
       "agent/airbnb-callback-persistence-presentation": false,
       "agent/booking-com-white-label-safe": false,
       "agent/booking-com-integrated-closure": false,
-      "agent/booking-com-auto-reconcile": false
+      "agent/booking-com-auto-reconcile": false,
+      "agent/expedia-connection-center-dashboard": false
     }
   },
   "headers": [
