@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
+type GatewayMonitoringMode =
+  | "ENABLED"
+  | "DISABLED"
+  | "LEGACY_UNCONFIGURED";
+
 type DeviceHealth = {
   battery?: number | null;
   gatewayConnected?: boolean | null;
@@ -18,6 +23,7 @@ type LockRow = {
   name: string | null;
   isActive: boolean;
   property: { id: string; name: string } | null;
+  gatewayMonitoringMode?: GatewayMonitoringMode;
   battery?: number | null;
   gatewayId?: number | null;
   gatewayName?: string | null;
@@ -120,16 +126,35 @@ function healthBadgeStyle(status?: string | null): CSSProperties {
   }
 }
 
+function monitoringMode(lock: LockRow): GatewayMonitoringMode {
+  return lock.gatewayMonitoringMode ?? "LEGACY_UNCONFIGURED";
+}
+
 function formatBattery(lock: LockRow) {
+  if (monitoringMode(lock) === "DISABLED") return "Not monitored";
+
   const value = lock.deviceHealth?.battery ?? lock.battery;
   return value != null ? `${value}%` : "—";
 }
 
 function formatGateway(lock: LockRow) {
+  const mode = monitoringMode(lock);
+
+  if (mode === "DISABLED") return "Not installed";
+  if (mode === "LEGACY_UNCONFIGURED") return "Setup required";
+
   const value = lock.deviceHealth?.gatewayConnected ?? lock.gatewayOnline;
 
-  if (value == null) return "—";
-  return value ? "Connected" : "No gateway";
+  if (value == null) return "Pending";
+  return value ? "Connected" : "Offline";
+}
+
+function formatHealth(lock: LockRow) {
+  const mode = monitoringMode(lock);
+
+  if (mode === "DISABLED") return "NOT MONITORED";
+  if (mode === "LEGACY_UNCONFIGURED") return "SETUP REQUIRED";
+  return lock.deviceHealth?.healthStatus ?? "UNKNOWN";
 }
 
 type ClickableLockRowProps = {
@@ -139,6 +164,7 @@ type ClickableLockRowProps = {
 
 function ClickableLockRow({ lock, onClick }: ClickableLockRowProps) {
   const [hovered, setHovered] = useState(false);
+  const healthLabel = formatHealth(lock);
 
   return (
     <tr
@@ -188,8 +214,8 @@ function ClickableLockRow({ lock, onClick }: ClickableLockRowProps) {
       </td>
 
       <td style={{ padding: 14 }}>
-        <span style={healthBadgeStyle(lock.deviceHealth?.healthStatus)}>
-          {lock.deviceHealth?.healthStatus ?? "UNKNOWN"}
+        <span style={healthBadgeStyle(healthLabel)}>
+          {healthLabel}
         </span>
       </td>
     </tr>
@@ -361,7 +387,7 @@ export function LocksPage() {
             Locks
           </div>
           <div style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
-            Monitor active locks and open each lock detail to manage swap and status.
+            Monitor locks and open each lock detail to configure gateway monitoring, swap and status.
           </div>
         </div>
 
