@@ -1,12 +1,19 @@
 const API_BASE =
   import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
+export type GatewayMonitoringMode =
+  | "ENABLED"
+  | "DISABLED"
+  | "LEGACY_UNCONFIGURED";
+
 export type HealthSummary = {
   healthy: number;
   warning: number;
   atRisk: number;
   critical: number;
   unknown: number;
+  notMonitored: number;
+  setupRequired: number;
   openAlerts: number;
 };
 
@@ -15,6 +22,7 @@ export type HealthLockRow = {
   name: string;
   property: { id: string; name: string } | null;
 
+  gatewayMonitoringMode: GatewayMonitoringMode;
   battery: number | null;
   isOnline: boolean | null;
   gatewayConnected: boolean | null;
@@ -41,6 +49,7 @@ export type ControlTowerRow = {
   name: string;
   property: { id: string; name: string } | null;
 
+  gatewayMonitoringMode: GatewayMonitoringMode;
   battery: number | null;
   gatewayConnected: boolean | null;
 
