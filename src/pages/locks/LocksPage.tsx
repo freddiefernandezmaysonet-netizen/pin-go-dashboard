@@ -233,7 +233,6 @@ export function LocksPage() {
 
   const [ttlockStatus, setTtlockStatus] = useState<TtlockStatusResp | null>(null);
   const [ttlockStatusLoading, setTtlockStatusLoading] = useState(true);
-  const [disconnectLoading, setDisconnectLoading] = useState(false);
 
   const [propertyFilter, setPropertyFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -255,8 +254,8 @@ export function LocksPage() {
       .then((resp: LocksResp) => {
         setData(resp);
       })
-      .catch((e) => {
-        setErr(String(e?.message ?? e));
+      .catch((error: unknown) => {
+        setErr(error instanceof Error ? error.message : String(error));
       })
       .finally(() => setLoading(false));
   };
@@ -301,47 +300,13 @@ export function LocksPage() {
       .finally(() => setTtlockStatusLoading(false));
   };
 
-  async function handleDisconnectTTLock() {
-    const confirmed = window.confirm(
-      "This will disconnect all TTLock locks from this organization.\n\nExisting access codes may stop working.\nAutomations that depend on TTLock may stop working.\n\nAre you sure you want to continue?"
-    );
-
-    if (!confirmed) return;
-
-    try {
-      setDisconnectLoading(true);
-
-      const res = await fetch(`${API_BASE}/api/org/ttlock/disconnect`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to disconnect TTLock");
-      }
-
-      alert(data?.message || "TTLock disconnected successfully");
-
-      loadLocks();
-      loadAlerts();
-      loadTtlockStatus();
-    } catch (e: any) {
-      console.error("[LocksPage] disconnect TTLock failed", e);
-      alert(e?.message || "Error disconnecting TTLock");
-    } finally {
-      setDisconnectLoading(false);
-    }
-  }
-
   useEffect(() => {
     loadLocks();
     loadAlerts();
     loadTtlockStatus();
   }, []);
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data?.items]);
 
   const propertyOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -495,7 +460,6 @@ export function LocksPage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-           
             <button
               type="button"
               onClick={() => navigate("/integrations/ttlock")}
@@ -613,7 +577,7 @@ export function LocksPage() {
               flexWrap: "wrap",
               alignItems: "center",
               width: "100%",
-           }}
+            }}
           >
             <select
               value={propertyFilter}
