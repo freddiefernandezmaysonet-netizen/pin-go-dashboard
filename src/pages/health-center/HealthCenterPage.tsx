@@ -3,12 +3,19 @@ import { Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
+type GatewayMonitoringMode =
+  | "ENABLED"
+  | "DISABLED"
+  | "LEGACY_UNCONFIGURED";
+
 type HealthSummary = {
   healthy: number;
   warning: number;
   atRisk: number;
   critical: number;
   unknown: number;
+  notMonitored: number;
+  setupRequired: number;
   openAlerts: number;
 };
 
@@ -16,24 +23,20 @@ type HealthLockRow = {
   id: string;
   name: string;
   property: { id: string; name: string } | null;
-
+  gatewayMonitoringMode: GatewayMonitoringMode;
   battery: number | null;
   isOnline: boolean | null;
   gatewayConnected: boolean | null;
-
   healthStatus: string;
   healthMessage: string | null;
-
   operationalRisk: string;
   operationalMessage: string | null;
   recommendedAction: string | null;
-
   nextCheckInAt: string | null;
   hasActiveAccess: boolean;
   lastSeenAt: string | null;
   lastSyncAt: string | null;
   riskCalculatedAt: string | null;
-
   updatedAt: string;
 };
 
@@ -41,6 +44,7 @@ type ControlTowerRow = {
   id: string;
   name: string;
   property: { id: string; name: string } | null;
+  gatewayMonitoringMode: GatewayMonitoringMode;
   battery: number | null;
   gatewayConnected: boolean | null;
   operationalRisk: string;
@@ -112,7 +116,6 @@ function SectionCard({
       >
         <h3 style={{ margin: 0 }}>{title}</h3>
       </div>
-
       {children}
     </div>
   );
@@ -171,21 +174,28 @@ function riskBadgeStyle(risk: string): React.CSSProperties {
 
 function formatDateTime(value?: string | null) {
   if (!value) return "—";
-
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-
   return d.toLocaleString();
 }
 
-function formatBattery(value?: number | null) {
+function formatBattery(
+  mode: GatewayMonitoringMode,
+  value?: number | null
+) {
+  if (mode === "DISABLED") return "Not monitored";
   if (value == null) return "—";
   return `${value}%`;
 }
 
-function formatGateway(value?: boolean | null) {
-  if (value == null) return "—";
-  return value ? "CONNECTED" : "DISCONNECTED";
+function formatGateway(
+  mode: GatewayMonitoringMode,
+  value?: boolean | null
+) {
+  if (mode === "DISABLED") return "Not installed";
+  if (mode === "LEGACY_UNCONFIGURED") return "Setup required";
+  if (value == null) return "Pending";
+  return value ? "Connected" : "Offline";
 }
 
 function TowerRow({ item }: { item: ControlTowerRow }) {
@@ -216,7 +226,6 @@ function TowerRow({ item }: { item: ControlTowerRow }) {
             {item.property?.name ?? "—"}
           </div>
         </div>
-
         <span style={riskBadgeStyle(item.operationalRisk)}>
           {item.operationalRisk}
         </span>
@@ -230,10 +239,12 @@ function TowerRow({ item }: { item: ControlTowerRow }) {
         }}
       >
         <div style={towerMetaStyle}>
-          <strong>Battery:</strong> {formatBattery(item.battery)}
+          <strong>Battery:</strong>{" "}
+          {formatBattery(item.gatewayMonitoringMode, item.battery)}
         </div>
         <div style={towerMetaStyle}>
-          <strong>Gateway:</strong> {formatGateway(item.gatewayConnected)}
+          <strong>Gateway:</strong>{" "}
+          {formatGateway(item.gatewayMonitoringMode, item.gatewayConnected)}
         </div>
         <div style={towerMetaStyle}>
           <strong>Next Check-in:</strong> {formatDateTime(item.nextCheckInAt)}
@@ -267,21 +278,19 @@ function HealthTableRow({ lock }: { lock: HealthLockRow }) {
       <td style={tdStyle}>
         <div style={{ fontWeight: 600, color: "#111827" }}>{lock.name}</div>
       </td>
-
       <td style={tdStyle}>{lock.property?.name ?? "—"}</td>
-
-      <td style={tdStyle}>{formatBattery(lock.battery)}</td>
-
-      <td style={tdStyle}>{formatGateway(lock.gatewayConnected)}</td>
-
+      <td style={tdStyle}>
+        {formatBattery(lock.gatewayMonitoringMode, lock.battery)}
+      </td>
+      <td style={tdStyle}>
+        {formatGateway(lock.gatewayMonitoringMode, lock.gatewayConnected)}
+      </td>
       <td style={tdStyle}>{formatDateTime(lock.nextCheckInAt)}</td>
-
       <td style={tdStyle}>
         <span style={riskBadgeStyle(lock.operationalRisk)}>
           {lock.operationalRisk}
         </span>
       </td>
-
       <td style={tdStyle}>
         {lock.recommendedAction ?? lock.operationalMessage ?? "—"}
       </td>
@@ -313,17 +322,9 @@ export function HealthCenterPage() {
         }),
       ]);
 
-      if (!summaryResp.ok) {
-        throw new Error("Failed to load health summary");
-      }
-
-      if (!locksResp.ok) {
-        throw new Error("Failed to load health locks");
-      }
-
-      if (!towerResp.ok) {
-        throw new Error("Failed to load health control tower");
-      }
+      if (!summaryResp.ok) throw new Error("Failed to load health summary");
+      if (!locksResp.ok) throw new Error("Failed to load health locks");
+      if (!towerResp.ok) throw new Error("Failed to load health control tower");
 
       const summaryData = await summaryResp.json();
       const locksData = await locksResp.json();
@@ -332,8 +333,12 @@ export function HealthCenterPage() {
       setSummary(summaryData.summary ?? null);
       setLocks(locksData.items ?? []);
       setControlTower(towerData.items ?? []);
-    } catch (err: any) {
-      setError(String(err?.message ?? err ?? "Failed to load Health Center."));
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : String(err ?? "Failed to load Health Center.")
+      );
     } finally {
       setLoading(false);
     }
@@ -360,13 +365,13 @@ export function HealthCenterPage() {
         style={{
           display: "grid",
           gap: 16,
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
         }}
       >
         <Stat
           label="Healthy"
           value={summary?.healthy ?? 0}
-          helper="Locks operating normally"
+          helper="Gateway-monitored locks operating normally"
         />
         <Stat
           label="Warning"
@@ -386,7 +391,17 @@ export function HealthCenterPage() {
         <Stat
           label="Unknown"
           value={summary?.unknown ?? 0}
-          helper="Missing or stale telemetry"
+          helper="Missing or stale telemetry on configured locks"
+        />
+        <Stat
+          label="Setup Required"
+          value={summary?.setupRequired ?? 0}
+          helper="Confirm whether a gateway is installed"
+        />
+        <Stat
+          label="Not Monitored"
+          value={summary?.notMonitored ?? 0}
+          helper="Locks intentionally configured without a gateway"
         />
       </div>
 
@@ -475,9 +490,10 @@ export function HealthCenterPage() {
 
       <SectionCard title="Operational Notes">
         <p style={{ color: "#6b7280", margin: 0 }}>
-          Health Center is an operational work queue. Healthy locks are counted
-          in summary only and are intentionally excluded from the control tower
-          and main table.
+          Health Center is an operational work queue. Locks configured without
+          a gateway are tracked as Not Monitored and are not treated as failures.
+          Legacy locks that have not been classified appear as Setup Required.
+          Gateway failures become critical inside the six-hour readiness window.
         </p>
       </SectionCard>
     </div>
