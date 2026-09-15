@@ -1,0 +1,31 @@
+name: Remove Organization Channel Distribution Validation
+
+on:
+  push:
+    branches:
+      - agent/remove-organization-channel-distribution
+    paths:
+      - ".github/workflows/remove-organization-channel-distribution-validation.yml"
+      - "src/api/organization.ts"
+      - "src/pages/organization/OrganizationSettingsPage.tsx"
+      - "src/pages/organization/OrganizationSettingsPage.no-legacy-distribution.contract.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Legacy distribution removal contract
+        run: node --test src/pages/organization/OrganizationSettingsPage.no-legacy-distribution.contract.test.mjs
+      - name: Dashboard build
+        run: npm run build
