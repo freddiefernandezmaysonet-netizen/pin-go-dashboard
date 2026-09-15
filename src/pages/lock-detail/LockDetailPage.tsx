@@ -2,12 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 
 
+type GatewayMonitoringMode =
+  | "ENABLED"
+  | "DISABLED"
+  | "LEGACY_UNCONFIGURED";
+
 type LockRow = {
   id: string;
   ttlockLockId: number;
   name: string | null;
   isActive: boolean;
   property: { id: string; name: string } | null;
+  gatewayMonitoringMode?: GatewayMonitoringMode;
   battery?: number | null;
   batteryFresh?: boolean;
   gatewayName?: string | null;
@@ -20,6 +26,15 @@ type LockRow = {
 type LocksResp = {
   items?: LockRow[];
   error?: string;
+};
+
+type GatewayMonitoringResp = {
+  ok: boolean;
+  error?: string;
+  lockId?: string;
+  gatewayInstalled?: boolean;
+  gatewayMonitoringMode?: GatewayMonitoringMode;
+  configuredAt?: string;
 };
 
 type SwapResp = {
@@ -201,9 +216,25 @@ function normalizeError(error?: string) {
       return "Missing required swap fields.";
     case "INVALID_TTLOCK_LOCK_ID":
       return "Invalid TTLock lock id.";
+    case "LOCK_NOT_FOUND":
+      return "This lock could not be found for your organization.";
+    case "GATEWAY_INSTALLED_BOOLEAN_REQUIRED":
+      return "Choose whether this lock has a gateway installed.";
     default:
       return error ?? "Operation failed.";
   }
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  return fallback;
 }
 
 function ReadonlyField({
@@ -248,6 +279,20 @@ function buttonStyle(disabled?: boolean): React.CSSProperties {
   };
 }
 
+function gatewayChoiceStyle(selected: boolean, disabled: boolean): React.CSSProperties {
+  return {
+    minHeight: 44,
+    padding: "10px 14px",
+    borderRadius: 12,
+    border: selected ? "2px solid #111827" : "1px solid #d1d5db",
+    background: selected ? "#f3f4f6" : "#fff",
+    color: disabled ? "#9ca3af" : "#111827",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontWeight: 700,
+    textAlign: "left",
+  };
+}
+
 export function LockDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -265,6 +310,10 @@ export function LockDetailPage() {
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
   const [swapSuccess, setSwapSuccess] = useState<string | null>(null);
+
+  const [gatewaySaveLoading, setGatewaySaveLoading] = useState(false);
+  const [gatewaySaveError, setGatewaySaveError] = useState<string | null>(null);
+  const [gatewaySaveSuccess, setGatewaySaveSuccess] = useState<string | null>(null);
 
   const loadLock = useCallback(async () => {
     if (!id) {
@@ -327,10 +376,10 @@ export function LockDetailPage() {
         setInventoryMessage(
           `Inventory pulled from TTLock. Total remote locks: ${data.totalFromTtlock ?? 0}.`
         );
-      } catch (err: any) {
+      } catch (error: unknown) {
         setAvailableLocks([]);
         setAvailableLocksError(
-          String(err?.message ?? err ?? "Unable to load TTLock inventory.")
+          errorMessage(error, "Unable to load TTLock inventory.")
         );
       } finally {
         setAvailableLocksLoading(false);
@@ -349,63 +398,92 @@ export function LockDetailPage() {
     setSwapError(null);
     setSwapSuccess(null);
     setInventoryMessage(null);
+    setGatewaySaveError(null);
+    setGatewaySaveSuccess(null);
 
     if (!lock?.property?.id) return;
     void loadAvailableTtlockLocks(lock.property.id, lock.ttlockLockId);
   }, [lock?.id, lock?.property?.id, lock?.ttlockLockId, loadAvailableTtlockLocks]);
 
+  const gatewayMode = lock?.gatewayMonitoringMode ?? "LEGACY_UNCONFIGURED";
+
   const batteryValue = useMemo(() => {
+    if (gatewayMode === "DISABLED") return "Not monitored";
     if (lock?.battery == null) return "—";
     return `${lock.battery}%`;
-  }, [lock?.battery]);
+  }, [gatewayMode, lock?.battery]);
 
   const batteryHelper = useMemo(() => {
     if (!lock) return "";
+    if (gatewayMode === "DISABLED") {
+      return "Remote battery checks are disabled because no gateway is installed";
+    }
+    if (gatewayMode === "LEGACY_UNCONFIGURED") {
+      return "Confirm gateway installation to activate the correct monitoring policy";
+    }
     if (lock.battery == null) return "Battery data not available yet";
     if (lock.batteryFresh === false) return "Battery cache not refreshed yet";
     return lock.battery <= 20
       ? "Low battery attention recommended"
       : "Last known battery level";
-  }, [lock]);
+  }, [gatewayMode, lock]);
 
   const gatewayValue = useMemo(() => {
     if (!lock) return "—";
+    if (gatewayMode === "DISABLED") return "Not installed";
+    if (gatewayMode === "LEGACY_UNCONFIGURED") return "Setup required";
+    if (lock.gatewayOnline === true) return "Connected";
+    if (lock.gatewayOnline === false) return "Offline";
     if (lock.gatewayName) return lock.gatewayName;
     if (lock.gatewayId != null) return `Gateway #${lock.gatewayId}`;
-    return "—";
-  }, [lock]);
+    return "Monitoring enabled";
+  }, [gatewayMode, lock]);
 
   const gatewayHelper = useMemo(() => {
     if (!lock) return "";
-    if (lock.gatewayId == null && !lock.gatewayName) {
-      return "Gateway data not available yet";
+    if (gatewayMode === "DISABLED") {
+      return "Pin&Go will not poll gateway or remote battery status for this lock";
+    }
+    if (gatewayMode === "LEGACY_UNCONFIGURED") {
+      return "Confirm whether this lock has a gateway installed";
     }
     if (lock.gatewayFresh === false) {
       return "Gateway cache not refreshed yet";
     }
     if (lock.gatewayOnline == null) {
-      return "Gateway status not available yet";
+      return "Gateway status will be verified by the monitoring schedule";
     }
-    return lock.gatewayOnline ? "Online" : "Offline";
-  }, [lock]);
+    return lock.gatewayOnline ? "Online" : "Offline — Pin&Go will retry automatically";
+  }, [gatewayMode, lock]);
 
   const batteryDetailValue = useMemo(() => {
     if (!lock) return "—";
+    if (gatewayMode === "DISABLED") return "Not monitored";
     if (lock.battery == null) return "—";
     return lock.batteryFresh === false ? `${lock.battery}% (stale)` : `${lock.battery}%`;
-  }, [lock]);
+  }, [gatewayMode, lock]);
 
   const gatewayDetailValue = useMemo(() => {
     if (!lock) return "—";
+    if (gatewayMode === "DISABLED") return "Not installed";
+    if (gatewayMode === "LEGACY_UNCONFIGURED") return "Setup required";
+
     const base = lock.gatewayName
       ? lock.gatewayName
       : lock.gatewayId != null
       ? `Gateway #${lock.gatewayId}`
-      : "—";
+      : "Configured";
 
-    if (base === "—") return base;
     return lock.gatewayFresh === false ? `${base} (stale)` : base;
-  }, [lock]);
+  }, [gatewayMode, lock]);
+
+  const gatewayStatusValue = useMemo(() => {
+    if (!lock) return "—";
+    if (gatewayMode === "DISABLED") return "NOT INSTALLED";
+    if (gatewayMode === "LEGACY_UNCONFIGURED") return "SETUP REQUIRED";
+    if (lock.gatewayOnline == null) return "PENDING VERIFICATION";
+    return lock.gatewayOnline ? "ONLINE" : "OFFLINE";
+  }, [gatewayMode, lock]);
 
   const selectedLockOption = useMemo(() => {
     const selectedId = Number(selectedTtlockLockId);
@@ -426,6 +504,63 @@ export function LockDetailPage() {
     if (!selectedLockOption) return "No TTLock device selected";
     return `${selectedLockOption.name ?? "TTLock Lock"} — ${selectedLockOption.ttlockLockId}`;
   }, [selectedLockOption]);
+
+  async function handleGatewayInstalledChange(gatewayInstalled: boolean) {
+    if (!lock) return;
+
+    setGatewaySaveLoading(true);
+    setGatewaySaveError(null);
+    setGatewaySaveSuccess(null);
+
+    try {
+      const r = await fetch(
+        `${API_BASE}/api/dashboard/locks/${encodeURIComponent(lock.id)}/gateway-monitoring`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ gatewayInstalled }),
+        }
+      );
+
+      const data: GatewayMonitoringResp = await r.json().catch(() => ({
+        ok: false,
+        error: `API ${r.status}`,
+      }));
+
+      if (!r.ok || !data.ok) {
+        setGatewaySaveError(normalizeError(data.error));
+        return;
+      }
+
+      const nextMode: GatewayMonitoringMode = gatewayInstalled
+        ? "ENABLED"
+        : "DISABLED";
+
+      setLock((current) =>
+        current
+          ? {
+              ...current,
+              gatewayMonitoringMode: data.gatewayMonitoringMode ?? nextMode,
+            }
+          : current
+      );
+
+      setGatewaySaveSuccess(
+        gatewayInstalled
+          ? "Gateway monitoring enabled. Pin&Go will verify gateway and remote battery status on schedule."
+          : "Gateway marked as not installed. Pin&Go will stop gateway and remote battery polling for this lock."
+      );
+    } catch (error: unknown) {
+      setGatewaySaveError(
+        errorMessage(error, "Unable to update gateway configuration.")
+      );
+    } finally {
+      setGatewaySaveLoading(false);
+    }
+  }
 
   async function handleRefreshInventory() {
     if (!lock?.property?.id) {
@@ -499,8 +634,8 @@ export function LockDetailPage() {
       }
 
       await loadAvailableTtlockLocks(lock.property.id, parsedNewId);
-    } catch (err: any) {
-      setSwapError(String(err?.message ?? err ?? "Swap failed."));
+    } catch (error: unknown) {
+      setSwapError(errorMessage(error, "Swap failed."));
       setSwapSuccess(null);
     } finally {
       setSwapLoading(false);
@@ -544,30 +679,155 @@ export function LockDetailPage() {
         <Stat label="Gateway" value={gatewayValue} helper={gatewayHelper} />
       </div>
 
+      <SectionCard title="Gateway Monitoring">
+        <div style={{ display: "grid", gap: 14 }}>
+          <div
+            style={{
+              borderRadius: 12,
+              padding: 14,
+              border:
+                gatewayMode === "LEGACY_UNCONFIGURED"
+                  ? "1px solid #fde68a"
+                  : "1px solid #e5e7eb",
+              background:
+                gatewayMode === "LEGACY_UNCONFIGURED"
+                  ? "#fffbeb"
+                  : "#f9fafb",
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: 5 }}>
+              {gatewayMode === "ENABLED"
+                ? "Gateway installed"
+                : gatewayMode === "DISABLED"
+                ? "No gateway installed"
+                : "Gateway setup required"}
+            </div>
+            <div style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.5 }}>
+              {gatewayMode === "ENABLED"
+                ? "Pin&Go monitors this lock through its TTLock gateway and schedules remote battery and gateway health checks."
+                : gatewayMode === "DISABLED"
+                ? "This lock is configured without a gateway. Pin&Go will not spend TTLock calls checking remote battery or gateway connectivity."
+                : "This is an existing lock that has not been classified yet. Confirm whether a gateway is physically installed so Pin&Go can apply the correct monitoring policy."}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: 10,
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            }}
+          >
+            <button
+              type="button"
+              disabled={gatewaySaveLoading}
+              onClick={() => void handleGatewayInstalledChange(true)}
+              style={gatewayChoiceStyle(
+                gatewayMode === "ENABLED",
+                gatewaySaveLoading
+              )}
+            >
+              Gateway installed
+              <div style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", marginTop: 4 }}>
+                Monitor gateway + remote battery
+              </div>
+            </button>
+
+            <button
+              type="button"
+              disabled={gatewaySaveLoading}
+              onClick={() => void handleGatewayInstalledChange(false)}
+              style={gatewayChoiceStyle(
+                gatewayMode === "DISABLED",
+                gatewaySaveLoading
+              )}
+            >
+              No gateway installed
+              <div style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", marginTop: 4 }}>
+                Disable gateway + remote battery polling
+              </div>
+            </button>
+          </div>
+
+          {gatewaySaveLoading ? (
+            <div style={{ fontSize: 13, color: "#6b7280" }}>
+              Saving gateway configuration...
+            </div>
+          ) : null}
+
+          {gatewaySaveError ? (
+            <div
+              style={{
+                borderRadius: 10,
+                padding: 12,
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                color: "#991b1b",
+                fontSize: 14,
+              }}
+            >
+              {gatewaySaveError}
+            </div>
+          ) : null}
+
+          {gatewaySaveSuccess ? (
+            <div
+              style={{
+                borderRadius: 10,
+                padding: 12,
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                color: "#166534",
+                fontSize: 14,
+              }}
+            >
+              {gatewaySaveSuccess}
+            </div>
+          ) : null}
+        </div>
+      </SectionCard>
+
       <SectionCard title="Lock Details">
         <InfoRow label="Lock Name" value={lock.name ?? "TTLock Lock"} />
         <InfoRow label="Property" value={lock.property?.name ?? "—"} />
         <InfoRow label="TTLock Lock ID" value={lock.ttlockLockId} />
+        <InfoRow
+          label="Gateway Monitoring"
+          value={
+            gatewayMode === "ENABLED"
+              ? "ENABLED"
+              : gatewayMode === "DISABLED"
+              ? "NOT INSTALLED"
+              : "SETUP REQUIRED"
+          }
+        />
         <InfoRow label="Battery" value={batteryDetailValue} />
         <InfoRow
           label="Battery Fresh"
-          value={lock.batteryFresh == null ? "—" : lock.batteryFresh ? "YES" : "NO"}
+          value={
+            gatewayMode === "DISABLED"
+              ? "NOT MONITORED"
+              : lock.batteryFresh == null
+              ? "—"
+              : lock.batteryFresh
+              ? "YES"
+              : "NO"
+          }
         />
         <InfoRow label="Gateway" value={gatewayDetailValue} />
         <InfoRow
           label="Gateway Fresh"
-          value={lock.gatewayFresh == null ? "—" : lock.gatewayFresh ? "YES" : "NO"}
-        />
-        <InfoRow
-          label="Gateway Status"
           value={
-            lock.gatewayOnline == null
+            gatewayMode === "DISABLED"
+              ? "NOT MONITORED"
+              : lock.gatewayFresh == null
               ? "—"
-              : lock.gatewayOnline
-              ? "ONLINE"
-              : "OFFLINE"
+              : lock.gatewayFresh
+              ? "YES"
+              : "NO"
           }
         />
+        <InfoRow label="Gateway Status" value={gatewayStatusValue} />
         <InfoRow label="Last Sync" value={formatUpdatedAt(lock.updatedAt)} />
       </SectionCard>
 
