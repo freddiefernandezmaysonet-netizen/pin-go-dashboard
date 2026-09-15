@@ -225,6 +225,18 @@ function normalizeError(error?: string) {
   }
 }
 
+function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  return fallback;
+}
+
 function ReadonlyField({
   label,
   value,
@@ -364,10 +376,10 @@ export function LockDetailPage() {
         setInventoryMessage(
           `Inventory pulled from TTLock. Total remote locks: ${data.totalFromTtlock ?? 0}.`
         );
-      } catch (err: any) {
+      } catch (error: unknown) {
         setAvailableLocks([]);
         setAvailableLocksError(
-          String(err?.message ?? err ?? "Unable to load TTLock inventory.")
+          errorMessage(error, "Unable to load TTLock inventory.")
         );
       } finally {
         setAvailableLocksLoading(false);
@@ -541,9 +553,9 @@ export function LockDetailPage() {
           ? "Gateway monitoring enabled. Pin&Go will verify gateway and remote battery status on schedule."
           : "Gateway marked as not installed. Pin&Go will stop gateway and remote battery polling for this lock."
       );
-    } catch (err: any) {
+    } catch (error: unknown) {
       setGatewaySaveError(
-        String(err?.message ?? err ?? "Unable to update gateway configuration.")
+        errorMessage(error, "Unable to update gateway configuration.")
       );
     } finally {
       setGatewaySaveLoading(false);
@@ -622,8 +634,8 @@ export function LockDetailPage() {
       }
 
       await loadAvailableTtlockLocks(lock.property.id, parsedNewId);
-    } catch (err: any) {
-      setSwapError(String(err?.message ?? err ?? "Swap failed."));
+    } catch (error: unknown) {
+      setSwapError(errorMessage(error, "Swap failed."));
       setSwapSuccess(null);
     } finally {
       setSwapLoading(false);
