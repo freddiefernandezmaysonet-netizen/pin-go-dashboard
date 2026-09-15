@@ -301,9 +301,13 @@ export function LocksPage() {
   };
 
   useEffect(() => {
-    loadLocks();
-    loadAlerts();
-    loadTtlockStatus();
+    const timer = window.setTimeout(() => {
+      loadLocks();
+      loadAlerts();
+      loadTtlockStatus();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
