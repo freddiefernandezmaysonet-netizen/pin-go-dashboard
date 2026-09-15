@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getDashboardOrganization,
   updateDashboardOrganization,
-  getChannelDistributionStatus,
   type DashboardOrganization,
-  type ChannelDistributionStatus,
 } from "../../api/organization";
 import { useAuth } from "../../auth/AuthProvider";
-import { getVisibleChannelLabel } from "../../lib/whiteLabel";
 
 function normalizeSlug(value: string) {
   return value
@@ -23,9 +20,6 @@ export default function OrganizationSettingsPage() {
 
   const [organization, setOrganization] =
     useState<DashboardOrganization | null>(null);
-  const [channelDistribution, setChannelDistribution] =
-    useState<ChannelDistributionStatus | null>(null);
-  const [validatingDistribution, setValidatingDistribution] = useState(false);
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -55,15 +49,13 @@ export default function OrganizationSettingsPage() {
         setError(null);
 
         const item = await getDashboardOrganization();
-        const distribution = await getChannelDistributionStatus();
-       
+
         if (!mounted) return;
 
         setOrganization(item);
         setName(item.name ?? "");
         setSlug(item.slug ?? "");
         setPublicBookingEnabled(Boolean(item.publicBookingEnabled));
-        setChannelDistribution(distribution);
       } catch (e) {
         console.error("[OrganizationSettingsPage] load failed", e);
         if (!mounted) return;
@@ -140,24 +132,6 @@ export default function OrganizationSettingsPage() {
       setSaving(false);
     }
   }
-
-async function handleValidateDistribution() {
-  try {
-    setValidatingDistribution(true);
-    setError(null);
-    setSuccess(null);
-
-    const distribution = await getChannelDistributionStatus();
-    setChannelDistribution(distribution);
-
-    setSuccess("Channel distribution status refreshed.");
-  } catch (e) {
-    console.error("[OrganizationSettingsPage] distribution validation failed", e);
-    setError("Unable to validate channel distribution.");
-  } finally {
-    setValidatingDistribution(false);
-  }
-}
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -294,107 +268,6 @@ async function handleValidateDistribution() {
               </div>
             </label>
           </section>
-
-          <section style={cardStyle}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 16,
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <div style={sectionTitleStyle}>Channel Distribution</div>
-                <div style={sectionDescriptionStyle}>
-                  Manage the global channel manager connection used to distribute
-                  properties to external booking channels.
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...statusBadgeStyle,
-                  background: channelDistribution?.connected
-                    ? "#f0fdf4"
-                    : "#f9fafb",
-                  borderColor: channelDistribution?.connected
-                    ? "#bbf7d0"
-                    : "#e5e7eb",
-                  color: channelDistribution?.connected
-                    ? "#166534"
-                    : "#6b7280",
-                }}
-              >
-                {channelDistribution?.connected ? "Connected" : "Not Connected"}
-              </div>
-            </div>
-
-            <div style={compatibilityGridStyle}>
-              <div style={compatibilityCardStyle}>
-                <div style={labelStyle}>Channel Manager</div>
-                <div style={compatibilityTextStyle}>
-                  {getVisibleChannelLabel(channelDistribution?.provider)} ·{" "}
-                  {channelDistribution?.status ?? "Not connected"}
-                </div>
-              </div>
-
-              <div style={compatibilityCardStyle}>
-                <div style={labelStyle}>Webhook</div>
-                <div style={compatibilityTextStyle}>
-                  {channelDistribution?.webhookConfigured
-                    ? "Configured"
-                    : "Not configured"}
-                </div>
-              </div>
-
-              <div style={compatibilityCardStyle}>
-                <div style={labelStyle}>Mapped Properties</div>
-                <div style={compatibilityTextStyle}>
-                  {channelDistribution?.mappedProperties ?? 0}
-                </div>
-              </div>
-            </div>
-
-            <div style={previewBoxStyle}>
-              <div style={labelStyle}>Connection Endpoint</div>
-              <div style={urlPreviewStyle}>
-                {channelDistribution?.webhookConfigured
-                  ? "Managed securely by Pin&Go Connect"
-                  : "Connect channel distribution to configure the endpoint"}
-              </div>
-            </div>
-
-            <div style={compatibilityGridStyle}>
-              {(channelDistribution?.connectedChannels ?? []).map((channel) => (
-                <div key={channel.name} style={compatibilityCardStyle}>
-                  <div style={labelStyle}>{channel.name}</div>
-                  <div style={compatibilityTextStyle}>{channel.status}</div>
-                </div>
-              ))}
-            </div>
-
-            {channelDistribution?.updatedAt ? (
-              <div style={{ fontSize: 12, color: "#6b7280" }}>
-                Last validated:{" "}
-                {new Date(channelDistribution.updatedAt).toLocaleString()}
-              </div>
-            ) : null}
-          </section>
-<button
-  type="button"
-  onClick={handleValidateDistribution}
-  disabled={validatingDistribution}
-  style={{
-    ...primaryButtonStyle,
-    opacity: validatingDistribution ? 0.7 : 1,
-    cursor: validatingDistribution ? "not-allowed" : "pointer",
-    width: "fit-content",
-  }}
->
-  {validatingDistribution ? "Validating..." : "Validate Connection"}
-</button>
 
           <section style={cardStyle}>
             <div>
