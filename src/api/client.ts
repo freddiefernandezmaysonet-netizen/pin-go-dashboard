@@ -1,3 +1,5 @@
+import { loginPathForSessionError } from "../auth/sessionExpiry";
+
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -11,7 +13,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (res.status === 401) {
-    window.location.href = "/login";
+    const data = await res.clone().json().catch(() => null);
+    window.location.href = loginPathForSessionError(data?.error) ?? "/login";
     throw new Error("Unauthorized");
   }
 
