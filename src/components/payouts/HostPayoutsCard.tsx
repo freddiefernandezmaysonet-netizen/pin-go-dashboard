@@ -145,13 +145,30 @@ function transactionReference(transaction: HostPayoutTransaction) {
   return transaction.reservationNumber || transaction.reservationId;
 }
 
+function isRefundedTransaction(transaction: HostPayoutTransaction) {
+  const paymentState = String(transaction.paymentState ?? "").toUpperCase();
+  const payoutStatus = String(transaction.hostPayoutStatus ?? "").toUpperCase();
+
+  return (
+    paymentState === "REFUNDED" ||
+    paymentState === "PARTIALLY_REFUNDED" ||
+    payoutStatus === "REFUNDED" ||
+    payoutStatus === "PARTIALLY_REFUNDED"
+  );
+}
+
 function TransactionFinancials({
   transaction,
 }: {
   transaction: HostPayoutTransaction;
 }) {
   const actualStripeFee = transaction.stripeProcessingFeeActual;
+  const actualApplicationFee =
+    transaction.applicationFeeActual && transaction.applicationFeeAmount !== null;
   const actualHostNet = transaction.hostNetAmount !== null;
+  const refunded = isRefundedTransaction(transaction);
+  const fullyReconciled =
+    actualStripeFee && actualApplicationFee && actualHostNet;
 
   return (
     <article
@@ -195,16 +212,16 @@ function TransactionFinancials({
             padding: "5px 9px",
             fontSize: 11,
             fontWeight: 800,
-            background: actualStripeFee
+            background: fullyReconciled
               ? "rgba(22, 163, 74, 0.1)"
               : "rgba(100, 116, 139, 0.1)",
-            border: actualStripeFee
+            border: fullyReconciled
               ? "1px solid rgba(22, 163, 74, 0.22)"
               : "1px solid rgba(100, 116, 139, 0.2)",
-            color: actualStripeFee ? "#166534" : "#475569",
+            color: fullyReconciled ? "#166534" : "#475569",
           }}
         >
-          {actualStripeFee ? "Stripe actual" : "Actual fee unavailable"}
+          {fullyReconciled ? "Stripe actual" : "Actual evidence incomplete"}
         </span>
       </div>
 
@@ -224,9 +241,17 @@ function TransactionFinancials({
         </div>
 
         <div style={transactionMetricStyle}>
-          <span style={transactionMetricLabelStyle}>Pin&Go fees</span>
+          <span style={transactionMetricLabelStyle}>
+            {actualApplicationFee
+              ? refunded
+                ? "Original application fee"
+                : "Application fee"
+              : "Recorded Pin&Go fee"}
+          </span>
           <strong style={transactionMetricValueStyle}>
-            {formatMoney(transaction.totalPinGoFeeAmount, transaction.currency)}
+            {actualApplicationFee
+              ? formatMoney(transaction.applicationFeeAmount, transaction.currency)
+              : formatMoney(transaction.totalPinGoFeeAmount, transaction.currency)}
           </strong>
         </div>
 
@@ -241,7 +266,11 @@ function TransactionFinancials({
 
         <div style={transactionMetricStyle}>
           <span style={transactionMetricLabelStyle}>
-            {actualHostNet ? "Host net" : "Recorded payout"}
+            {actualHostNet
+              ? refunded
+                ? "Original host net"
+                : "Host net"
+              : "Recorded payout"}
           </span>
           <strong style={transactionMetricValueStyle}>
             {actualHostNet
@@ -265,9 +294,11 @@ function TransactionFinancials({
         }}
       >
         <span>
-          {actualStripeFee
-            ? "Stripe processing is sourced from Stripe balance-transaction evidence."
-            : "Pin&Go does not estimate Stripe processing fees when actual Stripe evidence is unavailable."}
+          {refunded && (actualApplicationFee || actualHostNet)
+            ? "Refund recorded. Application fee and host net shown above are original-charge evidence; Pin&Go does not infer a post-refund net."
+            : fullyReconciled
+              ? "Processing fee, application fee, and host net are sourced from Stripe balance-transaction evidence."
+              : "Pin&Go does not estimate Stripe fees or host net when actual Stripe evidence is unavailable."}
         </span>
         {transaction.lastSyncedAt ? (
           <span>Reconciled {new Date(transaction.lastSyncedAt).toLocaleString()}</span>
@@ -510,8 +541,8 @@ export function HostPayoutsCard() {
                 lineHeight: 1.45,
               }}
             >
-              This is reference pricing only. Exact processing fees are shown below only when
-              Pin&Go has actual Stripe balance-transaction evidence.
+              This is reference pricing only. Exact processing and application fees are shown
+              below only when Pin&Go has actual Stripe balance-transaction evidence.
             </p>
           </div>
 
@@ -562,8 +593,8 @@ export function HostPayoutsCard() {
                 lineHeight: 1.45,
               }}
             >
-              Guest payment, Pin&Go fees, actual Stripe processing cost, and host net are kept
-              separate so the host can see the real transaction economics.
+              Guest payment, Pin&Go application fee, actual Stripe processing cost, and host net
+              are kept separate so the host can see the real transaction economics.
             </p>
           </div>
         </div>
