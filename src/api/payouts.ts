@@ -35,6 +35,14 @@ export type PayoutOnboardingLinkResponse = {
   };
 };
 
+export type PayoutDashboardLoginLinkResponse = {
+  ok: true;
+  loginLink: {
+    url: string;
+    accountId: string;
+  };
+};
+
 export async function getHostPayoutStatus() {
   return api<PayoutStatusResponse>("/api/dashboard/payouts/status");
 }
@@ -42,6 +50,15 @@ export async function getHostPayoutStatus() {
 export async function createHostPayoutOnboardingLink() {
   return api<PayoutOnboardingLinkResponse>(
     "/api/dashboard/payouts/onboarding-link",
+    {
+      method: "POST",
+    }
+  );
+}
+
+export async function createHostPayoutDashboardLoginLink() {
+  return api<PayoutDashboardLoginLinkResponse>(
+    "/api/dashboard/payouts/login-link",
     {
       method: "POST",
     }
