@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import {
+  createHostPayoutDashboardLoginLink,
   createHostPayoutOnboardingLink,
   getHostPayoutStatus,
   syncHostPayoutStatus,
@@ -158,6 +159,20 @@ export function HostPayoutsCard() {
       window.location.assign(response.onboardingLink.url);
     } catch (err: any) {
       setError(err?.message || "Unable to create Stripe onboarding link.");
+      setActionLoading(false);
+    }
+  }
+
+  async function handleOpenStripeDashboard() {
+    try {
+      setError(null);
+      setActionLoading(true);
+
+      const response = await createHostPayoutDashboardLoginLink();
+
+      window.location.assign(response.loginLink.url);
+    } catch (err: any) {
+      setError(err?.message || "Unable to open Stripe Dashboard.");
       setActionLoading(false);
     }
   }
@@ -432,6 +447,26 @@ export function HostPayoutsCard() {
           >
             Refresh status
           </button>
+
+          {isReady ? (
+            <button
+              type="button"
+              onClick={handleOpenStripeDashboard}
+              disabled={actionLoading}
+              style={{
+                border: "1px solid rgba(37, 99, 235, 0.25)",
+                background: "#2563eb",
+                color: "#ffffff",
+                borderRadius: 12,
+                padding: "10px 14px",
+                fontWeight: 900,
+                cursor: actionLoading ? "not-allowed" : "pointer",
+                opacity: actionLoading ? 0.7 : 1,
+              }}
+            >
+              Open Stripe Dashboard ↗
+            </button>
+          ) : null}
 
           {showSetupButton ? (
             <button
