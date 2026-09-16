@@ -151,6 +151,7 @@ function TransactionFinancials({
   transaction: HostPayoutTransaction;
 }) {
   const actualStripeFee = transaction.stripeProcessingFeeActual;
+  const actualHostNet = transaction.hostNetAmount !== null;
 
   return (
     <article
@@ -239,9 +240,11 @@ function TransactionFinancials({
         </div>
 
         <div style={transactionMetricStyle}>
-          <span style={transactionMetricLabelStyle}>Host net</span>
+          <span style={transactionMetricLabelStyle}>
+            {actualHostNet ? "Host net" : "Recorded payout"}
+          </span>
           <strong style={transactionMetricValueStyle}>
-            {transaction.hostNetAmount !== null
+            {actualHostNet
               ? formatMoney(transaction.hostNetAmount, transaction.currency)
               : formatMoney(transaction.recordedHostPayoutAmount, transaction.currency)}
           </strong>
