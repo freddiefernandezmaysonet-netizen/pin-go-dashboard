@@ -3,9 +3,13 @@ import type { CSSProperties } from "react";
 import {
   createHostPayoutOnboardingLink,
   getHostPayoutStatus,
+  getHostPayoutTransactions,
   syncHostPayoutStatus,
 } from "../../api/payouts";
-import type { OrganizationPayoutStatus } from "../../api/payouts";
+import type {
+  HostPayoutTransaction,
+  OrganizationPayoutStatus,
+} from "../../api/payouts";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -122,11 +126,162 @@ function getToneStyles(tone: string) {
   };
 }
 
+function formatMoney(amount: number | null, currency: string) {
+  if (amount === null || !Number.isFinite(amount)) return "—";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency.toUpperCase()}`;
+  }
+}
+
+function transactionReference(transaction: HostPayoutTransaction) {
+  return transaction.reservationNumber || transaction.reservationId;
+}
+
+function TransactionFinancials({
+  transaction,
+}: {
+  transaction: HostPayoutTransaction;
+}) {
+  const actualStripeFee = transaction.stripeProcessingFeeActual;
+
+  return (
+    <article
+      style={{
+        border: "1px solid rgba(148, 163, 184, 0.24)",
+        borderRadius: 16,
+        padding: 14,
+        background: "rgba(255, 255, 255, 0.88)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <strong style={{ display: "block", color: "#0f172a", fontSize: 14 }}>
+            {transaction.property.name}
+          </strong>
+          <span
+            style={{
+              display: "block",
+              marginTop: 3,
+              color: "#64748b",
+              fontSize: 12,
+            }}
+          >
+            {transactionReference(transaction)} · {new Date(transaction.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            borderRadius: 999,
+            padding: "5px 9px",
+            fontSize: 11,
+            fontWeight: 800,
+            background: actualStripeFee
+              ? "rgba(22, 163, 74, 0.1)"
+              : "rgba(100, 116, 139, 0.1)",
+            border: actualStripeFee
+              ? "1px solid rgba(22, 163, 74, 0.22)"
+              : "1px solid rgba(100, 116, 139, 0.2)",
+            color: actualStripeFee ? "#166534" : "#475569",
+          }}
+        >
+          {actualStripeFee ? "Stripe actual" : "Actual fee unavailable"}
+        </span>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))",
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        <div style={transactionMetricStyle}>
+          <span style={transactionMetricLabelStyle}>Guest paid</span>
+          <strong style={transactionMetricValueStyle}>
+            {formatMoney(transaction.guestPaidAmount, transaction.currency)}
+          </strong>
+        </div>
+
+        <div style={transactionMetricStyle}>
+          <span style={transactionMetricLabelStyle}>Pin&Go fees</span>
+          <strong style={transactionMetricValueStyle}>
+            {formatMoney(transaction.totalPinGoFeeAmount, transaction.currency)}
+          </strong>
+        </div>
+
+        <div style={transactionMetricStyle}>
+          <span style={transactionMetricLabelStyle}>Stripe processing</span>
+          <strong style={transactionMetricValueStyle}>
+            {actualStripeFee
+              ? formatMoney(transaction.stripeProcessingFeeAmount, transaction.currency)
+              : "—"}
+          </strong>
+        </div>
+
+        <div style={transactionMetricStyle}>
+          <span style={transactionMetricLabelStyle}>Host net</span>
+          <strong style={transactionMetricValueStyle}>
+            {transaction.hostNetAmount !== null
+              ? formatMoney(transaction.hostNetAmount, transaction.currency)
+              : formatMoney(transaction.recordedHostPayoutAmount, transaction.currency)}
+          </strong>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          flexWrap: "wrap",
+          marginTop: 10,
+          color: "#64748b",
+          fontSize: 11,
+          lineHeight: 1.45,
+        }}
+      >
+        <span>
+          {actualStripeFee
+            ? "Stripe processing is sourced from Stripe balance-transaction evidence."
+            : "Pin&Go does not estimate Stripe processing fees when actual Stripe evidence is unavailable."}
+        </span>
+        {transaction.lastSyncedAt ? (
+          <span>Reconciled {new Date(transaction.lastSyncedAt).toLocaleString()}</span>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
 export function HostPayoutsCard() {
   const [status, setStatus] = useState<OrganizationPayoutStatus | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<HostPayoutTransaction[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
 
   const copy = useMemo(() => getStatusCopy(status), [status]);
   const toneStyles = useMemo(() => getToneStyles(copy.tone), [copy.tone]);
@@ -148,6 +303,21 @@ export function HostPayoutsCard() {
     }
   }
 
+  async function loadTransactions() {
+    try {
+      setTransactionsError(null);
+      setTransactionsLoading(true);
+      const response = await getHostPayoutTransactions(10);
+      setTransactions(response.items);
+    } catch {
+      setTransactionsError(
+        "Detailed Stripe financial evidence is not available from the current backend environment."
+      );
+    } finally {
+      setTransactionsLoading(false);
+    }
+  }
+
   async function handleSetupPayouts() {
     try {
       setError(null);
@@ -165,7 +335,7 @@ export function HostPayoutsCard() {
   async function handleRefresh() {
     try {
       setActionLoading(true);
-      await loadStatus({ sync: true });
+      await Promise.all([loadStatus({ sync: true }), loadTransactions()]);
     } finally {
       setActionLoading(false);
     }
@@ -173,6 +343,7 @@ export function HostPayoutsCard() {
 
   useEffect(() => {
     loadStatus();
+    loadTransactions();
   }, []);
 
   const isReady = Boolean(status?.canAcceptDirectBookingPayments);
@@ -314,7 +485,7 @@ export function HostPayoutsCard() {
                 fontSize: 14,
               }}
             >
-              Stripe processing fees
+              Stripe reference pricing
             </strong>
             <p
               style={{
@@ -336,7 +507,8 @@ export function HostPayoutsCard() {
                 lineHeight: 1.45,
               }}
             >
-              Stripe sets these processing rates. Pin&Go does not set Stripe processing fees.
+              This is reference pricing only. Exact processing fees are shown below only when
+              Pin&Go has actual Stripe balance-transaction evidence.
             </p>
           </div>
 
@@ -355,6 +527,77 @@ export function HostPayoutsCard() {
             View Stripe pricing ↗
           </a>
         </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 14,
+          borderRadius: 16,
+          padding: "16px",
+          background: "rgba(248, 250, 252, 0.72)",
+          border: "1px solid rgba(148, 163, 184, 0.24)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <strong style={{ display: "block", color: "#0f172a", fontSize: 15 }}>
+              Recent Direct Booking financials
+            </strong>
+            <p
+              style={{
+                margin: "5px 0 0",
+                color: "#64748b",
+                fontSize: 12,
+                lineHeight: 1.45,
+              }}
+            >
+              Guest payment, Pin&Go fees, actual Stripe processing cost, and host net are kept
+              separate so the host can see the real transaction economics.
+            </p>
+          </div>
+        </div>
+
+        {transactionsLoading ? (
+          <p style={{ margin: "14px 0 0", color: "#64748b", fontSize: 13 }}>
+            Loading financial evidence…
+          </p>
+        ) : transactionsError ? (
+          <div
+            style={{
+              marginTop: 14,
+              borderRadius: 12,
+              padding: "11px 12px",
+              background: "rgba(241, 245, 249, 0.86)",
+              border: "1px solid rgba(148, 163, 184, 0.22)",
+              color: "#475569",
+              fontSize: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            {transactionsError}
+          </div>
+        ) : transactions.length === 0 ? (
+          <p style={{ margin: "14px 0 0", color: "#64748b", fontSize: 13 }}>
+            No Direct Booking financial transactions are available yet.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+            {transactions.map((transaction) => (
+              <TransactionFinancials
+                key={transaction.reservationId}
+                transaction={transaction}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {status?.disabledReason ? (
@@ -478,6 +721,29 @@ const metricValueStyle: CSSProperties = {
   display: "block",
   marginTop: 6,
   fontSize: 16,
+  color: "#0f172a",
+};
+
+const transactionMetricStyle: CSSProperties = {
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  borderRadius: 12,
+  padding: "10px 11px",
+  background: "rgba(248, 250, 252, 0.78)",
+};
+
+const transactionMetricLabelStyle: CSSProperties = {
+  display: "block",
+  fontSize: 10,
+  fontWeight: 800,
+  color: "#64748b",
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+};
+
+const transactionMetricValueStyle: CSSProperties = {
+  display: "block",
+  marginTop: 5,
+  fontSize: 14,
   color: "#0f172a",
 };
 
