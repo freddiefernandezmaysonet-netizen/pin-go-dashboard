@@ -11,6 +11,7 @@ type SignupSuccessStatusResponse = {
   ok: boolean;
   ready?: boolean;
   autoLoggedIn?: boolean;
+  requiresLogin?: boolean;
   status?: string;
   error?: string;
 };
@@ -55,6 +56,8 @@ export default function SignupSuccessPage() {
 
         if (cancelled || finishedRef.current) return;
 
+        // Backward-compatible rollout path while the old backend can still
+        // return an authenticated cookie during the coordinated E7 deploy.
         if (data.ok && data.ready && data.autoLoggedIn) {
           finishedRef.current = true;
 
@@ -66,15 +69,21 @@ export default function SignupSuccessPage() {
 
           if (cancelled) return;
 
-          setReady(true);
-          setLoading(false);
-
           if (!propsData?.items?.length) {
             navigate("/onboarding/property", { replace: true });
             return;
           }
 
           navigate("/overview", { replace: true });
+          return;
+        }
+
+        // E7 contract: account provisioning is complete, but authentication
+        // must happen through the normal password + Email MFA login flow.
+        if (data.ok && data.ready && data.requiresLogin) {
+          finishedRef.current = true;
+          setReady(true);
+          setLoading(false);
           return;
         }
 
@@ -101,7 +110,7 @@ export default function SignupSuccessPage() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, refresh]);
 
   return (
     <div
@@ -160,7 +169,7 @@ export default function SignupSuccessPage() {
                   lineHeight: 1.6,
                 }}
               >
-                Your payment was successful. Pin&Go is finishing your account setup and signing you in.
+                Your payment was successful. Pin&Go is finishing your account setup securely.
               </div>
             </div>
 
@@ -214,10 +223,29 @@ export default function SignupSuccessPage() {
                   fontSize: 14,
                   color: "#6b7280",
                   lineHeight: 1.6,
+                  marginBottom: 20,
                 }}
               >
-                Redirecting you to the dashboard...
+                Your Pin&Go workspace is ready. Continue with secure sign-in. On a new or untrusted browser, Pin&Go will send a verification code to your account email.
               </div>
+
+              <button
+                type="button"
+                onClick={() => navigate("/login?signup=complete", { replace: true })}
+                style={{
+                  width: "100%",
+                  height: 46,
+                  borderRadius: 12,
+                  border: "none",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Continue to secure sign in
+              </button>
             </div>
           </>
         ) : (

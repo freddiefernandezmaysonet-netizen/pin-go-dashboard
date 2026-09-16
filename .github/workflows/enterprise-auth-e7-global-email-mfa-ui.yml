@@ -1,0 +1,51 @@
+name: Enterprise Authentication E7 Global Email MFA UI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/enterprise-auth-e7-global-email-mfa-ui.yml"
+      - "src/pages/auth/SignupSuccessPage.tsx"
+      - "src/auth/enterprise-auth-e7-ui.contract.test.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: E7 secure signup transition UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --silent --no-audit --no-fund
+
+      - name: Certify E7 signup transition contract
+        run: node --test src/auth/enterprise-auth-e7-ui.contract.test.js
+
+      - name: Lint E7 signup success page
+        run: npx eslint src/pages/auth/SignupSuccessPage.tsx
+
+      - name: Build production dashboard
+        run: npm run build
+
+      - name: Certify E7 UI safety boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          test -z "$(git diff --name-only origin/main...HEAD -- src/api/auth.ts src/pages/LoginPage.tsx)"
+          grep -q 'data.ok && data.ready && data.autoLoggedIn' src/pages/auth/SignupSuccessPage.tsx
+          grep -q 'data.ok && data.ready && data.requiresLogin' src/pages/auth/SignupSuccessPage.tsx
+          grep -q 'Continue to secure sign in' src/pages/auth/SignupSuccessPage.tsx
