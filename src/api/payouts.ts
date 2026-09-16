@@ -51,6 +51,8 @@ export type HostPayoutTransaction = {
   pingoPlatformFeeAmount: number | null;
   identityCheckFeeAmount: number | null;
   totalPinGoFeeAmount: number | null;
+  applicationFeeAmount: number | null;
+  applicationFeeActual: boolean;
   stripeProcessingFeeAmount: number | null;
   stripeProcessingFeeActual: boolean;
   stripeFeeSource: "STRIPE_BALANCE_TRANSACTION" | null;
