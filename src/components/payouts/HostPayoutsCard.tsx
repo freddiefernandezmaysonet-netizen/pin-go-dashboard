@@ -288,6 +288,75 @@ export function HostPayoutsCard() {
         </div>
       </div>
 
+      <div
+        style={{
+          marginTop: 14,
+          borderRadius: 16,
+          padding: "14px 16px",
+          background: "rgba(248, 250, 252, 0.92)",
+          border: "1px solid rgba(148, 163, 184, 0.24)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: "1 1 480px" }}>
+            <strong
+              style={{
+                display: "block",
+                color: "#0f172a",
+                fontSize: 14,
+              }}
+            >
+              Stripe processing fees
+            </strong>
+            <p
+              style={{
+                margin: "6px 0 0",
+                color: "#475569",
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              Stripe standard pricing for successful domestic card transactions is{" "}
+              <strong>2.9% + $0.30</strong>. Additional Stripe fees may apply for
+              international cards, currency conversion, or other payment methods.
+            </p>
+            <p
+              style={{
+                margin: "6px 0 0",
+                color: "#64748b",
+                fontSize: 12,
+                lineHeight: 1.45,
+              }}
+            >
+              Stripe sets these processing rates. Pin&Go does not set Stripe processing fees.
+            </p>
+          </div>
+
+          <a
+            href="https://stripe.com/pricing"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              color: "#2563eb",
+              fontSize: 13,
+              fontWeight: 800,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            View Stripe pricing ↗
+          </a>
+        </div>
+      </div>
+
       {status?.disabledReason ? (
         <div
           style={{
