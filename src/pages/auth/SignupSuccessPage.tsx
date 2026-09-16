@@ -21,19 +21,18 @@ export default function SignupSuccessPage() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
   const sessionId = params.get("session_id");
+  const hasSessionId = Boolean(sessionId);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasSessionId);
   const [ready, setReady] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    hasSessionId ? "" : "Missing session id"
+  );
 
   const finishedRef = useRef(false);
 
   useEffect(() => {
-    if (!sessionId) {
-      setLoading(false);
-      setError("Missing session id");
-      return;
-    }
+    if (!sessionId) return;
 
     let cancelled = false;
     let timeoutId: number | undefined;
@@ -95,9 +94,9 @@ export default function SignupSuccessPage() {
         }
 
         timeoutId = window.setTimeout(poll, 1500);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (cancelled) return;
-        setError(e?.message ?? "Failed to verify signup");
+        setError(e instanceof Error ? e.message : "Failed to verify signup");
         setLoading(false);
       }
     }
