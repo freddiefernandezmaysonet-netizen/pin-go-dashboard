@@ -3,9 +3,13 @@ import type { CSSProperties } from "react";
 import {
   createHostPayoutOnboardingLink,
   getHostPayoutStatus,
+  getHostPayoutTransactions,
   syncHostPayoutStatus,
 } from "../../api/payouts";
-import type { OrganizationPayoutStatus } from "../../api/payouts";
+import type {
+  HostPayoutTransaction,
+  OrganizationPayoutStatus,
+} from "../../api/payouts";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -122,14 +126,63 @@ function getToneStyles(tone: string) {
   };
 }
 
+function formatMoney(value: number | null, currency: string) {
+  if (value === null) return "—";
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(value);
+  } catch {
+    return `$${value.toFixed(2)}`;
+  }
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function hasActualStripeEvidence(transaction: HostPayoutTransaction) {
+  return (
+    transaction.stripeFeeSource === "STRIPE_BALANCE_TRANSACTION" &&
+    transaction.stripeProcessingFeeActual &&
+    transaction.applicationFeeActual
+  );
+}
+
+function isRefundedTransaction(transaction: HostPayoutTransaction) {
+  return (
+    transaction.paymentState === "REFUNDED" ||
+    transaction.paymentState === "PARTIALLY_REFUNDED" ||
+    transaction.hostPayoutStatus === "REFUNDED" ||
+    transaction.hostPayoutStatus === "PARTIALLY_REFUNDED"
+  );
+}
+
 export function HostPayoutsCard() {
   const [status, setStatus] = useState<OrganizationPayoutStatus | null>(null);
+  const [transactions, setTransactions] = useState<HostPayoutTransaction[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("idle");
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
 
   const copy = useMemo(() => getStatusCopy(status), [status]);
   const toneStyles = useMemo(() => getToneStyles(copy.tone), [copy.tone]);
+  const hasRefundedTransactions = useMemo(
+    () => transactions.some(isRefundedTransaction),
+    [transactions]
+  );
 
   async function loadStatus(options?: { sync?: boolean }) {
     try {
@@ -145,6 +198,23 @@ export function HostPayoutsCard() {
     } catch (err: any) {
       setLoadState("error");
       setError(err?.message || "Unable to load payout status.");
+    }
+  }
+
+  async function loadTransactions() {
+    try {
+      setTransactionsLoading(true);
+      setTransactionsError(null);
+
+      const response = await getHostPayoutTransactions(10);
+      setTransactions(response.items);
+    } catch (err: any) {
+      setTransactions([]);
+      setTransactionsError(
+        err?.message || "Unable to load Direct Booking financial details."
+      );
+    } finally {
+      setTransactionsLoading(false);
     }
   }
 
@@ -165,14 +235,15 @@ export function HostPayoutsCard() {
   async function handleRefresh() {
     try {
       setActionLoading(true);
-      await loadStatus({ sync: true });
+      await Promise.all([loadStatus({ sync: true }), loadTransactions()]);
     } finally {
       setActionLoading(false);
     }
   }
 
   useEffect(() => {
-    loadStatus();
+    void loadStatus();
+    void loadTransactions();
   }, []);
 
   const isReady = Boolean(status?.canAcceptDirectBookingPayments);
@@ -314,7 +385,7 @@ export function HostPayoutsCard() {
                 fontSize: 14,
               }}
             >
-              Stripe processing fees
+              Actual Stripe financial evidence
             </strong>
             <p
               style={{
@@ -324,19 +395,10 @@ export function HostPayoutsCard() {
                 lineHeight: 1.5,
               }}
             >
-              Stripe standard pricing for successful domestic card transactions is{" "}
-              <strong>2.9% + $0.30</strong>. Additional Stripe fees may apply for
-              international cards, currency conversion, or other payment methods.
-            </p>
-            <p
-              style={{
-                margin: "6px 0 0",
-                color: "#64748b",
-                fontSize: 12,
-                lineHeight: 1.45,
-              }}
-            >
-              Stripe sets these processing rates. Pin&Go does not set Stripe processing fees.
+              For Direct Charges, Pin&Go displays the Stripe processing fee,
+              application fee, and host net only when they are reconciled from the
+              connected account&apos;s Stripe balance transaction. Legacy bookings are not
+              estimated.
             </p>
           </div>
 
@@ -355,6 +417,227 @@ export function HostPayoutsCard() {
             View Stripe pricing ↗
           </a>
         </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 16,
+          border: "1px solid rgba(148, 163, 184, 0.24)",
+          borderRadius: 16,
+          background: "rgba(255, 255, 255, 0.86)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+            padding: "16px 16px 12px",
+            borderBottom: "1px solid rgba(148, 163, 184, 0.18)",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <strong style={{ display: "block", fontSize: 15, color: "#0f172a" }}>
+              Direct Booking financials
+            </strong>
+            <span
+              style={{
+                display: "block",
+                marginTop: 4,
+                fontSize: 12,
+                lineHeight: 1.45,
+                color: "#64748b",
+              }}
+            >
+              Latest reservations. “Actual” values come from Stripe balance evidence;
+              legacy values are clearly labeled as recorded data.
+            </span>
+          </div>
+
+          {transactionsLoading ? (
+            <span style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>
+              Loading financials…
+            </span>
+          ) : null}
+        </div>
+
+        {transactionsError ? (
+          <div
+            style={{
+              padding: 16,
+              color: "#64748b",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            Financial transaction details are not available yet. Payout account status
+            and onboarding remain available.
+          </div>
+        ) : transactions.length === 0 && !transactionsLoading ? (
+          <div
+            style={{
+              padding: 16,
+              color: "#64748b",
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            No Direct Booking financial records are available yet.
+          </div>
+        ) : transactions.length > 0 ? (
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                minWidth: 940,
+                borderCollapse: "collapse",
+                fontSize: 13,
+              }}
+            >
+              <thead>
+                <tr style={{ background: "rgba(248, 250, 252, 0.92)" }}>
+                  <th style={tableHeaderStyle}>Reservation</th>
+                  <th style={tableHeaderStyle}>Guest paid</th>
+                  <th style={tableHeaderStyle}>Pin&Go fee</th>
+                  <th style={tableHeaderStyle}>Stripe fee</th>
+                  <th style={tableHeaderStyle}>Host amount</th>
+                  <th style={tableHeaderStyle}>Evidence</th>
+                  <th style={tableHeaderStyle}>Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction) => {
+                  const actualEvidence = hasActualStripeEvidence(transaction);
+                  const refunded = isRefundedTransaction(transaction);
+                  const pingoFeeAmount = transaction.applicationFeeActual
+                    ? transaction.applicationFeeAmount
+                    : transaction.totalPinGoFeeAmount;
+                  const hostAmount = actualEvidence
+                    ? transaction.hostNetAmount
+                    : transaction.recordedHostPayoutAmount;
+
+                  return (
+                    <tr
+                      key={transaction.reservationId}
+                      style={{ borderTop: "1px solid rgba(148, 163, 184, 0.16)" }}
+                    >
+                      <td style={tableCellStyle}>
+                        <strong style={{ color: "#0f172a", display: "block" }}>
+                          {transaction.reservationNumber || "Direct Booking"}
+                        </strong>
+                        <span style={tableSubtextStyle}>{transaction.property.name}</span>
+                        <span style={tableSubtextStyle}>
+                          {formatDate(transaction.createdAt)}
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <strong style={{ color: "#0f172a" }}>
+                          {formatMoney(transaction.guestPaidAmount, transaction.currency)}
+                        </strong>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <strong style={{ color: "#0f172a", display: "block" }}>
+                          {formatMoney(pingoFeeAmount, transaction.currency)}
+                        </strong>
+                        <span style={tableSubtextStyle}>
+                          {transaction.applicationFeeActual
+                            ? "Actual application fee"
+                            : "Recorded Pin&Go fee"}
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <strong style={{ color: "#0f172a", display: "block" }}>
+                          {transaction.stripeProcessingFeeActual
+                            ? formatMoney(
+                                transaction.stripeProcessingFeeAmount,
+                                transaction.currency
+                              )
+                            : "—"}
+                        </strong>
+                        <span style={tableSubtextStyle}>
+                          {transaction.stripeProcessingFeeActual
+                            ? "Actual Stripe fee"
+                            : "Not estimated"}
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <strong style={{ color: "#0f172a", display: "block" }}>
+                          {formatMoney(hostAmount, transaction.currency)}
+                        </strong>
+                        <span style={tableSubtextStyle}>
+                          {actualEvidence
+                            ? refunded
+                              ? "Original host net"
+                              : "Actual host net"
+                            : "Recorded host payout"}
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            borderRadius: 999,
+                            padding: "5px 8px",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            background: actualEvidence
+                              ? "rgba(22, 163, 74, 0.10)"
+                              : "rgba(100, 116, 139, 0.10)",
+                            color: actualEvidence ? "#166534" : "#475569",
+                          }}
+                        >
+                          {actualEvidence ? "Stripe actual" : "Legacy / recorded"}
+                        </span>
+                      </td>
+                      <td style={tableCellStyle}>
+                        <strong style={{ display: "block", color: "#334155" }}>
+                          {transaction.paymentState}
+                        </strong>
+                        <span style={tableSubtextStyle}>
+                          Payout: {transaction.hostPayoutStatus}
+                        </span>
+                        {refunded && actualEvidence ? (
+                          <span
+                            style={{
+                              display: "block",
+                              marginTop: 4,
+                              color: "#92400e",
+                              fontSize: 11,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            Original charge values shown
+                          </span>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {hasRefundedTransactions ? (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderTop: "1px solid rgba(245, 158, 11, 0.20)",
+              background: "rgba(255, 251, 235, 0.70)",
+              color: "#92400e",
+              fontSize: 12,
+              lineHeight: 1.45,
+            }}
+          >
+            Refunded transactions currently show the financial evidence from the original
+            Stripe charge. Host net is labeled “Original host net” until refund-aware net
+            reconciliation is certified.
+          </div>
+        ) : null}
       </div>
 
       {status?.disabledReason ? (
@@ -479,6 +762,31 @@ const metricValueStyle: CSSProperties = {
   marginTop: 6,
   fontSize: 16,
   color: "#0f172a",
+};
+
+const tableHeaderStyle: CSSProperties = {
+  textAlign: "left",
+  padding: "10px 12px",
+  color: "#64748b",
+  fontSize: 11,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  fontWeight: 800,
+  whiteSpace: "nowrap",
+};
+
+const tableCellStyle: CSSProperties = {
+  padding: "12px",
+  verticalAlign: "top",
+  color: "#475569",
+};
+
+const tableSubtextStyle: CSSProperties = {
+  display: "block",
+  marginTop: 3,
+  color: "#64748b",
+  fontSize: 11,
+  lineHeight: 1.35,
 };
 
 export default HostPayoutsCard;
