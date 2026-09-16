@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { fetchMe } from "../api/auth";
+import { fetchMe, signalSessionActivity } from "../api/auth";
+
+const SESSION_ACTIVITY_SIGNAL_INTERVAL_MS = 4 * 60 * 1000;
 
 type User = {
   id: string;
@@ -25,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const userId = user?.id ?? null;
 
   async function refresh() {
     try {
@@ -38,6 +41,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refresh().finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let lastSignalAt = 0;
+    let inFlight = false;
+
+    const signal = () => {
+      const now = Date.now();
+      if (
+        inFlight ||
+        now - lastSignalAt < SESSION_ACTIVITY_SIGNAL_INTERVAL_MS
+      ) {
+        return;
+      }
+
+      lastSignalAt = now;
+      inFlight = true;
+      void signalSessionActivity()
+        .catch((error) => {
+          console.error("[AuthProvider] session activity signal failed", error);
+        })
+        .finally(() => {
+          inFlight = false;
+        });
+    };
+
+    const signalWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        signal();
+      }
+    };
+
+    window.addEventListener("pointerdown", signal, { passive: true });
+    window.addEventListener("touchstart", signal, { passive: true });
+    window.addEventListener("wheel", signal, { passive: true });
+    window.addEventListener("scroll", signal, { passive: true });
+    window.addEventListener("keydown", signal);
+    window.addEventListener("focus", signal);
+    document.addEventListener("visibilitychange", signalWhenVisible);
+
+    return () => {
+      window.removeEventListener("pointerdown", signal);
+      window.removeEventListener("touchstart", signal);
+      window.removeEventListener("wheel", signal);
+      window.removeEventListener("scroll", signal);
+      window.removeEventListener("keydown", signal);
+      window.removeEventListener("focus", signal);
+      document.removeEventListener("visibilitychange", signalWhenVisible);
+    };
+  }, [userId]);
 
   return (
     <AuthContext.Provider value={{ user, loading, refresh }}>
