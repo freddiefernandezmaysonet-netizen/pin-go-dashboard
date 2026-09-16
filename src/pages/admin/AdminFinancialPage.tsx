@@ -2,7 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 
 const API = import.meta.env.VITE_API_BASE;
 
-type AdminFinancialData = any;
+type StripeActuals = {
+  saasRevenueActual?: number;
+  connectPlatformFeesActual?: number;
+  guestBookingGmv?: number;
+  hostTransfers?: number;
+  refunds?: number;
+  disputes?: number;
+  stripeProcessingFeesActual?: number | null;
+  netPlatformRevenue?: number | null;
+  reconciliationStatus?: string;
+  ledgerEventCount?: number;
+  livemode?: boolean | null;
+};
+
+type AdminFinancialData = {
+  stripeActuals?: StripeActuals;
+  [key: string]: any;
+};
 
 function money(value: unknown) {
   const n = typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -10,6 +27,12 @@ function money(value: unknown) {
     style: "currency",
     currency: "USD",
   }).format(n);
+}
+
+function moneyOrPending(value: unknown) {
+  return value === null || value === undefined
+    ? "Pending reconciliation"
+    : money(value);
 }
 
 function number(value: unknown) {
@@ -26,6 +49,27 @@ function shortId(value?: string | null) {
   if (!value) return "—";
   if (value.length <= 14) return value;
   return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
+function reconciliationLabel(value?: string) {
+  switch (value) {
+    case "NO_FINANCIAL_ACTIVITY":
+      return "No financial activity";
+    case "REQUIRES_BALANCE_TRANSACTION_RECONCILIATION":
+      return "Balance transaction reconciliation required";
+    case "REQUIRES_CURRENCY_RECONCILIATION":
+      return "Currency reconciliation required";
+    case "REQUIRES_LIVEMODE_RECONCILIATION":
+      return "Live/test reconciliation required";
+    default:
+      return "Reconciliation status unavailable";
+  }
+}
+
+function livemodeLabel(value?: boolean | null) {
+  if (value === true) return "Stripe Live";
+  if (value === false) return "Stripe Test";
+  return "Stripe Mode Unknown";
 }
 
 export default function AdminFinancialPage() {
@@ -71,30 +115,86 @@ export default function AdminFinancialPage() {
   if (error) return <PageError error={error} />;
 
   const organizations = data?.organizations ?? [];
+  const stripeActuals = data?.stripeActuals;
 
   return (
     <div style={{ padding: 24 }}>
-      {/* HEADER */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ margin: 0 }}>Admin Financial</h2>
 
-        <div style={{ marginTop: 6, display: "flex", gap: 10 }}>
+        <div
+          style={{
+            marginTop: 6,
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
           <Badge text="Last 30 Days" />
+          <Badge text="Actual + Estimated" tone="neutral" />
           <span style={{ color: "#64748b" }}>
             Platform-wide financial overview
           </span>
         </div>
       </div>
 
-      {/* KPI CARDS */}
       <div style={grid4}>
-        <Card title="MRR" value={money(data?.revenue?.total)} />
-        <Card title="Costs" value={money(data?.costs?.total)} />
-        <Card title="Net" value={money(data?.profit?.net)} />
-        <Card title="Margin" value={percent(data?.profit?.margin)} />
+        <Card title="Estimated MRR" value={money(data?.revenue?.total)} />
+        <Card title="Estimated Costs" value={money(data?.costs?.total)} />
+        <Card title="Estimated Net" value={money(data?.profit?.net)} />
+        <Card title="Estimated Margin" value={percent(data?.profit?.margin)} />
       </div>
 
-      {/* SUMMARY */}
+      <Section title="Stripe Actuals (Last 30 Days)">
+        <div style={statusRow}>
+          <Badge text={livemodeLabel(stripeActuals?.livemode)} tone="neutral" />
+          <Badge
+            text={reconciliationLabel(stripeActuals?.reconciliationStatus)}
+            tone="warning"
+          />
+          <span style={{ color: "#64748b", fontSize: 13 }}>
+            Ledger events: {number(stripeActuals?.ledgerEventCount)}
+          </span>
+        </div>
+
+        <Grid>
+          <Metric
+            label="SaaS Revenue — Actual"
+            value={money(stripeActuals?.saasRevenueActual)}
+          />
+          <Metric
+            label="Connect Platform Fees — Actual"
+            value={money(stripeActuals?.connectPlatformFeesActual)}
+          />
+          <Metric
+            label="Guest Booking GMV"
+            value={money(stripeActuals?.guestBookingGmv)}
+          />
+          <Metric
+            label="Host Transfers"
+            value={money(stripeActuals?.hostTransfers)}
+          />
+          <Metric label="Refunds" value={money(stripeActuals?.refunds)} />
+          <Metric label="Disputes" value={money(stripeActuals?.disputes)} />
+          <Metric
+            label="Stripe Processing Fees — Actual"
+            value={moneyOrPending(stripeActuals?.stripeProcessingFeesActual)}
+          />
+          <Metric
+            label="Net Platform Revenue — Actual"
+            value={moneyOrPending(stripeActuals?.netPlatformRevenue)}
+          />
+        </Grid>
+
+        <div style={actualsNote}>
+          Guest Booking GMV is guest payment volume, not Pin&Go revenue. Host
+          transfers are pass-through to hosts. Stripe processing fees and net
+          platform revenue remain pending until exact balance transaction fees
+          are reconciled.
+        </div>
+      </Section>
+
       <Section title="Platform">
         <Grid>
           <Metric label="Organizations" value={number(data?.summary?.totalOrgs)} />
@@ -105,22 +205,20 @@ export default function AdminFinancialPage() {
         </Grid>
       </Section>
 
-      {/* COSTS */}
-      <Section title="Costs Breakdown">
+      <Section title="Estimated Cost Breakdown">
         <Grid>
-          <Metric label="Stripe" value={money(data?.costs?.stripe)} />
-          <Metric label="Twilio" value={money(data?.costs?.twilio)} />
-          <Metric label="Tuya" value={money(data?.costs?.tuya)} />
+          <Metric label="Stripe — Estimated" value={money(data?.costs?.stripe)} />
+          <Metric label="Twilio — Estimated" value={money(data?.costs?.twilio)} />
+          <Metric label="Tuya — Estimated" value={money(data?.costs?.tuya)} />
         </Grid>
       </Section>
 
-      {/* TABLE */}
       <Section title="Organizations">
         <table style={table}>
           <thead>
             <tr>
               <Th>Org</Th>
-              <Th>MRR</Th>
+              <Th>Est. MRR</Th>
               <Th>Locks</Th>
               <Th>Smart</Th>
               <Th>SMS</Th>
@@ -150,9 +248,7 @@ export default function AdminFinancialPage() {
                 <Td>{number(org.usage?.automationExecutions)}</Td>
                 <Td>{number(org.usage?.reservations)}</Td>
 
-                <Td>
-                  {shortId(org.subscription?.stripeSubscriptionId)}
-                </Td>
+                <Td>{shortId(org.subscription?.stripeSubscriptionId)}</Td>
               </tr>
             ))}
           </tbody>
@@ -162,18 +258,12 @@ export default function AdminFinancialPage() {
   );
 }
 
-/* ---------- UI COMPONENTS ---------- */
-
 function PageState({ text }: { text: string }) {
   return <div style={{ padding: 24 }}>{text}</div>;
 }
 
 function PageError({ error }: { error: string }) {
-  return (
-    <div style={{ padding: 24, color: "#991b1b" }}>
-      Error: {error}
-    </div>
-  );
+  return <div style={{ padding: 24, color: "#991b1b" }}>Error: {error}</div>;
 }
 
 function Card({ title, value }: any) {
@@ -202,21 +292,32 @@ function Metric({ label, value }: any) {
   return (
     <div style={metric}>
       <div style={{ fontSize: 12, color: "#64748b" }}>{label}</div>
-      <div style={{ fontWeight: 700 }}>{value}</div>
+      <div style={{ fontWeight: 700, marginTop: 3 }}>{value}</div>
     </div>
   );
 }
 
-function Badge({ text }: { text: string }) {
+function Badge({
+  text,
+  tone = "info",
+}: {
+  text: string;
+  tone?: "info" | "neutral" | "warning";
+}) {
+  const tones = {
+    info: { background: "#e0f2fe", color: "#0369a1" },
+    neutral: { background: "#f1f5f9", color: "#334155" },
+    warning: { background: "#fef3c7", color: "#92400e" },
+  };
+
   return (
     <span
       style={{
         fontSize: 12,
         padding: "4px 10px",
         borderRadius: 999,
-        background: "#e0f2fe",
-        color: "#0369a1",
         fontWeight: 600,
+        ...tones[tone],
       }}
     >
       {text}
@@ -231,8 +332,6 @@ function Th({ children }: any) {
 function Td({ children }: any) {
   return <td style={td}>{children}</td>;
 }
-
-/* ---------- STYLES ---------- */
 
 const grid4 = {
   display: "grid",
@@ -266,6 +365,24 @@ const metric = {
   padding: 12,
   background: "#f8fafc",
   borderRadius: 10,
+};
+
+const statusRow = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap" as const,
+  alignItems: "center",
+  marginBottom: 14,
+};
+
+const actualsNote = {
+  marginTop: 14,
+  padding: 12,
+  borderRadius: 10,
+  background: "#f8fafc",
+  color: "#475569",
+  fontSize: 13,
+  lineHeight: 1.5,
 };
 
 const table = {
