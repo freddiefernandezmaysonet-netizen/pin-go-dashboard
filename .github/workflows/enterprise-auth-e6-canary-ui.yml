@@ -1,0 +1,51 @@
+name: Enterprise Authentication E6 Canary UI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/enterprise-auth-e6-canary-ui.yml"
+      - "src/api/auth.ts"
+      - "src/pages/LoginPage.tsx"
+      - "src/auth/enterprise-auth-e6.contract.test.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: E6 canary login UI contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --silent --no-audit --no-fund
+
+      - name: Contract tests
+        run: node --test src/auth/enterprise-auth-e6.contract.test.js
+
+      - name: Lint E6 auth surface
+        run: npx eslint src/api/auth.ts src/pages/LoginPage.tsx
+
+      - name: Production build
+        run: npm run build
+
+      - name: Certify dashboard scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          CHANGED="$(git diff --name-only origin/main...HEAD)"
+          echo "$CHANGED"
+          test -z "$(echo "$CHANGED" | grep -v -E '^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|src/api/auth\.ts|src/pages/LoginPage\.tsx|src/auth/enterprise-auth-e6\.contract\.test\.js)$' || true)"
