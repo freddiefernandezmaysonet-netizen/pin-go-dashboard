@@ -35,8 +35,44 @@ export type PayoutOnboardingLinkResponse = {
   };
 };
 
+export type HostPayoutTransaction = {
+  reservationId: string;
+  reservationNumber: string | null;
+  property: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  checkIn: string;
+  checkOut: string;
+  currency: string;
+  paymentState: string | null;
+  guestPaidAmount: number | null;
+  pingoPlatformFeeAmount: number | null;
+  identityCheckFeeAmount: number | null;
+  totalPinGoFeeAmount: number | null;
+  stripeProcessingFeeAmount: number | null;
+  stripeProcessingFeeActual: boolean;
+  stripeFeeSource: "STRIPE_BALANCE_TRANSACTION" | null;
+  recordedHostPayoutAmount: number | null;
+  hostNetAmount: number | null;
+  hostPayoutStatus: string | null;
+  lastSyncedAt: string | null;
+};
+
+export type HostPayoutTransactionsResponse = {
+  ok: true;
+  items: HostPayoutTransaction[];
+};
+
 export async function getHostPayoutStatus() {
   return api<PayoutStatusResponse>("/api/dashboard/payouts/status");
+}
+
+export async function getHostPayoutTransactions(limit = 10) {
+  return api<HostPayoutTransactionsResponse>(
+    `/api/dashboard/payouts/transactions?limit=${encodeURIComponent(String(limit))}`
+  );
 }
 
 export async function createHostPayoutOnboardingLink() {
