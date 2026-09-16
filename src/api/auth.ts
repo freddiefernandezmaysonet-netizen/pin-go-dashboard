@@ -1,3 +1,5 @@
+import { loginPathForSessionError } from "../auth/sessionExpiry";
+
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
   (import.meta.env.DEV ? "http://localhost:3000" : "");
@@ -11,6 +13,13 @@ function brandHostnameHeader() {
   return hostname
     ? { "X-Pin-Go-Brand-Hostname": hostname }
     : {};
+}
+
+function redirectForSessionError(errorCode: string | null | undefined) {
+  const path = loginPathForSessionError(errorCode);
+  if (!path) return false;
+  window.location.assign(path);
+  return true;
 }
 
 export type AuthenticatedUser = {
@@ -44,13 +53,67 @@ export async function fetchMe() {
     headers: brandHostnameHeader(),
     credentials: "include",
   });
+  const data = await res.json().catch(() => null);
 
   if (!res.ok) {
+    if (res.status === 401) {
+      redirectForSessionError(data?.error);
+    }
     return null;
   }
 
-  const data = await res.json();
   return data.user;
+}
+
+export async function signalSessionActivity(): Promise<{
+  supported: boolean;
+  active: boolean;
+  touched: boolean;
+  unavailable?: boolean;
+  redirected?: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/auth/session/activity`, {
+    method: "POST",
+    headers: brandHostnameHeader(),
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => null);
+
+  if (res.status === 404) {
+    return { supported: false, active: true, touched: false };
+  }
+
+  if (res.status === 401) {
+    const redirected = redirectForSessionError(data?.error);
+    if (!redirected) {
+      window.location.assign("/login");
+    }
+    return {
+      supported: true,
+      active: false,
+      touched: false,
+      redirected: true,
+    };
+  }
+
+  if (res.status === 503) {
+    return {
+      supported: true,
+      active: true,
+      touched: false,
+      unavailable: true,
+    };
+  }
+
+  if (!res.ok) {
+    return { supported: true, active: true, touched: false };
+  }
+
+  return {
+    supported: true,
+    active: data?.active !== false,
+    touched: data?.touched === true,
+  };
 }
 
 export async function login(email: string, password: string): Promise<LoginResult> {
