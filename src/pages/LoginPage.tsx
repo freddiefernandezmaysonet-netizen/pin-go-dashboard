@@ -8,6 +8,7 @@ import {
 } from "../api/auth";
 import { fetchProperties } from "../api/properties";
 import { useAuth } from "../auth/AuthProvider";
+import { sessionNoticeFromSearch } from "../auth/sessionExpiry";
 import { useBrand } from "../branding/BrandProvider";
 
 export default function LoginPage() {
@@ -36,6 +37,7 @@ export default function LoginPage() {
     brand.kind === "CUSTOM_BRAND" ? brand.primaryColor : "#2563eb";
   const brandButtonTextColor =
     brand.kind === "CUSTOM_BRAND" ? brand.onPrimaryColor : "#ffffff";
+  const sessionNotice = sessionNoticeFromSearch(window.location.search);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -268,6 +270,24 @@ export default function LoginPage() {
           {!mfa ? (
             <>
               <h2 style={{ marginTop: 0 }}>Sign in</h2>
+
+              {sessionNotice ? (
+                <div
+                  role="status"
+                  style={{
+                    marginBottom: 16,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid #bfdbfe",
+                    background: "#eff6ff",
+                    color: "#1e3a8a",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {sessionNotice}
+                </div>
+              ) : null}
 
               <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
                 <input
