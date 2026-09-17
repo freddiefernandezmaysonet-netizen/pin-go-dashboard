@@ -241,6 +241,7 @@ export function StripeConnectIsolationV2Card({
 
         if (!status.detailsSubmitted) {
           mount(instance, "account-onboarding", onboardingRef.current);
+          return;
         }
 
         mount(instance, "account-management", managementRef.current);
@@ -425,12 +426,14 @@ export function StripeConnectIsolationV2Card({
 
           {!status.detailsSubmitted ? (
             <EmbeddedSurface title="Complete setup" containerRef={onboardingRef} />
-          ) : null}
-
-          <EmbeddedSurface title="Account settings" containerRef={managementRef} />
-          <EmbeddedSurface title="Documents" containerRef={documentsRef} />
-          <EmbeddedSurface title="Payments" containerRef={paymentsRef} />
-          <EmbeddedSurface title="Payouts" containerRef={payoutsRef} />
+          ) : (
+            <>
+              <EmbeddedSurface title="Account settings" containerRef={managementRef} />
+              <EmbeddedSurface title="Documents" containerRef={documentsRef} />
+              <EmbeddedSurface title="Payments" containerRef={paymentsRef} />
+              <EmbeddedSurface title="Payouts" containerRef={payoutsRef} />
+            </>
+          )}
         </div>
       ) : null}
 
