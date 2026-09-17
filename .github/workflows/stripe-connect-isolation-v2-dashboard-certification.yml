@@ -9,6 +9,7 @@ on:
       - "src/components/payouts/HostPayoutsExperience.tsx"
       - "src/components/payouts/stripe-connect-isolation-v2.contract.test.mjs"
       - "src/app/routes/router.tsx"
+      - "vercel.json"
       - ".github/workflows/stripe-connect-isolation-v2-dashboard-certification.yml"
   workflow_dispatch:
 
@@ -61,6 +62,10 @@ jobs:
           grep -q 'mount(instance, "account-onboarding"' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'return;' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'mount(instance, "notification-banner"' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'https://connect-js.stripe.com' vercel.json
+          grep -q 'https://js.stripe.com' vercel.json
+          grep -q 'https://app.channex.io' vercel.json
+          grep -q 'https://staging.channex.io' vercel.json
           grep -q 'HostPayoutsExperience' src/app/routes/router.tsx
           ! grep -q 'createHostPayoutDashboardLoginLink' src/components/payouts/StripeConnectIsolationV2Card.tsx
           ! grep -q 'window.location' src/components/payouts/StripeConnectIsolationV2Card.tsx

@@ -12,6 +12,7 @@ const experienceSource = readFileSync(
   "utf8"
 );
 const routerSource = readFileSync("src/app/routes/router.tsx", "utf8");
+const vercelSource = readFileSync("vercel.json", "utf8");
 
 test("Isolation V2 visibility is controlled exclusively by backend organization eligibility", () => {
   assert.doesNotMatch(cardSource, /VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED/);
@@ -93,6 +94,13 @@ test("Isolation V2 mounts only onboarding before initial setup and defers notifi
   );
   assert.match(cardSource, /VITE_STRIPE_PUBLISHABLE_KEY/);
   assert.match(cardSource, /fetchClientSecret/);
+});
+
+test("Vercel CSP allows Stripe Connect embedded frames without removing Channex", () => {
+  assert.match(vercelSource, /https:\/\/connect-js\.stripe\.com/);
+  assert.match(vercelSource, /https:\/\/js\.stripe\.com/);
+  assert.match(vercelSource, /https:\/\/app\.channex\.io/);
+  assert.match(vercelSource, /https:\/\/staging\.channex\.io/);
 });
 
 test("organization route uses the gated payout experience", () => {
