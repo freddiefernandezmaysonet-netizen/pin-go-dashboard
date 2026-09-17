@@ -1,31 +1,31 @@
 import { useEffect, useState } from "react";
-import { getStripeConnectV2Eligibility } from "../../api/payouts";
-import { HostPayoutsCard } from "./HostPayoutsCard";
 import {
-  StripeConnectIsolationV2Card,
-  stripeConnectIsolationV2UiEnabled,
-} from "./StripeConnectIsolationV2Card";
+  getStripeConnectV2Eligibility,
+  type StripeConnectV2EligibilityResponse,
+} from "../../api/payouts";
+import { HostPayoutsCard } from "./HostPayoutsCard";
+import { StripeConnectIsolationV2Card } from "./StripeConnectIsolationV2Card";
 
 export function HostPayoutsExperience() {
-  const [canUseV2, setCanUseV2] = useState(false);
+  const [eligibility, setEligibility] = useState<
+    StripeConnectV2EligibilityResponse["eligibility"] | null
+  >(null);
 
   useEffect(() => {
-    if (!stripeConnectIsolationV2UiEnabled()) {
-      setCanUseV2(false);
-      return;
-    }
-
     let cancelled = false;
 
     getStripeConnectV2Eligibility()
       .then((response) => {
         if (!cancelled) {
-          setCanUseV2(response.eligibility.eligible);
+          setEligibility(response.eligibility);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setCanUseV2(false);
+          setEligibility({
+            eligible: false,
+            accountCreationAllowed: false,
+          });
         }
       });
 
@@ -34,8 +34,12 @@ export function HostPayoutsExperience() {
     };
   }, []);
 
-  if (stripeConnectIsolationV2UiEnabled() && canUseV2) {
-    return <StripeConnectIsolationV2Card />;
+  if (eligibility?.eligible) {
+    return (
+      <StripeConnectIsolationV2Card
+        accountCreationAllowed={eligibility.accountCreationAllowed}
+      />
+    );
   }
 
   return <HostPayoutsCard />;
