@@ -57,7 +57,7 @@ import PublicBookingCancelPage from "../../pages/public-booking/PublicBookingCan
 import GuestCancellationPage from "../../pages/public-booking/GuestCancellationPage";
 import OrganizationSettingsPage from "../../pages/organization/OrganizationSettingsPage";
 import OrganizationBrandingReviewPage from "../../pages/organization/OrganizationBrandingReviewPage";
-import { HostPayoutsCard } from "../../components/payouts/HostPayoutsCard";
+import HostPayoutsExperience from "../../components/payouts/HostPayoutsExperience";
 import { useAuth } from "../../auth/AuthProvider";
 import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
@@ -148,7 +148,7 @@ function OrganizationRoute() {
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <OrganizationSettingsPage />
-      <HostPayoutsCard />
+      <HostPayoutsExperience />
     </div>
   );
 }

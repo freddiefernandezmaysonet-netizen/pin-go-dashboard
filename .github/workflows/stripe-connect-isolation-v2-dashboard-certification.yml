@@ -1,0 +1,50 @@
+name: Stripe Connect Isolation V2 Dashboard Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/api/payouts.ts"
+      - "src/components/payouts/StripeConnectIsolationV2Card.tsx"
+      - "src/components/payouts/HostPayoutsExperience.tsx"
+      - "src/components/payouts/stripe-connect-isolation-v2.contract.test.mjs"
+      - "src/app/routes/router.tsx"
+      - ".github/workflows/stripe-connect-isolation-v2-dashboard-certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: Isolation V2 dashboard contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --silent --no-audit --no-fund
+
+      - name: Run Isolation V2 dashboard contracts
+        run: node --test src/components/payouts/stripe-connect-isolation-v2.contract.test.mjs
+
+      - name: Build dashboard
+        run: npm run build
+
+      - name: Certify safety boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'connect-isolation-v2/account-session' src/api/payouts.ts
+          grep -q 'HostPayoutsExperience' src/app/routes/router.tsx
+          ! grep -q 'createHostPayoutDashboardLoginLink' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          ! grep -q 'window.location' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          ! grep -q 'instance.create("payouts")' src/components/payouts/StripeConnectIsolationV2Card.tsx

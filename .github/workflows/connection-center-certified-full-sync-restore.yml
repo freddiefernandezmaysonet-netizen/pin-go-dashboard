@@ -46,23 +46,42 @@ jobs:
       - name: Build dashboard without deployment
         run: npm run build
 
-      - name: Prove exact restoration or integrated diff allowlist
+      - name: Prove exact restoration or protected Full Sync scope
         run: |
-          if [ "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" = "agent/booking-com-integrated-closure" ]; then
+          set -euo pipefail
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+
+          if [ "$branch" = "agent/booking-com-integrated-closure" ]; then
             python3 .github/scripts/verify-booking-com-integrated-scope.py
             exit 0
           fi
+
           git fetch origin main --depth=1
-          git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
-          cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
+
+          if [ "$branch" = "agent/connection-center-certified-full-sync-restore" ]; then
+            git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
+            cat > "$RUNNER_TEMP/expected.txt" <<'EOF'
           .github/workflows/connection-center-certified-full-sync-restore.yml
           src/api/distributionFullSync.contract.test.js
           src/api/distributionFullSync.ts
           src/app/routes/router.tsx
           src/components/distribution/ConnectionCenterFullSyncControl.tsx
           EOF
-          sort "$RUNNER_TEMP/expected.txt" -o "$RUNNER_TEMP/expected.txt"
-          diff -u "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/actual.txt"
+            sort "$RUNNER_TEMP/expected.txt" -o "$RUNNER_TEMP/expected.txt"
+            diff -u "$RUNNER_TEMP/expected.txt" "$RUNNER_TEMP/actual.txt"
+            exit 0
+          fi
+
+          # Other PRs may legitimately touch router.tsx. Keep the certified Full Sync
+          # implementation frozen and prove its route mount still exists instead of
+          # requiring every unrelated PR to match the historical restoration diff.
+          git diff --exit-code origin/main...HEAD -- \
+            src/api/distributionFullSync.contract.test.js \
+            src/api/distributionFullSync.ts \
+            src/components/distribution/ConnectionCenterFullSyncControl.tsx
+
+          grep -q 'ConnectionCenterFullSyncControl' src/app/routes/router.tsx
+          grep -q '<ConnectionCenterFullSyncControl />' src/app/routes/router.tsx
 
       - name: Prove existing OTA behavior surfaces remain frozen or exactly reviewed
         run: |
