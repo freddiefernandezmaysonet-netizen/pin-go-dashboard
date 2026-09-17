@@ -64,16 +64,33 @@ test("Isolation V2 embedded experience never falls back to Express Dashboard log
   assert.match(cardSource, /No external Stripe\s+Dashboard link is used as a fallback/);
 });
 
-test("Isolation V2 mounts onboarding first and defers operational surfaces until setup completes", () => {
+test("Isolation V2 mounts only onboarding before initial setup and defers notification plus operational surfaces", () => {
   assert.match(cardSource, /"account-onboarding"/);
   assert.match(cardSource, /"account-management"/);
   assert.match(cardSource, /"notification-banner"/);
   assert.match(cardSource, /"documents"/);
   assert.match(cardSource, /"payments"/);
   assert.match(cardSource, /"payouts"/);
-  assert.match(cardSource, /if \(!status\.detailsSubmitted\) \{[\s\S]*?mount\(instance, "account-onboarding"[\s\S]*?return;[\s\S]*?\}/);
-  assert.match(cardSource, /return;[\s\S]*?mount\(instance, "account-management"[\s\S]*?mount\(instance, "documents"[\s\S]*?mount\(instance, "payments"[\s\S]*?mount\(instance, "payouts"/);
-  assert.match(cardSource, /!status\.detailsSubmitted \? \([\s\S]*?Complete setup[\s\S]*?\) : \([\s\S]*?Account settings[\s\S]*?Documents[\s\S]*?Payments[\s\S]*?Payouts/);
+
+  const preOnboardingMatch = cardSource.match(
+    /if \(!status\.detailsSubmitted\) \{([\s\S]*?)return;([\s\S]*?)\}/
+  );
+  assert.ok(preOnboardingMatch);
+  assert.match(preOnboardingMatch[1], /mount\(instance, "account-onboarding"/);
+  assert.doesNotMatch(preOnboardingMatch[1], /notification-banner/);
+  assert.doesNotMatch(preOnboardingMatch[1], /account-management/);
+  assert.doesNotMatch(preOnboardingMatch[1], /documents/);
+  assert.doesNotMatch(preOnboardingMatch[1], /payments/);
+  assert.doesNotMatch(preOnboardingMatch[1], /payouts/);
+
+  assert.match(
+    cardSource,
+    /return;[\s\S]*?mount\(instance, "notification-banner"[\s\S]*?mount\(instance, "account-management"[\s\S]*?mount\(instance, "documents"[\s\S]*?mount\(instance, "payments"[\s\S]*?mount\(instance, "payouts"/
+  );
+  assert.match(
+    cardSource,
+    /!status\.detailsSubmitted \? \([\s\S]*?Complete setup[\s\S]*?\) : \([\s\S]*?notificationRef[\s\S]*?Account settings[\s\S]*?Documents[\s\S]*?Payments[\s\S]*?Payouts/
+  );
   assert.match(cardSource, /VITE_STRIPE_PUBLISHABLE_KEY/);
   assert.match(cardSource, /fetchClientSecret/);
 });
