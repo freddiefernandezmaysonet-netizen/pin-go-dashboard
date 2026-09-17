@@ -58,7 +58,9 @@ jobs:
           grep -q 'documents' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'instance.create(name)' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'if (!status.detailsSubmitted)' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'mount(instance, "account-onboarding"' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'return;' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'mount(instance, "notification-banner"' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'HostPayoutsExperience' src/app/routes/router.tsx
           ! grep -q 'createHostPayoutDashboardLoginLink' src/components/payouts/StripeConnectIsolationV2Card.tsx
           ! grep -q 'window.location' src/components/payouts/StripeConnectIsolationV2Card.tsx
