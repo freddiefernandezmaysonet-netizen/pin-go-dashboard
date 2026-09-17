@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  createStripeConnectIsolationV2Account,
   createStripeConnectIsolationV2AccountSession,
   getHostPayoutStatus,
   type OrganizationPayoutStatus,
@@ -13,8 +14,16 @@ type StripeConnectElement = HTMLElement & {
   setOnLoaderStart?: (handler: (event: unknown) => void) => void;
 };
 
+type EmbeddedComponentName =
+  | "account-onboarding"
+  | "account-management"
+  | "notification-banner"
+  | "documents"
+  | "payments"
+  | "payouts";
+
 type StripeConnectInstance = {
-  create(name: "payments"): StripeConnectElement;
+  create(name: EmbeddedComponentName): StripeConnectElement;
 };
 
 type StripeConnectGlobal = {
@@ -39,6 +48,16 @@ declare global {
 export function stripeConnectIsolationV2UiEnabled() {
   return (
     String(import.meta.env.VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED ?? "")
+      .trim()
+      .toLowerCase() === "true"
+  );
+}
+
+export function stripeConnectV2AccountCreationUiEnabled() {
+  return (
+    String(
+      import.meta.env.VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED ?? ""
+    )
       .trim()
       .toLowerCase() === "true"
   );
@@ -106,16 +125,53 @@ function statusLabel(status: OrganizationPayoutStatus | null) {
   return status.status;
 }
 
+function EmbeddedSurface({
+  title,
+  containerRef,
+}: {
+  title: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+}) {
+  return (
+    <div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 900,
+          color: "#0f172a",
+          marginBottom: 10,
+        }}
+      >
+        {title}
+      </div>
+      <div ref={containerRef} style={{ minHeight: 72 }} />
+    </div>
+  );
+}
+
 export function StripeConnectIsolationV2Card() {
-  const paymentsContainerRef = useRef<HTMLDivElement>(null);
+  const onboardingRef = useRef<HTMLDivElement>(null);
+  const managementRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const documentsRef = useRef<HTMLDivElement>(null);
+  const paymentsRef = useRef<HTMLDivElement>(null);
+  const payoutsRef = useRef<HTMLDivElement>(null);
+
   const [status, setStatus] = useState<OrganizationPayoutStatus | null>(null);
   const [accountContext, setAccountContext] =
     useState<StripeConnectIsolationV2AccountSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [embeddedVisible, setEmbeddedVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const publishableKey = getPublishableKey();
+
+  const refreshStatus = async () => {
+    const response = await getHostPayoutStatus();
+    setStatus(response.payoutStatus);
+    return response.payoutStatus;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -142,7 +198,7 @@ export function StripeConnectIsolationV2Card() {
     if (!status?.stripeConnectAccountId) return;
 
     let cancelled = false;
-    let mountedElement: StripeConnectElement | null = null;
+    const mountedElements: StripeConnectElement[] = [];
 
     const fetchClientSecret = async () => {
       try {
@@ -161,11 +217,28 @@ export function StripeConnectIsolationV2Card() {
       }
     };
 
+    const mount = (
+      instance: StripeConnectInstance,
+      name: EmbeddedComponentName,
+      target: HTMLDivElement | null
+    ) => {
+      if (!target) return;
+      const element = instance.create(name);
+      mountedElements.push(element);
+      element.setOnLoaderStart?.(() => {
+        if (!cancelled) setEmbeddedVisible(true);
+      });
+      element.setOnLoadError?.(() => {
+        if (!cancelled) {
+          setError(`Stripe ${name} could not be loaded for this organization.`);
+        }
+      });
+      target.replaceChildren(element);
+    };
+
     loadConnectJs()
       .then((stripeConnect) => {
-        if (cancelled || !stripeConnect.init || !paymentsContainerRef.current) {
-          return;
-        }
+        if (cancelled || !stripeConnect.init) return;
 
         const instance = stripeConnect.init({
           publishableKey,
@@ -179,18 +252,16 @@ export function StripeConnectIsolationV2Card() {
           },
         });
 
-        const payments = instance.create("payments");
-        mountedElement = payments;
-        payments.setOnLoaderStart?.(() => {
-          if (!cancelled) setEmbeddedVisible(true);
-        });
-        payments.setOnLoadError?.(() => {
-          if (!cancelled) {
-            setError("Stripe payments could not be loaded for this organization.");
-          }
-        });
+        mount(instance, "notification-banner", notificationRef.current);
 
-        paymentsContainerRef.current.replaceChildren(payments);
+        if (!status.detailsSubmitted) {
+          mount(instance, "account-onboarding", onboardingRef.current);
+        }
+
+        mount(instance, "account-management", managementRef.current);
+        mount(instance, "documents", documentsRef.current);
+        mount(instance, "payments", paymentsRef.current);
+        mount(instance, "payouts", payoutsRef.current);
       })
       .catch(() => {
         if (!cancelled) setError("Stripe Connect could not be loaded.");
@@ -198,13 +269,32 @@ export function StripeConnectIsolationV2Card() {
 
     return () => {
       cancelled = true;
-      mountedElement?.remove();
+      for (const element of mountedElements) element.remove();
     };
-  }, [publishableKey, status?.stripeConnectAccountId]);
+  }, [publishableKey, status?.stripeConnectAccountId, status?.detailsSubmitted]);
 
   if (!stripeConnectIsolationV2UiEnabled()) {
     return null;
   }
+
+  const handleCreateAccount = async () => {
+    if (!stripeConnectV2AccountCreationUiEnabled()) return;
+
+    setCreatingAccount(true);
+    setError(null);
+    try {
+      await createStripeConnectIsolationV2Account();
+      await refreshStatus();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to create the Stripe connected account."
+      );
+    } finally {
+      setCreatingAccount(false);
+    }
+  };
 
   return (
     <section
@@ -308,9 +398,21 @@ export function StripeConnectIsolationV2Card() {
 
       {!status?.stripeConnectAccountId && !loading ? (
         <div style={noticeStyle}>
-          This organization does not have a connected Stripe account. V2
-          onboarding for new no-dashboard accounts is intentionally not active
-          in this phase.
+          <div>This organization does not have a connected Stripe account.</div>
+          {stripeConnectV2AccountCreationUiEnabled() ? (
+            <button
+              type="button"
+              onClick={handleCreateAccount}
+              disabled={creatingAccount}
+              style={{ marginTop: 12 }}
+            >
+              {creatingAccount ? "Creating…" : "Create Stripe account"}
+            </button>
+          ) : (
+            <div style={{ marginTop: 8 }}>
+              V2 account creation remains disabled for this build.
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -331,23 +433,23 @@ export function StripeConnectIsolationV2Card() {
       ) : null}
 
       {status?.stripeConnectAccountId && publishableKey ? (
-        <div>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 900,
-              color: "#0f172a",
-              marginBottom: 10,
-            }}
-          >
-            Payments
-          </div>
+        <div style={{ display: "grid", gap: 22 }}>
           {!embeddedVisible ? (
-            <div style={{ color: "#64748b", fontSize: 13, marginBottom: 10 }}>
-              Loading the organization-scoped Stripe payments view…
+            <div style={{ color: "#64748b", fontSize: 13 }}>
+              Loading the organization-scoped Stripe experience…
             </div>
           ) : null}
-          <div ref={paymentsContainerRef} style={{ minHeight: 120 }} />
+
+          <div ref={notificationRef} style={{ minHeight: 24 }} />
+
+          {!status.detailsSubmitted ? (
+            <EmbeddedSurface title="Complete setup" containerRef={onboardingRef} />
+          ) : null}
+
+          <EmbeddedSurface title="Account settings" containerRef={managementRef} />
+          <EmbeddedSurface title="Documents" containerRef={documentsRef} />
+          <EmbeddedSurface title="Payments" containerRef={paymentsRef} />
+          <EmbeddedSurface title="Payouts" containerRef={payoutsRef} />
         </div>
       ) : null}
 
@@ -360,9 +462,9 @@ export function StripeConnectIsolationV2Card() {
           paddingTop: 14,
         }}
       >
-        Payout readiness is shown from Pin&Go&apos;s organization-scoped record.
-        Money-moving actions remain disabled in the Isolation V2 Account Session
-        during this canary phase.
+        Account creation and the embedded experience are independently gated.
+        Refunds, disputes, capture, instant payouts, standard payouts and payout
+        schedule edits remain disabled during this canary phase.
       </div>
     </section>
   );

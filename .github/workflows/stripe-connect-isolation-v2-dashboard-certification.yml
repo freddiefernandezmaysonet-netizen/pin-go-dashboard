@@ -43,8 +43,14 @@ jobs:
         run: |
           set -euo pipefail
           grep -q 'VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'connect-isolation-v2/account' src/api/payouts.ts
           grep -q 'connect-isolation-v2/account-session' src/api/payouts.ts
+          grep -q 'account-onboarding' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'account-management' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'notification-banner' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'documents' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          grep -q 'instance.create(name)' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'HostPayoutsExperience' src/app/routes/router.tsx
           ! grep -q 'createHostPayoutDashboardLoginLink' src/components/payouts/StripeConnectIsolationV2Card.tsx
           ! grep -q 'window.location' src/components/payouts/StripeConnectIsolationV2Card.tsx
-          ! grep -q 'instance.create("payouts")' src/components/payouts/StripeConnectIsolationV2Card.tsx
