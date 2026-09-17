@@ -43,6 +43,20 @@ export type PayoutDashboardLoginLinkResponse = {
   };
 };
 
+export type StripeConnectIsolationV2AccountSession = {
+  clientSecret: string;
+  expiresAt: number;
+  accountId: string;
+  accountDisplayId: string;
+  organizationId: string;
+  organizationName: string;
+};
+
+export type StripeConnectIsolationV2AccountSessionResponse = {
+  ok: true;
+  accountSession: StripeConnectIsolationV2AccountSession;
+};
+
 export async function getHostPayoutStatus() {
   return api<PayoutStatusResponse>("/api/dashboard/payouts/status");
 }
@@ -59,6 +73,15 @@ export async function createHostPayoutOnboardingLink() {
 export async function createHostPayoutDashboardLoginLink() {
   return api<PayoutDashboardLoginLinkResponse>(
     "/api/dashboard/payouts/login-link",
+    {
+      method: "POST",
+    }
+  );
+}
+
+export async function createStripeConnectIsolationV2AccountSession() {
+  return api<StripeConnectIsolationV2AccountSessionResponse>(
+    "/api/dashboard/payouts/connect-isolation-v2/account-session",
     {
       method: "POST",
     }
