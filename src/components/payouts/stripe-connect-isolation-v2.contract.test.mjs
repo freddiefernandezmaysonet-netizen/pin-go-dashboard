@@ -65,6 +65,15 @@ test("Isolation V2 embedded experience never falls back to Express Dashboard log
   assert.match(cardSource, /No external Stripe\s+Dashboard link is used as a fallback/);
 });
 
+test("Isolation V2 synchronizes payout readiness with Stripe instead of reading a stale snapshot", () => {
+  assert.match(apiSource, /export async function syncHostPayoutStatus\(\)/);
+  assert.match(apiSource, /\/api\/dashboard\/payouts\/sync/);
+  assert.match(cardSource, /syncHostPayoutStatus/);
+  assert.doesNotMatch(cardSource, /getHostPayoutStatus/);
+  assert.match(cardSource, /const refreshStatus = async \(\) => \{[\s\S]*?syncHostPayoutStatus\(\)/);
+  assert.match(cardSource, /useEffect\(\(\) => \{[\s\S]*?syncHostPayoutStatus\(\)/);
+});
+
 test("Isolation V2 mounts only onboarding before initial setup and defers notification plus operational surfaces", () => {
   assert.match(cardSource, /"account-onboarding"/);
   assert.match(cardSource, /"account-management"/);
