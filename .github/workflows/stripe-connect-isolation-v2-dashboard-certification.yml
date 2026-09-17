@@ -53,6 +53,8 @@ jobs:
           ! grep -q 'VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'connect-isolation-v2/account' src/api/payouts.ts
           grep -q 'connect-isolation-v2/account-session' src/api/payouts.ts
+          grep -q 'syncHostPayoutStatus' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          ! grep -q 'getHostPayoutStatus' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'account-onboarding' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'account-management' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'notification-banner' src/components/payouts/StripeConnectIsolationV2Card.tsx

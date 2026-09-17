@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   createStripeConnectIsolationV2Account,
   createStripeConnectIsolationV2AccountSession,
-  getHostPayoutStatus,
+  syncHostPayoutStatus,
   type OrganizationPayoutStatus,
   type StripeConnectIsolationV2AccountSession,
 } from "../../api/payouts";
@@ -154,7 +154,7 @@ export function StripeConnectIsolationV2Card({
   const publishableKey = getPublishableKey();
 
   const refreshStatus = async () => {
-    const response = await getHostPayoutStatus();
+    const response = await syncHostPayoutStatus();
     setStatus(response.payoutStatus);
     return response.payoutStatus;
   };
@@ -162,12 +162,12 @@ export function StripeConnectIsolationV2Card({
   useEffect(() => {
     let cancelled = false;
 
-    getHostPayoutStatus()
+    syncHostPayoutStatus()
       .then((response) => {
         if (!cancelled) setStatus(response.payoutStatus);
       })
       .catch(() => {
-        if (!cancelled) setError("Unable to load payout status.");
+        if (!cancelled) setError("Unable to sync payout status.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
