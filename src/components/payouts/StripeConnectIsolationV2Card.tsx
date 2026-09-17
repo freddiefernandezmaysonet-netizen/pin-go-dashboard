@@ -45,24 +45,6 @@ declare global {
   }
 }
 
-export function stripeConnectIsolationV2UiEnabled() {
-  return (
-    String(import.meta.env.VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED ?? "")
-      .trim()
-      .toLowerCase() === "true"
-  );
-}
-
-export function stripeConnectV2AccountCreationUiEnabled() {
-  return (
-    String(
-      import.meta.env.VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED ?? ""
-    )
-      .trim()
-      .toLowerCase() === "true"
-  );
-}
-
 function getPublishableKey() {
   return String(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "").trim();
 }
@@ -149,7 +131,11 @@ function EmbeddedSurface({
   );
 }
 
-export function StripeConnectIsolationV2Card() {
+export function StripeConnectIsolationV2Card({
+  accountCreationAllowed,
+}: {
+  accountCreationAllowed: boolean;
+}) {
   const onboardingRef = useRef<HTMLDivElement>(null);
   const managementRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -193,7 +179,6 @@ export function StripeConnectIsolationV2Card() {
   }, []);
 
   useEffect(() => {
-    if (!stripeConnectIsolationV2UiEnabled()) return;
     if (!publishableKey) return;
     if (!status?.stripeConnectAccountId) return;
 
@@ -273,12 +258,8 @@ export function StripeConnectIsolationV2Card() {
     };
   }, [publishableKey, status?.stripeConnectAccountId, status?.detailsSubmitted]);
 
-  if (!stripeConnectIsolationV2UiEnabled()) {
-    return null;
-  }
-
   const handleCreateAccount = async () => {
-    if (!stripeConnectV2AccountCreationUiEnabled()) return;
+    if (!accountCreationAllowed) return;
 
     setCreatingAccount(true);
     setError(null);
@@ -390,16 +371,16 @@ export function StripeConnectIsolationV2Card() {
 
       {!publishableKey ? (
         <div style={noticeStyle}>
-          Isolation V2 is enabled in the UI, but the Stripe publishable key is
-          not configured for this build. No external Stripe Dashboard link is
-          used as a fallback.
+          Stripe Connect is enabled for this organization, but the Stripe
+          publishable key is not configured for this build. No external Stripe
+          Dashboard link is used as a fallback.
         </div>
       ) : null}
 
       {!status?.stripeConnectAccountId && !loading ? (
         <div style={noticeStyle}>
           <div>This organization does not have a connected Stripe account.</div>
-          {stripeConnectV2AccountCreationUiEnabled() ? (
+          {accountCreationAllowed ? (
             <button
               type="button"
               onClick={handleCreateAccount}
@@ -410,7 +391,7 @@ export function StripeConnectIsolationV2Card() {
             </button>
           ) : (
             <div style={{ marginTop: 8 }}>
-              V2 account creation remains disabled for this build.
+              V2 account creation remains disabled by the server canary policy.
             </div>
           )}
         </div>
@@ -462,9 +443,10 @@ export function StripeConnectIsolationV2Card() {
           paddingTop: 14,
         }}
       >
-        Account creation and the embedded experience are independently gated.
-        Refunds, disputes, capture, instant payouts, standard payouts and payout
-        schedule edits remain disabled during this canary phase.
+        Visibility and account creation are controlled by the authenticated
+        organization&apos;s server-side canary policy. Refunds, disputes,
+        capture, instant payouts, standard payouts and payout schedule edits
+        remain disabled during this canary phase.
       </div>
     </section>
   );
