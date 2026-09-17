@@ -64,13 +64,16 @@ test("Isolation V2 embedded experience never falls back to Express Dashboard log
   assert.match(cardSource, /No external Stripe\s+Dashboard link is used as a fallback/);
 });
 
-test("Isolation V2 mounts the required no-dashboard embedded components", () => {
+test("Isolation V2 mounts onboarding first and defers operational surfaces until setup completes", () => {
   assert.match(cardSource, /"account-onboarding"/);
   assert.match(cardSource, /"account-management"/);
   assert.match(cardSource, /"notification-banner"/);
   assert.match(cardSource, /"documents"/);
   assert.match(cardSource, /"payments"/);
   assert.match(cardSource, /"payouts"/);
+  assert.match(cardSource, /if \(!status\.detailsSubmitted\) \{[\s\S]*?mount\(instance, "account-onboarding"[\s\S]*?return;[\s\S]*?\}/);
+  assert.match(cardSource, /return;[\s\S]*?mount\(instance, "account-management"[\s\S]*?mount\(instance, "documents"[\s\S]*?mount\(instance, "payments"[\s\S]*?mount\(instance, "payouts"/);
+  assert.match(cardSource, /!status\.detailsSubmitted \? \([\s\S]*?Complete setup[\s\S]*?\) : \([\s\S]*?Account settings[\s\S]*?Documents[\s\S]*?Payments[\s\S]*?Payouts/);
   assert.match(cardSource, /VITE_STRIPE_PUBLISHABLE_KEY/);
   assert.match(cardSource, /fetchClientSecret/);
 });
