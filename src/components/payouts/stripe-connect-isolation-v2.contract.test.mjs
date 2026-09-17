@@ -21,7 +21,21 @@ test("Isolation V2 UI and V2 account creation are independently default-off", ()
   assert.match(experienceSource, /return <HostPayoutsCard \/>/);
 });
 
+test("Isolation V2 rendering requires server-side organization eligibility and fails closed", () => {
+  assert.match(experienceSource, /getStripeConnectV2Eligibility/);
+  assert.match(experienceSource, /response\.eligibility\.eligible/);
+  assert.match(experienceSource, /setCanUseV2\(false\)/);
+  assert.match(
+    experienceSource,
+    /stripeConnectIsolationV2UiEnabled\(\) && canUseV2/
+  );
+});
+
 test("Isolation V2 account endpoints never accept an account id from the browser", () => {
+  assert.match(
+    apiSource,
+    /\/api\/dashboard\/payouts\/connect-isolation-v2\/eligibility/
+  );
   assert.match(
     apiSource,
     /\/api\/dashboard\/payouts\/connect-isolation-v2\/account"/

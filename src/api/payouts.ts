@@ -43,6 +43,14 @@ export type PayoutDashboardLoginLinkResponse = {
   };
 };
 
+export type StripeConnectV2EligibilityResponse = {
+  ok: true;
+  eligibility: {
+    eligible: boolean;
+    accountCreationAllowed: boolean;
+  };
+};
+
 export type StripeConnectIsolationV2Account = {
   accountId: string;
   accountDisplayId: string;
@@ -71,6 +79,12 @@ export type StripeConnectIsolationV2AccountSessionResponse = {
 
 export async function getHostPayoutStatus() {
   return api<PayoutStatusResponse>("/api/dashboard/payouts/status");
+}
+
+export async function getStripeConnectV2Eligibility() {
+  return api<StripeConnectV2EligibilityResponse>(
+    "/api/dashboard/payouts/connect-isolation-v2/eligibility"
+  );
 }
 
 export async function createHostPayoutOnboardingLink() {
