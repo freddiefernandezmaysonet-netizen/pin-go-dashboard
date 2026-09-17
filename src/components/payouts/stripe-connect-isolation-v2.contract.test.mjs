@@ -13,22 +13,28 @@ const experienceSource = readFileSync(
 );
 const routerSource = readFileSync("src/app/routes/router.tsx", "utf8");
 
-test("Isolation V2 UI and V2 account creation are independently default-off", () => {
-  assert.match(cardSource, /VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED/);
-  assert.match(cardSource, /VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED/);
-  assert.match(cardSource, /toLowerCase\(\) === "true"/);
-  assert.match(experienceSource, /stripeConnectIsolationV2UiEnabled\(\)/);
+test("Isolation V2 visibility is controlled exclusively by backend organization eligibility", () => {
+  assert.doesNotMatch(cardSource, /VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED/);
+  assert.doesNotMatch(cardSource, /VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED/);
+  assert.doesNotMatch(experienceSource, /VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED/);
+  assert.doesNotMatch(experienceSource, /VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED/);
+  assert.match(experienceSource, /getStripeConnectV2Eligibility/);
+  assert.match(experienceSource, /eligibility\?\.eligible/);
   assert.match(experienceSource, /return <HostPayoutsCard \/>/);
 });
 
-test("Isolation V2 rendering requires server-side organization eligibility and fails closed", () => {
-  assert.match(experienceSource, /getStripeConnectV2Eligibility/);
-  assert.match(experienceSource, /response\.eligibility\.eligible/);
-  assert.match(experienceSource, /setCanUseV2\(false\)/);
-  assert.match(
-    experienceSource,
-    /stripeConnectIsolationV2UiEnabled\(\) && canUseV2/
-  );
+test("Isolation V2 account creation permission comes from backend eligibility", () => {
+  assert.match(experienceSource, /accountCreationAllowed=/);
+  assert.match(experienceSource, /eligibility\.accountCreationAllowed/);
+  assert.match(cardSource, /accountCreationAllowed: boolean/);
+  assert.match(cardSource, /if \(!accountCreationAllowed\) return/);
+  assert.match(cardSource, /accountCreationAllowed \?/);
+});
+
+test("Isolation V2 fails closed to legacy payouts when eligibility request fails", () => {
+  assert.match(experienceSource, /eligible: false/);
+  assert.match(experienceSource, /accountCreationAllowed: false/);
+  assert.match(experienceSource, /return <HostPayoutsCard \/>/);
 });
 
 test("Isolation V2 account endpoints never accept an account id from the browser", () => {
@@ -55,7 +61,7 @@ test("Isolation V2 embedded experience never falls back to Express Dashboard log
   assert.doesNotMatch(cardSource, /login-link/);
   assert.doesNotMatch(cardSource, /window\.location/);
   assert.doesNotMatch(cardSource, /express\.stripe\.com/);
-  assert.match(cardSource, /No external Stripe Dashboard link is\s+used as a fallback/);
+  assert.match(cardSource, /No external Stripe\s+Dashboard link is used as a fallback/);
 });
 
 test("Isolation V2 mounts the required no-dashboard embedded components", () => {
