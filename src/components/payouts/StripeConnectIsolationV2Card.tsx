@@ -237,13 +237,12 @@ export function StripeConnectIsolationV2Card({
           },
         });
 
-        mount(instance, "notification-banner", notificationRef.current);
-
         if (!status.detailsSubmitted) {
           mount(instance, "account-onboarding", onboardingRef.current);
           return;
         }
 
+        mount(instance, "notification-banner", notificationRef.current);
         mount(instance, "account-management", managementRef.current);
         mount(instance, "documents", documentsRef.current);
         mount(instance, "payments", paymentsRef.current);
@@ -422,12 +421,11 @@ export function StripeConnectIsolationV2Card({
             </div>
           ) : null}
 
-          <div ref={notificationRef} style={{ minHeight: 24 }} />
-
           {!status.detailsSubmitted ? (
             <EmbeddedSurface title="Complete setup" containerRef={onboardingRef} />
           ) : (
             <>
+              <div ref={notificationRef} style={{ minHeight: 24 }} />
               <EmbeddedSurface title="Account settings" containerRef={managementRef} />
               <EmbeddedSurface title="Documents" containerRef={documentsRef} />
               <EmbeddedSurface title="Payments" containerRef={paymentsRef} />
