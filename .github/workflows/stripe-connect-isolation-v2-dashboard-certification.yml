@@ -42,11 +42,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
-          grep -q 'VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'connect-isolation-v2/eligibility' src/api/payouts.ts
           grep -q 'getStripeConnectV2Eligibility' src/components/payouts/HostPayoutsExperience.tsx
-          grep -q 'setCanUseV2(false)' src/components/payouts/HostPayoutsExperience.tsx
+          grep -q 'eligibility.accountCreationAllowed' src/components/payouts/HostPayoutsExperience.tsx
+          grep -q 'accountCreationAllowed: boolean' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          ! grep -q 'VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED' src/components/payouts/HostPayoutsExperience.tsx
+          ! grep -q 'VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED' src/components/payouts/HostPayoutsExperience.tsx
+          ! grep -q 'VITE_STRIPE_CONNECT_ISOLATION_V2_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
+          ! grep -q 'VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED' src/components/payouts/StripeConnectIsolationV2Card.tsx
           grep -q 'connect-isolation-v2/account' src/api/payouts.ts
           grep -q 'connect-isolation-v2/account-session' src/api/payouts.ts
           grep -q 'account-onboarding' src/components/payouts/StripeConnectIsolationV2Card.tsx
