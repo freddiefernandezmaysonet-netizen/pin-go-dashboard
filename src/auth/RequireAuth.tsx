@@ -1,12 +1,13 @@
 import { useState, type ReactElement } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { logout } from "../api/auth";
+import { loginPathForSessionError } from "./sessionExpiry";
 import { useBrand } from "../branding/BrandProvider";
 import { useAuth } from "./AuthProvider";
 
 export function RequireAuth({ children }: { children: ReactElement }) {
   const navigate = useNavigate();
-  const { user, loading, refresh } = useAuth();
+  const { user, loading, sessionError, refresh } = useAuth();
   const { brand, isCustomBrand } = useBrand();
   const [signingOut, setSigningOut] = useState(false);
   const logoUrl =
@@ -116,7 +117,12 @@ export function RequireAuth({ children }: { children: ReactElement }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to={loginPathForSessionError(sessionError) ?? "/login"}
+        replace
+      />
+    );
   }
 
   if (organizationDomainMismatch) {
