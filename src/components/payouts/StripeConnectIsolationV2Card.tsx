@@ -228,7 +228,7 @@ export function StripeConnectIsolationV2Card({
         const instance = stripeConnect.init({
           publishableKey,
           fetchClientSecret,
-          locale: "es-419",
+          locale: "en-US",
           appearance: {
             overlays: "dialog",
             variables: {
