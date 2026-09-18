@@ -40,10 +40,17 @@ jobs:
         run: npm ci --silent --no-audit --no-fund
 
       - name: Contract tests
-        run: node --test src/auth/enterprise-auth-e6.contract.test.js
+        run: >-
+          node --test
+          src/auth/enterprise-auth-e6.contract.test.js
+          src/auth/public-route-session-isolation.contract.test.js
 
       - name: Lint E6 auth surface
-        run: npx eslint src/api/auth.ts src/pages/LoginPage.tsx
+        run: >-
+          npx eslint
+          src/api/auth.ts
+          src/auth/RequireAuth.tsx
+          src/pages/LoginPage.tsx
 
       - name: Production build
         run: npm run build
@@ -55,11 +62,12 @@ jobs:
           git fetch --no-tags origin main:refs/remotes/origin/main
           CHANGED="$(git diff --name-only origin/main...HEAD)"
           echo "$CHANGED"
-          test -z "$(echo "$CHANGED" | grep -v -E '^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|src/api/auth\.ts|src/api/client\.ts|src/auth/AuthProvider\.tsx|src/auth/RequireAuth\.tsx|src/auth/sessionExpiry\.ts|src/pages/LoginPage\.tsx|src/auth/enterprise-auth-e6\.contract\.test\.js|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/auth/public-route-session-isolation\.contract\.test\.js)
+          allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|src/api/auth\.ts|src/api/client\.ts|src/auth/AuthProvider\.tsx|src/auth/RequireAuth\.tsx|src/auth/sessionExpiry\.ts|src/pages/LoginPage\.tsx|src/auth/enterprise-auth-e6\.contract\.test\.js|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/auth/public-route-session-isolation\.contract\.test\.js)$'
+          unexpected="$(echo "$CHANGED" | grep -Ev "$allowed" || true)"
+          test -z "$unexpected"
+
           grep -q '/auth/mfa/verify' src/api/auth.ts
           grep -q '/auth/mfa/resend' src/api/auth.ts
-          grep -q 'Trust this device for 30 days' src/pages/LoginPage.tsx
- || true)"
-          grep -q '/auth/mfa/verify' src/api/auth.ts
-          grep -q '/auth/mfa/resend' src/api/auth.ts
+          ! grep -Eq 'window\.location\.(assign|href)' src/api/auth.ts
+          grep -q 'loginPathForSessionError' src/auth/RequireAuth.tsx
           grep -q 'Trust this device for 30 days' src/pages/LoginPage.tsx
