@@ -228,7 +228,7 @@ export function StripeConnectIsolationV2Card({
         const instance = stripeConnect.init({
           publishableKey,
           fetchClientSecret,
-          locale: "es-419",
+          locale: "en-US",
           appearance: {
             overlays: "dialog",
             variables: {
@@ -308,7 +308,7 @@ export function StripeConnectIsolationV2Card({
               textTransform: "uppercase",
             }}
           >
-            Stripe Connect Isolation V2
+            Stripe Connect
           </div>
           <h3 style={{ margin: "8px 0 0", fontSize: 21, color: "#0f172a" }}>
             Payments & Payouts
@@ -391,7 +391,7 @@ export function StripeConnectIsolationV2Card({
             </button>
           ) : (
             <div style={{ marginTop: 8 }}>
-              V2 account creation remains disabled by the server canary policy.
+              Stripe account setup is not available for this organization yet.
             </div>
           )}
         </div>
@@ -444,10 +444,9 @@ export function StripeConnectIsolationV2Card({
           paddingTop: 14,
         }}
       >
-        Visibility and account creation are controlled by the authenticated
-        organization&apos;s server-side canary policy. Refunds, disputes,
-        capture, instant payouts, standard payouts and payout schedule edits
-        remain disabled during this canary phase.
+        Payments and payouts are securely scoped to the authenticated
+        organization. Available Stripe features depend on the organization&apos;s
+        account status and permissions.
       </div>
     </section>
   );
