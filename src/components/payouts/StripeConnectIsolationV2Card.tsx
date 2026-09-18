@@ -444,10 +444,9 @@ export function StripeConnectIsolationV2Card({
           paddingTop: 14,
         }}
       >
-        Visibility and account creation are controlled by the authenticated
-        organization&apos;s server-side canary policy. Refunds, disputes,
-        capture, instant payouts, standard payouts and payout schedule edits
-        remain disabled during this canary phase.
+        Payments and payouts are securely scoped to the authenticated
+        organization. Available Stripe features depend on the organization&apos;s
+        account status and permissions.
       </div>
     </section>
   );
