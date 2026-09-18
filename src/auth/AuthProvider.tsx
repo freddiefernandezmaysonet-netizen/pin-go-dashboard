@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
-import { fetchMe, signalSessionActivity } from "../api/auth";
+import { fetchMeState, signalSessionActivity, type AuthSessionError } from "../api/auth";
 
 const SESSION_ACTIVITY_SIGNAL_INTERVAL_MS = 4 * 60 * 1000;
 
@@ -16,38 +16,49 @@ type User = {
 type AuthContextType = {
   user: User | null;
   loading: boolean;
+  sessionError: AuthSessionError;
   refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  sessionError: null,
   refresh: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<AuthSessionError>(null);
   const userId = user?.id ?? null;
 
   async function refresh() {
     try {
-      const u = await fetchMe();
-      setUser(u);
+      const state = await fetchMeState();
+      setUser(state.user);
+      setSessionError(state.sessionError);
     } catch {
       setUser(null);
+      setSessionError(null);
     }
   }
 
   useEffect(() => {
     let cancelled = false;
 
-    void fetchMe()
-      .then((u) => {
-        if (!cancelled) setUser(u);
+    void fetchMeState()
+      .then((state) => {
+        if (!cancelled) {
+          setUser(state.user);
+          setSessionError(state.sessionError);
+        }
       })
       .catch(() => {
-        if (!cancelled) setUser(null);
+        if (!cancelled) {
+          setUser(null);
+          setSessionError(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -76,6 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       lastSignalAt = now;
       inFlight = true;
       void signalSessionActivity()
+        .then((activity) => {
+          if (!activity.active) {
+            setUser(null);
+            setSessionError(activity.sessionError ?? null);
+          }
+        })
         .catch((error) => {
           console.error("[AuthProvider] session activity signal failed", error);
         })
@@ -110,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [userId]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, refresh }}>
+    <AuthContext.Provider value={{ user, loading, sessionError, refresh }}>
       {children}
     </AuthContext.Provider>
   );
