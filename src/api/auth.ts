@@ -1,5 +1,3 @@
-import { loginPathForSessionError } from "../auth/sessionExpiry";
-
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
   (import.meta.env.DEV ? "http://localhost:3000" : "");
@@ -13,13 +11,6 @@ function brandHostnameHeader() {
   return hostname
     ? { "X-Pin-Go-Brand-Hostname": hostname }
     : {};
-}
-
-function redirectForSessionError(errorCode: string | null | undefined) {
-  const path = loginPathForSessionError(errorCode);
-  if (!path) return false;
-  window.location.assign(path);
-  return true;
 }
 
 export type AuthenticatedUser = {
@@ -48,7 +39,26 @@ export type LoginMfaRequired = {
 
 export type LoginResult = LoginSuccess | LoginMfaRequired;
 
-export async function fetchMe() {
+export type AuthSessionError =
+  | "SESSION_EXPIRED"
+  | "SESSION_REAUTH_REQUIRED"
+  | null;
+
+export type FetchMeState = {
+  user: AuthenticatedUser | null;
+  sessionError: AuthSessionError;
+};
+
+function getAuthSessionError(
+  errorCode: string | null | undefined
+): AuthSessionError {
+  return errorCode === "SESSION_EXPIRED" ||
+    errorCode === "SESSION_REAUTH_REQUIRED"
+    ? errorCode
+    : null;
+}
+
+export async function fetchMeState(): Promise<FetchMeState> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     headers: brandHostnameHeader(),
     credentials: "include",
@@ -56,13 +66,22 @@ export async function fetchMe() {
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    if (res.status === 401) {
-      redirectForSessionError(data?.error);
-    }
-    return null;
+    return {
+      user: null,
+      sessionError:
+        res.status === 401 ? getAuthSessionError(data?.error) : null,
+    };
   }
 
-  return data.user;
+  return {
+    user: data.user,
+    sessionError: null,
+  };
+}
+
+export async function fetchMe() {
+  const state = await fetchMeState();
+  return state.user;
 }
 
 export async function signalSessionActivity(): Promise<{
@@ -70,7 +89,7 @@ export async function signalSessionActivity(): Promise<{
   active: boolean;
   touched: boolean;
   unavailable?: boolean;
-  redirected?: boolean;
+  sessionError?: AuthSessionError;
 }> {
   const res = await fetch(`${API_BASE}/auth/session/activity`, {
     method: "POST",
@@ -84,15 +103,11 @@ export async function signalSessionActivity(): Promise<{
   }
 
   if (res.status === 401) {
-    const redirected = redirectForSessionError(data?.error);
-    if (!redirected) {
-      window.location.assign("/login");
-    }
     return {
       supported: true,
       active: false,
       touched: false,
-      redirected: true,
+      sessionError: getAuthSessionError(data?.error),
     };
   }
 

@@ -9,8 +9,10 @@ on:
       - "src/api/auth.ts"
       - "src/api/client.ts"
       - "src/auth/AuthProvider.tsx"
+      - "src/auth/RequireAuth.tsx"
       - "src/auth/sessionExpiry.ts"
       - "src/auth/enterprise-auth-e8b-ui.contract.test.js"
+      - "src/auth/public-route-session-isolation.contract.test.js"
       - "src/pages/LoginPage.tsx"
   workflow_dispatch:
 
@@ -36,11 +38,12 @@ jobs:
       - name: Install dependencies
         run: npm ci --silent --no-audit --no-fund
 
-      - name: Certify E6 and E8B auth UI contracts
+      - name: Certify E6, E8B, and public-route auth contracts
         run: >-
           node --test
           src/auth/enterprise-auth-e6.contract.test.js
           src/auth/enterprise-auth-e8b-ui.contract.test.js
+          src/auth/public-route-session-isolation.contract.test.js
 
       - name: Lint E8B auth surface
         run: >-
@@ -48,6 +51,7 @@ jobs:
           src/api/auth.ts
           src/api/client.ts
           src/auth/AuthProvider.tsx
+          src/auth/RequireAuth.tsx
           src/auth/sessionExpiry.ts
           src/pages/LoginPage.tsx
 
@@ -60,16 +64,20 @@ jobs:
           set -euo pipefail
           git fetch --no-tags origin main:refs/remotes/origin/main
 
-          allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|src/api/auth\.ts|src/api/client\.ts|src/auth/AuthProvider\.tsx|src/auth/sessionExpiry\.ts|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/pages/LoginPage\.tsx)$'
+          allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|src/api/auth\.ts|src/api/client\.ts|src/auth/AuthProvider\.tsx|src/auth/RequireAuth\.tsx|src/auth/sessionExpiry\.ts|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/auth/public-route-session-isolation\.contract\.test\.js|src/pages/LoginPage\.tsx)$'
           unexpected="$(git diff --name-only origin/main...HEAD | grep -Ev "$allowed" || true)"
           test -z "$unexpected"
 
           grep -q '/auth/session/activity' src/api/auth.ts
           grep -q 'res.status === 404' src/api/auth.ts
+          grep -q 'fetchMeState' src/api/auth.ts
+          ! grep -Eq 'window\.location\.(assign|href)' src/api/auth.ts
           grep -q 'SESSION_ACTIVITY_SIGNAL_INTERVAL_MS' src/auth/AuthProvider.tsx
+          grep -q 'fetchMeState' src/auth/AuthProvider.tsx
           grep -q 'pointerdown' src/auth/AuthProvider.tsx
           grep -q 'visibilitychange' src/auth/AuthProvider.tsx
           ! grep -q 'setInterval' src/auth/AuthProvider.tsx
+          grep -q 'loginPathForSessionError' src/auth/RequireAuth.tsx
           grep -q 'SESSION_EXPIRED' src/auth/sessionExpiry.ts
           grep -q 'SESSION_REAUTH_REQUIRED' src/auth/sessionExpiry.ts
           grep -q 'sessionNoticeFromSearch' src/pages/LoginPage.tsx
