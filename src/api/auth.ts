@@ -1,5 +1,3 @@
-import { loginPathForSessionError } from "../auth/sessionExpiry";
-
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
   (import.meta.env.DEV ? "http://localhost:3000" : "");
@@ -13,13 +11,6 @@ function brandHostnameHeader() {
   return hostname
     ? { "X-Pin-Go-Brand-Hostname": hostname }
     : {};
-}
-
-function redirectForSessionError(errorCode: string | null | undefined) {
-  const path = loginPathForSessionError(errorCode);
-  if (!path) return false;
-  window.location.assign(path);
-  return true;
 }
 
 export type AuthenticatedUser = {
