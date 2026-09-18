@@ -308,7 +308,7 @@ export function StripeConnectIsolationV2Card({
               textTransform: "uppercase",
             }}
           >
-            Stripe Connect Isolation V2
+            Stripe Connect
           </div>
           <h3 style={{ margin: "8px 0 0", fontSize: 21, color: "#0f172a" }}>
             Payments & Payouts
@@ -391,7 +391,7 @@ export function StripeConnectIsolationV2Card({
             </button>
           ) : (
             <div style={{ marginTop: 8 }}>
-              V2 account creation remains disabled by the server canary policy.
+              Stripe account setup is not available for this organization yet.
             </div>
           )}
         </div>
