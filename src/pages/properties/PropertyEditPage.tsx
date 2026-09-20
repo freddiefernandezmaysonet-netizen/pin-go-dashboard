@@ -337,7 +337,7 @@ export function PropertyEditPage() {
  });
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY) return;
+    if (!GOOGLE_MAPS_API_KEY || loading) return;
 
     let cancelled = false;
     let autocompleteElement: HTMLElement | null = null;
@@ -461,7 +461,7 @@ export function PropertyEditPage() {
       }
       autocompleteElement?.remove();
     };
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     if (!locationDirty) return;
