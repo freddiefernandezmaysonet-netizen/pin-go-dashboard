@@ -1567,7 +1567,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                 </button>
               )}
             </div>
-          ) : null
+          ) : null}
 
           <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
