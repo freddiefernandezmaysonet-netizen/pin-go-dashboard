@@ -26,13 +26,16 @@ type GoogleMapsWindow = Window & {
 let googleMapsLoader: Promise<any> | null = null;
 
 async function importGoogleMapsLibraries(google: any) {
-  await Promise.all([
+  const [placesLibrary] = await Promise.all([
     google.maps.importLibrary("places"),
     google.maps.importLibrary("maps"),
     google.maps.importLibrary("marker"),
   ]);
 
-  return google;
+  return {
+    google,
+    PlaceAutocompleteElement: placesLibrary.PlaceAutocompleteElement,
+  };
 }
 
 function loadGooglePlaces(apiKey: string) {
@@ -151,14 +154,18 @@ export default function CreatePropertyPage() {
     let selectHandler: ((event: Event) => void) | null = null;
 
     loadGooglePlaces(GOOGLE_MAPS_API_KEY)
-      .then((google) => {
+      .then(({ google, PlaceAutocompleteElement }) => {
         if (cancelled || !autocompleteMountRef.current) {
           return;
         }
 
         googleMapsRef.current = google;
 
-        autocompleteElement = new google.maps.places.PlaceAutocompleteElement();
+        if (typeof PlaceAutocompleteElement !== "function") {
+          throw new Error("Google Places autocomplete is unavailable");
+        }
+
+        autocompleteElement = new PlaceAutocompleteElement();
         (autocompleteElement as any).placeholder = "Search for the property address";
         autocompleteElement.style.width = "100%";
 
