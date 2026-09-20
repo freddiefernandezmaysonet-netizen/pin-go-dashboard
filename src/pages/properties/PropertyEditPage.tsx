@@ -355,9 +355,10 @@ export function PropertyEditPage() {
         }
 
         googleMapsRef.current = google;
-        autocompleteElement = new PlaceAutocompleteElement();
-        (autocompleteElement as any).placeholder = "Search for a new property address";
-        autocompleteElement.style.width = "100%";
+        const nextAutocompleteElement = new PlaceAutocompleteElement() as HTMLElement;
+        autocompleteElement = nextAutocompleteElement;
+        (nextAutocompleteElement as any).placeholder = "Search for a new property address";
+        nextAutocompleteElement.style.width = "100%";
 
         selectHandler = async (event: Event) => {
           try {
@@ -445,8 +446,8 @@ export function PropertyEditPage() {
           }
         };
 
-        autocompleteElement.addEventListener("gmp-select", selectHandler);
-        autocompleteMountRef.current.replaceChildren(autocompleteElement);
+        nextAutocompleteElement.addEventListener("gmp-select", selectHandler);
+        autocompleteMountRef.current.replaceChildren(nextAutocompleteElement);
       })
       .catch(() => {
         if (!cancelled) {
