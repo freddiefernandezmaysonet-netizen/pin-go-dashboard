@@ -1,10 +1,92 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { useNavigate, useParams } from "react-router-dom";
 import { CancellationPolicyCard } from "../../components/properties/CancellationPolicyCard";
 import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
+const GOOGLE_MAPS_SCRIPT_ID = "pin-go-google-maps";
+
+type GoogleMapsWindow = Window & { google?: any };
+
+type GooglePlacesLoaderResult = {
+  google: any;
+  PlaceAutocompleteElement: any;
+};
+
+let googleMapsLoader: Promise<GooglePlacesLoaderResult> | null = null;
+
+async function importGoogleMapsLibraries(google: any) {
+  const [placesLibrary] = await Promise.all([
+    google.maps.importLibrary("places"),
+    google.maps.importLibrary("maps"),
+    google.maps.importLibrary("marker"),
+  ]);
+
+  return {
+    google,
+    PlaceAutocompleteElement: placesLibrary.PlaceAutocompleteElement,
+  };
+}
+
+function loadGooglePlaces(apiKey: string) {
+  const mapsWindow = window as GoogleMapsWindow;
+
+  if (mapsWindow.google?.maps) {
+    return importGoogleMapsLibraries(mapsWindow.google);
+  }
+
+  if (googleMapsLoader) return googleMapsLoader;
+
+  googleMapsLoader = new Promise((resolve, reject) => {
+    const existingScript =
+      document.getElementById(GOOGLE_MAPS_SCRIPT_ID) ??
+      document.querySelector<HTMLScriptElement>(
+        'script[src*="maps.googleapis.com/maps/api/js"]'
+      );
+
+    const handleLoad = async () => {
+      try {
+        if (!mapsWindow.google?.maps) {
+          throw new Error("Google Maps did not initialize");
+        }
+        resolve(await importGoogleMapsLibraries(mapsWindow.google));
+      } catch (error) {
+        googleMapsLoader = null;
+        reject(error);
+      }
+    };
+
+    const handleError = () => {
+      googleMapsLoader = null;
+      reject(new Error("Google Maps failed to load"));
+    };
+
+    if (existingScript) {
+      if (mapsWindow.google?.maps) {
+        void handleLoad();
+      } else {
+        existingScript.addEventListener("load", handleLoad, { once: true });
+        existingScript.addEventListener("error", handleError, { once: true });
+      }
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = GOOGLE_MAPS_SCRIPT_ID;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+      apiKey
+    )}&v=weekly&loading=async`;
+    script.async = true;
+    script.addEventListener("load", handleLoad, { once: true });
+    script.addEventListener("error", handleError, { once: true });
+    document.head.appendChild(script);
+  });
+
+  return googleMapsLoader;
+}
 
 function toLocalDateKey(date: Date) {
   const year = date.getFullYear();
@@ -140,6 +222,12 @@ type PropertyItem = {
 export function PropertyEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const autocompleteMountRef = useRef<HTMLDivElement>(null);
+  const mapMountRef = useRef<HTMLDivElement>(null);
+  const googleMapsRef = useRef<any>(null);
+  const mapRef = useRef<any>(null);
+  const mapMarkerRef = useRef<any>(null);
+  const timezoneLookupIdRef = useRef(0);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,6 +235,13 @@ export function PropertyEditPage() {
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [placesAvailable, setPlacesAvailable] = useState(Boolean(GOOGLE_MAPS_API_KEY));
+  const [locationMessage, setLocationMessage] = useState(
+    GOOGLE_MAPS_API_KEY ? "" : "Google Places is unavailable. Enter the address manually."
+  );
+  const [locationDirty, setLocationDirty] = useState(false);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [timezoneLookupMessage, setTimezoneLookupMessage] = useState("");
 
   const [amenities, setAmenities] = useState<PropertyAmenityItem[]>([]);
   const [editingAmenityId, setEditingAmenityId] = useState<string | null>(null);
@@ -244,6 +339,177 @@ export function PropertyEditPage() {
     publicDescriptionEs: "",
     publicPhotosText: "",
  });
+
+  useEffect(() => {
+    if (!GOOGLE_MAPS_API_KEY) return;
+
+    let cancelled = false;
+    let autocompleteElement: HTMLElement | null = null;
+    let selectHandler: ((event: Event) => void) | null = null;
+
+    loadGooglePlaces(GOOGLE_MAPS_API_KEY)
+      .then(({ google, PlaceAutocompleteElement }) => {
+        if (cancelled || !autocompleteMountRef.current) return;
+        if (typeof PlaceAutocompleteElement !== "function") {
+          throw new Error("Google Places autocomplete is unavailable");
+        }
+
+        googleMapsRef.current = google;
+        const nextAutocompleteElement = new PlaceAutocompleteElement() as HTMLElement;
+        autocompleteElement = nextAutocompleteElement;
+        (nextAutocompleteElement as any).placeholder = "Search for a new property address";
+        nextAutocompleteElement.style.width = "100%";
+
+        selectHandler = async (event: Event) => {
+          try {
+            const placePrediction = (event as any).placePrediction;
+            const place = placePrediction.toPlace();
+            await place.fetchFields({
+              fields: ["formattedAddress", "addressComponents", "location"],
+            });
+            if (cancelled) return;
+
+            const components = place.addressComponents ?? [];
+            const componentValue = (type: string) =>
+              components.find((component: any) => component.types?.includes(type))
+                ?.longText ?? "";
+            const nextCity =
+              componentValue("locality") ||
+              componentValue("postal_town") ||
+              componentValue("administrative_area_level_2");
+            const nextRegion = componentValue("administrative_area_level_1");
+            const nextCountry = componentValue("country");
+            const nextPostalCode = componentValue("postal_code");
+
+            if (!place.formattedAddress || !place.location) {
+              throw new Error("Google Places did not return a complete location");
+            }
+
+            const nextLatitude = place.location.lat();
+            const nextLongitude = place.location.lng();
+
+            setForm((s) => ({
+              ...s,
+              address1: place.formattedAddress,
+              city: nextCity,
+              region: nextCountry === "Puerto Rico" ? "Puerto Rico" : nextRegion,
+              country: nextCountry,
+              postalCode: nextPostalCode,
+              latitude: String(nextLatitude),
+              longitude: String(nextLongitude),
+            }));
+            setLocationDirty(true);
+            setLocationConfirmed(false);
+
+            const lookupId = ++timezoneLookupIdRef.current;
+            setTimezoneLookupMessage("Detecting timezone...");
+            try {
+              const params = new URLSearchParams({
+                lat: String(nextLatitude),
+                lng: String(nextLongitude),
+              });
+              const response = await fetch(
+                `${API_BASE}/api/dashboard/location/timezone?${params.toString()}`,
+                { credentials: "include" }
+              );
+              const result = await response.json();
+              const resolvedTimezone =
+                typeof result?.timezone === "string" && result.timezone.trim()
+                  ? result.timezone
+                  : null;
+
+              if (
+                !cancelled &&
+                lookupId === timezoneLookupIdRef.current &&
+                response.ok &&
+                result?.ok === true &&
+                resolvedTimezone
+              ) {
+                setForm((s) => ({ ...s, timezone: resolvedTimezone }));
+                setTimezoneLookupMessage("");
+              } else if (!cancelled && lookupId === timezoneLookupIdRef.current) {
+                setTimezoneLookupMessage(
+                  "Timezone could not be detected automatically. Please confirm it manually."
+                );
+              }
+            } catch {
+              if (!cancelled && lookupId === timezoneLookupIdRef.current) {
+                setTimezoneLookupMessage(
+                  "Timezone could not be detected automatically. Please confirm it manually."
+                );
+              }
+            }
+          } catch {
+            setLocationMessage(
+              "Google Places could not load this location. The existing property location was not changed."
+            );
+          }
+        };
+
+        nextAutocompleteElement.addEventListener("gmp-select", selectHandler);
+        autocompleteMountRef.current.replaceChildren(nextAutocompleteElement);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPlacesAvailable(false);
+          setLocationMessage(
+            "Google Places is unavailable. The existing property location can still be saved unchanged."
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (autocompleteElement && selectHandler) {
+        autocompleteElement.removeEventListener("gmp-select", selectHandler);
+      }
+      autocompleteElement?.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!locationDirty) return;
+    const google = googleMapsRef.current;
+    const lat = Number(form.latitude);
+    const lng = Number(form.longitude);
+
+    if (
+      !google?.maps ||
+      !GOOGLE_MAPS_MAP_ID ||
+      !mapMountRef.current ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      form.latitude.trim() === "" ||
+      form.longitude.trim() === ""
+    ) {
+      return;
+    }
+
+    const position = { lat, lng };
+    if (!mapRef.current) {
+      mapRef.current = new google.maps.Map(mapMountRef.current, {
+        center: position,
+        zoom: 18,
+        mapId: GOOGLE_MAPS_MAP_ID,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+      });
+      mapMarkerRef.current = new google.maps.marker.AdvancedMarkerElement({
+        map: mapRef.current,
+        position,
+        title: form.address1 || "Property location",
+      });
+      return;
+    }
+
+    mapRef.current.setCenter(position);
+    mapRef.current.setZoom(18);
+    if (mapMarkerRef.current) {
+      mapMarkerRef.current.position = position;
+      mapMarkerRef.current.title = form.address1 || "Property location";
+    }
+  }, [form.address1, form.latitude, form.longitude, locationDirty]);
 
   useEffect(() => {
     if (!id) return;
@@ -421,6 +687,10 @@ cleaningFee:
     setErr(null);
 
     try {
+      if (locationDirty && !locationConfirmed) {
+        throw new Error("Confirm the new property location on the map before saving");
+      }
+
       const latitude = form.latitude.trim() === "" ? null : Number(form.latitude);
       const longitude =
         form.longitude.trim() === "" ? null : Number(form.longitude);
@@ -1222,17 +1492,82 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
           </div>
 
 
-          <div style={{ display: "grid", gap: 6 }}>
+          <div style={{ display: "grid", gap: 8 }}>
             <div style={labelStyle}>Address</div>
             <input
               value={form.address1}
-              onChange={(e) =>
-                setForm((s) => ({ ...s, address1: e.target.value }))
-              }
+              readOnly
               placeholder="Address"
-              style={inputStyle}
+              style={{ ...inputStyle, background: "#f9fafb" }}
             />
+            {placesAvailable ? (
+              <div ref={autocompleteMountRef} />
+            ) : null}
+            {locationMessage ? (
+              <div style={helperTextStyle}>{locationMessage}</div>
+            ) : null}
+            {timezoneLookupMessage ? (
+              <div style={helperTextStyle}>{timezoneLookupMessage}</div>
+            ) : null}
           </div>
+
+          {locationDirty ? (
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                border: "1px solid #dbeafe",
+                borderRadius: 16,
+                background: "#f8fbff",
+                padding: 14,
+              }}
+            >
+              <div>
+                <div style={{ ...labelStyle, fontSize: 15 }}>
+                  Confirm new property location
+                </div>
+                <div style={helperTextStyle}>
+                  Make sure the pin marks the exact property guests should navigate to.
+                </div>
+              </div>
+              <div
+                ref={mapMountRef}
+                aria-label="Selected property location map"
+                style={{
+                  width: "100%",
+                  height: 280,
+                  borderRadius: 14,
+                  border: "1px solid #dbe3ee",
+                  overflow: "hidden",
+                  background: "#e5e7eb",
+                }}
+              />
+              <div style={helperTextStyle}>{form.address1}</div>
+              {locationConfirmed ? (
+                <div
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid #bbf7d0",
+                    background: "#f0fdf4",
+                    color: "#166534",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    padding: "11px 12px",
+                  }}
+                >
+                  Location confirmed
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setLocationConfirmed(true)}
+                  style={secondaryButtonStyle}
+                >
+                  Confirm location
+                </button>
+              )}
+            </div>
+          ) : null}
 
           <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
