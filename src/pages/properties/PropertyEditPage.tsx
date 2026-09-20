@@ -65,12 +65,8 @@ function loadGooglePlaces(apiKey: string) {
     };
 
     if (existingScript) {
-      if (mapsWindow.google?.maps) {
-        void handleLoad();
-      } else {
-        existingScript.addEventListener("load", handleLoad, { once: true });
-        existingScript.addEventListener("error", handleError, { once: true });
-      }
+      existingScript.addEventListener("load", handleLoad, { once: true });
+      existingScript.addEventListener("error", handleError, { once: true });
       return;
     }
 
