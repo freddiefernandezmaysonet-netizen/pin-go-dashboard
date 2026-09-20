@@ -11,7 +11,12 @@ const GOOGLE_MAPS_SCRIPT_ID = "pin-go-google-maps";
 
 type GoogleMapsWindow = Window & { google?: any };
 
-let googleMapsLoader: Promise<any> | null = null;
+type GooglePlacesLoaderResult = {
+  google: any;
+  PlaceAutocompleteElement: any;
+};
+
+let googleMapsLoader: Promise<GooglePlacesLoaderResult> | null = null;
 
 async function importGoogleMapsLibraries(google: any) {
   const [placesLibrary] = await Promise.all([
