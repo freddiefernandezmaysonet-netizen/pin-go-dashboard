@@ -950,3 +950,12 @@
 .pbe-calendar-stage .rdp-disabled .pbe-calendar-nightly-rate {
   opacity: 0.45;
 }
+
+
+.pbe-amenities-toggle {
+  margin-top: 24px;
+}
+
+.pbe-highlights {
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+}
