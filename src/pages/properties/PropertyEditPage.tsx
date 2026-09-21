@@ -277,6 +277,7 @@ export function PropertyEditPage() {
   const [organizationSlug, setOrganizationSlug] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [placesAvailable, setPlacesAvailable] = useState(Boolean(GOOGLE_MAPS_API_KEY));
+  const [nearbyPlaceAutocompleteReady, setNearbyPlaceAutocompleteReady] = useState(false);
   const [locationMessage, setLocationMessage] = useState(
     GOOGLE_MAPS_API_KEY ? "" : "Google Places is unavailable. Enter the address manually."
   );
@@ -526,7 +527,8 @@ export function PropertyEditPage() {
 
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY || loading || !nearbyPlaceAutocompleteMountRef.current) return;
+    if (!GOOGLE_MAPS_API_KEY || loading || !nearbyPlaceAutocompleteReady) return;
+    if (!nearbyPlaceAutocompleteMountRef.current) return;
 
     let cancelled = false;
     let autocompleteElement: HTMLElement | null = null;
@@ -596,7 +598,7 @@ export function PropertyEditPage() {
         autocompleteElement.removeEventListener("gmp-select", selectHandler as EventListener);
       }
     };
-  }, [loading, form.latitude, form.longitude]);
+  }, [loading, nearbyPlaceAutocompleteReady]);
 
 
   useEffect(() => {
@@ -2245,7 +2247,12 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
   {placesAvailable ? (
     <div style={{ display: "grid", gap: 6 }}>
       <div style={labelStyle}>Find a nearby place</div>
-      <div ref={nearbyPlaceAutocompleteMountRef} />
+      <div
+        ref={(node) => {
+          nearbyPlaceAutocompleteMountRef.current = node;
+          setNearbyPlaceAutocompleteReady(Boolean(node));
+        }}
+      />
       <div style={helperTextStyle}>
         Select a Google place and Pin&Go will fill the name, Maps link and distance automatically.
       </div>
