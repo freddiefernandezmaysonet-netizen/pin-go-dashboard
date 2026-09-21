@@ -2642,7 +2642,7 @@ return (
                   <div className="pbe-amenity-grid">
                     {(amenitiesExpanded
                       ? includedAmenities
-                      : includedAmenities.slice(0, 6)
+                      : includedAmenities.slice(0, 8)
                     ).map((amenity) => (
                       <article className="pbe-amenity-card" key={amenity.id}>
                         <div className="pbe-amenity-icon">
@@ -2659,7 +2659,7 @@ return (
                     ))}
                   </div>
 
-                  {includedAmenities.length > 6 ? (
+                  {includedAmenities.length > 8 ? (
                     <button
                       className="pbe-outline-action pbe-amenities-toggle"
                       type="button"
