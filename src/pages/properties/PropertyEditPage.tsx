@@ -251,6 +251,7 @@ export function PropertyEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingNearbyPlacePhoto, setUploadingNearbyPlacePhoto] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -1012,6 +1013,34 @@ async function handleUploadPhotos(
 
     setEditingAmenityId(null);
     setEditingAmenity(null);
+  }
+
+  async function handleUploadNearbyPlacePhoto(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingNearbyPlacePhoto(true);
+    setErr(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const res = await fetch(`${API_BASE}/api/uploads/property-photo`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to upload Things to Do photo");
+      setNewNearbyPlace((current) => ({ ...current, photoUrl: data.url }));
+    } catch (error: any) {
+      setErr(String(error?.message ?? error));
+    } finally {
+      setUploadingNearbyPlacePhoto(false);
+      e.target.value = "";
+    }
   }
 
   async function handleCreateNearbyPlace() {
@@ -2166,12 +2195,27 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     placeholder="Google Maps URL"
     style={inputStyle}
   />
-  <input
-    value={newNearbyPlace.photoUrl}
-    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, photoUrl: e.target.value }))}
-    placeholder="Photo URL (optional)"
-    style={inputStyle}
-  />
+  <div style={{ display: "grid", gap: 8 }}>
+    <div style={labelStyle}>Photo</div>
+    <input type="file" accept="image/*" onChange={handleUploadNearbyPlacePhoto} />
+    {uploadingNearbyPlacePhoto ? <div style={helperTextStyle}>Uploading photo...</div> : null}
+    {newNearbyPlace.photoUrl ? (
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <img
+          src={newNearbyPlace.photoUrl}
+          alt=""
+          style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 12 }}
+        />
+        <button
+          type="button"
+          onClick={() => setNewNearbyPlace((s) => ({ ...s, photoUrl: "" }))}
+          style={secondarySmallButtonStyle}
+        >
+          Remove photo
+        </button>
+      </div>
+    ) : null}
+  </div>
 
   <button
     type="button"
