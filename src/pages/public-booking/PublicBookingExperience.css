@@ -929,3 +929,24 @@
   .pbe-collection-page .pbe-collection-section { padding: 72px 18px !important; }
   .pbe-collection-page .pbe-collection-photo { min-height: 270px !important; }
 }
+
+
+.pbe-calendar-stage .rdp-day_button {
+  min-height: 48px;
+  height: auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pbe-calendar-nightly-rate {
+  display: block;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0.78;
+}
+
+.pbe-calendar-stage .rdp-disabled .pbe-calendar-nightly-rate {
+  opacity: 0.45;
+}
