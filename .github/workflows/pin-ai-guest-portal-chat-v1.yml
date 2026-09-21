@@ -1,0 +1,52 @@
+name: Pin AI Guest Portal Chat V1
+
+on:
+  pull_request:
+    branches:
+      - agent/pin-ai-property-knowledge-v1-dashboard
+    paths:
+      - "src/components/public-booking/GuestPinAIAssistant.tsx"
+      - "src/pages/public-booking/GuestCancellationPage.tsx"
+      - "src/pin-ai-guest-portal.contract.test.js"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pin-ai-guest-portal-chat-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  guest-portal-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run Pin AI guest portal contract
+        run: npm run test:pin-ai-guest-portal
+
+      - name: Run retained dashboard contracts
+        run: |
+          npm run test:property-knowledge-dashboard
+          npm run test:distribution-connection-center
+          node --test src/reviews.enterprise-e1.contract.test.js
+
+      - name: Lint changed guest portal surface
+        run: |
+          npx eslint \
+            src/components/public-booking/GuestPinAIAssistant.tsx \
+            src/pages/public-booking/GuestCancellationPage.tsx \
+            --max-warnings=0
+
+      - name: Build production dashboard
+        run: npm run build
