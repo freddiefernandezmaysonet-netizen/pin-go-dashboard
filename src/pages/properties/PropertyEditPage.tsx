@@ -130,12 +130,12 @@ type NearbyPlaceCategory =
 type PropertyNearbyPlaceItem = {
   id: string;
   name: string;
+  nameEs?: string | null;
   category: NearbyPlaceCategory;
   description?: string | null;
+  descriptionEs?: string | null;
   distanceText?: string | null;
   travelTimeMinutes?: number | null;
-  latitude?: number | null;
-  longitude?: number | null;
   googleMapsUrl?: string | null;
   photoUrl?: string | null;
   sortOrder: number;
@@ -240,29 +240,10 @@ type PropertyItem = {
   checkOutTime?: string | null;
 };
 
-function haversineDistanceMiles(
-  fromLat: number,
-  fromLng: number,
-  toLat: number,
-  toLng: number
-) {
-  const radiusMiles = 3958.7613;
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const dLat = toRadians(toLat - fromLat);
-  const dLng = toRadians(toLng - fromLng);
-  const lat1 = toRadians(fromLat);
-  const lat2 = toRadians(toLat);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * radiusMiles * Math.asin(Math.sqrt(a));
-}
-
 export function PropertyEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const autocompleteMountRef = useRef<HTMLDivElement>(null);
-  const nearbyPlaceAutocompleteMountRef = useRef<HTMLDivElement>(null);
   const mapMountRef = useRef<HTMLDivElement>(null);
   const googleMapsRef = useRef<any>(null);
   const mapRef = useRef<any>(null);
@@ -302,12 +283,12 @@ export function PropertyEditPage() {
   const [editingNearbyPlace, setEditingNearbyPlace] = useState<PropertyNearbyPlaceItem | null>(null);
   const [newNearbyPlace, setNewNearbyPlace] = useState({
     name: "",
+    nameEs: "",
     category: "OTHER" as NearbyPlaceCategory,
     description: "",
+    descriptionEs: "",
     distanceText: "",
     travelTimeMinutes: "",
-    latitude: null as number | null,
-    longitude: null as number | null,
     googleMapsUrl: "",
     photoUrl: "",
     isActive: true,
@@ -523,81 +504,6 @@ export function PropertyEditPage() {
       autocompleteElement?.remove();
     };
   }, [loading]);
-
-
-  useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY || loading || !nearbyPlaceAutocompleteMountRef.current) return;
-
-    let cancelled = false;
-    let autocompleteElement: HTMLElement | null = null;
-    let selectHandler: ((event: Event) => void) | null = null;
-
-    loadGooglePlaces(GOOGLE_MAPS_API_KEY)
-      .then(({ PlaceAutocompleteElement }) => {
-        if (cancelled || !nearbyPlaceAutocompleteMountRef.current) return;
-
-        const nextAutocompleteElement = new PlaceAutocompleteElement() as HTMLElement;
-        autocompleteElement = nextAutocompleteElement;
-        (nextAutocompleteElement as any).placeholder = "Search a nearby place";
-        nextAutocompleteElement.style.width = "100%";
-
-        selectHandler = async (event: Event) => {
-          try {
-            const prediction = (event as any).placePrediction;
-            const place = prediction.toPlace();
-            await place.fetchFields({
-              fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
-            });
-            if (cancelled || !place.location) return;
-
-            const placeLatitude = place.location.lat();
-            const placeLongitude = place.location.lng();
-            const propertyLatitude = Number(form.latitude);
-            const propertyLongitude = Number(form.longitude);
-            const miles =
-              Number.isFinite(propertyLatitude) && Number.isFinite(propertyLongitude)
-                ? haversineDistanceMiles(
-                    propertyLatitude,
-                    propertyLongitude,
-                    placeLatitude,
-                    placeLongitude
-                  )
-                : null;
-
-            setNewNearbyPlace((current) => ({
-              ...current,
-              name:
-                typeof place.displayName === "string"
-                  ? place.displayName
-                  : place.displayName?.text ?? current.name,
-              latitude: placeLatitude,
-              longitude: placeLongitude,
-              distanceText: miles === null ? current.distanceText : `${miles.toFixed(1)} mi`,
-              googleMapsUrl:
-                typeof place.googleMapsURI === "string" && place.googleMapsURI
-                  ? place.googleMapsURI
-                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      place.formattedAddress || `${placeLatitude},${placeLongitude}`
-                    )}`,
-            }));
-          } catch (error: any) {
-            setErr(String(error?.message ?? "Unable to load selected place"));
-          }
-        };
-
-        nextAutocompleteElement.addEventListener("gmp-select", selectHandler as EventListener);
-        nearbyPlaceAutocompleteMountRef.current.replaceChildren(nextAutocompleteElement);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      if (autocompleteElement && selectHandler) {
-        autocompleteElement.removeEventListener("gmp-select", selectHandler as EventListener);
-      }
-    };
-  }, [loading, form.latitude, form.longitude]);
-
 
   useEffect(() => {
     if (!locationDirty) return;
@@ -1163,12 +1069,12 @@ async function handleUploadPhotos(
     setNearbyPlaces((prev) => [...prev, data.item]);
     setNewNearbyPlace({
       name: "",
+      nameEs: "",
       category: "OTHER",
       description: "",
+      descriptionEs: "",
       distanceText: "",
       travelTimeMinutes: "",
-      latitude: null,
-      longitude: null,
       googleMapsUrl: "",
       photoUrl: "",
       isActive: true,
@@ -2240,23 +2146,22 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     <div style={helperTextStyle}>
       Recommend nearby places guests can discover during their stay.
     </div>
-  </div>
-
-  {placesAvailable ? (
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Find a nearby place</div>
-      <div ref={nearbyPlaceAutocompleteMountRef} />
-      <div style={helperTextStyle}>
-        Select a Google place and Pin&Go will fill the name, Maps link and distance automatically.
-      </div>
+    <div style={{ ...helperTextStyle, fontWeight: 800 }}>
+      {nearbyPlaces.length} of 5 places
     </div>
-  ) : null}
+  </div>
 
   <div style={responsiveGridStyle}>
     <input
       value={newNearbyPlace.name}
       onChange={(e) => setNewNearbyPlace((s) => ({ ...s, name: e.target.value }))}
-      placeholder="Place name"
+      placeholder="Place name (English)"
+      style={inputStyle}
+    />
+    <input
+      value={newNearbyPlace.nameEs}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, nameEs: e.target.value }))}
+      placeholder="Nombre del lugar (Español)"
       style={inputStyle}
     />
     <select
@@ -2281,38 +2186,52 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     placeholder="Short guest-facing description"
     style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
   />
+  <textarea
+    value={newNearbyPlace.descriptionEs}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, descriptionEs: e.target.value }))}
+    placeholder="Descripción breve para huéspedes (Español)"
+    style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
+  />
 
   <div style={responsiveGridStyle}>
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Distance</div>
-      <input
-        value={newNearbyPlace.distanceText}
-        readOnly={placesAvailable}
-        onChange={(e) => setNewNearbyPlace((s) => ({ ...s, distanceText: e.target.value }))}
-        placeholder="Calculated after selecting a place"
-        style={{ ...inputStyle, background: placesAvailable ? "#f9fafb" : "#ffffff" }}
-      />
-    </div>
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Maps</div>
-      <input
-        value={newNearbyPlace.googleMapsUrl}
-        readOnly={placesAvailable}
-        onChange={(e) => setNewNearbyPlace((s) => ({ ...s, googleMapsUrl: e.target.value }))}
-        placeholder="Generated after selecting a place"
-        style={{ ...inputStyle, background: placesAvailable ? "#f9fafb" : "#ffffff" }}
-      />
-    </div>
+    <input
+      value={newNearbyPlace.distanceText}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, distanceText: e.target.value }))}
+      placeholder="Distance, e.g. 3.2 mi"
+      style={inputStyle}
+    />
+    <input
+      type="number"
+      min="0"
+      value={newNearbyPlace.travelTimeMinutes}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, travelTimeMinutes: e.target.value }))}
+      placeholder="Travel time (minutes)"
+      style={inputStyle}
+    />
   </div>
 
+  <input
+    value={newNearbyPlace.googleMapsUrl}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, googleMapsUrl: e.target.value }))}
+    placeholder="Google Maps URL"
+    style={inputStyle}
+  />
   <div style={{ display: "grid", gap: 8 }}>
     <div style={labelStyle}>Photo</div>
     <input type="file" accept="image/*" onChange={handleUploadNearbyPlacePhoto} />
     {uploadingNearbyPlacePhoto ? <div style={helperTextStyle}>Uploading photo...</div> : null}
     {newNearbyPlace.photoUrl ? (
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <img src={newNearbyPlace.photoUrl} alt="" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 12 }} />
-        <button type="button" onClick={() => setNewNearbyPlace((s) => ({ ...s, photoUrl: "" }))} style={secondarySmallButtonStyle}>
+        <img
+          src={newNearbyPlace.photoUrl}
+          alt=""
+          style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 12 }}
+        />
+        <button
+          type="button"
+          onClick={() => setNewNearbyPlace((s) => ({ ...s, photoUrl: "" }))}
+          style={secondarySmallButtonStyle}
+        >
           Remove photo
         </button>
       </div>
@@ -2323,9 +2242,9 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     type="button"
     onClick={() => handleCreateNearbyPlace().catch((e) => setErr(String(e?.message ?? e)))}
     style={secondaryButtonStyle}
-    disabled={!newNearbyPlace.name.trim()}
+    disabled={!newNearbyPlace.name.trim() || nearbyPlaces.length >= 5}
   >
-    Add Things to Do place
+    {nearbyPlaces.length >= 5 ? "Maximum 5 places" : "Add Things to Do place"}
   </button>
 
   {nearbyPlaces.length === 0 ? (
@@ -2358,6 +2277,14 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                     }
                     style={inputStyle}
                   />
+                  <input
+                    value={item.nameEs ?? ""}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) => s ? ({ ...s, nameEs: e.target.value }) : s)
+                    }
+                    placeholder="Nombre (Español)"
+                    style={inputStyle}
+                  />
                   <select
                     value={item.category}
                     onChange={(e) =>
@@ -2377,6 +2304,14 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                   onChange={(e) =>
                     setEditingNearbyPlace((s) => s ? ({ ...s, description: e.target.value }) : s)
                   }
+                  style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
+                />
+                <textarea
+                  value={item.descriptionEs ?? ""}
+                  onChange={(e) =>
+                    setEditingNearbyPlace((s) => s ? ({ ...s, descriptionEs: e.target.value }) : s)
+                  }
+                  placeholder="Descripción (Español)"
                   style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
                 />
                 <div style={responsiveGridStyle}>
