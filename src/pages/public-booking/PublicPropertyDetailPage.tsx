@@ -1607,6 +1607,8 @@ export default function PublicPropertyDetailPage() {
 
  
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [calendarRatesByDate, setCalendarRatesByDate] = useState<Record<string, number>>({});
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
 
   const [adults, setAdults] = useState(bookingSearchHandoff?.guests ?? 1);
   const [children, setChildren] = useState(0);
@@ -1949,6 +1951,79 @@ function formatDisplayTime(time?: string | null) {
   copy.propertyNotFound,
   preferredLanguage,
 ]);
+
+useEffect(() => {
+  let active = true;
+
+  async function loadCalendarRates() {
+    if (!property?.id) {
+      setCalendarRatesByDate({});
+      return;
+    }
+
+    const firstVisibleMonth = new Date(
+      calendarMonth.getFullYear(),
+      calendarMonth.getMonth(),
+      1
+    );
+    const from = toDateInputValue(firstVisibleMonth);
+    const to = toDateInputValue(
+      new Date(
+        firstVisibleMonth.getFullYear(),
+        firstVisibleMonth.getMonth() + 2,
+        0
+      )
+    );
+
+    try {
+      const res = await fetch(`${API_BASE}/api/public-booking/calendar-rates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          propertyId: property.id,
+          from,
+          to,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!active) return;
+
+      if (!res.ok || !data.ok || !Array.isArray(data.rates)) {
+        setCalendarRatesByDate({});
+        return;
+      }
+
+      const nextRates: Record<string, number> = {};
+
+      for (const item of data.rates) {
+        const date = String(item?.date ?? "");
+        const rate = Number(item?.rate);
+
+        if (date && Number.isFinite(rate) && rate > 0) {
+          nextRates[date] = rate;
+        }
+      }
+
+      setCalendarRatesByDate(nextRates);
+    } catch (error) {
+      console.error("[calendar rates frontend error]", error);
+
+      if (active) {
+        setCalendarRatesByDate({});
+      }
+    }
+  }
+
+  void loadCalendarRates();
+
+  return () => {
+    active = false;
+  };
+}, [property?.id, calendarMonth]);
 
 const refreshBlockedDates = useCallback(async () => {
   if (!property?.id) {
@@ -2958,7 +3033,8 @@ return (
     <DayPicker     
       mode="range"
       numberOfMonths={2}
-      defaultMonth={fromDateInputValue(checkIn)}
+      month={calendarMonth}
+      onMonthChange={setCalendarMonth}
       locale={preferredLanguage === "es" ? es : enUS}
       selected={{
         from: fromDateInputValue(checkIn),
@@ -2972,7 +3048,23 @@ return (
         date < new Date(new Date().setHours(0, 0, 0, 0)) ||
         blockedDates.includes(toLocalDateKey(date))
       }
+      components={{
+        DayButton: ({ day, modifiers, ...buttonProps }) => {
+          const dateKey = toLocalDateKey(day.date);
+          const rate = calendarRatesByDate[dateKey];
 
+          return (
+            <button {...buttonProps}>
+              <span>{day.date.getDate()}</span>
+              {!modifiers.outside && rate ? (
+                <small className="pbe-calendar-nightly-rate">
+                  {formatNightlyDisplayMoney(rate)}
+                </small>
+              ) : null}
+            </button>
+          );
+        },
+      }}
      />
   </div>
 </div>
