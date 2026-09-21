@@ -130,8 +130,10 @@ type NearbyPlaceCategory =
 type PropertyNearbyPlaceItem = {
   id: string;
   name: string;
+  nameEs?: string | null;
   category: NearbyPlaceCategory;
   description?: string | null;
+  descriptionEs?: string | null;
   distanceText?: string | null;
   travelTimeMinutes?: number | null;
   googleMapsUrl?: string | null;
@@ -281,8 +283,10 @@ export function PropertyEditPage() {
   const [editingNearbyPlace, setEditingNearbyPlace] = useState<PropertyNearbyPlaceItem | null>(null);
   const [newNearbyPlace, setNewNearbyPlace] = useState({
     name: "",
+    nameEs: "",
     category: "OTHER" as NearbyPlaceCategory,
     description: "",
+    descriptionEs: "",
     distanceText: "",
     travelTimeMinutes: "",
     googleMapsUrl: "",
@@ -1065,8 +1069,10 @@ async function handleUploadPhotos(
     setNearbyPlaces((prev) => [...prev, data.item]);
     setNewNearbyPlace({
       name: "",
+      nameEs: "",
       category: "OTHER",
       description: "",
+      descriptionEs: "",
       distanceText: "",
       travelTimeMinutes: "",
       googleMapsUrl: "",
@@ -2140,13 +2146,22 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     <div style={helperTextStyle}>
       Recommend nearby places guests can discover during their stay.
     </div>
+    <div style={{ ...helperTextStyle, fontWeight: 800 }}>
+      {nearbyPlaces.length} of 5 places
+    </div>
   </div>
 
   <div style={responsiveGridStyle}>
     <input
       value={newNearbyPlace.name}
       onChange={(e) => setNewNearbyPlace((s) => ({ ...s, name: e.target.value }))}
-      placeholder="Place name"
+      placeholder="Place name (English)"
+      style={inputStyle}
+    />
+    <input
+      value={newNearbyPlace.nameEs}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, nameEs: e.target.value }))}
+      placeholder="Nombre del lugar (Español)"
       style={inputStyle}
     />
     <select
@@ -2169,6 +2184,12 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     value={newNearbyPlace.description}
     onChange={(e) => setNewNearbyPlace((s) => ({ ...s, description: e.target.value }))}
     placeholder="Short guest-facing description"
+    style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
+  />
+  <textarea
+    value={newNearbyPlace.descriptionEs}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, descriptionEs: e.target.value }))}
+    placeholder="Descripción breve para huéspedes (Español)"
     style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
   />
 
@@ -2221,9 +2242,9 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     type="button"
     onClick={() => handleCreateNearbyPlace().catch((e) => setErr(String(e?.message ?? e)))}
     style={secondaryButtonStyle}
-    disabled={!newNearbyPlace.name.trim()}
+    disabled={!newNearbyPlace.name.trim() || nearbyPlaces.length >= 5}
   >
-    Add Things to Do place
+    {nearbyPlaces.length >= 5 ? "Maximum 5 places" : "Add Things to Do place"}
   </button>
 
   {nearbyPlaces.length === 0 ? (
@@ -2256,6 +2277,14 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                     }
                     style={inputStyle}
                   />
+                  <input
+                    value={item.nameEs ?? ""}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) => s ? ({ ...s, nameEs: e.target.value }) : s)
+                    }
+                    placeholder="Nombre (Español)"
+                    style={inputStyle}
+                  />
                   <select
                     value={item.category}
                     onChange={(e) =>
@@ -2275,6 +2304,14 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                   onChange={(e) =>
                     setEditingNearbyPlace((s) => s ? ({ ...s, description: e.target.value }) : s)
                   }
+                  style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
+                />
+                <textarea
+                  value={item.descriptionEs ?? ""}
+                  onChange={(e) =>
+                    setEditingNearbyPlace((s) => s ? ({ ...s, descriptionEs: e.target.value }) : s)
+                  }
+                  placeholder="Descripción (Español)"
                   style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
                 />
                 <div style={responsiveGridStyle}>
