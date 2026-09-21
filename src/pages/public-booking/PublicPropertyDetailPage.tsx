@@ -52,6 +52,16 @@ type PublicProperty = {
   feeType: "PER_STAY" | "PER_NIGHT";
   amount: string | number;
   }>;
+  nearbyPlaces?: Array<{
+    id: string;
+    name: string;
+    category: string;
+    description?: string | null;
+    distanceText?: string | null;
+    travelTimeMinutes?: number | null;
+    googleMapsUrl?: string | null;
+    photoUrl?: string | null;
+  }>;
   taxes?: Array<{
     id: string;
     name: string;
@@ -2709,6 +2719,44 @@ return (
                     ))}
                   </div>
                 </section>
+
+                {(property.nearbyPlaces ?? []).length > 0 ? (
+                  <section className="pbe-section pbe-things-to-do" aria-labelledby="pbe-things-to-do-title">
+                    <div className="pbe-section-heading">
+                      <p className="pbe-kicker">{preferredLanguage === "es" ? "QUÉ HACER CERCA" : "THINGS TO DO"}</p>
+                      <h2 id="pbe-things-to-do-title">
+                        {preferredLanguage === "es"
+                          ? "Descubre lo mejor alrededor de tu estadía."
+                          : "Discover what is worth exploring nearby."}
+                      </h2>
+                      <p className="pbe-lead">
+                        {preferredLanguage === "es"
+                          ? "Lugares seleccionados para disfrutar más del destino."
+                          : "Handpicked places to help you make more of the destination."}
+                      </p>
+                    </div>
+                    <div className="pbe-things-grid">
+                      {(property.nearbyPlaces ?? []).map((place) => (
+                        <article className="pbe-thing-card" key={place.id}>
+                          {place.photoUrl ? <img src={place.photoUrl} alt={place.name} loading="lazy" decoding="async" /> : null}
+                          <div className="pbe-thing-card-body">
+                            <div className="pbe-thing-meta">
+                              <span>{place.category.replaceAll("_", " ")}</span>
+                              {place.travelTimeMinutes != null ? <span>{place.travelTimeMinutes} min</span> : place.distanceText ? <span>{place.distanceText}</span> : null}
+                            </div>
+                            <h3>{place.name}</h3>
+                            {place.description ? <p>{place.description}</p> : null}
+                            {place.googleMapsUrl ? (
+                              <a href={place.googleMapsUrl} target="_blank" rel="noreferrer">
+                                {preferredLanguage === "es" ? "Ver en Maps" : "View on Maps"} <span aria-hidden="true">↗</span>
+                              </a>
+                            ) : null}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
 
                 {location ? (
                   <section className="pbe-section pbe-location" aria-labelledby="pbe-new-location-title">
