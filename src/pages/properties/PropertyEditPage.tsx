@@ -134,8 +134,6 @@ type PropertyNearbyPlaceItem = {
   description?: string | null;
   distanceText?: string | null;
   travelTimeMinutes?: number | null;
-  latitude?: number | null;
-  longitude?: number | null;
   googleMapsUrl?: string | null;
   photoUrl?: string | null;
   sortOrder: number;
@@ -240,29 +238,10 @@ type PropertyItem = {
   checkOutTime?: string | null;
 };
 
-function haversineDistanceMiles(
-  fromLat: number,
-  fromLng: number,
-  toLat: number,
-  toLng: number
-) {
-  const radiusMiles = 3958.7613;
-  const toRadians = (value: number) => (value * Math.PI) / 180;
-  const dLat = toRadians(toLat - fromLat);
-  const dLng = toRadians(toLng - fromLng);
-  const lat1 = toRadians(fromLat);
-  const lat2 = toRadians(toLat);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * radiusMiles * Math.asin(Math.sqrt(a));
-}
-
 export function PropertyEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const autocompleteMountRef = useRef<HTMLDivElement>(null);
-  const nearbyPlaceAutocompleteMountRef = useRef<HTMLDivElement>(null);
   const mapMountRef = useRef<HTMLDivElement>(null);
   const googleMapsRef = useRef<any>(null);
   const mapRef = useRef<any>(null);
@@ -272,7 +251,6 @@ export function PropertyEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingNearbyPlacePhoto, setUploadingNearbyPlacePhoto] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [organizationSlug, setOrganizationSlug] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -306,8 +284,6 @@ export function PropertyEditPage() {
     description: "",
     distanceText: "",
     travelTimeMinutes: "",
-    latitude: null as number | null,
-    longitude: null as number | null,
     googleMapsUrl: "",
     photoUrl: "",
     isActive: true,
@@ -523,81 +499,6 @@ export function PropertyEditPage() {
       autocompleteElement?.remove();
     };
   }, [loading]);
-
-
-  useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY || loading || !nearbyPlaceAutocompleteMountRef.current) return;
-
-    let cancelled = false;
-    let autocompleteElement: HTMLElement | null = null;
-    let selectHandler: ((event: Event) => void) | null = null;
-
-    loadGooglePlaces(GOOGLE_MAPS_API_KEY)
-      .then(({ PlaceAutocompleteElement }) => {
-        if (cancelled || !nearbyPlaceAutocompleteMountRef.current) return;
-
-        const nextAutocompleteElement = new PlaceAutocompleteElement() as HTMLElement;
-        autocompleteElement = nextAutocompleteElement;
-        (nextAutocompleteElement as any).placeholder = "Search a nearby place";
-        nextAutocompleteElement.style.width = "100%";
-
-        selectHandler = async (event: Event) => {
-          try {
-            const prediction = (event as any).placePrediction;
-            const place = prediction.toPlace();
-            await place.fetchFields({
-              fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
-            });
-            if (cancelled || !place.location) return;
-
-            const placeLatitude = place.location.lat();
-            const placeLongitude = place.location.lng();
-            const propertyLatitude = Number(form.latitude);
-            const propertyLongitude = Number(form.longitude);
-            const miles =
-              Number.isFinite(propertyLatitude) && Number.isFinite(propertyLongitude)
-                ? haversineDistanceMiles(
-                    propertyLatitude,
-                    propertyLongitude,
-                    placeLatitude,
-                    placeLongitude
-                  )
-                : null;
-
-            setNewNearbyPlace((current) => ({
-              ...current,
-              name:
-                typeof place.displayName === "string"
-                  ? place.displayName
-                  : place.displayName?.text ?? current.name,
-              latitude: placeLatitude,
-              longitude: placeLongitude,
-              distanceText: miles === null ? current.distanceText : `${miles.toFixed(1)} mi`,
-              googleMapsUrl:
-                typeof place.googleMapsURI === "string" && place.googleMapsURI
-                  ? place.googleMapsURI
-                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      place.formattedAddress || `${placeLatitude},${placeLongitude}`
-                    )}`,
-            }));
-          } catch (error: any) {
-            setErr(String(error?.message ?? "Unable to load selected place"));
-          }
-        };
-
-        nextAutocompleteElement.addEventListener("gmp-select", selectHandler as EventListener);
-        nearbyPlaceAutocompleteMountRef.current.replaceChildren(nextAutocompleteElement);
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      if (autocompleteElement && selectHandler) {
-        autocompleteElement.removeEventListener("gmp-select", selectHandler as EventListener);
-      }
-    };
-  }, [loading, form.latitude, form.longitude]);
-
 
   useEffect(() => {
     if (!locationDirty) return;
@@ -1113,34 +1014,6 @@ async function handleUploadPhotos(
     setEditingAmenity(null);
   }
 
-  async function handleUploadNearbyPlacePhoto(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingNearbyPlacePhoto(true);
-    setErr(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("photo", file);
-      const res = await fetch(`${API_BASE}/api/uploads/property-photo`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to upload Things to Do photo");
-      setNewNearbyPlace((current) => ({ ...current, photoUrl: data.url }));
-    } catch (error: any) {
-      setErr(String(error?.message ?? error));
-    } finally {
-      setUploadingNearbyPlacePhoto(false);
-      e.target.value = "";
-    }
-  }
-
   async function handleCreateNearbyPlace() {
     if (!id || !newNearbyPlace.name.trim()) return;
 
@@ -1167,8 +1040,6 @@ async function handleUploadPhotos(
       description: "",
       distanceText: "",
       travelTimeMinutes: "",
-      latitude: null,
-      longitude: null,
       googleMapsUrl: "",
       photoUrl: "",
       isActive: true,
@@ -2242,16 +2113,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     </div>
   </div>
 
-  {placesAvailable ? (
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Find a nearby place</div>
-      <div ref={nearbyPlaceAutocompleteMountRef} />
-      <div style={helperTextStyle}>
-        Select a Google place and Pin&Go will fill the name, Maps link and distance automatically.
-      </div>
-    </div>
-  ) : null}
-
   <div style={responsiveGridStyle}>
     <input
       value={newNearbyPlace.name}
@@ -2283,41 +2144,34 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
   />
 
   <div style={responsiveGridStyle}>
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Distance</div>
-      <input
-        value={newNearbyPlace.distanceText}
-        readOnly={placesAvailable}
-        onChange={(e) => setNewNearbyPlace((s) => ({ ...s, distanceText: e.target.value }))}
-        placeholder="Calculated after selecting a place"
-        style={{ ...inputStyle, background: placesAvailable ? "#f9fafb" : "#ffffff" }}
-      />
-    </div>
-    <div style={{ display: "grid", gap: 6 }}>
-      <div style={labelStyle}>Maps</div>
-      <input
-        value={newNearbyPlace.googleMapsUrl}
-        readOnly={placesAvailable}
-        onChange={(e) => setNewNearbyPlace((s) => ({ ...s, googleMapsUrl: e.target.value }))}
-        placeholder="Generated after selecting a place"
-        style={{ ...inputStyle, background: placesAvailable ? "#f9fafb" : "#ffffff" }}
-      />
-    </div>
+    <input
+      value={newNearbyPlace.distanceText}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, distanceText: e.target.value }))}
+      placeholder="Distance, e.g. 3.2 mi"
+      style={inputStyle}
+    />
+    <input
+      type="number"
+      min="0"
+      value={newNearbyPlace.travelTimeMinutes}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, travelTimeMinutes: e.target.value }))}
+      placeholder="Travel time (minutes)"
+      style={inputStyle}
+    />
   </div>
 
-  <div style={{ display: "grid", gap: 8 }}>
-    <div style={labelStyle}>Photo</div>
-    <input type="file" accept="image/*" onChange={handleUploadNearbyPlacePhoto} />
-    {uploadingNearbyPlacePhoto ? <div style={helperTextStyle}>Uploading photo...</div> : null}
-    {newNearbyPlace.photoUrl ? (
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <img src={newNearbyPlace.photoUrl} alt="" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 12 }} />
-        <button type="button" onClick={() => setNewNearbyPlace((s) => ({ ...s, photoUrl: "" }))} style={secondarySmallButtonStyle}>
-          Remove photo
-        </button>
-      </div>
-    ) : null}
-  </div>
+  <input
+    value={newNearbyPlace.googleMapsUrl}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, googleMapsUrl: e.target.value }))}
+    placeholder="Google Maps URL"
+    style={inputStyle}
+  />
+  <input
+    value={newNearbyPlace.photoUrl}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, photoUrl: e.target.value }))}
+    placeholder="Photo URL (optional)"
+    style={inputStyle}
+  />
 
   <button
     type="button"
