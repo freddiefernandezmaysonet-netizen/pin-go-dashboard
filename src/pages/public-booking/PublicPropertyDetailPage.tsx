@@ -1616,6 +1616,7 @@ export default function PublicPropertyDetailPage() {
   const [checkoutStarted, setCheckoutStarted] = useState(false);
   const [confirmationStarted, setConfirmationStarted] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [amenitiesExpanded, setAmenitiesExpanded] = useState(false);
 
   const publicReviewsRequestKey = `${organizationSlug ?? ""}/${propertySlug ?? ""}`;
   const publicReviewsSummary =
@@ -2639,30 +2640,73 @@ return (
                     </p>
                   </div>
                   <div className="pbe-amenity-grid">
-                    {[...includedAmenities, ...copy.propertyHighlights.items]
-                      .slice(0, 8)
-                      .map((item) => {
-                        const isPropertyAmenity = "name" in item;
-                        const name = isPropertyAmenity
-                          ? item.name
-                          : item.title;
-                        const key = isPropertyAmenity ? item.id : item.icon;
+                    {(amenitiesExpanded
+                      ? includedAmenities
+                      : includedAmenities.slice(0, 6)
+                    ).map((amenity) => (
+                      <article className="pbe-amenity-card" key={amenity.id}>
+                        <div className="pbe-amenity-icon">
+                          <AmenityIcon name={amenity.name} />
+                        </div>
+                        <h3>{amenity.name}</h3>
+                        <p>
+                          {amenity.description ||
+                            (preferredLanguage === "es"
+                              ? "Incluido con tu estadía."
+                              : "Included with your stay.")}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
 
-                        return (
-                          <article className="pbe-amenity-card" key={key}>
-                            <div className="pbe-amenity-icon">
-                              <AmenityIcon name={name} />
-                            </div>
-                            <h3>{name}</h3>
-                            <p>
-                              {item.description ||
-                                (preferredLanguage === "es"
-                                  ? "Incluido con tu estadía."
-                                  : "Included with your stay.")}
-                            </p>
-                          </article>
-                        );
-                      })}
+                  {includedAmenities.length > 6 ? (
+                    <button
+                      className="pbe-outline-action pbe-amenities-toggle"
+                      type="button"
+                      onClick={() => setAmenitiesExpanded((current) => !current)}
+                      aria-expanded={amenitiesExpanded}
+                    >
+                      {amenitiesExpanded
+                        ? preferredLanguage === "es"
+                          ? "Mostrar menos"
+                          : "Show less"
+                        : preferredLanguage === "es"
+                          ? `Mostrar todas las amenidades (${includedAmenities.length})`
+                          : `Show all amenities (${includedAmenities.length})`}
+                      <span aria-hidden="true">{amenitiesExpanded ? "↑" : "↓"}</span>
+                    </button>
+                  ) : null}
+                </section>
+
+                <section className="pbe-section pbe-highlights" aria-labelledby="pbe-highlights-title">
+                  <div className="pbe-section-heading">
+                    <p className="pbe-kicker">
+                      {preferredLanguage === "es"
+                        ? "ASPECTOS DESTACADOS"
+                        : "PROPERTY HIGHLIGHTS"}
+                    </p>
+                    <h2 id="pbe-highlights-title">
+                      {preferredLanguage === "es"
+                        ? "Una experiencia más simple desde el primer momento."
+                        : "A smoother experience from the very beginning."}
+                    </h2>
+                    <p className="pbe-lead">
+                      {preferredLanguage === "es"
+                        ? "Tecnología y servicios que hacen que reservar, llegar y disfrutar sea más sencillo."
+                        : "Technology and services that make booking, arrival, and your stay feel effortless."}
+                    </p>
+                  </div>
+
+                  <div className="pbe-amenity-grid">
+                    {copy.propertyHighlights.items.map((item) => (
+                      <article className="pbe-amenity-card" key={item.icon}>
+                        <div className="pbe-amenity-icon">
+                          <PublicFeatureIcon type={item.icon} />
+                        </div>
+                        <h3>{item.title}</h3>
+                        <p>{item.description}</p>
+                      </article>
+                    ))}
                   </div>
                 </section>
 
