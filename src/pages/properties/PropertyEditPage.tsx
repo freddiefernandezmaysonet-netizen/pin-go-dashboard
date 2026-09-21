@@ -117,6 +117,29 @@ type PropertyAmenityItem = {
   isActive: boolean;
 };
 
+type NearbyPlaceCategory =
+  | "BEACH"
+  | "RESTAURANT"
+  | "ATTRACTION"
+  | "NATURE"
+  | "SHOPPING"
+  | "NIGHTLIFE"
+  | "CULTURE"
+  | "OTHER";
+
+type PropertyNearbyPlaceItem = {
+  id: string;
+  name: string;
+  category: NearbyPlaceCategory;
+  description?: string | null;
+  distanceText?: string | null;
+  travelTimeMinutes?: number | null;
+  googleMapsUrl?: string | null;
+  photoUrl?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
+
 type PropertyTaxItem = {
   id: string;
   name: string;
@@ -250,6 +273,20 @@ export function PropertyEditPage() {
     chargeMode: "INCLUDED" as AmenityChargeMode,
     feeType: "PER_STAY" as AmenityFeeType,
     amount: "",
+  });
+
+  const [nearbyPlaces, setNearbyPlaces] = useState<PropertyNearbyPlaceItem[]>([]);
+  const [editingNearbyPlaceId, setEditingNearbyPlaceId] = useState<string | null>(null);
+  const [editingNearbyPlace, setEditingNearbyPlace] = useState<PropertyNearbyPlaceItem | null>(null);
+  const [newNearbyPlace, setNewNearbyPlace] = useState({
+    name: "",
+    category: "OTHER" as NearbyPlaceCategory,
+    description: "",
+    distanceText: "",
+    travelTimeMinutes: "",
+    googleMapsUrl: "",
+    photoUrl: "",
+    isActive: true,
   });
 
   const [taxes, setTaxes] = useState<PropertyTaxItem[]>([]);
@@ -529,6 +566,17 @@ export function PropertyEditPage() {
         setOrganizationSlug(p.organization?.slug ?? "");
         setAmenities((p.amenities ?? []).filter((a) => a.isActive !== false));
         setTaxes((p.taxes ?? []).filter((t) => t.isActive !== false));
+
+        fetch(`${API_BASE}/api/properties/${id}/nearby-places`, {
+          credentials: "include",
+        })
+          .then((r) => r.json())
+          .then((nearbyData) => {
+            setNearbyPlaces(Array.isArray(nearbyData.items) ? nearbyData.items : []);
+          })
+          .catch(() => {
+            setNearbyPlaces([]);
+          });
 
         fetch(`${API_BASE}/api/dashboard/properties/${id}/seasons`, {
   credentials: "include",
@@ -964,6 +1012,74 @@ async function handleUploadPhotos(
 
     setEditingAmenityId(null);
     setEditingAmenity(null);
+  }
+
+  async function handleCreateNearbyPlace() {
+    if (!id || !newNearbyPlace.name.trim()) return;
+
+    const res = await fetch(`${API_BASE}/api/properties/${id}/nearby-places`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...newNearbyPlace,
+        travelTimeMinutes: newNearbyPlace.travelTimeMinutes.trim()
+          ? Number(newNearbyPlace.travelTimeMinutes)
+          : null,
+        sortOrder: nearbyPlaces.length,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Failed to create nearby place");
+
+    setNearbyPlaces((prev) => [...prev, data.item]);
+    setNewNearbyPlace({
+      name: "",
+      category: "OTHER",
+      description: "",
+      distanceText: "",
+      travelTimeMinutes: "",
+      googleMapsUrl: "",
+      photoUrl: "",
+      isActive: true,
+    });
+  }
+
+  async function handleSaveNearbyPlace() {
+    if (!id || !editingNearbyPlaceId || !editingNearbyPlace) return;
+
+    const res = await fetch(
+      `${API_BASE}/api/properties/${id}/nearby-places/${editingNearbyPlaceId}`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingNearbyPlace),
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Failed to update nearby place");
+
+    setNearbyPlaces((prev) =>
+      prev.map((item) => (item.id === editingNearbyPlaceId ? data.item : item))
+    );
+    setEditingNearbyPlaceId(null);
+    setEditingNearbyPlace(null);
+  }
+
+  async function handleDeleteNearbyPlace(placeId: string) {
+    if (!id || !window.confirm("Delete this Things to Do place?")) return;
+
+    const res = await fetch(
+      `${API_BASE}/api/properties/${id}/nearby-places/${placeId}`,
+      { method: "DELETE", credentials: "include" }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Failed to delete nearby place");
+
+    setNearbyPlaces((prev) => prev.filter((item) => item.id !== placeId));
   }
 
   async function handleCreateTax() {
@@ -1978,7 +2094,234 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 
 </div>   
 
-       <div style={responsiveGridStyle}>
+       <div
+  style={{
+    border: "1px solid #dbeafe",
+    borderRadius: 16,
+    padding: 16,
+    background: "#f8fbff",
+    display: "grid",
+    gap: 14,
+  }}
+>
+  <div>
+    <div style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>
+      Things to Do
+    </div>
+    <div style={helperTextStyle}>
+      Recommend nearby places guests can discover during their stay.
+    </div>
+  </div>
+
+  <div style={responsiveGridStyle}>
+    <input
+      value={newNearbyPlace.name}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, name: e.target.value }))}
+      placeholder="Place name"
+      style={inputStyle}
+    />
+    <select
+      value={newNearbyPlace.category}
+      onChange={(e) =>
+        setNewNearbyPlace((s) => ({
+          ...s,
+          category: e.target.value as NearbyPlaceCategory,
+        }))
+      }
+      style={inputStyle}
+    >
+      {["BEACH","RESTAURANT","ATTRACTION","NATURE","SHOPPING","NIGHTLIFE","CULTURE","OTHER"].map((category) => (
+        <option key={category} value={category}>{category}</option>
+      ))}
+    </select>
+  </div>
+
+  <textarea
+    value={newNearbyPlace.description}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, description: e.target.value }))}
+    placeholder="Short guest-facing description"
+    style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
+  />
+
+  <div style={responsiveGridStyle}>
+    <input
+      value={newNearbyPlace.distanceText}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, distanceText: e.target.value }))}
+      placeholder="Distance, e.g. 3.2 mi"
+      style={inputStyle}
+    />
+    <input
+      type="number"
+      min="0"
+      value={newNearbyPlace.travelTimeMinutes}
+      onChange={(e) => setNewNearbyPlace((s) => ({ ...s, travelTimeMinutes: e.target.value }))}
+      placeholder="Travel time (minutes)"
+      style={inputStyle}
+    />
+  </div>
+
+  <input
+    value={newNearbyPlace.googleMapsUrl}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, googleMapsUrl: e.target.value }))}
+    placeholder="Google Maps URL"
+    style={inputStyle}
+  />
+  <input
+    value={newNearbyPlace.photoUrl}
+    onChange={(e) => setNewNearbyPlace((s) => ({ ...s, photoUrl: e.target.value }))}
+    placeholder="Photo URL (optional)"
+    style={inputStyle}
+  />
+
+  <button
+    type="button"
+    onClick={() => handleCreateNearbyPlace().catch((e) => setErr(String(e?.message ?? e)))}
+    style={secondaryButtonStyle}
+    disabled={!newNearbyPlace.name.trim()}
+  >
+    Add Things to Do place
+  </button>
+
+  {nearbyPlaces.length === 0 ? (
+    <div style={helperTextStyle}>No Things to Do places added yet.</div>
+  ) : (
+    <div style={{ display: "grid", gap: 10 }}>
+      {nearbyPlaces.map((place) => {
+        const editing = editingNearbyPlaceId === place.id && editingNearbyPlace;
+        const item = editing || place;
+
+        return (
+          <div
+            key={place.id}
+            style={{
+              border: "1px solid #e5e7eb",
+              borderRadius: 14,
+              padding: 12,
+              background: "#ffffff",
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            {editing ? (
+              <>
+                <div style={responsiveGridStyle}>
+                  <input
+                    value={item.name}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) => s ? ({ ...s, name: e.target.value }) : s)
+                    }
+                    style={inputStyle}
+                  />
+                  <select
+                    value={item.category}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) =>
+                        s ? ({ ...s, category: e.target.value as NearbyPlaceCategory }) : s
+                      )
+                    }
+                    style={inputStyle}
+                  >
+                    {["BEACH","RESTAURANT","ATTRACTION","NATURE","SHOPPING","NIGHTLIFE","CULTURE","OTHER"].map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+                <textarea
+                  value={item.description ?? ""}
+                  onChange={(e) =>
+                    setEditingNearbyPlace((s) => s ? ({ ...s, description: e.target.value }) : s)
+                  }
+                  style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
+                />
+                <div style={responsiveGridStyle}>
+                  <input
+                    value={item.distanceText ?? ""}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) => s ? ({ ...s, distanceText: e.target.value }) : s)
+                    }
+                    placeholder="Distance"
+                    style={inputStyle}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={item.travelTimeMinutes ?? ""}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) =>
+                        s ? ({ ...s, travelTimeMinutes: e.target.value === "" ? null : Number(e.target.value) }) : s
+                      )
+                    }
+                    placeholder="Minutes"
+                    style={inputStyle}
+                  />
+                </div>
+                <input
+                  value={item.googleMapsUrl ?? ""}
+                  onChange={(e) =>
+                    setEditingNearbyPlace((s) => s ? ({ ...s, googleMapsUrl: e.target.value }) : s)
+                  }
+                  placeholder="Google Maps URL"
+                  style={inputStyle}
+                />
+                <input
+                  value={item.photoUrl ?? ""}
+                  onChange={(e) =>
+                    setEditingNearbyPlace((s) => s ? ({ ...s, photoUrl: e.target.value }) : s)
+                  }
+                  placeholder="Photo URL"
+                  style={inputStyle}
+                />
+                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={item.isActive}
+                    onChange={(e) =>
+                      setEditingNearbyPlace((s) => s ? ({ ...s, isActive: e.target.checked }) : s)
+                    }
+                  />
+                  Active on Direct Booking
+                </label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => handleSaveNearbyPlace().catch((e) => setErr(String(e?.message ?? e)))} style={secondarySmallButtonStyle}>
+                    Save
+                  </button>
+                  <button type="button" onClick={() => { setEditingNearbyPlaceId(null); setEditingNearbyPlace(null); }} style={secondarySmallButtonStyle}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 900, color: "#111827" }}>{place.name}</div>
+                    <div style={helperTextStyle}>
+                      {place.category}
+                      {place.travelTimeMinutes != null ? ` · ${place.travelTimeMinutes} min` : ""}
+                      {place.distanceText ? ` · ${place.distanceText}` : ""}
+                      {!place.isActive ? " · Hidden" : ""}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={() => { setEditingNearbyPlaceId(place.id); setEditingNearbyPlace({ ...place }); }} style={secondarySmallButtonStyle}>
+                      Edit
+                    </button>
+                    <button type="button" onClick={() => handleDeleteNearbyPlace(place.id).catch((e) => setErr(String(e?.message ?? e)))} style={secondarySmallButtonStyle}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                {place.description ? <div style={helperTextStyle}>{place.description}</div> : null}
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+<div style={responsiveGridStyle}>
   <div style={{ display: "grid", gap: 6 }}>
     <div style={labelStyle}>Nightly Rate</div>
     <input
