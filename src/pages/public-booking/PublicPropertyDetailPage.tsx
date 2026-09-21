@@ -55,8 +55,10 @@ type PublicProperty = {
   nearbyPlaces?: Array<{
     id: string;
     name: string;
+    nameEs?: string | null;
     category: string;
     description?: string | null;
+    descriptionEs?: string | null;
     distanceText?: string | null;
     travelTimeMinutes?: number | null;
     googleMapsUrl?: string | null;
@@ -2744,8 +2746,20 @@ return (
                               <span>{place.category.replaceAll("_", " ")}</span>
                               {place.travelTimeMinutes != null ? <span>{place.travelTimeMinutes} min</span> : place.distanceText ? <span>{place.distanceText}</span> : null}
                             </div>
-                            <h3>{place.name}</h3>
-                            {place.description ? <p>{place.description}</p> : null}
+                            <h3>
+                              {preferredLanguage === "es"
+                                ? place.nameEs || place.name
+                                : place.name || place.nameEs}
+                            </h3>
+                            {(preferredLanguage === "es"
+                              ? place.descriptionEs || place.description
+                              : place.description || place.descriptionEs) ? (
+                              <p>
+                                {preferredLanguage === "es"
+                                  ? place.descriptionEs || place.description
+                                  : place.description || place.descriptionEs}
+                              </p>
+                            ) : null}
                             {place.googleMapsUrl ? (
                               <a href={place.googleMapsUrl} target="_blank" rel="noreferrer">
                                 {preferredLanguage === "es" ? "Ver en Maps" : "View on Maps"} <span aria-hidden="true">↗</span>
