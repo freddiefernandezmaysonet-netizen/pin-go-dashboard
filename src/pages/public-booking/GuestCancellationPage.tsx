@@ -3,11 +3,14 @@ import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
+import { GuestPinAIAssistant } from "../../components/public-booking/GuestPinAIAssistant";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_BASE ||
   "https://api.pin-ngo.com";
+const PIN_AI_GUEST_PORTAL_ENABLED =
+  import.meta.env.VITE_PIN_AI_GUEST_PORTAL_ENABLED === "true";
 
 type CancellationRefundRule = {
   minHoursBeforeCheckIn: number;
@@ -1334,6 +1337,12 @@ export default function GuestCancellationPage() {
                       </div>
                     ) : null}
                   </div>
+
+                  {!isCancelled && PIN_AI_GUEST_PORTAL_ENABLED ? (
+                    <GuestPinAIAssistant
+                      guestToken={String(guestToken ?? "").trim()}
+                    />
+                  ) : null}
 
                   {!isCancelled ? (
                     <div style={styles.modificationCard}>

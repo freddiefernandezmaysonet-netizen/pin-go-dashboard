@@ -11,6 +11,7 @@
     "test:manual-reservation-date-change": "node --test src/components/reservations/manualReservationDateChangeFlow.test.js",
     "test:distribution-connection-center": "node --test src/api/distribution.contract.test.js",
     "test:property-knowledge-dashboard": "node --test src/property-knowledge-dashboard.contract.test.js",
+    "test:pin-ai-guest-portal": "node --test src/pin-ai-guest-portal.contract.test.js",
     "test:enterprise-reviews-e1": "node --test src/reviews.enterprise-e1.contract.test.js && eslint src/api/reviews.ts src/lib/reviewsConfig.ts src/lib/publicDocumentMetadata.ts src/lib/publicReviewsPagination.ts src/lib/reviewModerationPolicy.ts src/components/reviews/PublicReviewsSection.tsx src/pages/public-booking/GuestReviewPage.tsx src/pages/public-booking/PublicPropertyDetailPage.tsx src/pages/reputation/ReputationPage.tsx src/pages/admin/AdminReviewModerationPage.tsx src/app/layout/AppShell.tsx src/app/routes/router.tsx && vite build"
   },
   "dependencies": {
@@ -55,3 +56,4 @@
     "vite": "^7.3.1"
   }
 }
+
