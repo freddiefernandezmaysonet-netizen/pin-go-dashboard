@@ -1,0 +1,52 @@
+name: Pin AI Property Knowledge Dashboard V1
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/pin-ai-property-knowledge-dashboard-v1.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "src/api/client.ts"
+      - "src/api/propertyKnowledge.ts"
+      - "src/app/layout/AppShell.tsx"
+      - "src/app/routes/router.tsx"
+      - "src/pages/properties/PropertyKnowledgePage.tsx"
+      - "src/pages/property-detail/PropertyDetailPage.tsx"
+      - "src/property-knowledge-dashboard.contract.test.js"
+
+permissions:
+  contents: read
+
+jobs:
+  property-knowledge-dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --silent --no-audit --no-fund
+
+      - name: Certify Property Knowledge dashboard contract
+        run: npm run test:property-knowledge-dashboard
+
+      - name: Lint changed Property Knowledge surfaces
+        run: |
+          npx eslint \
+            src/api/propertyKnowledge.ts \
+            src/pages/properties/PropertyKnowledgePage.tsx \
+            src/app/layout/AppShell.tsx \
+            src/app/routes/router.tsx
+
+      - name: Build dashboard
+        run: npm run build
