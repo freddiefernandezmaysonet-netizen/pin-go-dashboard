@@ -44,6 +44,10 @@ type PublicProperty = {
     configured: boolean;
     requiresIdentityVerification: boolean;
   } | null;
+  propertyRules?: {
+    en?: unknown;
+    es?: unknown;
+  } | null;
   amenities?: Array<{
   id: string;
   name: string;
@@ -174,6 +178,34 @@ type PublicCancellationPolicyPresentation = {
   checkIn: string | null;
 };
 
+
+function publicRuleToText(value: unknown) {
+  if (typeof value === "string") return value.trim();
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const rule = value as Record<string, unknown>;
+    const title = typeof rule.title === "string" ? rule.title.trim() : "";
+    const text =
+      typeof rule.text === "string"
+        ? rule.text.trim()
+        : typeof rule.description === "string"
+          ? rule.description.trim()
+          : typeof rule.label === "string"
+            ? rule.label.trim()
+            : "";
+    return [title, text].filter(Boolean).join(": ");
+  }
+  return "";
+}
+
+function normalizePublicPropertyRules(value: unknown) {
+  const source = Array.isArray(value)
+    ? value
+    : value && typeof value === "object"
+      ? Object.values(value as Record<string, unknown>)
+      : [value];
+
+  return source.map(publicRuleToText).filter(Boolean);
+}
 
 const GUEST_LANGUAGE_STORAGE_KEY =
   "pingo_guest_preferred_language";
@@ -1630,6 +1662,16 @@ export default function PublicPropertyDetailPage() {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false);
 
+  const displayedPropertyRules = useMemo(
+    () =>
+      normalizePublicPropertyRules(
+        preferredLanguage === "es"
+          ? property?.propertyRules?.es ?? property?.propertyRules?.en
+          : property?.propertyRules?.en ?? property?.propertyRules?.es
+      ),
+    [preferredLanguage, property?.propertyRules]
+  );
+
   const publicReviewsRequestKey = `${organizationSlug ?? ""}/${propertySlug ?? ""}`;
   const publicReviewsSummary =
     loadedPublicReviewsSummary?.requestKey === publicReviewsRequestKey
@@ -2721,6 +2763,29 @@ return (
                     ))}
                   </div>
                 </section>
+
+                {displayedPropertyRules.length > 0 ? (
+                  <section className="pbe-section pbe-property-rules" aria-labelledby="pbe-property-rules-title">
+                    <div className="pbe-section-heading">
+                      <p className="pbe-kicker">
+                        {preferredLanguage === "es" ? "ANTES DE RESERVAR" : "BEFORE YOU BOOK"}
+                      </p>
+                      <h2 id="pbe-property-rules-title">
+                        {preferredLanguage === "es" ? "Reglas de la propiedad" : "Property Rules"}
+                      </h2>
+                      <p className="pbe-lead">
+                        {preferredLanguage === "es"
+                          ? "Conoce las reglas de esta propiedad antes de confirmar tu estadía."
+                          : "Review this property's rules before confirming your stay."}
+                      </p>
+                    </div>
+                    <ul className="pbe-property-rules-list">
+                      {displayedPropertyRules.map((rule, index) => (
+                        <li key={`${index}-${rule}`}>{rule}</li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
 
                 {(property.nearbyPlaces ?? []).length > 0 ? (
                   <section className="pbe-section pbe-things-to-do" aria-labelledby="pbe-things-to-do-title">
