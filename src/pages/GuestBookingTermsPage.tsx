@@ -25,7 +25,7 @@ export default function GuestBookingTermsPage() {
       <p>The guest must provide accurate booking and contact information. Only the authorized reservation and registered occupants may use access credentials, subject to the Property Rules and Guest Agreement.</p>
 
       <h3>Communications</h3>
-      <p>Email may be used for reservation and stay communications. Transactional SMS is optional and is sent only when the guest provides the applicable consent. Message and data rates may apply; SMS recipients may reply STOP to opt out or HELP for assistance.</p>
+      <p>Email may be used for reservation and stay communications. Transactional SMS is optional and is sent only when the guest provides the applicable consent. Message frequency varies according to the reservation and stay. Message and data rates may apply. SMS recipients may reply STOP to opt out or HELP for assistance. Carriers are not liable for delayed or undelivered messages.</p>
 
       <h3>Third-party services</h3>
       <p>Payment, identity verification, messaging, smart-access, and other operational functions may depend on third-party service providers. Their services may be subject to their own terms and privacy practices.</p>
@@ -52,7 +52,7 @@ export default function GuestBookingTermsPage() {
       <p>El huésped debe proporcionar información correcta de reservación y contacto. Solo la reservación autorizada y los ocupantes registrados pueden utilizar las credenciales de acceso, sujeto a las Reglas de la propiedad y al Acuerdo del huésped.</p>
 
       <h3>Comunicaciones</h3>
-      <p>El correo electrónico puede utilizarse para comunicaciones relacionadas con la reservación y la estadía. Los SMS transaccionales son opcionales y solo se envían cuando el huésped proporciona el consentimiento correspondiente. Pueden aplicar cargos por mensajes y datos; los destinatarios pueden responder STOP para cancelar o HELP para recibir asistencia.</p>
+      <p>El correo electrónico puede utilizarse para comunicaciones relacionadas con la reservación y la estadía. Los SMS transaccionales son opcionales y solo se envían cuando el huésped proporciona el consentimiento correspondiente. La frecuencia de mensajes varía según la reservación y la estadía. Pueden aplicar cargos por mensajes y datos. Los destinatarios pueden responder STOP para cancelar o HELP para recibir asistencia. Los operadores móviles no son responsables por mensajes retrasados o no entregados.</p>
 
       <h3>Servicios de terceros</h3>
       <p>El pago, la verificación de identidad, la mensajería, el acceso inteligente y otras funciones operacionales pueden depender de proveedores externos. Sus servicios pueden estar sujetos a sus propios términos y prácticas de privacidad.</p>
