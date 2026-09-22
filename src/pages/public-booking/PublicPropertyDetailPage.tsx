@@ -2965,8 +2965,16 @@ return (
                             </strong>
                             <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
                           </summary>
-                          <p>{copy.securePreCheckinIntro}</p>
-                          <p>{securePreCheckinDisclosureText}</p>
+                          <p>
+                            {preferredLanguage === "es"
+                              ? "Después de reservar, el huésped principal deberá completar una verificación segura de identidad mediante Stripe Identity antes de recibir las credenciales de acceso. El proceso requiere capturar una identificación oficial válida con foto y completar una selfie para verificar que corresponde al documento. También deberá aceptar el Acuerdo del Huésped."
+                              : "After booking, the primary guest must complete secure identity verification through Stripe Identity before receiving access credentials. The process requires live capture of a valid government-issued photo ID and a selfie to verify that it matches the document. The guest must also accept the Guest Agreement."}
+                          </p>
+                          <p>
+                            {preferredLanguage === "es"
+                              ? "Pin&Go no almacena las imágenes del documento ni de la selfie. La reservación puede quedar confirmada después del pago, pero el acceso permanecerá pendiente hasta completar estos requisitos."
+                              : "Pin&Go does not store images of the identity document or selfie. The reservation may be confirmed after payment, but access will remain pending until these requirements are completed."}
+                          </p>
                         </details>
                       ) : null}
                     </div>
