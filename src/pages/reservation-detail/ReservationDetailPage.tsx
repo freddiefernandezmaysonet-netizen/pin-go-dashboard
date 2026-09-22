@@ -513,6 +513,22 @@ export function ReservationDetailPage() {
       setDamageError("Enter a valid damage amount.");
       return;
     }
+    const maximumLiability = Number(
+      data?.propertyProtection?.maxDamageLiabilityAmount
+    );
+    if (
+      Number.isFinite(maximumLiability) &&
+      maximumLiability > 0 &&
+      requestedAmount > maximumLiability
+    ) {
+      setDamageError(
+        `Damage amount cannot exceed the reservation liability limit of ${money(
+          maximumLiability,
+          reservationCurrency
+        )}.`
+      );
+      return;
+    }
     if (!damageEvidenceNotes.trim()) {
       setDamageError("Add evidence notes before creating the case.");
       return;
@@ -562,6 +578,21 @@ export function ReservationDetailPage() {
     const approvedAmount = Number(damageApprovedAmount);
     if (!Number.isFinite(approvedAmount) || approvedAmount <= 0) {
       setDamageError("Enter a valid approved amount.");
+      return;
+    }
+    const requestedAmount = Number(data.damageCase.requestedAmount);
+    const maximumLiability = Number(
+      data.propertyProtection?.maxDamageLiabilityAmount
+    );
+    if (
+      approvedAmount > requestedAmount ||
+      (Number.isFinite(maximumLiability) &&
+        maximumLiability > 0 &&
+        approvedAmount > maximumLiability)
+    ) {
+      setDamageError(
+        "Approved amount cannot exceed the reported damage or reservation liability limit."
+      );
       return;
     }
     try {
@@ -1005,6 +1036,17 @@ export function ReservationDetailPage() {
                 <div><b>Requested:</b> {money(data.damageCase.requestedAmount, data.damageCase.currency)}</div>
                 <div><b>Approved:</b> {data.damageCase.approvedAmount === null ? "—" : money(data.damageCase.approvedAmount, data.damageCase.currency)}</div>
                 <div><b>Description:</b> {data.damageCase.description}</div>
+                <div>
+                  <b>Evidence notes:</b>{" "}
+                  {typeof data.damageCase.evidence === "object" &&
+                  data.damageCase.evidence !== null &&
+                  "notes" in data.damageCase.evidence
+                    ? String(
+                        (data.damageCase.evidence as { notes?: unknown }).notes ??
+                          "—"
+                      )
+                    : "—"}
+                </div>
               </div>
 
               {data.damageCase.status === "OPEN" ||
