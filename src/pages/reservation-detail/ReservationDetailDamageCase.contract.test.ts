@@ -53,3 +53,32 @@ test("UI surfaces recorded evidence and mirrors liability bounds before server e
   assert.match(source, /Approved amount cannot exceed the reported damage or reservation liability limit/);
   assert.match(source, /maxDamageLiabilityAmount/);
 });
+
+test("host sees every guest Damage Case response state", () => {
+  assert.match(source, /Guest response/);
+  assert.match(source, /Response status:/);
+  assert.match(source, /"PENDING"/);
+  assert.match(source, /"ACKNOWLEDGED"/);
+  assert.match(source, /"ACCEPTED"/);
+  assert.match(source, /"DISPUTED"/);
+  assert.match(source, /guestAcknowledgedAt/);
+  assert.match(source, /guestRespondedAt/);
+  assert.match(source, /Guest explanation:/);
+  assert.match(source, /guestResponseNote/);
+});
+
+test("acknowledgement is not presented as acceptance", () => {
+  assert.match(source, /confirmed receipt of the report/);
+  assert.match(source, /This is not an[\s\S]*acceptance of the approved report/);
+  assert.match(source, /Acknowledged:/);
+});
+
+test("guest response presentation remains explicitly non-charging", () => {
+  assert.match(source, /Awaiting the guest&apos;s response\. No charge has been made\./);
+  assert.match(source, /Acceptance did not[\s\S]*execute a charge/);
+  assert.match(source, /disputed the approved report\. No charge has been[\s\S]*made/);
+  assert.doesNotMatch(source, /Charge accepted case/);
+  assert.doesNotMatch(source, /Capture payment/);
+  assert.doesNotMatch(source, /Create PaymentIntent/);
+});
+
