@@ -233,6 +233,9 @@ type PropertyItem = {
   occupancyHighThresholdPercent?: number | null;
   occupancyHighAdjustmentPercent?: number | null;
   cleaningFee?: number | null;
+  propertyProtectionEnabled?: boolean;
+  propertyProtectionMode?: "CARD_ON_FILE";
+  maxDamageLiabilityAmount?: number | null;
   maxGuests?: number | null;
   minimumNights?: number | null;
   maximumNights?: number | null;
@@ -363,6 +366,9 @@ export function PropertyEditPage() {
     occupancyHighThresholdPercent: "",
     occupancyHighAdjustmentPercent: "",
     cleaningFee: "",
+    propertyProtectionEnabled: false,
+    propertyProtectionMode: "CARD_ON_FILE" as const,
+    maxDamageLiabilityAmount: "",
     maxGuests: "",
     minimumNights: "1",
     maximumNights: "",
@@ -698,6 +704,12 @@ cleaningFee:
             p.cleaningFee !== null && p.cleaningFee !== undefined
               ? String(p.cleaningFee)
               : "",
+          propertyProtectionEnabled: Boolean(p.propertyProtectionEnabled),
+          propertyProtectionMode: "CARD_ON_FILE",
+          maxDamageLiabilityAmount:
+            p.maxDamageLiabilityAmount !== null && p.maxDamageLiabilityAmount !== undefined
+              ? String(p.maxDamageLiabilityAmount)
+              : "",
           maxGuests:
             p.maxGuests !== null && p.maxGuests !== undefined
               ? String(p.maxGuests)
@@ -844,6 +856,12 @@ occupancyHighAdjustmentPercent:
 
 cleaningFee:
        form.cleaningFee.trim() === "" ? null : Number(form.cleaningFee),
+          propertyProtectionEnabled: form.propertyProtectionEnabled,
+          propertyProtectionMode: "CARD_ON_FILE",
+          maxDamageLiabilityAmount:
+            form.maxDamageLiabilityAmount.trim() === ""
+              ? null
+              : Number(form.maxDamageLiabilityAmount),
           maxGuests: form.maxGuests.trim() === "" ? null : Number(form.maxGuests),
           minimumNights: Number(form.minimumNights || 1),
           maximumNights:
@@ -1888,6 +1906,76 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               />
               Public Booking Enabled
             </label>
+<div
+  style={{
+    border: "1px solid #bfdbfe",
+    borderRadius: 16,
+    padding: 16,
+    background: "#ffffff",
+    display: "grid",
+    gap: 14,
+  }}
+>
+  <div>
+    <div style={{ ...labelStyle, fontSize: 16 }}>Property Protection</div>
+    <div style={helperTextStyle}>
+      Optional damage responsibility protection for Direct Booking. This does not place a deposit or hold on the guest&apos;s funds.
+    </div>
+  </div>
+
+  <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontWeight: 700 }}>
+    <input
+      type="checkbox"
+      checked={form.propertyProtectionEnabled}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, propertyProtectionEnabled: e.target.checked }))
+      }
+    />
+    <span>
+      Enable damage responsibility protection
+      <span style={{ ...helperTextStyle, display: "block", fontWeight: 400 }}>
+        When the Card on File payment phase is enabled, the guest will authorize a compatible payment method to be securely retained by Stripe for eligible, documented damage claims.
+      </span>
+    </span>
+  </label>
+
+  {form.propertyProtectionEnabled ? (
+    <>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Protection method</div>
+        <input value="Card on File" disabled style={{ ...inputStyle, background: "#f8fafc" }} />
+        <div style={helperTextStyle}>No funds are held at booking.</div>
+      </div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Maximum damage responsibility</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontWeight: 800 }}>$</span>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            value={form.maxDamageLiabilityAmount}
+            onChange={(e) =>
+              setForm((s) => ({ ...s, maxDamageLiabilityAmount: e.target.value }))
+            }
+            placeholder="500.00"
+            style={inputStyle}
+          />
+        </div>
+        <div style={helperTextStyle}>
+          Maximum amount the guest can authorize for an eligible, documented damage claim under the accepted policy.
+        </div>
+      </div>
+    </>
+  ) : (
+    <div style={helperTextStyle}>
+      Property Protection is off. No payment method is retained for damage responsibility.
+    </div>
+  )}
+</div>
+
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Property URL Slug</div>
 
