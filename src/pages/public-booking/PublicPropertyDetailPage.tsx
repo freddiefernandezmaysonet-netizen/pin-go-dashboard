@@ -3988,12 +3988,16 @@ return (
                 <div style={styles.legalLinks}>
                   <span>
                     {copy.legalAgreementPrefix}{" "}
-                    <Link to="/legal/terms" style={styles.legalLink}>
-                      {copy.termsOfService}
+                    <Link to="/legal/guest-booking-terms" style={styles.legalLink}>
+                      {preferredLanguage === "es"
+                        ? "Términos de reservación para huéspedes"
+                        : "Guest Booking Terms"}
                     </Link>{" "}
                     {copy.legalAnd}{" "}
-                    <Link to="/legal/privacy" style={styles.legalLink}>
-                      {copy.privacyPolicy}
+                    <Link to="/legal/guest-privacy" style={styles.legalLink}>
+                      {preferredLanguage === "es"
+                        ? "Aviso de privacidad para huéspedes"
+                        : "Guest Privacy Notice"}
                     </Link>
                     .
                   </span>
