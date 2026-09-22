@@ -57,3 +57,56 @@ test("approved Damage Case is rendered independently of cancellation management 
   assert.ok(phaseIndex > protectionIndex);
   assert.ok(preStayReservationIndex > protectionIndex);
 });
+
+test("guest response uses the existing token and non-charging response endpoint", () => {
+  assert.match(source, /\/property-protection-case\/respond/);
+  assert.match(source, /method: "POST"/);
+  assert.match(source, /action,/);
+  assert.match(source, /note: action === "DISPUTED"/);
+  assert.match(source, /loadPropertyProtectionCase\(\)/);
+});
+
+test("guest can acknowledge without accepting and then advance", () => {
+  assert.match(source, /"ACKNOWLEDGED"/);
+  assert.match(source, /Confirmar recibido/);
+  assert.match(source, /Acknowledge receipt/);
+  assert.match(source, /Esto no significa que lo aceptaste/);
+  assert.match(source, /This does not mean you accepted it/);
+  assert.match(source, /Aceptar reporte/);
+  assert.match(source, /Accept report/);
+});
+
+test("acceptance requires explicit confirmation", () => {
+  assert.match(source, /action === "ACCEPTED"/);
+  assert.match(source, /window\.confirm/);
+  assert.match(source, /aceptas el reporte de daños aprobado/);
+  assert.match(source, /accept the approved damage report/);
+});
+
+test("dispute requires a bounded explanation", () => {
+  assert.match(source, /action === "DISPUTED" && !note/);
+  assert.match(source, /maxLength=\{2000\}/);
+  assert.match(source, /Explicación de la disputa/);
+  assert.match(source, /Dispute explanation/);
+  assert.match(source, /Disputar reporte/);
+  assert.match(source, /Dispute report/);
+});
+
+test("accepted and disputed responses are final in the guest UI", () => {
+  assert.match(
+    source,
+    /guestResponse ===\s*"ACCEPTED"[\s\S]*guestResponse ===\s*"DISPUTED"/
+  );
+  assert.match(source, /Respuesta final/);
+  assert.match(source, /Final response/);
+  assert.match(source, /guestResponseNote/);
+});
+
+test("guest response keeps the explicit non-charging boundary", () => {
+  assert.match(source, /Ninguna opción realiza un cargo/);
+  assert.match(source, /No option makes a charge/);
+  assert.doesNotMatch(source, /Charge damage report/);
+  assert.doesNotMatch(source, /createPaymentIntent/);
+  assert.doesNotMatch(source, /captureDamage/);
+});
+
