@@ -26,7 +26,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Certify non-charging Damage Case UX
-        run: node --import tsx --test src/pages/reservation-detail/ReservationDetailDamageCase.contract.test.ts
+        run: node --experimental-strip-types --test src/pages/reservation-detail/ReservationDetailDamageCase.contract.test.ts
 
       - name: Build dashboard
         run: npm run build
