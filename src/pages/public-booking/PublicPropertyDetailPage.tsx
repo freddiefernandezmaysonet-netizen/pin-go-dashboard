@@ -85,6 +85,15 @@ type PublicPricingQuote = {
   totalAmount: string | number | null;
   nightlySubtotal: string | number | null;
   cleaningFee: string | number | null;
+  amenitiesTotal?: string | number | null;
+  taxableSubtotal?: string | number | null;
+  taxesTotal?: string | number | null;
+  taxes?: Array<{
+    id: string;
+    name: string;
+    percentage: string | number;
+    amount: string | number;
+  }>;
   nightlyRates?: Array<{
     date: string;
     rate: string | number;
@@ -3552,7 +3561,9 @@ return (
   <div style={styles.priceRow}>
     <span>
       {pricing?.nightlyRates?.length
-        ? copy.nightlyRates
+        ? preferredLanguage === "es"
+          ? `Alojamiento · ${nights} ${nights === 1 ? "noche" : "noches"}`
+          : `Accommodation · ${nights} ${nights === 1 ? "night" : "nights"}`
         : `${formatMoney(property.baseNightlyRate)} × ${
             nights || 0
           } ${copy.nights}`}
@@ -3612,17 +3623,15 @@ return (
                         ))}
 
                       
-                       {(property?.taxes ?? []).map((tax) => {
+                       {(pricing?.taxes ?? []).map((tax) => {
   const percentage = Number(tax.percentage ?? 0);
-
-  const amount = taxableSubtotal * (percentage / 100);
 
   return (
     <div key={tax.id} style={styles.priceRow}>
       <span>
         {tax.name} ({percentage}%)
       </span>
-      <strong>{formatMoney(amount)}</strong>
+      <strong>{formatMoney(tax.amount)}</strong>
     </div>
   );
 })}
