@@ -130,6 +130,11 @@ type PropertyProtectionCaseResponse = {
     evidenceNotes?: string | null;
     hostApprovedAt?: string | null;
     guestNotifiedAt?: string | null;
+    guestResponse: "PENDING" | "ACKNOWLEDGED" | "ACCEPTED" | "DISPUTED";
+    guestAcknowledgedAt?: string | null;
+    guestRespondedAt?: string | null;
+    guestResponseNote?: string | null;
+    guestResponseVersion?: string | null;
     closedAt?: string | null;
     closedReason?: string | null;
     collectionStatus: "NO_CHARGE_MADE" | "CLOSED_NO_CHARGE";
@@ -137,6 +142,27 @@ type PropertyProtectionCaseResponse = {
   error?: string;
   message?: string;
 };
+
+type PropertyProtectionResponseResult = {
+  ok?: boolean;
+  alreadyRecorded?: boolean;
+  response?: {
+    damageCaseId: string;
+    guestResponse: "ACKNOWLEDGED" | "ACCEPTED" | "DISPUTED";
+    guestAcknowledgedAt?: string | null;
+    guestRespondedAt?: string | null;
+    guestResponseNote?: string | null;
+    guestResponseVersion?: string | null;
+    collectionStatus: "NO_CHARGE_MADE";
+  };
+  error?: string;
+  message?: string;
+};
+
+type PropertyProtectionGuestAction =
+  | "ACKNOWLEDGED"
+  | "ACCEPTED"
+  | "DISPUTED";
 
 type ModificationAmenity = {
   id: string;
@@ -740,6 +766,16 @@ export default function GuestCancellationPage() {
     useState<PropertyProtectionCaseResponse | null>(null);
   const [propertyProtectionCaseLoading, setPropertyProtectionCaseLoading] =
     useState(true);
+  const [propertyProtectionSubmitting, setPropertyProtectionSubmitting] =
+    useState(false);
+  const [propertyProtectionResponseNote, setPropertyProtectionResponseNote] =
+    useState("");
+  const [propertyProtectionResponseError, setPropertyProtectionResponseError] =
+    useState<string | null>(null);
+  const [
+    propertyProtectionResponseMessage,
+    setPropertyProtectionResponseMessage,
+  ] = useState<string | null>(null);
 
   const loadPreview = useCallback(async () => {
     try {
@@ -1248,6 +1284,102 @@ export default function GuestCancellationPage() {
     }
   }
 
+  async function handlePropertyProtectionResponse(
+    action: PropertyProtectionGuestAction
+  ) {
+    const isSpanish = propertyProtectionCase?.preferredLanguage === "es";
+    const note = propertyProtectionResponseNote.trim();
+
+    if (action === "DISPUTED" && !note) {
+      setPropertyProtectionResponseError(
+        isSpanish
+          ? "Explica por qué disputas este reporte."
+          : "Please explain why you dispute this report."
+      );
+      return;
+    }
+
+    if (
+      action === "ACCEPTED" &&
+      !window.confirm(
+        isSpanish
+          ? "¿Confirmas que aceptas el reporte de daños aprobado?"
+          : "Do you confirm that you accept the approved damage report?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setPropertyProtectionSubmitting(true);
+      setPropertyProtectionResponseError(null);
+      setPropertyProtectionResponseMessage(null);
+
+      const token = String(guestToken ?? "").trim();
+      if (!token) {
+        throw new Error(
+          isSpanish
+            ? "Falta el enlace de la reservación."
+            : "Missing reservation link."
+        );
+      }
+
+      const res = await fetch(
+        `${API_BASE}/api/public-booking/manage/${encodeURIComponent(
+          token
+        )}/property-protection-case/respond`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action,
+            note: action === "DISPUTED" ? note : undefined,
+          }),
+        }
+      );
+      const data: PropertyProtectionResponseResult = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(
+          data.message ||
+            data.error ||
+            (isSpanish
+              ? "No se pudo registrar tu respuesta."
+              : "Unable to record your response.")
+        );
+      }
+
+      await loadPropertyProtectionCase();
+      setPropertyProtectionResponseNote("");
+      setPropertyProtectionResponseMessage(
+        action === "ACKNOWLEDGED"
+          ? isSpanish
+            ? "Confirmaste que recibiste este reporte. Aún puedes aceptarlo o disputarlo."
+            : "You confirmed receipt of this report. You may still accept or dispute it."
+          : action === "ACCEPTED"
+            ? isSpanish
+              ? "Aceptaste el reporte de daños aprobado."
+              : "You accepted the approved damage report."
+            : isSpanish
+              ? "Tu disputa fue registrada para revisión."
+              : "Your dispute was recorded for review."
+      );
+    } catch (err: unknown) {
+      setPropertyProtectionResponseError(
+        getCaughtErrorMessage(
+          err,
+          isSpanish
+            ? "No se pudo registrar tu respuesta."
+            : "Unable to record your response."
+        )
+      );
+    } finally {
+      setPropertyProtectionSubmitting(false);
+    }
+  }
+
   return (
     <div style={styles.page}>
       <header style={styles.header}>
@@ -1418,6 +1550,166 @@ export default function GuestCancellationPage() {
                     : propertyProtectionCase.preferredLanguage === "es"
                       ? "No se ha realizado ningún cargo por este reporte."
                       : "No charge has been made for this report."}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 18,
+                    borderTop: "1px solid #e2e8f0",
+                    paddingTop: 18,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                >
+                  <strong>
+                    {propertyProtectionCase.preferredLanguage === "es"
+                      ? "Tu respuesta"
+                      : "Your response"}
+                  </strong>
+
+                  {propertyProtectionCase.damageCase.guestResponse ===
+                    "ACCEPTED" ||
+                  propertyProtectionCase.damageCase.guestResponse ===
+                    "DISPUTED" ? (
+                    <div style={styles.successBox}>
+                      {propertyProtectionCase.preferredLanguage === "es"
+                        ? propertyProtectionCase.damageCase.guestResponse ===
+                          "ACCEPTED"
+                          ? "Respuesta final: aceptaste el reporte aprobado."
+                          : "Respuesta final: disputaste el reporte. El equipo revisará tu explicación."
+                        : propertyProtectionCase.damageCase.guestResponse ===
+                            "ACCEPTED"
+                          ? "Final response: you accepted the approved report."
+                          : "Final response: you disputed the report. The team will review your explanation."}
+                      {propertyProtectionCase.damageCase.guestResponseNote ? (
+                        <div style={{ marginTop: 8 }}>
+                          <strong>
+                            {propertyProtectionCase.preferredLanguage === "es"
+                              ? "Tu explicación:"
+                              : "Your explanation:"}
+                          </strong>{" "}
+                          {
+                            propertyProtectionCase.damageCase
+                              .guestResponseNote
+                          }
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <>
+                      <p style={styles.mutedText}>
+                        {propertyProtectionCase.preferredLanguage === "es"
+                          ? propertyProtectionCase.damageCase.guestResponse ===
+                            "ACKNOWLEDGED"
+                            ? "Ya confirmaste que recibiste el reporte. Esto no significa que lo aceptaste; todavía puedes aceptarlo o disputarlo."
+                            : "Puedes confirmar que recibiste el reporte, aceptarlo o disputarlo. Ninguna opción realiza un cargo."
+                          : propertyProtectionCase.damageCase.guestResponse ===
+                              "ACKNOWLEDGED"
+                            ? "You confirmed receipt of the report. This does not mean you accepted it; you may still accept or dispute it."
+                            : "You may acknowledge, accept, or dispute the report. No option makes a charge."}
+                      </p>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(190px, 1fr))",
+                          gap: 10,
+                        }}
+                      >
+                        {propertyProtectionCase.damageCase.guestResponse ===
+                        "PENDING" ? (
+                          <button
+                            type="button"
+                            style={styles.secondaryButton}
+                            disabled={propertyProtectionSubmitting}
+                            onClick={() =>
+                              handlePropertyProtectionResponse("ACKNOWLEDGED")
+                            }
+                          >
+                            {propertyProtectionCase.preferredLanguage === "es"
+                              ? "Confirmar recibido"
+                              : "Acknowledge receipt"}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          style={{
+                            ...styles.secondaryButton,
+                            borderColor: "#16a34a",
+                            color: "#166534",
+                          }}
+                          disabled={propertyProtectionSubmitting}
+                          onClick={() =>
+                            handlePropertyProtectionResponse("ACCEPTED")
+                          }
+                        >
+                          {propertyProtectionCase.preferredLanguage === "es"
+                            ? "Aceptar reporte"
+                            : "Accept report"}
+                        </button>
+                      </div>
+
+                      <label style={styles.reasonField}>
+                        <span>
+                          {propertyProtectionCase.preferredLanguage === "es"
+                            ? "Explicación de la disputa"
+                            : "Dispute explanation"}
+                        </span>
+                        <textarea
+                          value={propertyProtectionResponseNote}
+                          maxLength={2000}
+                          onChange={(event) =>
+                            setPropertyProtectionResponseNote(
+                              event.target.value
+                            )
+                          }
+                          disabled={propertyProtectionSubmitting}
+                          style={styles.textarea}
+                          placeholder={
+                            propertyProtectionCase.preferredLanguage === "es"
+                              ? "Explica qué información consideras incorrecta."
+                              : "Explain which information you believe is incorrect."
+                          }
+                        />
+                        <span style={{ color: "#64748b", fontSize: 12 }}>
+                          {propertyProtectionResponseNote.length}/2000
+                        </span>
+                      </label>
+
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.secondaryButton,
+                          borderColor: "#dc2626",
+                          color: "#991b1b",
+                        }}
+                        disabled={
+                          propertyProtectionSubmitting ||
+                          !propertyProtectionResponseNote.trim()
+                        }
+                        onClick={() =>
+                          handlePropertyProtectionResponse("DISPUTED")
+                        }
+                      >
+                        {propertyProtectionCase.preferredLanguage === "es"
+                          ? "Disputar reporte"
+                          : "Dispute report"}
+                      </button>
+                    </>
+                  )}
+
+                  {propertyProtectionResponseMessage ? (
+                    <div style={styles.successBox}>
+                      {propertyProtectionResponseMessage}
+                    </div>
+                  ) : null}
+
+                  {propertyProtectionResponseError ? (
+                    <div style={styles.inlineError}>
+                      {propertyProtectionResponseError}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : null}
