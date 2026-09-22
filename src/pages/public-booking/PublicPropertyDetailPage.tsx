@@ -48,6 +48,19 @@ type PublicProperty = {
     en?: unknown;
     es?: unknown;
   } | null;
+  guestAgreementDisclosure?: {
+    version: string;
+    en: {
+      title: string;
+      summary?: string | null;
+      agreementText: string;
+    };
+    es: {
+      title: string;
+      summary?: string | null;
+      agreementText: string;
+    };
+  } | null;
   amenities?: Array<{
   id: string;
   name: string;
@@ -2896,7 +2909,52 @@ return (
                           </p>
                         ))}
                         <p>{cancellationPolicySummary.approvalNote}</p>
+                        {property.cancellationPolicyPresentation?.feeDisclosure ? (
+                          <p>
+                            <strong>
+                              {preferredLanguage === "es"
+                                ? "Cargos y reembolsos"
+                                : "Fees and refunds"}
+                            </strong>
+                            <br />
+                            {property.cancellationPolicyPresentation.feeDisclosure}
+                          </p>
+                        ) : null}
                       </details>
+                      {property.guestAgreementDisclosure ? (() => {
+                        const disclosure =
+                          preferredLanguage === "es"
+                            ? property.guestAgreementDisclosure.es
+                            : property.guestAgreementDisclosure.en;
+
+                        return (
+                          <details id="guest-agreement-policy">
+                            <summary>
+                              <strong>
+                                {preferredLanguage === "es"
+                                  ? "Acuerdo del huésped"
+                                  : "Guest Agreement"}
+                              </strong>
+                              <span>
+                                {preferredLanguage === "es"
+                                  ? "Leer acuerdo completo"
+                                  : "Read full agreement"}{" "}＋
+                              </span>
+                            </summary>
+                            {disclosure.summary ? <p>{disclosure.summary}</p> : null}
+                            <p style={{ whiteSpace: "pre-wrap" }}>
+                              {disclosure.agreementText}
+                            </p>
+                            <p>
+                              <small>
+                                {preferredLanguage === "es"
+                                  ? `Versión ${property.guestAgreementDisclosure.version}`
+                                  : `Version ${property.guestAgreementDisclosure.version}`}
+                              </small>
+                            </p>
+                          </details>
+                        );
+                      })() : null}
                       <details id="identity-check-policy">
                         <summary>
                           <strong>
