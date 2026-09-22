@@ -109,6 +109,35 @@ type CancellationPreviewResponse = {
   details?: CancellationPreviewResponse;
 };
 
+type PropertyProtectionCaseResponse = {
+  ok?: boolean;
+  available?: boolean;
+  reservationNumber?: string | null;
+  propertyName?: string | null;
+  preferredLanguage?: string | null;
+  propertyProtection?: {
+    mode?: string | null;
+    maxDamageLiabilityAmount?: number | null;
+    currency?: string | null;
+  } | null;
+  damageCase?: {
+    id: string;
+    status: string;
+    requestedAmount: number;
+    approvedAmount: number | null;
+    currency: string;
+    description: string;
+    evidenceNotes?: string | null;
+    hostApprovedAt?: string | null;
+    guestNotifiedAt?: string | null;
+    closedAt?: string | null;
+    closedReason?: string | null;
+    collectionStatus: "NO_CHARGE_MADE" | "CLOSED_NO_CHARGE";
+  } | null;
+  error?: string;
+  message?: string;
+};
+
 type ModificationAmenity = {
   id: string;
   name: string;
@@ -707,6 +736,10 @@ export default function GuestCancellationPage() {
     useState<string | null>(null);
   const [pendingCheckoutModificationId, setPendingCheckoutModificationId] =
     useState<string | null>(null);
+  const [propertyProtectionCase, setPropertyProtectionCase] =
+    useState<PropertyProtectionCaseResponse | null>(null);
+  const [propertyProtectionCaseLoading, setPropertyProtectionCaseLoading] =
+    useState(true);
 
   const loadPreview = useCallback(async () => {
     try {
@@ -790,9 +823,44 @@ export default function GuestCancellationPage() {
     }
   }, [guestToken]);
 
+
+  const loadPropertyProtectionCase = useCallback(async () => {
+    try {
+      setPropertyProtectionCaseLoading(true);
+      const token = String(guestToken ?? "").trim();
+      if (!token) {
+        setPropertyProtectionCase(null);
+        return;
+      }
+
+      const res = await fetch(
+        `${API_BASE}/api/public-booking/manage/${encodeURIComponent(
+          token
+        )}/property-protection-case`,
+        { cache: "no-store" }
+      );
+      const data: PropertyProtectionCaseResponse = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setPropertyProtectionCase(null);
+        return;
+      }
+
+      setPropertyProtectionCase(data);
+    } catch {
+      setPropertyProtectionCase(null);
+    } finally {
+      setPropertyProtectionCaseLoading(false);
+    }
+  }, [guestToken]);
+
   useEffect(() => {
     loadPreview();
   }, [loadPreview]);
+
+  useEffect(() => {
+    loadPropertyProtectionCase();
+  }, [loadPropertyProtectionCase]);
 
   useEffect(() => {
     loadModificationOptions();
