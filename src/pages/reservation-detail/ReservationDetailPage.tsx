@@ -93,6 +93,27 @@ type Reservation = {
   pricingBreakdown?: PricingBreakdown | null;
   stripeCheckoutSessionId?: string | null;
   stripePaymentIntentId?: string | null;
+  propertyProtection?: {
+    required: boolean;
+    mode: string | null;
+    maxDamageLiabilityAmount: number | null;
+    cardOnFileStatus: string;
+  };
+  damageCase?: {
+    id: string;
+    status: string;
+    requestedAmount: number;
+    approvedAmount: number | null;
+    currency: string;
+    description: string;
+    evidence: unknown;
+    hostApprovedAt: string | null;
+    guestNotifiedAt: string | null;
+    closedAt: string | null;
+    closedReason: string | null;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
   property?: { id: string; name: string; timezone?: string | null } | null;
   passcodes?: Passcode[];
   nfc?: Nfc[];
@@ -311,6 +332,14 @@ export function ReservationDetailPage() {
     tone: "success" | "warning";
     message: string;
   } | null>(null);
+  const [damageDescription, setDamageDescription] = useState("");
+  const [damageAmount, setDamageAmount] = useState("");
+  const [damageEvidenceNotes, setDamageEvidenceNotes] = useState("");
+  const [damageApprovedAmount, setDamageApprovedAmount] = useState("");
+  const [damageCloseReason, setDamageCloseReason] = useState("");
+  const [damageSubmitting, setDamageSubmitting] = useState(false);
+  const [damageError, setDamageError] = useState<string | null>(null);
+  const [damageNotice, setDamageNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -449,6 +478,130 @@ export function ReservationDetailPage() {
       );
     } finally {
       setCancellationSubmitting(false);
+    }
+  }
+
+
+  async function damageCaseRequest(
+    path: string,
+    body?: Record<string, unknown>
+  ) {
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+    if (!response.ok || payload?.ok !== true) {
+      throw new Error(payload?.error || "Unable to update the damage case.");
+    }
+    return payload;
+  }
+
+  async function createDamageCase() {
+    if (!id || damageSubmitting) return;
+    const requestedAmount = Number(damageAmount);
+    if (!damageDescription.trim()) {
+      setDamageError("Describe the reported damage.");
+      return;
+    }
+    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+      setDamageError("Enter a valid damage amount.");
+      return;
+    }
+    if (!damageEvidenceNotes.trim()) {
+      setDamageError("Add evidence notes before creating the case.");
+      return;
+    }
+
+    try {
+      setDamageSubmitting(true);
+      setDamageError(null);
+      setDamageNotice(null);
+      await damageCaseRequest(
+        `/api/dashboard/reservations/${id}/damage-case`,
+        {
+          requestedAmount,
+          description: damageDescription.trim(),
+          evidence: { notes: damageEvidenceNotes.trim() },
+        }
+      );
+      setDamageNotice("Damage case created. Review the evidence before submitting it.");
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setDamageError(error instanceof Error ? error.message : "Unable to create the damage case.");
+    } finally {
+      setDamageSubmitting(false);
+    }
+  }
+
+  async function submitDamageCaseReview() {
+    if (!data?.damageCase?.id || damageSubmitting) return;
+    try {
+      setDamageSubmitting(true);
+      setDamageError(null);
+      setDamageNotice(null);
+      await damageCaseRequest(
+        `/api/dashboard/damage-cases/${data.damageCase.id}/submit-review`
+      );
+      setDamageNotice("Damage case submitted for host review.");
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setDamageError(error instanceof Error ? error.message : "Unable to submit the damage case.");
+    } finally {
+      setDamageSubmitting(false);
+    }
+  }
+
+  async function approveDamageCase() {
+    if (!data?.damageCase?.id || damageSubmitting) return;
+    const approvedAmount = Number(damageApprovedAmount);
+    if (!Number.isFinite(approvedAmount) || approvedAmount <= 0) {
+      setDamageError("Enter a valid approved amount.");
+      return;
+    }
+    try {
+      setDamageSubmitting(true);
+      setDamageError(null);
+      setDamageNotice(null);
+      await damageCaseRequest(
+        `/api/dashboard/damage-cases/${data.damageCase.id}/approve`,
+        { approvedAmount }
+      );
+      setDamageNotice("Damage amount approved. Guest notification is required before collection.");
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setDamageError(error instanceof Error ? error.message : "Unable to approve the damage case.");
+    } finally {
+      setDamageSubmitting(false);
+    }
+  }
+
+  async function closeDamageCaseNoCharge() {
+    if (!data?.damageCase?.id || damageSubmitting) return;
+    const reason = damageCloseReason.trim();
+    if (!reason) {
+      setDamageError("Enter a reason for closing the case without a charge.");
+      return;
+    }
+    try {
+      setDamageSubmitting(true);
+      setDamageError(null);
+      setDamageNotice(null);
+      await damageCaseRequest(
+        `/api/dashboard/damage-cases/${data.damageCase.id}/close-no-charge`,
+        { reason }
+      );
+      setDamageNotice("Damage case closed without a charge.");
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setDamageError(error instanceof Error ? error.message : "Unable to close the damage case.");
+    } finally {
+      setDamageSubmitting(false);
     }
   }
   
@@ -693,6 +846,269 @@ export function ReservationDetailPage() {
 
 
 
+
+
+      {data.propertyProtection?.required ? (
+        <div style={cardStyle()}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <h3 style={sectionTitleStyle()}>Property Protection / Damage Case</h3>
+              <div style={{ ...mutedStyle(), marginTop: 6 }}>
+                Card on File protection accepted for this reservation.
+              </div>
+            </div>
+            <div>{statusPill(data.propertyProtection.cardOnFileStatus)}</div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
+            <Stat
+              title="Maximum liability"
+              value={money(
+                data.propertyProtection.maxDamageLiabilityAmount,
+                reservationCurrency
+              )}
+            />
+            <Stat
+              title="Protection mode"
+              value={labelizeStatus(data.propertyProtection.mode)}
+            />
+            <Stat
+              title="Card on File"
+              value={statusPill(data.propertyProtection.cardOnFileStatus)}
+            />
+          </div>
+
+          {damageNotice ? (
+            <div
+              role="status"
+              style={{
+                marginTop: 16,
+                border: "1px solid #a7f3d0",
+                background: "#ecfdf5",
+                color: "#065f46",
+                borderRadius: 12,
+                padding: 12,
+                fontWeight: 700,
+              }}
+            >
+              {damageNotice}
+            </div>
+          ) : null}
+
+          {damageError ? (
+            <div
+              role="alert"
+              style={{
+                marginTop: 16,
+                border: "1px solid #fecaca",
+                background: "#fef2f2",
+                color: "#991b1b",
+                borderRadius: 12,
+                padding: 12,
+                fontWeight: 700,
+              }}
+            >
+              {damageError}
+            </div>
+          ) : null}
+
+          {!data.damageCase ? (
+            <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+              <div style={{ fontWeight: 800 }}>Report damage</div>
+              <div style={mutedStyle()}>
+                Document the issue and evidence. Creating this case does not charge the guest.
+              </div>
+              <input
+                value={damageAmount}
+                onChange={(event) => setDamageAmount(event.target.value)}
+                inputMode="decimal"
+                placeholder="Damage amount"
+                disabled={damageSubmitting}
+                style={{ padding: 11, border: "1px solid #d1d5db", borderRadius: 10 }}
+              />
+              <textarea
+                value={damageDescription}
+                onChange={(event) => setDamageDescription(event.target.value)}
+                placeholder="Describe the damage"
+                rows={3}
+                disabled={damageSubmitting}
+                style={{ padding: 11, border: "1px solid #d1d5db", borderRadius: 10, resize: "vertical" }}
+              />
+              <textarea
+                value={damageEvidenceNotes}
+                onChange={(event) => setDamageEvidenceNotes(event.target.value)}
+                placeholder="Evidence notes (what was observed, where, and supporting details)"
+                rows={3}
+                disabled={damageSubmitting}
+                style={{ padding: 11, border: "1px solid #d1d5db", borderRadius: 10, resize: "vertical" }}
+              />
+              <div style={{ ...mutedStyle(), fontSize: 13 }}>
+                Evidence notes are recorded with the case. Photo/file evidence can be added in a later evidence-upload phase.
+              </div>
+              <button
+                type="button"
+                onClick={createDamageCase}
+                disabled={
+                  damageSubmitting ||
+                  data.propertyProtection.cardOnFileStatus !== "READY"
+                }
+                style={{
+                  justifySelf: "start",
+                  border: 0,
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  background:
+                    damageSubmitting ||
+                    data.propertyProtection.cardOnFileStatus !== "READY"
+                      ? "#d1d5db"
+                      : "#111827",
+                  color: "#fff",
+                  fontWeight: 800,
+                  cursor:
+                    damageSubmitting ||
+                    data.propertyProtection.cardOnFileStatus !== "READY"
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                Create damage case
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
+              <div
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  padding: 14,
+                  background: "#fafafa",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <div><b>Case status:</b> {statusPill(data.damageCase.status)}</div>
+                <div><b>Requested:</b> {money(data.damageCase.requestedAmount, data.damageCase.currency)}</div>
+                <div><b>Approved:</b> {data.damageCase.approvedAmount === null ? "—" : money(data.damageCase.approvedAmount, data.damageCase.currency)}</div>
+                <div><b>Description:</b> {data.damageCase.description}</div>
+              </div>
+
+              {data.damageCase.status === "OPEN" ||
+              data.damageCase.status === "EVIDENCE_PENDING" ? (
+                <button
+                  type="button"
+                  onClick={submitDamageCaseReview}
+                  disabled={damageSubmitting}
+                  style={{
+                    justifySelf: "start",
+                    border: 0,
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    background: "#111827",
+                    color: "#fff",
+                    fontWeight: 800,
+                    cursor: damageSubmitting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Submit for host review
+                </button>
+              ) : null}
+
+              {data.damageCase.status === "HOST_REVIEW" ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <input
+                    value={damageApprovedAmount}
+                    onChange={(event) => setDamageApprovedAmount(event.target.value)}
+                    inputMode="decimal"
+                    placeholder="Approved amount"
+                    disabled={damageSubmitting}
+                    style={{ padding: 11, border: "1px solid #d1d5db", borderRadius: 10 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={approveDamageCase}
+                    disabled={damageSubmitting}
+                    style={{
+                      justifySelf: "start",
+                      border: 0,
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      background: "#111827",
+                      color: "#fff",
+                      fontWeight: 800,
+                      cursor: damageSubmitting ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Approve amount
+                  </button>
+                </div>
+              ) : null}
+
+              {data.damageCase.status === "GUEST_NOTIFICATION_PENDING" ? (
+                <div
+                  style={{
+                    border: "1px solid #fde68a",
+                    background: "#fffbeb",
+                    color: "#92400e",
+                    borderRadius: 12,
+                    padding: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  Approved — guest notification required before collection. No charge has been made.
+                </div>
+              ) : null}
+
+              {data.damageCase.status !== "CLOSED_NO_CHARGE" ? (
+                <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
+                  <textarea
+                    value={damageCloseReason}
+                    onChange={(event) => setDamageCloseReason(event.target.value)}
+                    placeholder="Reason to close without a charge"
+                    rows={2}
+                    disabled={damageSubmitting}
+                    style={{ padding: 11, border: "1px solid #d1d5db", borderRadius: 10, resize: "vertical" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={closeDamageCaseNoCharge}
+                    disabled={damageSubmitting || !damageCloseReason.trim()}
+                    style={{
+                      justifySelf: "start",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 10,
+                      padding: "9px 13px",
+                      background: "#fff",
+                      color: "#374151",
+                      fontWeight: 700,
+                      cursor:
+                        damageSubmitting || !damageCloseReason.trim()
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  >
+                    Close without charge
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+      ) : null}
 
 
       <div style={cardStyle()}>
