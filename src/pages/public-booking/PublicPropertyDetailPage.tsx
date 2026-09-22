@@ -4,6 +4,8 @@ import { addDays, format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import "react-day-picker/style.css";
 import { Link, useParams } from "react-router-dom";
+import GuestBookingTermsPage from "../GuestBookingTermsPage";
+import GuestPrivacyNoticePage from "../GuestPrivacyNoticePage";
 import { useBrand } from "../../branding/BrandProvider";
 import type { PublicReviewsSummary } from "../../components/reviews/PublicReviewsSection";
 import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
@@ -1660,7 +1662,8 @@ export default function PublicPropertyDetailPage() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
-  const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);  
+  const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);
+  const [legalDocument, setLegalDocument] = useState<"terms" | "privacy" | null>(null);  
   const [cancellationTermsAccepted, setCancellationTermsAccepted] = useState(false);
   const [
   securePreCheckinRequirementAccepted,
@@ -3988,17 +3991,13 @@ return (
                 <div style={styles.legalLinks}>
                   <span>
                     {copy.legalAgreementPrefix}{" "}
-                    <Link to="/legal/guest-booking-terms" style={styles.legalLink}>
-                      {preferredLanguage === "es"
-                        ? "Términos de reservación para huéspedes"
-                        : "Guest Booking Terms"}
-                    </Link>{" "}
+                    <button type="button" onClick={() => setLegalDocument("terms")} style={styles.legalButton}>
+                      {preferredLanguage === "es" ? "Términos de reservación para huéspedes" : "Guest Booking Terms"}
+                    </button>{" "}
                     {copy.legalAnd}{" "}
-                    <Link to="/legal/guest-privacy" style={styles.legalLink}>
-                      {preferredLanguage === "es"
-                        ? "Aviso de privacidad para huéspedes"
-                        : "Guest Privacy Notice"}
-                    </Link>
+                    <button type="button" onClick={() => setLegalDocument("privacy")} style={styles.legalButton}>
+                      {preferredLanguage === "es" ? "Aviso de privacidad para huéspedes" : "Guest Privacy Notice"}
+                    </button>
                     .
                   </span>
                 </div>
@@ -4049,6 +4048,24 @@ return (
             </section>
           </>
         )}
+      {legalDocument ? (
+        <div role="dialog" aria-modal="true" style={styles.legalModalBackdrop}>
+          <div style={styles.legalModal}>
+            <div style={styles.legalModalHeader}>
+              <strong>{legalDocument === "terms" ? (preferredLanguage === "es" ? "Términos de reservación para huéspedes" : "Guest Booking Terms") : (preferredLanguage === "es" ? "Aviso de privacidad para huéspedes" : "Guest Privacy Notice")}</strong>
+              <button type="button" aria-label={preferredLanguage === "es" ? "Cerrar" : "Close"} onClick={() => setLegalDocument(null)} style={styles.legalModalClose}>×</button>
+            </div>
+            <div style={styles.legalModalBody}>
+              {legalDocument === "terms" ? <GuestBookingTermsPage /> : <GuestPrivacyNoticePage />}
+            </div>
+            <div style={styles.legalModalFooter}>
+              <button type="button" onClick={() => setLegalDocument(null)} style={styles.legalModalDone}>
+                {preferredLanguage === "es" ? "Cerrar" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       </main>
 {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
   <div
@@ -4983,6 +5000,68 @@ includedAmenityPill: {
     opacity: 0.65,
     cursor: "not-allowed",
     boxShadow: "none",
+  },
+  legalButton: {
+    border: "none",
+    background: "transparent",
+    padding: 0,
+    color: "#2563eb",
+    textDecoration: "underline",
+    cursor: "pointer",
+    font: "inherit",
+  },
+  legalModalBackdrop: {
+    position: "fixed" as const,
+    inset: 0,
+    zIndex: 10000,
+    background: "rgba(15,23,42,0.52)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  legalModal: {
+    width: "min(900px, 100%)",
+    maxHeight: "calc(100vh - 32px)",
+    background: "#fff",
+    borderRadius: 18,
+    display: "flex",
+    flexDirection: "column" as const,
+    overflow: "hidden",
+  },
+  legalModalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    padding: "16px 20px",
+    borderBottom: "1px solid #e5e7eb",
+  },
+  legalModalClose: {
+    border: "none",
+    background: "transparent",
+    fontSize: 30,
+    lineHeight: 1,
+    cursor: "pointer",
+  },
+  legalModalBody: {
+    overflowY: "auto" as const,
+    WebkitOverflowScrolling: "touch" as const,
+  },
+  legalModalFooter: {
+    padding: "12px 20px",
+    borderTop: "1px solid #e5e7eb",
+    display: "flex",
+    justifyContent: "flex-end",
+  },
+  legalModalDone: {
+    border: "none",
+    background: "#111827",
+    color: "#fff",
+    borderRadius: 10,
+    padding: "10px 18px",
+    fontWeight: 700,
+    cursor: "pointer",
   },
   disclaimer: {
     marginTop: 12,
