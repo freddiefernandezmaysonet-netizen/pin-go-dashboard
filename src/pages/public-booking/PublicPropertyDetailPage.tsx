@@ -2955,24 +2955,20 @@ return (
                           </details>
                         );
                       })() : null}
-                      <details id="identity-check-policy">
-                        <summary>
-                          <strong>
-                            {identityVerificationRequired
-                              ? copy.identityCheckStep
-                              : copy.guestAgreementStep}
-                          </strong>
-                          <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
-                        </summary>
-                        <p>
-                          {identityVerificationRequired
-                            ? copy.securePreCheckinIntro
-                            : preferredLanguage === "es"
-                            ? "Después de reservar, el huésped principal acepta el Acuerdo del Huésped antes de que Pin&Go libere las credenciales de acceso. Esta reservación no requiere documento ni selfie."
-                            : "After booking, the primary guest accepts the Guest Agreement before Pin&Go releases access credentials. This reservation does not require a document or selfie."}
-                        </p>
-                        <p>{securePreCheckinDisclosureText}</p>
-                      </details>
+                      {identityVerificationRequired ? (
+                        <details id="identity-check-policy">
+                          <summary>
+                            <strong>
+                              {preferredLanguage === "es"
+                                ? "Verificación de identidad"
+                                : "Identity Verification"}
+                            </strong>
+                            <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
+                          </summary>
+                          <p>{copy.securePreCheckinIntro}</p>
+                          <p>{securePreCheckinDisclosureText}</p>
+                        </details>
+                      ) : null}
                     </div>
                   </section>
                 ) : null}
