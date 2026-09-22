@@ -44,6 +44,8 @@ import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
 import LandingPage from "../../pages/LandingPage";
 import TermsPage from "../../pages/TermsPage";
 import PrivacyPage from "../../pages/PrivacyPage";
+import GuestBookingTermsPage from "../../pages/GuestBookingTermsPage";
+import GuestPrivacyNoticePage from "../../pages/GuestPrivacyNoticePage";
 import SupportPolicyPage from "../../pages/SupportPolicyPage";
 import BillingPolicyPage from "../../pages/BillingPolicyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
@@ -248,6 +250,14 @@ export const router = createBrowserRouter([
   { 
     path: "/legal/privacy",
     element: <PrivacyPage /> 
+  },
+  {
+    path: "/legal/guest-booking-terms",
+    element: <GuestBookingTermsPage />,
+  },
+  {
+    path: "/legal/guest-privacy",
+    element: <GuestPrivacyNoticePage />,
   },
   { 
   path: "/legal/support-policy",
