@@ -45,3 +45,11 @@ test("Card on File must be READY before creating a Damage Case", () => {
     /data\.propertyProtection\.cardOnFileStatus !== "READY"/
   );
 });
+
+
+test("UI surfaces recorded evidence and mirrors liability bounds before server enforcement", () => {
+  assert.match(source, /Evidence notes:/);
+  assert.match(source, /Damage amount cannot exceed the reservation liability limit/);
+  assert.match(source, /Approved amount cannot exceed the reported damage or reservation liability limit/);
+  assert.match(source, /maxDamageLiabilityAmount/);
+});
