@@ -3979,22 +3979,7 @@ return (
                   </div>
                   <b aria-hidden="true">↗</b>
                 </a>
-                <Link className="pbe-service-card" to="/legal/support-policy">
-                  <span aria-hidden="true">◎</span>
-                  <div>
-                    <small>{preferredLanguage === "es" ? "SERVICIO" : "SERVICE"}</small>
-                    <strong>{preferredLanguage === "es" ? "Cómo podemos ayudarte" : "How we can help"}</strong>
-                    <p>{preferredLanguage === "es" ? "Consulta nuestra política de soporte" : "Read our support policy"}</p>
-                  </div>
-                  <b aria-hidden="true">→</b>
-                </Link>
               </div>
-              <p className="pbe-pin-ai-note">
-                <span aria-hidden="true">✦</span>
-                {preferredLanguage === "es"
-                  ? "Preparado para asistencia conversacional de Pin AI."
-                  : "Ready for conversational assistance from Pin AI."}
-              </p>
             </section>
           </>
         )}
