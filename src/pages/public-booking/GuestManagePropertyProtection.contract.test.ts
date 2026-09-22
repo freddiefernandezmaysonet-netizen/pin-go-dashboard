@@ -44,3 +44,16 @@ test("Manage Reservation explicitly states collection status without financial c
   assert.doesNotMatch(source, /stripeDamageCustomerId/);
   assert.doesNotMatch(source, /stripeDamagePaymentMethodId/);
 });
+
+
+test("approved Damage Case is rendered independently of cancellation management phase", () => {
+  const protectionIndex = source.indexOf("propertyProtectionCase?.available");
+  const phaseIndex = source.indexOf('managementPhase === "IN_STAY"');
+  const preStayReservationIndex = source.indexOf(
+    "preview?.reservation && preview?.policy && preview?.evaluation"
+  );
+
+  assert.ok(protectionIndex > 0);
+  assert.ok(phaseIndex > protectionIndex);
+  assert.ok(preStayReservationIndex > protectionIndex);
+});
