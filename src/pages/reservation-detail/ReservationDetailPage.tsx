@@ -109,6 +109,11 @@ type Reservation = {
     evidence: unknown;
     hostApprovedAt: string | null;
     guestNotifiedAt: string | null;
+    guestResponse: "PENDING" | "ACKNOWLEDGED" | "ACCEPTED" | "DISPUTED";
+    guestAcknowledgedAt: string | null;
+    guestRespondedAt: string | null;
+    guestResponseNote: string | null;
+    guestResponseVersion: string | null;
     closedAt: string | null;
     closedReason: string | null;
     createdAt: string;
@@ -1047,6 +1052,76 @@ export function ReservationDetailPage() {
                       )
                     : "—"}
                 </div>
+              </div>
+
+              <div
+                style={{
+                  border: "1px solid #bfdbfe",
+                  borderRadius: 14,
+                  padding: 14,
+                  background: "#eff6ff",
+                  color: "#1e3a8a",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontWeight: 800 }}>Guest response</div>
+                <div>
+                  <b>Response status:</b>{" "}
+                  {statusPill(data.damageCase.guestResponse)}
+                </div>
+
+                {data.damageCase.guestResponse === "PENDING" ? (
+                  <div>
+                    Awaiting the guest&apos;s response. No charge has been made.
+                  </div>
+                ) : null}
+
+                {data.damageCase.guestResponse === "ACKNOWLEDGED" ? (
+                  <>
+                    <div>
+                      The guest confirmed receipt of the report. This is not an
+                      acceptance of the approved report.
+                    </div>
+                    <div>
+                      <b>Acknowledged:</b>{" "}
+                      {fmt(
+                        data.damageCase.guestAcknowledgedAt,
+                        data.property?.timezone
+                      )}
+                    </div>
+                  </>
+                ) : null}
+
+                {data.damageCase.guestResponse === "ACCEPTED" ? (
+                  <div>
+                    The guest accepted the approved report. Acceptance did not
+                    execute a charge.
+                  </div>
+                ) : null}
+
+                {data.damageCase.guestResponse === "DISPUTED" ? (
+                  <>
+                    <div>
+                      The guest disputed the approved report. No charge has been
+                      made.
+                    </div>
+                    <div>
+                      <b>Guest explanation:</b>{" "}
+                      {data.damageCase.guestResponseNote || "—"}
+                    </div>
+                  </>
+                ) : null}
+
+                {data.damageCase.guestRespondedAt ? (
+                  <div>
+                    <b>Last response:</b>{" "}
+                    {fmt(
+                      data.damageCase.guestRespondedAt,
+                      data.property?.timezone
+                    )}
+                  </div>
+                ) : null}
               </div>
 
               {data.damageCase.status === "OPEN" ||
