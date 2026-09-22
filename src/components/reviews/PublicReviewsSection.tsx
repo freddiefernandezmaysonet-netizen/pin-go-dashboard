@@ -40,6 +40,7 @@ export function PublicReviewsSection({
     INITIAL_PUBLIC_REVIEWS_PAGINATION
   );
   const [sort, setSort] = useState<PublicReviewSort>("RECENT");
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const [loading, setLoading] = useState(true);
   const stayMonthFormatter = useMemo(
     () => new Intl.DateTimeFormat(language, { month: "long", year: "numeric", timeZone: "UTC" }),
@@ -52,7 +53,7 @@ export function PublicReviewsSection({
       organizationSlug,
       propertySlug,
       pagination.request.page,
-      10,
+      showAllReviews ? 10 : 4,
       sort,
       controller.signal
     )
@@ -111,6 +112,7 @@ export function PublicReviewsSection({
     pagination.request.page,
     propertySlug,
     sort,
+    showAllReviews,
   ]);
 
   if (!data?.total) return null;
@@ -155,7 +157,7 @@ export function PublicReviewsSection({
         ))}
       </div>
       <div className="pbe-review-grid">
-        {data.reviews.map((review) => (
+        {data.reviews.slice(0, 4).map((review) => (
           <article key={review.id} className="pbe-review-card">
             <div className="pbe-review-stars">
               <span aria-hidden="true">{"★".repeat(review.overallRating)}</span>
@@ -182,27 +184,89 @@ export function PublicReviewsSection({
             : "We could not load more reviews. Please try again."}
         </p>
       ) : null}
-      {hasMore ? (
+      {data.total > 4 ? (
         <button
           className="pbe-review-more"
           type="button"
-          disabled={loading}
-          aria-describedby={pagination.loadMoreError ? "pbe-review-load-error" : undefined}
           onClick={() => {
             setLoading(true);
-            dispatchPagination({ type: "REQUEST_NEXT" });
+            dispatchPagination({ type: "RESET" });
+            setShowAllReviews(true);
           }}
         >
-          {loading
-            ? "…"
-            : pagination.loadMoreError
-              ? language === "es"
-                ? "Reintentar evaluaciones"
-                : "Retry reviews"
-              : language === "es"
-                ? "Ver más evaluaciones"
-                : "Show more reviews"}
+          {language === "es"
+            ? `Ver todas las evaluaciones (${data.total})`
+            : `Show all reviews (${data.total})`}
         </button>
+      ) : null}
+
+      {showAllReviews ? (
+        <div className="pbe-review-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="pbe-review-modal">
+            <header className="pbe-review-modal-header">
+              <strong>
+                {language === "es"
+                  ? `Evaluaciones (${data.total})`
+                  : `Reviews (${data.total})`}
+              </strong>
+              <button type="button" aria-label={language === "es" ? "Cerrar" : "Close"} onClick={() => setShowAllReviews(false)}>×</button>
+            </header>
+            <div className="pbe-review-modal-body">
+              <div className="pbe-review-grid">
+                {data.reviews.map((review) => (
+                  <article key={review.id} className="pbe-review-card">
+                    <div className="pbe-review-stars">
+                      <span aria-hidden="true">{"★".repeat(review.overallRating)}</span>
+                      <span style={visuallyHidden}>{language === "es" ? `${review.overallRating} de 5 estrellas` : `${review.overallRating} out of 5 stars`}</span>
+                    </div>
+                    <p>{review.publicComment}</p>
+                    <footer>
+                      <strong>{review.guestDisplayName}</strong>
+                      <span>✓ {language === "es" ? "Estadía verificada" : "Verified stay"} · {stayMonthFormatter.format(new Date(review.stayMonth))}</span>
+                    </footer>
+                    {review.response ? (
+                      <aside>
+                        <strong>{language === "es" ? "Respuesta del anfitrión" : "Response from the host"}</strong>
+                        <p>{review.response.body}</p>
+                      </aside>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+              {hasMore ? (
+                <button
+                  className="pbe-review-more"
+                  type="button"
+                  disabled={loading}
+                  aria-describedby={pagination.loadMoreError ? "pbe-review-load-error" : undefined}
+                  onClick={() => {
+                    setLoading(true);
+                    dispatchPagination(
+                      pagination.loadMoreError
+                        ? { type: "RETRY" }
+                        : { type: "REQUEST_NEXT" }
+                    );
+                  }}
+                >
+                  {loading
+                    ? "…"
+                    : pagination.loadMoreError
+                      ? language === "es"
+                        ? "Reintentar evaluaciones"
+                        : "Retry reviews"
+                      : language === "es"
+                        ? "Cargar más"
+                        : "Load more"}
+                </button>
+              ) : null}
+            </div>
+            <footer className="pbe-review-modal-footer">
+              <button type="button" onClick={() => setShowAllReviews(false)}>
+                {language === "es" ? "Cerrar" : "Close"}
+              </button>
+            </footer>
+          </div>
+        </div>
       ) : null}
     </section>
   );
