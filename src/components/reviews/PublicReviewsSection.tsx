@@ -238,12 +238,25 @@ export function PublicReviewsSection({
                   className="pbe-review-more"
                   type="button"
                   disabled={loading}
+                  aria-describedby={pagination.loadMoreError ? "pbe-review-load-error" : undefined}
                   onClick={() => {
                     setLoading(true);
-                    dispatchPagination({ type: "REQUEST_NEXT" });
+                    dispatchPagination(
+                      pagination.loadMoreError
+                        ? { type: "RETRY" }
+                        : { type: "REQUEST_NEXT" }
+                    );
                   }}
                 >
-                  {loading ? "…" : language === "es" ? "Cargar más" : "Load more"}
+                  {loading
+                    ? "…"
+                    : pagination.loadMoreError
+                      ? language === "es"
+                        ? "Reintentar evaluaciones"
+                        : "Retry reviews"
+                      : language === "es"
+                        ? "Cargar más"
+                        : "Load more"}
                 </button>
               ) : null}
             </div>
