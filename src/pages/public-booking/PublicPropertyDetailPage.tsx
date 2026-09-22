@@ -42,6 +42,13 @@ type PublicProperty = {
   cancellationPolicyPresentation?:
   | PublicCancellationPolicyPresentation
   | null;
+  propertyProtection?: {
+    enabled: boolean;
+    mode: "CARD_ON_FILE";
+    maxDamageLiabilityAmount: string | number | null;
+    currency: string;
+    disclosureVersion: string;
+  } | null;
   guestAccessSettings?: {
     configured: boolean;
     requiresIdentityVerification: boolean;
@@ -1665,6 +1672,7 @@ export default function PublicPropertyDetailPage() {
   const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);
   const [legalDocument, setLegalDocument] = useState<"terms" | "privacy" | null>(null);  
   const [cancellationTermsAccepted, setCancellationTermsAccepted] = useState(false);
+  const [propertyProtectionConsentAccepted, setPropertyProtectionConsentAccepted] = useState(false);
   const [
   securePreCheckinRequirementAccepted,
   setSecurePreCheckinRequirementAccepted,
@@ -2214,7 +2222,8 @@ useEffect(() => {
  
 useEffect(() => {
   setSecurePreCheckinRequirementAccepted(false);
-}, [checkIn, checkOut, property?.id]);
+  setPropertyProtectionConsentAccepted(false);
+}, [checkIn, checkOut, property?.id, property?.propertyProtection?.disclosureVersion, property?.propertyProtection?.maxDamageLiabilityAmount]);
 
   async function handleReserve(e: React.FormEvent) {
     e.preventDefault();
@@ -2242,6 +2251,16 @@ useEffect(() => {
           copy.securePreCheckinRequiredError
        );
      }
+      if (
+        property.propertyProtection?.enabled &&
+        !propertyProtectionConsentAccepted
+      ) {
+        throw new Error(
+          preferredLanguage === "es"
+            ? "Debes aceptar la autorización de responsabilidad por daños para continuar."
+            : "You must accept the damage responsibility authorization to continue."
+        );
+      }
       if (
         requiresCancellationTermsAcceptance &&
         !cancellationTermsAccepted
@@ -2299,6 +2318,22 @@ guestAcceptedSecurePreCheckinRequirementVersion:
 
 guestAcceptedSecurePreCheckinRequirementSource:
   "DIRECT_BOOKING_CHECKOUT",
+  guestAcceptedPropertyProtectionConsent:
+    property.propertyProtection?.enabled
+      ? propertyProtectionConsentAccepted
+      : false,
+  guestAcceptedPropertyProtectionConsentAt:
+    property.propertyProtection?.enabled && propertyProtectionConsentAccepted
+      ? new Date().toISOString()
+      : null,
+  guestAcceptedPropertyProtectionConsentVersion:
+    property.propertyProtection?.enabled
+      ? property.propertyProtection.disclosureVersion
+      : null,
+  guestAcceptedPropertyProtectionMaxDamageLiabilityAmount:
+    property.propertyProtection?.enabled
+      ? property.propertyProtection.maxDamageLiabilityAmount
+      : null,
   guestAcceptedCancellationTerms: cancellationTermsAccepted,
   guestAcceptedCancellationTermsAt: cancellationTermsAccepted
     ? new Date().toISOString()
@@ -3706,6 +3741,33 @@ return (
   <strong>{formatMoney(displayTotal)}</strong>
 </div>
                     </div>
+
+{property.propertyProtection?.enabled &&
+property.propertyProtection.maxDamageLiabilityAmount !== null ? (
+  <div className="pbe-agreement-card" style={styles.securePreCheckinAcceptanceCard}>
+    <div style={styles.securePreCheckinAcceptanceTitle}>
+      {preferredLanguage === "es" ? "Responsabilidad por daños" : "Damage responsibility"}
+    </div>
+    <p style={styles.securePreCheckinAcceptanceText}>
+      {preferredLanguage === "es"
+        ? `Esta propiedad utiliza Card on File con un límite máximo de ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)}. No se retienen fondos ni se cobra un depósito al reservar. Si ocurre un daño elegible y documentado, podrá iniciarse un cargo posterior de hasta este límite conforme a la política aceptada.`
+        : `This property uses Card on File with a maximum damage responsibility of ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)}. No funds are held and no security deposit is charged at booking. If eligible, documented damage occurs, a later charge of up to this limit may be initiated under the accepted policy.`}
+    </p>
+    <label style={styles.securePreCheckinAcceptanceLabel}>
+      <input
+        type="checkbox"
+        checked={propertyProtectionConsentAccepted}
+        onChange={(e) => setPropertyProtectionConsentAccepted(e.target.checked)}
+        style={styles.securePreCheckinAcceptanceCheckbox}
+      />
+      <span style={styles.securePreCheckinAcceptanceText}>
+        {preferredLanguage === "es"
+          ? `Autorizo que, cuando Card on File esté habilitado para esta reservación, Stripe pueda conservar de forma segura un método de pago compatible para posibles cargos posteriores por daños elegibles y documentados, hasta un máximo de ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)}. Entiendo que esta autorización no coloca un hold ni cobra un depósito al reservar.`
+          : `I authorize Stripe, when Card on File is enabled for this reservation, to securely retain a compatible payment method for possible later charges for eligible, documented damage, up to ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)}. I understand that this authorization does not place a hold or charge a security deposit at booking.`}
+      </span>
+    </label>
+  </div>
+) : null}
 
      <div className="pbe-agreement-card pbe-agreement-card--identity" style={styles.securePreCheckinAcceptanceCard}>
   <label style={styles.securePreCheckinAcceptanceLabel}>
