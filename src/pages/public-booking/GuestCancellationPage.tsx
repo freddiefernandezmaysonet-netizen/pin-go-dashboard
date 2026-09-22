@@ -109,6 +109,35 @@ type CancellationPreviewResponse = {
   details?: CancellationPreviewResponse;
 };
 
+type PropertyProtectionCaseResponse = {
+  ok?: boolean;
+  available?: boolean;
+  reservationNumber?: string | null;
+  propertyName?: string | null;
+  preferredLanguage?: string | null;
+  propertyProtection?: {
+    mode?: string | null;
+    maxDamageLiabilityAmount?: number | null;
+    currency?: string | null;
+  } | null;
+  damageCase?: {
+    id: string;
+    status: string;
+    requestedAmount: number;
+    approvedAmount: number | null;
+    currency: string;
+    description: string;
+    evidenceNotes?: string | null;
+    hostApprovedAt?: string | null;
+    guestNotifiedAt?: string | null;
+    closedAt?: string | null;
+    closedReason?: string | null;
+    collectionStatus: "NO_CHARGE_MADE" | "CLOSED_NO_CHARGE";
+  } | null;
+  error?: string;
+  message?: string;
+};
+
 type ModificationAmenity = {
   id: string;
   name: string;
@@ -707,6 +736,10 @@ export default function GuestCancellationPage() {
     useState<string | null>(null);
   const [pendingCheckoutModificationId, setPendingCheckoutModificationId] =
     useState<string | null>(null);
+  const [propertyProtectionCase, setPropertyProtectionCase] =
+    useState<PropertyProtectionCaseResponse | null>(null);
+  const [propertyProtectionCaseLoading, setPropertyProtectionCaseLoading] =
+    useState(true);
 
   const loadPreview = useCallback(async () => {
     try {
@@ -790,9 +823,44 @@ export default function GuestCancellationPage() {
     }
   }, [guestToken]);
 
+
+  const loadPropertyProtectionCase = useCallback(async () => {
+    try {
+      setPropertyProtectionCaseLoading(true);
+      const token = String(guestToken ?? "").trim();
+      if (!token) {
+        setPropertyProtectionCase(null);
+        return;
+      }
+
+      const res = await fetch(
+        `${API_BASE}/api/public-booking/manage/${encodeURIComponent(
+          token
+        )}/property-protection-case`,
+        { cache: "no-store" }
+      );
+      const data: PropertyProtectionCaseResponse = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setPropertyProtectionCase(null);
+        return;
+      }
+
+      setPropertyProtectionCase(data);
+    } catch {
+      setPropertyProtectionCase(null);
+    } finally {
+      setPropertyProtectionCaseLoading(false);
+    }
+  }, [guestToken]);
+
   useEffect(() => {
     loadPreview();
   }, [loadPreview]);
+
+  useEffect(() => {
+    loadPropertyProtectionCase();
+  }, [loadPropertyProtectionCase]);
 
   useEffect(() => {
     loadModificationOptions();
@@ -1215,6 +1283,146 @@ export default function GuestCancellationPage() {
 
         <section style={styles.contentSection}>
           <div style={styles.container}>
+            {!propertyProtectionCaseLoading &&
+            propertyProtectionCase?.available &&
+            propertyProtectionCase.propertyProtection &&
+            propertyProtectionCase.damageCase ? (
+              <div style={styles.card}>
+                <div style={styles.sectionEyebrow}>
+                  {propertyProtectionCase.preferredLanguage === "es"
+                    ? "Protección de la propiedad"
+                    : "Property Protection"}
+                </div>
+                <h2 style={styles.cardTitle}>
+                  {propertyProtectionCase.preferredLanguage === "es"
+                    ? "Reporte de daños"
+                    : "Damage report"}
+                </h2>
+                <p style={styles.mutedText}>
+                  {propertyProtectionCase.preferredLanguage === "es"
+                    ? "El anfitrión revisó y aprobó este reporte. Aquí puedes consultar los detalles asociados con tu reservación."
+                    : "The host reviewed and approved this report. You can review the details associated with your reservation here."}
+                </p>
+
+                <div style={styles.infoGrid}>
+                  <div style={styles.infoItem}>
+                    <span>
+                      {propertyProtectionCase.preferredLanguage === "es"
+                        ? "Estado"
+                        : "Status"}
+                    </span>
+                    <strong>
+                      {String(propertyProtectionCase.damageCase.status)
+                        .replaceAll("_", " ")}
+                    </strong>
+                  </div>
+                  <div style={styles.infoItem}>
+                    <span>
+                      {propertyProtectionCase.preferredLanguage === "es"
+                        ? "Cantidad reportada"
+                        : "Reported amount"}
+                    </span>
+                    <strong>
+                      {formatMoney(
+                        propertyProtectionCase.damageCase.requestedAmount,
+                        propertyProtectionCase.damageCase.currency
+                      )}
+                    </strong>
+                  </div>
+                  <div style={styles.infoItem}>
+                    <span>
+                      {propertyProtectionCase.preferredLanguage === "es"
+                        ? "Cantidad aprobada"
+                        : "Approved amount"}
+                    </span>
+                    <strong>
+                      {propertyProtectionCase.damageCase.approvedAmount ===
+                      null
+                        ? "—"
+                        : formatMoney(
+                            propertyProtectionCase.damageCase
+                              .approvedAmount,
+                            propertyProtectionCase.damageCase.currency
+                          )}
+                    </strong>
+                  </div>
+                  <div style={styles.infoItem}>
+                    <span>
+                      {propertyProtectionCase.preferredLanguage === "es"
+                        ? "Responsabilidad máxima aceptada"
+                        : "Accepted maximum liability"}
+                    </span>
+                    <strong>
+                      {formatMoney(
+                        propertyProtectionCase.propertyProtection
+                          .maxDamageLiabilityAmount,
+                        propertyProtectionCase.propertyProtection
+                          .currency || "usd"
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 18,
+                    display: "grid",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <strong>
+                      {propertyProtectionCase.preferredLanguage === "es"
+                        ? "Descripción"
+                        : "Description"}
+                    </strong>
+                    <p style={styles.mutedText}>
+                      {propertyProtectionCase.damageCase.description}
+                    </p>
+                  </div>
+
+                  {propertyProtectionCase.damageCase.evidenceNotes ? (
+                    <div>
+                      <strong>
+                        {propertyProtectionCase.preferredLanguage === "es"
+                          ? "Evidencia documentada"
+                          : "Documented evidence"}
+                      </strong>
+                      <p style={styles.mutedText}>
+                        {
+                          propertyProtectionCase.damageCase
+                            .evidenceNotes
+                        }
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 18,
+                    border: "1px solid #bfdbfe",
+                    background: "#eff6ff",
+                    color: "#1e3a8a",
+                    borderRadius: 14,
+                    padding: 14,
+                    fontWeight: 700,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {propertyProtectionCase.damageCase.collectionStatus ===
+                  "CLOSED_NO_CHARGE"
+                    ? propertyProtectionCase.preferredLanguage === "es"
+                      ? "Este caso fue cerrado sin cargo."
+                      : "This case was closed without a charge."
+                    : propertyProtectionCase.preferredLanguage === "es"
+                      ? "No se ha realizado ningún cargo por este reporte."
+                      : "No charge has been made for this report."}
+                </div>
+              </div>
+            ) : null}
+
+
             {loading ? (
               <div style={styles.card}>
                 <div style={styles.loadingTitle}>Loading reservation...</div>
