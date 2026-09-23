@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
+import { GuestDamagePaymentAuthorization } from "./GuestDamagePaymentAuthorization";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -1709,6 +1710,16 @@ export default function GuestCancellationPage() {
                     <div style={styles.inlineError}>
                       {propertyProtectionResponseError}
                     </div>
+                  ) : null}
+                  {propertyProtectionCase.damageCase.status === "GUEST_NOTIFIED" &&
+                  propertyProtectionCase.damageCase.guestResponse === "ACCEPTED" && guestToken ? (
+                    <GuestDamagePaymentAuthorization
+                      key={JSON.stringify(propertyProtectionCase)}
+                      apiBase={API_BASE}
+                      guestToken={guestToken}
+                      caseId={propertyProtectionCase.damageCase.id}
+                      language={propertyProtectionCase.preferredLanguage === "es" ? "es" : "en"}
+                    />
                   ) : null}
                 </div>
               </div>
