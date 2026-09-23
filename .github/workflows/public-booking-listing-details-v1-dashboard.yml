@@ -8,7 +8,8 @@ on:
       - 'package.json'
       - 'src/pages/public-booking/PublicPropertyDetailPage.tsx'
       - 'src/pages/public-booking/PublicListingDetailsSections.tsx'
-      - 'src/pages/public-booking/PublicListingDetailsSections.test.tsx'
+      - 'src/pages/public-booking/publicListingDetails.logic.js'
+      - 'src/pages/public-booking/publicListingDetails.logic.test.js'
       - 'src/pages/public-booking/publicListingDetails.types.ts'
       - 'src/pages/public-booking/PublicBookingExperience.css'
 
