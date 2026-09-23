@@ -184,6 +184,49 @@ type PropertyHolidayPricingItem = {
   source: string;
 };
 
+type MarketPricingStrategy = "OCCUPANCY" | "BALANCED" | "REVENUE";
+type MarketPricingPosition = "VALUE" | "COMPETITIVE" | "PREMIUM";
+type MarketPricingAggressiveness =
+  | "CONSERVATIVE"
+  | "MODERATE"
+  | "AGGRESSIVE";
+
+type MarketPricingFormState = {
+  configured: boolean;
+  providerAssigned: boolean;
+  enabled: boolean;
+  currency: string;
+  strategy: MarketPricingStrategy;
+  position: MarketPricingPosition;
+  aggressiveness: MarketPricingAggressiveness;
+  minimumConfidence: string;
+  maximumIncreasePercent: string;
+  maximumDecreasePercent: string;
+  marketRadiusKm: string;
+  maximumComparables: string;
+  lastSuccessfulRefreshAt: string | null;
+  nextRefreshAt: string | null;
+  lastErrorCode: string | null;
+};
+
+const DEFAULT_MARKET_PRICING_FORM: MarketPricingFormState = {
+  configured: false,
+  providerAssigned: false,
+  enabled: false,
+  currency: "",
+  strategy: "BALANCED",
+  position: "COMPETITIVE",
+  aggressiveness: "MODERATE",
+  minimumConfidence: "70",
+  maximumIncreasePercent: "20",
+  maximumDecreasePercent: "15",
+  marketRadiusKm: "",
+  maximumComparables: "10",
+  lastSuccessfulRefreshAt: null,
+  nextRefreshAt: null,
+  lastErrorCode: null,
+};
+
 type PropertyItem = {
   id: string;
   name: string;
@@ -317,6 +360,14 @@ export function PropertyEditPage() {
     useState("");
   const [savingHolidayPricingId, setSavingHolidayPricingId] =
     useState<string | null>(null);
+  const [marketPricing, setMarketPricing] = useState<MarketPricingFormState>(
+    DEFAULT_MARKET_PRICING_FORM
+  );
+  const [marketPricingLoading, setMarketPricingLoading] = useState(false);
+  const [marketPricingSaving, setMarketPricingSaving] = useState(false);
+  const [marketPricingAdvancedOpen, setMarketPricingAdvancedOpen] =
+    useState(false);
+  const [marketPricingMessage, setMarketPricingMessage] = useState("");
   const [newSeason, setNewSeason] = useState({
   name: "",
   type: "SHOULDER" as PropertySeasonType,
@@ -613,6 +664,64 @@ fetch(`${API_BASE}/api/dashboard/properties/${id}/holiday-pricing`, {
     setHolidayPricing([]);
   });
 
+        setMarketPricingLoading(true);
+        fetch(`${API_BASE}/api/dashboard/properties/${id}/market-pricing`, {
+          credentials: "include",
+        })
+          .then(async (response) => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              throw new Error(
+                data?.error || "Market Competition configuration is unavailable"
+              );
+            }
+            return data?.marketPricing;
+          })
+          .then((profile) => {
+            if (!profile?.configured) {
+              setMarketPricing(DEFAULT_MARKET_PRICING_FORM);
+              return;
+            }
+
+            setMarketPricing({
+              configured: true,
+              providerAssigned: Boolean(profile.providerAssigned),
+              enabled: Boolean(profile.enabled),
+              currency: String(profile.currency ?? ""),
+              strategy: (profile.strategy ?? "BALANCED") as MarketPricingStrategy,
+              position: (profile.position ?? "COMPETITIVE") as MarketPricingPosition,
+              aggressiveness: (profile.aggressiveness ??
+                "MODERATE") as MarketPricingAggressiveness,
+              minimumConfidence: String(profile.minimumConfidence ?? 70),
+              maximumIncreasePercent: String(
+                profile.maximumIncreasePercent ?? 20
+              ),
+              maximumDecreasePercent: String(
+                profile.maximumDecreasePercent ?? 15
+              ),
+              marketRadiusKm:
+                profile.marketRadiusKm === null ||
+                profile.marketRadiusKm === undefined
+                  ? ""
+                  : String(profile.marketRadiusKm),
+              maximumComparables: String(profile.maximumComparables ?? 10),
+              lastSuccessfulRefreshAt: profile.lastSuccessfulRefreshAt ?? null,
+              nextRefreshAt: profile.nextRefreshAt ?? null,
+              lastErrorCode: profile.lastErrorCode ?? null,
+            });
+            setMarketPricingMessage("");
+          })
+          .catch((error: any) => {
+            setMarketPricing(DEFAULT_MARKET_PRICING_FORM);
+            setMarketPricingMessage(
+              String(
+                error?.message ??
+                  "Market Competition configuration is unavailable"
+              )
+            );
+          })
+          .finally(() => setMarketPricingLoading(false));
+
         setForm({
           name: p.name ?? "",
           address1: p.address1 ?? "",
@@ -884,6 +993,158 @@ cleaningFee:
       setSaving(false);
     }
   }
+
+async function handleSaveMarketPricing() {
+  if (!id) return;
+
+  const currency = marketPricing.currency.trim().toUpperCase();
+  const minimumConfidence = Number(marketPricing.minimumConfidence);
+  const maximumIncreasePercent = Number(
+    marketPricing.maximumIncreasePercent
+  );
+  const maximumDecreasePercent = Number(
+    marketPricing.maximumDecreasePercent
+  );
+  const maximumComparables = Number(marketPricing.maximumComparables);
+  const marketRadiusKm =
+    marketPricing.marketRadiusKm.trim() === ""
+      ? null
+      : Number(marketPricing.marketRadiusKm);
+
+  if (!/^[A-Z]{3}$/.test(currency)) {
+    setMarketPricingMessage("Enter a valid three-letter currency code.");
+    return;
+  }
+
+  if (
+    !Number.isFinite(minimumConfidence) ||
+    minimumConfidence < 0 ||
+    minimumConfidence > 100
+  ) {
+    setMarketPricingMessage("Minimum confidence must be between 0 and 100.");
+    return;
+  }
+
+  if (
+    !Number.isFinite(maximumIncreasePercent) ||
+    maximumIncreasePercent < 0 ||
+    maximumIncreasePercent > 100 ||
+    !Number.isFinite(maximumDecreasePercent) ||
+    maximumDecreasePercent < 0 ||
+    maximumDecreasePercent > 100
+  ) {
+    setMarketPricingMessage(
+      "Maximum increase and decrease must be between 0 and 100."
+    );
+    return;
+  }
+
+  if (
+    !Number.isInteger(maximumComparables) ||
+    maximumComparables < 1 ||
+    maximumComparables > 50
+  ) {
+    setMarketPricingMessage("Maximum comparables must be between 1 and 50.");
+    return;
+  }
+
+  if (
+    marketRadiusKm !== null &&
+    (!Number.isFinite(marketRadiusKm) ||
+      marketRadiusKm < 0.1 ||
+      marketRadiusKm > 100)
+  ) {
+    setMarketPricingMessage("Market radius must be between 0.1 and 100 km.");
+    return;
+  }
+
+  setMarketPricingSaving(true);
+  setMarketPricingMessage("");
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/api/dashboard/properties/${id}/market-pricing`,
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // Provider assignment is intentionally outside the host dashboard.
+          // Until a provider exists, configuration can be saved but cannot
+          // activate Market Competition.
+          enabled: marketPricing.providerAssigned
+            ? marketPricing.enabled
+            : false,
+          currency,
+          strategy: marketPricing.strategy,
+          position: marketPricing.position,
+          aggressiveness: marketPricing.aggressiveness,
+          minimumConfidence,
+          maximumIncreasePercent,
+          maximumDecreasePercent,
+          marketRadiusKm,
+          maximumComparables,
+        }),
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error || "Failed to save Market Competition configuration"
+      );
+    }
+
+    const profile = data?.marketPricing;
+    setMarketPricing((current) => ({
+      ...current,
+      configured: Boolean(profile?.configured),
+      providerAssigned: Boolean(profile?.providerAssigned),
+      enabled: Boolean(profile?.enabled),
+      currency: String(profile?.currency ?? currency),
+      strategy: (profile?.strategy ?? current.strategy) as MarketPricingStrategy,
+      position: (profile?.position ?? current.position) as MarketPricingPosition,
+      aggressiveness: (profile?.aggressiveness ??
+        current.aggressiveness) as MarketPricingAggressiveness,
+      minimumConfidence: String(
+        profile?.minimumConfidence ?? minimumConfidence
+      ),
+      maximumIncreasePercent: String(
+        profile?.maximumIncreasePercent ?? maximumIncreasePercent
+      ),
+      maximumDecreasePercent: String(
+        profile?.maximumDecreasePercent ?? maximumDecreasePercent
+      ),
+      marketRadiusKm:
+        profile?.marketRadiusKm === null ||
+        profile?.marketRadiusKm === undefined
+          ? ""
+          : String(profile.marketRadiusKm),
+      maximumComparables: String(
+        profile?.maximumComparables ?? maximumComparables
+      ),
+      lastSuccessfulRefreshAt: profile?.lastSuccessfulRefreshAt ?? null,
+      nextRefreshAt: profile?.nextRefreshAt ?? null,
+      lastErrorCode: profile?.lastErrorCode ?? null,
+    }));
+    setMarketPricingMessage(
+      profile?.providerAssigned
+        ? "Market Competition configuration saved."
+        : "Configuration saved. Data provider pending."
+    );
+  } catch (error: any) {
+    setMarketPricingMessage(
+      String(
+        error?.message || "Failed to save Market Competition configuration"
+      )
+    );
+  } finally {
+    setMarketPricingSaving(false);
+  }
+}
 
 async function handleUploadPhotos(
   e: React.ChangeEvent<HTMLInputElement>
@@ -2642,8 +2903,333 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     Enable Dynamic Pricing
   </label>
 
- 
+  <div
+    style={{
+      borderTop: "1px solid #dbeafe",
+      paddingTop: 16,
+      display: "grid",
+      gap: 14,
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 12,
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 15, fontWeight: 900, color: "#111827" }}>
+          Market Competition
+        </div>
+        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+          Configure once. Pin&Go can compare similar listings and adjust rates
+          within the limits you choose.
+        </div>
+      </div>
 
+      <div
+        style={{
+          padding: "5px 10px",
+          borderRadius: 999,
+          fontSize: 11,
+          fontWeight: 900,
+          background:
+            marketPricing.enabled && marketPricing.providerAssigned
+              ? "#dcfce7"
+              : marketPricing.configured
+                ? "#fef3c7"
+                : "#f3f4f6",
+          color:
+            marketPricing.enabled && marketPricing.providerAssigned
+              ? "#166534"
+              : marketPricing.configured
+                ? "#92400e"
+                : "#4b5563",
+        }}
+      >
+        {marketPricing.enabled && marketPricing.providerAssigned
+          ? "Active"
+          : marketPricing.configured && !marketPricing.providerAssigned
+            ? "Configured · Data provider pending"
+            : marketPricing.configured
+              ? "Configured · Not active"
+              : "Not configured"}
+      </div>
+    </div>
+
+    <label
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        fontSize: 14,
+        fontWeight: 800,
+        color: "#111827",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={marketPricing.enabled}
+        onChange={(e) =>
+          setMarketPricing((current) => ({
+            ...current,
+            enabled: e.target.checked,
+          }))
+        }
+        disabled={
+          marketPricingLoading ||
+          !form.dynamicPricingEnabled ||
+          !marketPricing.providerAssigned
+        }
+      />
+      Use Market Competition
+    </label>
+
+    {!marketPricing.providerAssigned ? (
+      <div
+        style={{
+          padding: 12,
+          borderRadius: 12,
+          background: "#fffbeb",
+          border: "1px solid #fde68a",
+          color: "#92400e",
+          fontSize: 12,
+          lineHeight: 1.5,
+        }}
+      >
+        You can save the initial strategy now. Market Competition will remain
+        off until Pin&Go has a competitive-data provider assigned.
+      </div>
+    ) : null}
+
+    <div style={responsiveGridStyle}>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Pricing Goal</div>
+        <select
+          value={marketPricing.strategy}
+          onChange={(e) =>
+            setMarketPricing((current) => ({
+              ...current,
+              strategy: e.target.value as MarketPricingStrategy,
+            }))
+          }
+          style={inputStyle}
+          disabled={marketPricingLoading}
+        >
+          <option value="OCCUPANCY">Maximize Occupancy</option>
+          <option value="BALANCED">Balanced</option>
+          <option value="REVENUE">Maximize Revenue</option>
+        </select>
+      </div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Market Position</div>
+        <select
+          value={marketPricing.position}
+          onChange={(e) =>
+            setMarketPricing((current) => ({
+              ...current,
+              position: e.target.value as MarketPricingPosition,
+            }))
+          }
+          style={inputStyle}
+          disabled={marketPricingLoading}
+        >
+          <option value="VALUE">Value</option>
+          <option value="COMPETITIVE">Competitive</option>
+          <option value="PREMIUM">Premium</option>
+        </select>
+      </div>
+
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={labelStyle}>Adjustment Style</div>
+        <select
+          value={marketPricing.aggressiveness}
+          onChange={(e) =>
+            setMarketPricing((current) => ({
+              ...current,
+              aggressiveness: e.target.value as MarketPricingAggressiveness,
+            }))
+          }
+          style={inputStyle}
+          disabled={marketPricingLoading}
+        >
+          <option value="CONSERVATIVE">Conservative</option>
+          <option value="MODERATE">Moderate</option>
+          <option value="AGGRESSIVE">Aggressive</option>
+        </select>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => setMarketPricingAdvancedOpen((current) => !current)}
+      style={{
+        border: 0,
+        background: "transparent",
+        padding: 0,
+        color: "#2563eb",
+        fontSize: 12,
+        fontWeight: 900,
+        cursor: "pointer",
+        justifySelf: "start",
+      }}
+    >
+      {marketPricingAdvancedOpen ? "Hide advanced settings" : "Advanced settings"}
+    </button>
+
+    {marketPricingAdvancedOpen ? (
+      <div style={responsiveGridStyle}>
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={labelStyle}>Currency</div>
+          <input
+            value={marketPricing.currency}
+            onChange={(e) =>
+              setMarketPricing((current) => ({
+                ...current,
+                currency: e.target.value.toUpperCase().slice(0, 3),
+              }))
+            }
+            placeholder="USD"
+            maxLength={3}
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={labelStyle}>Minimum Confidence (%)</div>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={marketPricing.minimumConfidence}
+            onChange={(e) =>
+              setMarketPricing((current) => ({
+                ...current,
+                minimumConfidence: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={labelStyle}>Maximum Increase (%)</div>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={marketPricing.maximumIncreasePercent}
+            onChange={(e) =>
+              setMarketPricing((current) => ({
+                ...current,
+                maximumIncreasePercent: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={labelStyle}>Maximum Decrease (%)</div>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={marketPricing.maximumDecreasePercent}
+            onChange={(e) =>
+              setMarketPricing((current) => ({
+                ...current,
+                maximumDecreasePercent: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={labelStyle}>Market Radius (km)</div>
+          <input
+            type="number"
+            min="0.1"
+            max="100"
+            step="0.1"
+            value={marketPricing.marketRadiusKm}
+            onChange={(e) =>
+              setMarketPricing((current) => ({
+                ...current,
+                marketRadiusKm: e.target.value,
+              }))
+            }
+            placeholder="Optional"
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ display: "grid", gap: 6 }}>
+          <div style={labelStyle}>Maximum Comparables</div>
+          <input
+            type="number"
+            min="1"
+            max="50"
+            step="1"
+            value={marketPricing.maximumComparables}
+            onChange={(e) =>
+              setMarketPricing((current) => ({
+                ...current,
+                maximumComparables: e.target.value,
+              }))
+            }
+            style={inputStyle}
+          />
+        </div>
+      </div>
+    ) : null}
+
+    {marketPricing.lastErrorCode ? (
+      <div style={{ fontSize: 12, color: "#b91c1c" }}>
+        Market data status: {marketPricing.lastErrorCode}
+      </div>
+    ) : null}
+
+    {marketPricingMessage ? (
+      <div
+        style={{
+          fontSize: 12,
+          color: marketPricingMessage.toLowerCase().includes("saved")
+            ? "#166534"
+            : "#6b7280",
+        }}
+      >
+        {marketPricingMessage}
+      </div>
+    ) : null}
+
+    <button
+      type="button"
+      onClick={handleSaveMarketPricing}
+      disabled={marketPricingLoading || marketPricingSaving}
+      style={{
+        ...primarySmallButtonStyle,
+        justifySelf: "start",
+        opacity: marketPricingLoading || marketPricingSaving ? 0.65 : 1,
+        cursor:
+          marketPricingLoading || marketPricingSaving
+            ? "not-allowed"
+            : "pointer",
+      }}
+    >
+      {marketPricingSaving
+        ? "Saving Market Competition..."
+        : "Save Market Competition"}
+    </button>
+  </div>
 
   <div style={responsiveGridStyle}>
     <div style={{ display: "grid", gap: 6 }}>
