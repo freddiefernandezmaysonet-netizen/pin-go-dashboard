@@ -13,6 +13,30 @@ export type SleepingArea = {
   beds: Array<{ type: BedType; quantity: number }>;
 };
 
+export type SharedSpace = {
+  type: "POOL" | "HOT_TUB" | "KITCHEN" | "PATIO" | "YARD" | "LIVING_ROOM" | "LAUNDRY" | "OTHER";
+  labelEn: string | null;
+  labelEs: string | null;
+  sortOrder: number;
+};
+
+export type SafetyConsideration = {
+  type: "POOL" | "HOT_TUB" | "WATERFRONT" | "HEIGHTS" | "STAIRS" | "OTHER";
+  descriptionEn: string | null;
+  descriptionEs: string | null;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+export type AdditionalConsideration = {
+  titleEn: string | null;
+  titleEs: string | null;
+  descriptionEn: string | null;
+  descriptionEs: string | null;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 export type ListingDetailsForm = {
   accommodationType: "" | "ENTIRE_PLACE" | "PRIVATE_ROOM" | "SHARED_ROOM";
   bedroomCount: string;
@@ -50,6 +74,10 @@ export type ListingDetailsForm = {
   stepFreeBathroomAccess: TriState;
   stepFreeShower: TriState;
   sleepingAreas: SleepingArea[];
+  // PUT replaces these collections. Preserve them even before their editors exist.
+  sharedSpaces: SharedSpace[];
+  safetyConsiderations: SafetyConsideration[];
+  additionalConsiderations: AdditionalConsideration[];
 };
 
 export const EMPTY_LISTING_DETAILS: ListingDetailsForm = {
@@ -89,4 +117,7 @@ export const EMPTY_LISTING_DETAILS: ListingDetailsForm = {
   stepFreeBathroomAccess: "UNKNOWN",
   stepFreeShower: "UNKNOWN",
   sleepingAreas: [],
+  sharedSpaces: [],
+  safetyConsiderations: [],
+  additionalConsiderations: [],
 };
