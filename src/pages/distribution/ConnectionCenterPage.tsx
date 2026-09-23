@@ -480,6 +480,12 @@ export function ConnectionCenterPage() {
     } finally { setBusyProvider(null); }
   }
 
+  async function refreshAirbnbVerifiedStatus() {
+    if (simulated) return;
+    await reconcileDistributionChannel(id, "AIRBNB");
+    await load();
+  }
+
   async function confirmAirbnbCandidate(listingId: string) {
     setError(null);
     setNotice(null);
@@ -621,7 +627,8 @@ export function ConnectionCenterPage() {
 
                 {airbnbChannelLinked && !simulated && (
                   <AirbnbActivationPanel key={id} propertyId={id} mappingRevision={airbnbMappingStatus}
-                    onMapped={setAirbnbMappedPropertyId} onActivated={load} />
+                    onMapped={setAirbnbMappedPropertyId} onActivated={load}
+                    onRefreshVerifiedStatus={refreshAirbnbVerifiedStatus} />
                 )}
 
                 {canConnect ? (

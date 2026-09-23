@@ -6,8 +6,9 @@ export default function AirbnbActivationPanel(props: {
   mappingRevision: string;
   onMapped(propertyId: string): void;
   onActivated(): Promise<void>;
+  onRefreshVerifiedStatus(): Promise<void>;
 }) {
-  const { propertyId, mappingRevision, onMapped, onActivated } = props;
+  const { propertyId, mappingRevision, onMapped, onActivated, onRefreshVerifiedStatus } = props;
   const [state, setState] = useState<AirbnbActivationState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,24 @@ export default function AirbnbActivationPanel(props: {
     }
   }
 
+  async function refreshVerifiedStatus() {
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      await onRefreshVerifiedStatus();
+      if (!mounted.current) return;
+      setRefresh(n => n + 1);
+    } catch {
+      if (!mounted.current) return;
+      setError("Pin&Go couldn't refresh Airbnb's verified status. No activation or Full Sync was requested.");
+    } finally {
+      submitting.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  }
+
   async function verifyActivation() {
     if (!state || state.status !== "CHECK_REQUIRED" || submitting.current) return;
     submitting.current = true;
@@ -79,7 +98,11 @@ export default function AirbnbActivationPanel(props: {
       <p style={{ margin: 0 }}>Your Airbnb property mapping is verified. Activation starts sending availability, rates and restrictions to Airbnb and receiving reservations.</p>
       <button type="button" style={buttonStyle} disabled={busy} onClick={() => void activate()}>{busy ? "Activating Airbnb…" : "Activate Airbnb"}</button>
     </>}
-    {state?.status === "ACTIVE" && <p role="status" style={{ color: "#065f46" }}>Airbnb activation confirmed.</p>}
+    {state?.status === "ACTIVE" && <>
+      <p role="status" style={{ color: "#065f46", margin: 0 }}>Airbnb reports this channel as active.</p>
+      <p style={{ margin: 0 }}>Refresh verified status to reconcile Pin&Go's saved connection state with current Channex evidence. This does not request activation or Full Sync.</p>
+      <button type="button" style={buttonStyle} disabled={busy} onClick={() => void refreshVerifiedStatus()}>{busy ? "Refreshing verified status…" : "Refresh verified status"}</button>
+    </>}
     {state?.status === "NOT_READY" && <p>{state.reason === "FULL_SYNC_REQUIRED"
       ? "Sync availability & rates and wait for confirmation before activating Airbnb."
       : state.reason === "MAPPING_REQUIRED"

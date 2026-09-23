@@ -143,3 +143,12 @@ test("completed mapping triggers fresh read; stale unmounted response is ignored
   const late = panel({ inspectAirbnbActivation: () => new Promise(resolve => { finish = resolve; }) });
   late.unmount(); finish(ready); await new Promise(resolve => setImmediate(resolve)); assert.deepEqual(late.mapped, []);
 });
+
+
+test("active Airbnb evidence offers canonical refresh without activation or Full Sync", () => {
+  assert.match(source, /onRefreshVerifiedStatus\(\)/);
+  assert.match(source, /Refresh verified status/);
+  assert.match(source, /This does not request activation or Full Sync\./);
+  assert.doesNotMatch(source, /Airbnb activation confirmed\./);
+  assert.match(source, /Airbnb reports this channel as active\./);
+});
