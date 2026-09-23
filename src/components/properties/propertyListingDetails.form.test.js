@@ -181,3 +181,22 @@ test("an aborted late response cannot apply another property's data", async () =
   controller.abort(); release(new Response(JSON.stringify(envelope())));
   await assert.rejects(pending, { name: "AbortError" });
 });
+
+test("empty additional consideration is blocked before a write", () => {
+  const form = hydrateListingDetails(fixture());
+  form.additionalConsiderations.push({
+    titleEn: null, titleEs: null, descriptionEn: null, descriptionEs: null,
+    isActive: true, sortOrder: 17,
+  });
+  assert.throws(() => buildListingDetailsPayload(form), /requires a title or description/);
+});
+test("edited listing collections survive the request payload projection", () => {
+  const form = hydrateListingDetails(fixture());
+  form.sharedSpaces[0].labelEs = "Piscina común";
+  form.safetyConsiderations[0].isActive = true;
+  form.additionalConsiderations[0].titleEs = "Acceso";
+  const payload = buildListingDetailsPayload(form);
+  assert.equal(payload.sharedSpaces[0].labelEs, "Piscina común");
+  assert.equal(payload.safetyConsiderations[0].isActive, true);
+  assert.equal(payload.additionalConsiderations[0].titleEs, "Acceso");
+});
