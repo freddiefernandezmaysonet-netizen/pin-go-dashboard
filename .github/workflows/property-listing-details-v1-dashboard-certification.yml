@@ -7,6 +7,7 @@ on:
       - '.github/workflows/property-listing-details-v1-dashboard-certification.yml'
       - 'src/components/properties/PropertyListingDetailsCard.tsx'
       - 'src/components/properties/RoomLayoutEditor.tsx'
+      - 'src/components/properties/ListingCollectionsEditor.tsx'
       - 'src/components/properties/propertyListingDetails.*'
       - 'src/pages/properties/PropertyEditPage.tsx'
       - 'package.json'
