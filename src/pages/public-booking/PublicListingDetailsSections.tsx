@@ -2,6 +2,8 @@ import type { PublicListingDetails } from "./publicListingDetails.types";
 import { beforeBookingFacts, listingFactLabels, publicBathrooms, totalPublicBeds } from "./publicListingDetails.logic.js";
 
 export { beforeBookingFacts, listingFactLabels, publicBathrooms, totalPublicBeds } from "./publicListingDetails.logic.js";
+const bedName={KING:{en:"king bed",es:"cama king"},QUEEN:{en:"queen bed",es:"cama queen"},DOUBLE:{en:"double bed",es:"cama doble"},SINGLE:{en:"single bed",es:"cama individual"},BUNK:{en:"bunk bed",es:"litera"},SOFA_BED:{en:"sofa bed",es:"sofá cama"},FUTON:{en:"futon",es:"futón"},CRIB:{en:"crib",es:"cuna"},OTHER:{en:"bed",es:"cama"}} as const;
+
 type Lang="en"|"es";
 function bedText(b:PublicListingDetails["sleepingAreas"][number]["beds"][number],l:Lang){return `${b.quantity} ${bedName[b.type][l]}`;}
 export function PublicListingDetailsSections({details,language}:{details?:PublicListingDetails|null;language:Lang}){
