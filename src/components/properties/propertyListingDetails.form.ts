@@ -137,6 +137,12 @@ export function buildListingDetailsPayload(form: ListingDetailsForm): Record<str
   for (const [key, max] of Object.entries(texts)) result[key] = text(source[key], key, max)?.trim() || null;
   Object.assign(result, projectCollections(source));
 
+  for (const [index, item] of (result.additionalConsiderations as Array<Record<string, unknown>>).entries()) {
+    if (!item.titleEn && !item.titleEs && !item.descriptionEn && !item.descriptionEs) {
+      throw new Error(`Each additional consideration requires a title or description (item ${index + 1}).`);
+    }
+  }
+
   if (result.adultsOnly === "YES" && (result.childrenPolicy === "ALLOWED" || result.infantsPolicy === "ALLOWED")) {
     throw new Error("Adults Only cannot allow children or infants.");
   }
