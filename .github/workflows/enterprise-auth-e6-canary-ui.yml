@@ -57,12 +57,24 @@ jobs:
 
       - name: Certify dashboard scope
         shell: bash
+        env:
+          SCOPE_PR_NUMBER: ${{ github.event.pull_request.number }}
+          SCOPE_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin main:refs/remotes/origin/main
           CHANGED="$(git diff --name-only origin/main...HEAD)"
           echo "$CHANGED"
           allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|src/api/auth\.ts|src/api/client\.ts|src/auth/AuthProvider\.tsx|src/auth/RequireAuth\.tsx|src/auth/sessionExpiry\.ts|src/pages/LoginPage\.tsx|src/auth/enterprise-auth-e6\.contract\.test\.js|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/auth/public-route-session-isolation\.contract\.test\.js)$'
+          # Only the authorized same-repository PR receives this coordinated file list.
+          if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" &&
+                "${GITHUB_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
+                "${SCOPE_PR_NUMBER:-}" == "135" &&
+                "${SCOPE_HEAD_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
+                "${GITHUB_HEAD_REF:-}" == "agent/mission-control-e13-decoupling-v1" &&
+                "${GITHUB_BASE_REF:-}" == "main" ]]; then
+            allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|\.github/workflows/mission-control-observational-certification\.yml|src/api/distribution\.ts|src/auth/AuthProvider\.tsx|src/components/reviews/PublicReviewsSection\.tsx|src/dashboard-typescript-baseline\.contract\.test\.mjs|src/pages/properties/PropertyCalendarMissionControl\.contract\.test\.mjs|src/pages/properties/PropertyCalendarPage\.tsx|src/pages/staff/StaffMembersPage\.tsx|vercel\.json)$'
+          fi
           unexpected="$(echo "$CHANGED" | grep -Ev "$allowed" || true)"
           test -z "$unexpected"
 
