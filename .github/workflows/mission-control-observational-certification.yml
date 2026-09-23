@@ -1,0 +1,38 @@
+name: Mission Control Observational Dashboard Certification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/pages/properties/PropertyCalendarPage.tsx'
+      - 'src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs'
+      - 'src/lib/apmsMissionControl*'
+      - 'src/auth/AuthProvider.tsx'
+      - 'src/pages/staff/StaffMembersPage.tsx'
+      - 'src/components/reviews/PublicReviewsSection.tsx'
+      - 'src/api/distribution.ts'
+      - 'src/dashboard-typescript-baseline.contract.test.mjs'
+      - 'vercel.json'
+      - '.github/workflows/mission-control-observational-certification.yml'
+permissions:
+  contents: read
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Authorized baseline regressions (mocked, no real requests)
+        run: node --test src/dashboard-typescript-baseline.contract.test.mjs
+      - name: Snapshot presentation, freshness and isolated component render tests
+        run: node --test src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
+      - name: Dashboard TypeScript
+        run: npx --no-install tsc -p tsconfig.app.json --noEmit
+      - name: Production bundle only (no publish or deployment)
+        run: npm run build

@@ -1,20 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
-import { fetchMeState, signalSessionActivity, type AuthSessionError } from "../api/auth";
+import { fetchMeState, signalSessionActivity, type AuthSessionError, type AuthenticatedUser } from "../api/auth";
 
 const SESSION_ACTIVITY_SIGNAL_INTERVAL_MS = 4 * 60 * 1000;
 
-type User = {
-  id: string;
-  email: string;
-  orgId: string;
-  role: string;
-  organizationName?: string | null;
-  organizationSlug?: string | null;
-};
-
 type AuthContextType = {
-  user: User | null;
+  user: AuthenticatedUser | null;
   loading: boolean;
   sessionError: AuthSessionError;
   refresh: () => Promise<void>;
@@ -28,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState<AuthSessionError>(null);
   const userId = user?.id ?? null;
