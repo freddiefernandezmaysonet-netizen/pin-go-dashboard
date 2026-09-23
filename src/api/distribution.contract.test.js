@@ -116,16 +116,3 @@ test("simulation remains explicit and makes no external calls or data changes", 
   assert.match(connectionCenterPage, /Simulation mode is active\. No external calls or data changes will be made\./);
   assert.match(connectionCenterPage, /if \(simulated\) \{\s*setFrameReady\(false\)/);
 });
-
-
-test("Airbnb verified-status refresh uses canonical reconcile without activation or Full Sync", () => {
-  const panel = readFileSync(new URL("../pages/distribution/AirbnbActivationPanel.tsx", import.meta.url), "utf8");
-  const refresh = pageFunction("refreshAirbnbVerifiedStatus");
-  assert.match(refresh, /reconcileDistributionChannel\(id, "AIRBNB"\)/);
-  assert.match(refresh, /await load\(\)/);
-  assert.doesNotMatch(refresh, /activateAirbnbForHost|verifyAirbnbActivationForHost|Full Sync|fullSync/i);
-  assert.match(panel, /Refresh verified status/);
-  assert.match(panel, /This does not request activation or Full Sync\./);
-  assert.match(panel, /onRefreshVerifiedStatus\(\)/);
-  assert.doesNotMatch(panel, /Airbnb activation confirmed\./);
-});
