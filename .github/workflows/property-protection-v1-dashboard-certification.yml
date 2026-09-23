@@ -7,6 +7,8 @@ on:
       - "src/pages/reservation-detail/ReservationDetailDamageCase.contract.test.ts"
       - "src/pages/public-booking/GuestCancellationPage.tsx"
       - "src/pages/public-booking/GuestManagePropertyProtection.contract.test.ts"
+      - "src/pages/public-booking/GuestDamagePaymentAuthorization.tsx"
+      - "src/pages/public-booking/GuestDamagePaymentAuthorization.runtime.test.mjs"
       - "src/pages/public-booking/PublicPropertyDetailPage.tsx"
       - "src/pages/public-booking/PublicPropertyProtection.contract.test.ts"
       - ".github/workflows/property-protection-v1-dashboard-certification.yml"
@@ -37,6 +39,16 @@ jobs:
 
       - name: Build dashboard
         run: npm run build
+
+      - name: Check explicit guest authorization component
+        run: |
+          ./node_modules/.bin/eslint src/pages/public-booking/GuestDamagePaymentAuthorization.tsx
+          ./node_modules/.bin/tsc --noEmit --strict --skipLibCheck --jsx react-jsx --module esnext --moduleResolution bundler --target es2022 src/pages/public-booking/GuestDamagePaymentAuthorization.tsx
+
+      - name: Exercise authorization UX with synthetic responses only
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --prefix "$RUNNER_TEMP/damage-renderer" react@19.2.4 react-test-renderer@19.2.4
+          PINGO_REACT_TEST_PACKAGE="$RUNNER_TEMP/damage-renderer/package.json" node --test src/pages/public-booking/GuestDamagePaymentAuthorization.runtime.test.mjs
 
       - name: Certify public Property Protection disclosure
         run: node --experimental-strip-types --test src/pages/public-booking/PublicPropertyProtection.contract.test.ts
