@@ -241,11 +241,7 @@ export function PublicReviewsSection({
                   aria-describedby={pagination.loadMoreError ? "pbe-review-load-error" : undefined}
                   onClick={() => {
                     setLoading(true);
-                    dispatchPagination(
-                      pagination.loadMoreError
-                        ? { type: "RETRY" }
-                        : { type: "REQUEST_NEXT" }
-                    );
+                    dispatchPagination({ type: "REQUEST_NEXT" });
                   }}
                 >
                   {loading

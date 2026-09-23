@@ -118,7 +118,7 @@ export function StaffMembersPage() {
 
       if (!resolvedOrgId) {
         const me = await fetchMe();
-        resolvedOrgId = String(me?.orgId ?? me?.organizationId ?? "");
+        resolvedOrgId = String(me?.orgId ?? "");
 
         if (!resolvedOrgId) {
           throw new Error("No organizationId found in current session");
