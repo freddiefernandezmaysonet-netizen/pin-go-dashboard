@@ -32,9 +32,10 @@ test("Market Competition remains fail-closed while the data provider is pending"
 });
 
 test("Market Competition does not replace the existing property save path", () => {
-  assert.match(
-    source,
-    /fetch\(\$\{API_BASE\}\/api\/dashboard\/properties\/\$\{id\}[^]*method: "PATCH"/
+  assert.equal(
+    source.includes('fetch(`${API_BASE}/api/dashboard/properties/${id}`, {'),
+    true
   );
+  assert.match(source, /method: "PATCH"/);
   assert.match(source, /Save Market Competition/);
 });
