@@ -22,7 +22,6 @@ import {
 } from "../../lib/whiteLabel";
 import {
   getLiveMissionControlMetric,
-  getMissionControlDisplayStatus,
 } from "../../lib/apmsMissionControlPresentation.js";
 import {
   MISSION_CONTROL_POLL_INTERVAL_MS,
@@ -513,16 +512,7 @@ const revenueSummary = useMemo(() => {
  
 const hasLiveMissionControlSnapshot = Boolean(missionControlSnapshot);
 
-const missionControlStatus = getMissionControlDisplayStatus({
-  loading,
-  snapshot: missionControlSnapshot,
-});
 
-const missionControlEngineHealth = Array.isArray(
-  missionControlSnapshot?.engineHealth
-)
-  ? missionControlSnapshot.engineHealth
-  : [];
 
 const guestJourneyMetrics =
   missionControlSnapshot?.guestJourneyMetrics ?? null;
@@ -559,42 +549,9 @@ const guestJourneyHostInterventionRequired = Number(
   guestJourneyMetrics?.hostInterventionRequired ?? 0
 );
 
-const missionEngineDisplayOrder = [
-  "Revenue",
-  "Reservation",
-  "Guest Journey",
-  "Access",
-  "Cleaning",
-  "Messaging",
-  "Distribution",
-];
 
-function getMissionEngineSortValue(engine: string) {
-  const index = missionEngineDisplayOrder.indexOf(engine);
 
-  return index >= 0 ? index : missionEngineDisplayOrder.length;
-}
 
-function getMissionEngineFallbackMessage(engine: string) {
-  if (engine === "Revenue") return "Waiting for revenue engine activity.";
-  if (engine === "Reservation")
-    return "Waiting for reservation autopilot activity.";
-  if (engine === "Guest Journey")
-    return "Waiting for guest journey engine activity.";
-  if (engine === "Access") return "Waiting for access engine activity.";
-  if (engine === "Cleaning") return "Waiting for cleaning engine activity.";
-  if (engine === "Messaging") return "Waiting for messaging engine activity.";
-  if (engine === "Distribution")
-    return "Waiting for distribution engine activity.";
-
-  return "Waiting for APMS engine activity.";
-}
-
-const missionControlEngineCards = [...missionControlEngineHealth].sort(
-  (engineA: any, engineB: any) =>
-    getMissionEngineSortValue(engineA.engine) -
-    getMissionEngineSortValue(engineB.engine)
-);
 
 const hasOperationalIntelligenceContract = Array.isArray(
   missionControlSnapshot?.operationalItems
@@ -901,34 +858,15 @@ function renderMissionActionDetails(action: any) {
 }
 
 function getMissionActionLastSignalLabel(action: any) {
-  const engineName = String(action?.engine ?? "");
-  const matchingEngineHealth = missionControlEngineHealth.find(
-    (engineHealth: any) => engineHealth?.engine === engineName
-  );
-
-  const rawDate =
-  action?.lastSignalAt ??
-  matchingEngineHealth?.lastExecutionAt ??
-  missionControlSnapshot?.generatedAt;
-  
+  const rawDate = action?.lastSignalAt ?? missionControlSnapshot?.generatedAt;
   const date = rawDate ? new Date(rawDate) : null;
-
-  if (!date || Number.isNaN(date.getTime())) {
-    return "Live APMS signal";
-  }
-
+  if (!date || Number.isNaN(date.getTime())) return "Signal time unavailable";
   const formattedDate = date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
   });
-
-  if (matchingEngineHealth?.lastExecutionAt) {
-    return `Last ${engineName || "APMS"} signal: ${formattedDate}`;
-  }
-
-  return `Last APMS check: ${formattedDate}`;
+  return action?.lastSignalAt
+    ? `Last operational signal: ${formattedDate}`
+    : `Snapshot updated: ${formattedDate}`;
 }
 
 function getMissionActionMetaStyle(action: any): CSSProperties {
@@ -1225,21 +1163,6 @@ function formatMissionStatusLabel(status: string) {
   return String(status ?? "PENDING").replaceAll("_", " ");
 }
 
-function formatMissionEngineTime(engineHealth: any) {
-  const rawDate = engineHealth?.lastExecutionAt;
-  const date = rawDate ? new Date(rawDate) : null;
-
-  if (!date || Number.isNaN(date.getTime())) {
-    return "No execution yet";
-  }
-
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function isAutoResolutionEntry(entry: any) {
   const status = String(entry?.status ?? "").toUpperCase();
@@ -1417,54 +1340,7 @@ const recentApmsActivities = [...missionControlRecentAuditEntries]
   )
   .slice(0, 8);
 
-function formatAutopilotStatus(status: string) {
-  if (status === "ACTIVE") return "Auto Pilot Active";
-  if (status === "NEEDS_ATTENTION") return "Needs Attention";
-  if (status === "PAUSED") return "Auto Pilot Paused";
-  if (status === "ERROR") return "Auto Pilot Error";
-  if (status === "LOADING") return "Auto Pilot Checking";
-  if (status === "UNAVAILABLE" || status === "UNKNOWN") {
-    return "Auto Pilot Unavailable";
-  }
 
-  return "Auto Pilot Unavailable";
-}
-
-function getAutopilotPillStyle(status: string): CSSProperties {
-  if (
-    status === "LOADING" ||
-    status === "UNAVAILABLE" ||
-    status === "UNKNOWN"
-  ) {
-    return {
-      ...styles.autoPilotPill,
-      background: "#475569",
-    };
-  }
-
-  if (status === "ERROR") {
-    return {
-      ...styles.autoPilotPill,
-      background: "#991b1b",
-    };
-  }
-
-  if (status === "NEEDS_ATTENTION") {
-    return {
-      ...styles.autoPilotPill,
-      background: "#92400e",
-    };
-  }
-
-  if (status === "PAUSED") {
-    return {
-      ...styles.autoPilotPill,
-      background: "#475569",
-    };
-  }
-
-  return styles.autoPilotPill;
-}
  
 const occupancySummary = useMemo(() => {
   const totalDays = visibleMonthDays.length || 1;
@@ -1769,9 +1645,6 @@ paymentState: manualPaymentState,
               : `${nightlyRates.length} rate signal(s), ${reservations.length} reservation(s), and ${blockedDates.length} blocked date(s) loaded.`}
           </p>
         </div>
-        <div style={getAutopilotPillStyle(missionControlStatus)}>
-          🦾 {formatAutopilotStatus(missionControlStatus)}
-        </div>     
       </div>
 
       <div style={styles.summaryGrid}>
@@ -1823,25 +1696,19 @@ paymentState: manualPaymentState,
        <div style={styles.missionControlCard}>
   <div style={styles.missionEnterpriseHeader}>
     <div>
-      <div style={styles.missionEyebrow}>APMS Mission Control</div>
+      <div style={styles.missionEyebrow}>Mission Control</div>
       <div style={styles.missionEnterpriseTitle}>
-        Autonomous property operations
+        Property operations overview
       </div>
       <div style={styles.missionEnterpriseSubtitle}>
-        Live engine health, operational memory, and autonomous execution for this property.
+        Reservation readiness, operational alerts, and recorded activity for this property.
+      </div>
+      <div role="note" style={styles.missionEnterpriseSubtitle}>
+        Global engine health is not assessed in this view.
       </div>
     </div>
 
     <div style={styles.missionStatusCluster}>
-      <div
-        style={{
-          ...styles.missionStatusPill,
-          ...getMissionStatusPillStyle(missionControlStatus),
-        }}
-      >
-        <span style={styles.missionStatusDot} />
-        {formatMissionStatusLabel(missionControlStatus)}
-      </div>
       <div style={styles.missionGeneratedLabel}>
         {loading
           ? "Verifying live snapshot"
@@ -1856,8 +1723,8 @@ paymentState: manualPaymentState,
     <div style={styles.missionUnavailableState}>
       <strong>Mission Control live state is unavailable.</strong>
       <span>
-        Pin&Go cannot prove current APMS health for this property, so no ACTIVE
-        status or autonomy metrics are being inferred.
+        Operational data is unavailable for this property. No activity or
+        readiness metrics are inferred while the snapshot is unavailable.
       </span>
     </div>
   ) : null}
@@ -1905,15 +1772,6 @@ paymentState: manualPaymentState,
       </div>
     </div>
 
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Engines Online</div>
-      <div style={styles.missionHeroValue}>
-        {hasLiveMissionControlSnapshot ? missionControlEngineHealth.length : "—"}
-      </div>
-      <div style={styles.missionHeroHint}>
-        Active APMS engines reporting health
-      </div>
-    </div>
   </div>
     
      {guestJourneyMetrics ? (
@@ -2027,53 +1885,6 @@ paymentState: manualPaymentState,
     />
   ) : null}
 
-  <div style={styles.missionPanel}>
-    <div style={styles.missionPanelHeader}>
-      <div>
-        <div style={styles.missionPanelTitle}>Engine Health</div>
-        <div style={styles.missionPanelMeta}>
-          Revenue, Reservation, and future APMS engines
-        </div>
-      </div>
-    </div>
-        <div style={styles.missionEngineGrid}>
-      {!hasLiveMissionControlSnapshot ? (
-        <div style={styles.missionEngineUnavailable}>
-          Engine health is unavailable until Mission Control returns a live snapshot.
-        </div>
-      ) : missionControlEngineCards.map((engineHealth: any) => (
-        <div key={engineHealth.engine} style={styles.missionEngineCard}>
-          <div style={styles.missionEngineHeader}>
-            <div>
-              <div style={styles.missionEngineName}>
-                {getMissionActivityEngineLabel(engineHealth.engine)}
-              </div>
-
-              <div style={styles.missionEngineTimestamp}>
-                {formatMissionEngineTime(engineHealth)}
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...styles.missionStatusPill,
-                ...getMissionStatusPillStyle(
-                  engineHealth?.status ?? "PENDING"
-                ),
-              }}
-            >
-              {formatMissionStatusLabel(engineHealth?.status ?? "PENDING")}
-            </div>
-          </div>
-
-          <div style={styles.missionEngineMessage}>
-            {sanitizeWhiteLabelText(engineHealth?.message) ||
-              getMissionEngineFallbackMessage(engineHealth.engine)}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
   
   {recentApmsActivities.length > 0 ? (
     <div style={styles.missionPanel}>
@@ -3418,7 +3229,7 @@ missionEngineUnavailable: {
 missionHeroGrid: {
   padding: 18,
   display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(170px, 1fr))",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: 14,
   background: "#f8fafc",
   borderBottom: "1px solid #e2e8f0",

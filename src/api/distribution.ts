@@ -222,7 +222,7 @@ async function postDistribution(path: string, action: string): Promise<unknown> 
 
 export async function prepareDistributionChannel(
   propertyId: string,
-  provider: "AIRBNB" | "BOOKING_COM" | "VRBO"
+  provider: DistributionProvider
 ): Promise<"READY"> {
   const payload = await postDistribution(
     `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/${encodeURIComponent(provider)}/prepare`,
@@ -236,7 +236,7 @@ export async function prepareDistributionChannel(
 
 export async function reconcileDistributionChannel(
   propertyId: string,
-  provider: "AIRBNB" | "BOOKING_COM" | "VRBO"
+  provider: DistributionProvider
 ): Promise<void> {
   const payload = await postDistribution(
     `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/${encodeURIComponent(provider)}/reconcile`,
@@ -249,7 +249,7 @@ export async function reconcileDistributionChannel(
 
 export async function issueDistributionConnectionSession(
   propertyId: string,
-  provider: "AIRBNB" | "BOOKING_COM" | "VRBO"
+  provider: DistributionProvider
 ): Promise<DistributionConnectionSession> {
   const payload = await postDistribution(
     `/api/dashboard/distribution/properties/${encodeURIComponent(propertyId)}/channels/${encodeURIComponent(provider)}/session`,
