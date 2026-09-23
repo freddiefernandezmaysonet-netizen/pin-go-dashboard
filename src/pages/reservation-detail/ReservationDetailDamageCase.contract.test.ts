@@ -1,11 +1,42 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 
 const source = readFileSync(
   new URL("./ReservationDetailPage.tsx", import.meta.url),
   "utf8"
 );
+
+test("checkout eligibility fails closed and respects the exact cutoff and extensions", () => {
+  const helper = source.slice(source.indexOf("function isDamageCheckoutComplete("), source.indexOf("export function ReservationDetailPage"));
+  const evaluate = runInNewContext(ts.transpile(helper) + ";isDamageCheckoutComplete");
+  const checkout = "2026-09-23T11:00:00-04:00";
+  const cutoff = Date.parse("2026-09-23T15:00:00Z");
+  assert.equal(evaluate(checkout, cutoff - 1), false);
+  assert.equal(evaluate(checkout, cutoff), false);
+  assert.equal(evaluate(checkout, cutoff + 1), true);
+  assert.equal(evaluate("2026-09-24T15:00:00Z", cutoff + 1), false);
+  for (const invalid of [undefined, "", "invalid"]) assert.equal(evaluate(invalid, cutoff), false);
+  assert.equal(evaluate(checkout, NaN), false);
+});
+
+test("approval is disabled and guarded while internal documentation remains available", () => {
+  const approval = source.slice(source.indexOf("async function approveDamageCase"), source.indexOf("async function closeDamageCaseNoCharge"));
+  assert.ok(approval.indexOf("!isDamageCheckoutComplete(data.checkOut, Date.now())") < approval.indexOf("await damageCaseRequest"));
+  assert.match(source, /onClick=\{approveDamageCase\}\s+disabled=\{damageSubmitting \|\| !damageCheckoutComplete\}/);
+  assert.match(source, /aria-describedby=\{!damageCheckoutComplete \? "damage-checkout-help" : undefined\}/);
+  const documentation = source.slice(source.indexOf("async function createDamageCase"), source.indexOf("async function approveDamageCase"));
+  assert.doesNotMatch(documentation, /isDamageCheckoutComplete|damageCheckoutComplete/);
+  assert.match(source, /window\.clearInterval\(timer\)/);
+});
+
+test("checkout rejection is explained in both languages and refreshes the reservation", () => {
+  assert.match(source, /You can document damage now/);
+  assert.match(source, /Puedes documentar el daño ahora/);
+  assert.match(source, /payload\?\.error === "DAMAGE_CASE_CHECKOUT_REQUIRED"[\s\S]*?setRefreshKey[\s\S]*?throw new Error\(DAMAGE_CHECKOUT_MESSAGE\)/);
+});
 
 test("Property Protection UI is reservation-snapshot gated", () => {
   assert.match(source, /data\.propertyProtection\?\.required/);
@@ -81,4 +112,3 @@ test("guest response presentation remains explicitly non-charging", () => {
   assert.doesNotMatch(source, /Capture payment/);
   assert.doesNotMatch(source, /Create PaymentIntent/);
 });
-

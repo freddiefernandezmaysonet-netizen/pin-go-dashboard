@@ -323,6 +323,13 @@ function Stat({ title, value }: { title: string; value: React.ReactNode }) {
   );
 }
 
+const DAMAGE_CHECKOUT_MESSAGE = "You can document damage now. Approval and guest notification are available only after checkout. / Puedes documentar el daño ahora. La aprobación y notificación al huésped estarán disponibles después del checkout.";
+
+function isDamageCheckoutComplete(checkOut: string | undefined, now: number): boolean {
+  const checkoutTime = checkOut ? Date.parse(checkOut) : NaN;
+  return Number.isFinite(checkoutTime) && Number.isFinite(now) && now > checkoutTime;
+}
+
 export function ReservationDetailPage() {
   const { id } = useParams();
   const [data, setData] = useState<Reservation | null>(null);
@@ -345,6 +352,13 @@ export function ReservationDetailPage() {
   const [damageSubmitting, setDamageSubmitting] = useState(false);
   const [damageError, setDamageError] = useState<string | null>(null);
   const [damageNotice, setDamageNotice] = useState<string | null>(null);
+  const [damageClock, setDamageClock] = useState(Date.now);
+  const damageCheckoutComplete = isDamageCheckoutComplete(data?.checkOut, damageClock);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setDamageClock(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -502,6 +516,10 @@ export function ReservationDetailPage() {
       error?: string;
     } | null;
     if (!response.ok || payload?.ok !== true) {
+      if (payload?.error === "DAMAGE_CASE_CHECKOUT_REQUIRED") {
+        setRefreshKey((current) => current + 1);
+        throw new Error(DAMAGE_CHECKOUT_MESSAGE);
+      }
       throw new Error(payload?.error || "Unable to update the damage case.");
     }
     return payload;
@@ -580,6 +598,10 @@ export function ReservationDetailPage() {
 
   async function approveDamageCase() {
     if (!data?.damageCase?.id || damageSubmitting) return;
+    if (!isDamageCheckoutComplete(data.checkOut, Date.now())) {
+      setDamageError(DAMAGE_CHECKOUT_MESSAGE);
+      return;
+    }
     const approvedAmount = Number(damageApprovedAmount);
     if (!Number.isFinite(approvedAmount) || approvedAmount <= 0) {
       setDamageError("Enter a valid approved amount.");
@@ -963,6 +985,12 @@ export function ReservationDetailPage() {
             </div>
           ) : null}
 
+          {!damageCheckoutComplete ? (
+            <p id="damage-checkout-help" role="status" style={{ marginTop: 16, color: "#92400e" }}>
+              {DAMAGE_CHECKOUT_MESSAGE}
+            </p>
+          ) : null}
+
           {!data.damageCase ? (
             <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
               <div style={{ fontWeight: 800 }}>Report damage</div>
@@ -1152,13 +1180,14 @@ export function ReservationDetailPage() {
                     onChange={(event) => setDamageApprovedAmount(event.target.value)}
                     inputMode="decimal"
                     placeholder="Approved amount"
-                    disabled={damageSubmitting}
+                    disabled={damageSubmitting || !damageCheckoutComplete}
                     style={{ padding: 11, border: "1px solid #d1d5db", borderRadius: 10 }}
                   />
                   <button
                     type="button"
                     onClick={approveDamageCase}
-                    disabled={damageSubmitting}
+                    disabled={damageSubmitting || !damageCheckoutComplete}
+                    aria-describedby={!damageCheckoutComplete ? "damage-checkout-help" : undefined}
                     style={{
                       justifySelf: "start",
                       border: 0,
@@ -1167,7 +1196,8 @@ export function ReservationDetailPage() {
                       background: "#111827",
                       color: "#fff",
                       fontWeight: 800,
-                      cursor: damageSubmitting ? "not-allowed" : "pointer",
+                      cursor: damageSubmitting || !damageCheckoutComplete ? "not-allowed" : "pointer",
+                      opacity: damageSubmitting || !damageCheckoutComplete ? 0.5 : 1,
                     }}
                   >
                     Approve amount
