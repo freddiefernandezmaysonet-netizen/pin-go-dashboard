@@ -56,6 +56,7 @@ function SideItem({ to, label }: { to: string; label: string }) {
 function getPageTitle(pathname: string) {
   if (pathname.startsWith("/overview")) return "Overview";
   if (/^\/properties\/[^/]+\/distribution(?:\/|$)/.test(pathname)) return "Booking channels";
+  if (/^\/properties\/[^/]+\/knowledge(?:\/|$)/.test(pathname)) return "Property Knowledge";
   if (pathname.startsWith("/properties")) return "Properties";
   if (pathname.startsWith("/locks")) return "Locks";
   if (pathname.startsWith("/reservations")) return "Reservations";
@@ -118,6 +119,7 @@ export function AppShell() {
   useEffect(() => {
     if (!mobileNavigationActive) return;
     const sidebar = sidebarRef.current;
+    const menuButton = menuButtonRef.current;
     if (!sidebar) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -147,7 +149,7 @@ export function AppShell() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
-      if (window.matchMedia("(max-width: 720px)").matches) menuButtonRef.current?.focus();
+      if (window.matchMedia("(max-width: 720px)").matches) menuButton?.focus();
     };
   }, [mobileNavigationActive]);
 

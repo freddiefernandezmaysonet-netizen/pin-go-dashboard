@@ -68,6 +68,7 @@ import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 const GuestReviewPage = lazy(() => import("../../pages/public-booking/GuestReviewPage"));
 const ReputationPage = lazy(() => import("../../pages/reputation/ReputationPage"));
 const AdminReviewModerationPage = lazy(() => import("../../pages/admin/AdminReviewModerationPage"));
+const PropertyKnowledgePage = lazy(() => import("../../pages/properties/PropertyKnowledgePage"));
 
 function ReviewRouteBoundary({ children }: { children: ReactNode }) {
   return (
@@ -143,6 +144,17 @@ function ReviewManagerRoute({ children }: { children: ReactElement }) {
     children
   ) : (
     <Navigate to="/overview" replace />
+  );
+}
+
+function PropertyAdminRoute({ children }: { children: ReactElement }) {
+  const { user } = useAuth();
+  return user?.role === "ORG_ADMIN" ||
+    user?.role === "ADMIN" ||
+    user?.role === "PLATFORM_ADMIN" ? (
+    children
+  ) : (
+    <Navigate to="/properties" replace />
   );
 }
 
@@ -300,6 +312,16 @@ export const router = createBrowserRouter([
       { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },
       { path: "/properties/:id/calendar", element: <PropertyCalendarRoute /> },
+      {
+        path: "/properties/:id/knowledge",
+        element: (
+          <PropertyAdminRoute>
+            <Suspense fallback={<div role="status">Loading Property Knowledge…</div>}>
+              <PropertyKnowledgePage />
+            </Suspense>
+          </PropertyAdminRoute>
+        ),
+      },
       { path: "/properties/:id/distribution", element: <ConnectionCenterRoute /> },
       { path: "/distribution/airbnb/callback", element: <AirbnbConnectionCallbackPage /> },
      

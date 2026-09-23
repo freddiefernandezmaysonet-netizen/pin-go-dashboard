@@ -1256,6 +1256,19 @@ function removeGuestExperienceDevice(deviceId: string) {
               </SectionCard>
 
               {(user?.role === "ORG_ADMIN" || user?.role === "ADMIN" || user?.role === "PLATFORM_ADMIN") && (
+                <SectionCard title="Pin AI Property Knowledge">
+                  <div style={{ display: "grid", gap: 12, color: "#6b7280", lineHeight: 1.7 }}>
+                    <span>
+                      Document the stable property facts Pin AI can use when assisting guests.
+                    </span>
+                    <Link to={`/properties/${id}/knowledge`} style={{ color: "#2563eb", fontWeight: 700 }}>
+                      Manage Property Knowledge →
+                    </Link>
+                  </div>
+                </SectionCard>
+              )}
+
+              {(user?.role === "ORG_ADMIN" || user?.role === "ADMIN" || user?.role === "PLATFORM_ADMIN") && (
                 <SectionCard title="Channel distribution">
                   <div style={{ display: "grid", gap: 12, color: "#6b7280", lineHeight: 1.7 }}>
                     <span>Conecta y supervisa los canales de reserva de esta propiedad.</span>
