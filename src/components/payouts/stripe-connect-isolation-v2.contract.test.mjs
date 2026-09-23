@@ -21,7 +21,7 @@ test("Isolation V2 visibility is controlled exclusively by backend organization 
   assert.doesNotMatch(experienceSource, /VITE_STRIPE_CONNECT_V2_ACCOUNT_CREATION_ENABLED/);
   assert.match(experienceSource, /getStripeConnectV2Eligibility/);
   assert.match(experienceSource, /eligibility\?\.eligible/);
-  assert.match(experienceSource, /return <HostPayoutsCard \/>/);
+  assert.doesNotMatch(experienceSource, /HostPayoutsCard/);
 });
 
 test("Isolation V2 account creation permission comes from backend eligibility", () => {
@@ -32,10 +32,12 @@ test("Isolation V2 account creation permission comes from backend eligibility", 
   assert.match(cardSource, /accountCreationAllowed \?/);
 });
 
-test("Isolation V2 fails closed to legacy payouts when eligibility request fails", () => {
-  assert.match(experienceSource, /eligible: false/);
-  assert.match(experienceSource, /accountCreationAllowed: false/);
-  assert.match(experienceSource, /return <HostPayoutsCard \/>/);
+test("failed eligibility has an explicit retry and never falls back to legacy", () => {
+  assert.match(experienceSource, /setError\(true\)/);
+  assert.match(experienceSource, /role="alert"/);
+  assert.match(experienceSource, /Try again/);
+  assert.doesNotMatch(experienceSource, /HostPayoutsCard/);
+  assert.match(cardSource, /status && !status.stripeConnectAccountId && !loading && !error/);
 });
 
 test("Isolation V2 account endpoints never accept an account id from the browser", () => {

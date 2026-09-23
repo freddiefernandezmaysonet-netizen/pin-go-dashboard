@@ -150,6 +150,7 @@ export function StripeConnectIsolationV2Card({
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [embeddedVisible, setEmbeddedVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   const publishableKey = getPublishableKey();
 
@@ -161,6 +162,11 @@ export function StripeConnectIsolationV2Card({
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setStatus(null);
+    setError(null);
+    setAccountContext(null);
+    setEmbeddedVisible(false);
 
     syncHostPayoutStatus()
       .then((response) => {
@@ -176,7 +182,7 @@ export function StripeConnectIsolationV2Card({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retry]);
 
   useEffect(() => {
     if (!publishableKey) return;
@@ -322,8 +328,8 @@ export function StripeConnectIsolationV2Card({
               lineHeight: 1.55,
             }}
           >
-            Stripe access is scoped server-side to this Pin&Go organization.
-            The browser cannot select or submit a different connected account.
+            Manage your payment account, review payments and track payouts
+            for all properties in your organization.
           </p>
         </div>
 
@@ -377,7 +383,7 @@ export function StripeConnectIsolationV2Card({
         </div>
       ) : null}
 
-      {!status?.stripeConnectAccountId && !loading ? (
+      {status && !status.stripeConnectAccountId && !loading && !error ? (
         <div style={noticeStyle}>
           <div>This organization does not have a connected Stripe account.</div>
           {accountCreationAllowed ? (
@@ -410,6 +416,7 @@ export function StripeConnectIsolationV2Card({
           }}
         >
           {error}
+          <div><button type="button" onClick={() => setRetry(value => value + 1)}>Try again</button></div>
         </div>
       ) : null}
 
