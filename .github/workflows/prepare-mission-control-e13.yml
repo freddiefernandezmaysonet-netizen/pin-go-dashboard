@@ -2,7 +2,7 @@ name: Prepare isolated Mission Control dashboard patch
 on:
   push:
     branches: ['agent/mission-control-e13-decoupling-v1']
-    paths: ['.github/scripts/prepare-mission-control-e13.mjs', '.github/workflows/prepare-mission-control-e13.yml']
+    paths: ['.github/scripts/prepare-mission-control-e13.mjs', '.github/scripts/prepare-dashboard-baseline.mjs', '.github/workflows/prepare-mission-control-e13.yml']
 permissions:
   contents: read
 concurrency:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -29,7 +29,9 @@ jobs:
           cache: npm
       - name: Require audited baseline and no-deploy guard
         run: |
-          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          test "$(git rev-parse HEAD^)" = '3176d514e522db870cf6249f0e9df1c2c551f3e4'
+          git merge-base --is-ancestor "$BASE_SHA" HEAD
+          test "$(git ls-remote origin refs/heads/agent/mission-control-e13-decoupling-v1 | cut -f1)" = "$GITHUB_SHA"
           node --input-type=module - <<'JS'
           import fs from 'node:fs';
           import assert from 'node:assert/strict';
@@ -41,33 +43,40 @@ jobs:
           assert.deepEqual(current,before);
           JS
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Establish unchanged Dashboard baseline
+      - name: Apply four authorized corrections, one file at a time
+        run: node .github/scripts/prepare-dashboard-baseline.mjs
+      - name: Certify corrected baseline BEFORE changing the calendar
         run: |
-          node --test src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs
+          node --test src/dashboard-typescript-baseline.contract.test.mjs src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs
           npx --no-install tsc -p tsconfig.app.json --noEmit
           npm run build
-      - name: Apply one audited page edit
+      - name: Apply previously authorized page edit only after baseline passes
         run: node .github/scripts/prepare-mission-control-e13.mjs
       - name: Validate actual component render and full Dashboard build
         run: |
-          node --test src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
+          node --test src/dashboard-typescript-baseline.contract.test.mjs src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
           npx --no-install tsc -p tsconfig.app.json --noEmit
           npm run build
           git diff --check
-      - name: Remove preparer and verify four-file final scope
+      - name: Remove temporary preparers and verify exact authorized final scope
         run: |
-          git rm -- .github/scripts/prepare-mission-control-e13.mjs .github/workflows/prepare-mission-control-e13.yml
-          git add -- src/pages/properties/PropertyCalendarPage.tsx
+          git rm -- .github/scripts/prepare-mission-control-e13.mjs .github/scripts/prepare-dashboard-baseline.mjs .github/workflows/prepare-mission-control-e13.yml
+          git add -- src/auth/AuthProvider.tsx src/pages/staff/StaffMembersPage.tsx src/components/reviews/PublicReviewsSection.tsx src/api/distribution.ts src/pages/properties/PropertyCalendarPage.tsx
           git diff --name-only "$BASE_SHA" | sort > "$RUNNER_TEMP/actual.txt"
           cat > "$RUNNER_TEMP/allowed.txt" <<'EOF'
           .github/workflows/mission-control-observational-certification.yml
+          src/api/distribution.ts
+          src/auth/AuthProvider.tsx
+          src/components/reviews/PublicReviewsSection.tsx
+          src/dashboard-typescript-baseline.contract.test.mjs
           src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
           src/pages/properties/PropertyCalendarPage.tsx
+          src/pages/staff/StaffMembersPage.tsx
           vercel.json
           EOF
           sort "$RUNNER_TEMP/allowed.txt" -o "$RUNNER_TEMP/allowed.txt"
           diff -u "$RUNNER_TEMP/allowed.txt" "$RUNNER_TEMP/actual.txt"
-          git diff --exit-code "$BASE_SHA" -- src/components src/api src/app src/lib src/pages/ApmsDecisionHistoryPage.tsx package.json package-lock.json tsconfig.app.json
+          git diff --exit-code "$BASE_SHA" -- src/api/auth.ts src/app src/lib src/pages/ApmsDecisionHistoryPage.tsx package.json package-lock.json tsconfig.app.json
           git diff --cached --check
       - name: Export tested blobs for connector publication; never update a ref
         env:
