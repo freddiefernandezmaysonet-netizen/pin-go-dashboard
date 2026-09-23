@@ -1,0 +1,32 @@
+name: Public Booking Listing Details V1 Dashboard Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/public-booking-listing-details-v1-dashboard.yml'
+      - 'package.json'
+      - 'src/pages/public-booking/PublicPropertyDetailPage.tsx'
+      - 'src/pages/public-booking/PublicListingDetailsSections.tsx'
+      - 'src/pages/public-booking/PublicListingDetailsSections.test.tsx'
+      - 'src/pages/public-booking/publicListingDetails.types.ts'
+      - 'src/pages/public-booking/PublicBookingExperience.css'
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: Public listing facts, 21+ rule and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:public-booking-listing-details-v1
