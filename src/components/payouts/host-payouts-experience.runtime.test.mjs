@@ -53,3 +53,95 @@ test("old backend ineligibility is an explicit error, never legacy fallback", as
   assert.equal(renderer.root.findAllByType("new-payouts").length, 0);
   await act(async () => renderer.unmount());
 });
+
+const cardSource = ts.transpileModule(
+  readFileSync("src/components/payouts/StripeConnectIsolationV2Card.tsx", "utf8")
+    .replace("import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY", '"pk_test_mock"'),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } },
+).outputText;
+const incomplete = {
+  stripeConnectAccountId: "acct_mock", detailsSubmitted: false,
+  status: "RESTRICTED", payoutsEnabled: false, canAcceptDirectBookingPayments: false,
+};
+async function mountCard(sync) {
+  const elements = [];
+  const exports = {};
+  vm.runInNewContext(cardSource, {
+    exports,
+    window: { StripeConnect: { init: () => ({ create: name => {
+      const element = { name, remove() {}, setOnExit(handler) { this.exit = handler; } };
+      elements.push(element);
+      return element;
+    } }) } },
+    require: name => {
+      if (name === "react" || name === "react/jsx-runtime") return testRequire(name);
+      if (name === "../../api/payouts") return {
+        syncHostPayoutStatus: sync,
+        createStripeConnectIsolationV2Account: () => { throw new Error("Account creation forbidden in this test"); },
+        createStripeConnectIsolationV2AccountSession: () => { throw new Error("Real sessions forbidden in this test"); },
+      };
+      throw new Error(`Unexpected dependency: ${name}`);
+    },
+  });
+  let renderer;
+  await act(async () => {
+    renderer = create(React.createElement(exports.StripeConnectIsolationV2Card, { accountCreationAllowed: false }), {
+      createNodeMock: () => ({ replaceChildren() {} }),
+    });
+  });
+  return { renderer, elements, text: () => JSON.stringify(renderer.toJSON()) };
+}
+
+test("onboarding exit rechecks the server, deduplicates events and switches surfaces only after confirmation", async () => {
+  let calls = 0, resolve;
+  const view = await mountCard(() => {
+    calls++;
+    return calls === 1 ? Promise.resolve({ payoutStatus: incomplete }) : new Promise(r => { resolve = r; });
+  });
+  const onboarding = view.elements.find(e => e.name === "account-onboarding");
+  assert.equal(typeof onboarding.exit, "function");
+  await act(async () => { onboarding.exit(); onboarding.exit(); });
+  assert.equal(calls, 2);
+  assert.match(view.text(), /Checking your Stripe status/);
+  assert.equal(view.elements.some(e => e.name === "payments"), false);
+  await act(async () => resolve({ payoutStatus: { ...incomplete, detailsSubmitted: true, status: "READY", payoutsEnabled: true, canAcceptDirectBookingPayments: true } }));
+  assert.match(view.text(), /Ready/);
+  assert.equal(view.elements.some(e => e.name === "payments"), true);
+  await act(async () => onboarding.exit());
+  assert.equal(calls, 2, "removed component cannot trigger another sync");
+  await act(async () => view.renderer.unmount());
+});
+
+test("abandoning setup preserves restricted status and retry recovers from refresh failure", async () => {
+  let calls = 0;
+  const view = await mountCard(async () => {
+    if (++calls === 3) throw new Error("synthetic sync failure");
+    return { payoutStatus: incomplete };
+  });
+  const onboarding = view.elements.find(e => e.name === "account-onboarding");
+  await act(async () => onboarding.exit());
+  assert.match(view.text(), /Action required/);
+  assert.match(view.text(), /Complete setup with your organization/);
+  assert.equal(view.elements.some(e => e.name === "payments"), false);
+  await act(async () => onboarding.exit());
+  assert.match(view.text(), /last confirmed status/);
+  assert.match(view.text(), /Action required/);
+  await act(async () => view.renderer.root.findAllByType("button").find(b => b.props.children === "Try again").props.onClick());
+  assert.equal(calls, 4);
+  assert.equal(view.renderer.root.findAllByProps({ role: "alert" }).length, 0);
+  await act(async () => view.renderer.unmount());
+});
+
+test("late exit response after unmount is ignored", async () => {
+  let calls = 0, resolve;
+  const view = await mountCard(() => ++calls === 1
+    ? Promise.resolve({ payoutStatus: incomplete })
+    : new Promise(r => { resolve = r; }));
+  const onboarding = view.elements.find(e => e.name === "account-onboarding");
+  await act(async () => onboarding.exit());
+  await act(async () => view.renderer.unmount());
+  await act(async () => resolve({ payoutStatus: { ...incomplete, detailsSubmitted: true } }));
+  await act(async () => onboarding.exit());
+  assert.equal(calls, 2);
+  assert.deepEqual(view.elements.map(e => e.name), ["account-onboarding"]);
+});

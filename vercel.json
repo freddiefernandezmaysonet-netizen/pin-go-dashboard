@@ -1,6 +1,7 @@
 {
   "git": {
     "deploymentEnabled": {
+      "agent/stripe-onboarding-status-refresh": false,
       "agent/airbnb-white-label-connection-closure": false,
       "agent/airbnb-callback-persistence-presentation": false,
       "agent/booking-com-white-label-safe": false,
