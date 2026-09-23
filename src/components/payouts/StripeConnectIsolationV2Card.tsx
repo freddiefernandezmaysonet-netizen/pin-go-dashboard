@@ -12,6 +12,7 @@ const CONNECT_JS_SRC = "https://connect-js.stripe.com/v1.0/connect.js";
 type StripeConnectElement = HTMLElement & {
   setOnLoadError?: (handler: (event: unknown) => void) => void;
   setOnLoaderStart?: (handler: (event: unknown) => void) => void;
+  setOnExit?: (handler: () => void) => void;
 };
 
 type EmbeddedComponentName =
@@ -151,6 +152,7 @@ export function StripeConnectIsolationV2Card({
   const [embeddedVisible, setEmbeddedVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
 
   const publishableKey = getPublishableKey();
 
@@ -190,6 +192,26 @@ export function StripeConnectIsolationV2Card({
 
     let cancelled = false;
     const mountedElements: StripeConnectElement[] = [];
+    let syncInFlight = false;
+    setRefreshingStatus(false);
+
+    const handleOnboardingExit = async () => {
+      if (cancelled || syncInFlight) return;
+      syncInFlight = true;
+      setRefreshingStatus(true);
+      try {
+        // Exiting also includes abandoning setup. Only server evidence changes readiness.
+        const response = await syncHostPayoutStatus();
+        if (!cancelled) setStatus(response.payoutStatus);
+      } catch {
+        if (!cancelled) {
+          setError("Unable to refresh Stripe status. Your last confirmed status is shown. Try again to check it.");
+        }
+      } finally {
+        syncInFlight = false;
+        if (!cancelled) setRefreshingStatus(false);
+      }
+    };
 
     const fetchClientSecret = async () => {
       try {
@@ -215,6 +237,9 @@ export function StripeConnectIsolationV2Card({
     ) => {
       if (!target) return;
       const element = instance.create(name);
+      if (name === "account-onboarding") {
+        element.setOnExit?.(() => { void handleOnboardingExit(); });
+      }
       mountedElements.push(element);
       element.setOnLoaderStart?.(() => {
         if (!cancelled) setEmbeddedVisible(true);
@@ -422,6 +447,17 @@ export function StripeConnectIsolationV2Card({
 
       {status?.stripeConnectAccountId && publishableKey ? (
         <div style={{ display: "grid", gap: 22 }}>
+          {!status.detailsSubmitted ? (
+            <p style={{ margin: 0, color: "#475569", lineHeight: 1.55 }}>
+              Complete setup with your organization’s business and bank information.
+              Stripe may ask you to sign in to securely provide these details.
+              Payments and payouts remain unavailable until Stripe confirms they are enabled.
+            </p>
+          ) : null}
+          {refreshingStatus ? <p role="status">Checking your Stripe status…</p> : null}
+          <button type="button" disabled={refreshingStatus || loading} onClick={() => setRetry(value => value + 1)}>
+            Refresh status
+          </button>
           {!embeddedVisible ? (
             <div style={{ color: "#64748b", fontSize: 13 }}>
               Loading the organization-scoped Stripe experience…
