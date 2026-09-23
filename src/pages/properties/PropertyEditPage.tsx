@@ -3,6 +3,7 @@ import { DayPicker, type DateRange } from "react-day-picker";
 import { useNavigate, useParams } from "react-router-dom";
 import { CancellationPolicyCard } from "../../components/properties/CancellationPolicyCard";
 import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
+import { PropertyListingDetailsCard } from "../../components/properties/PropertyListingDetailsCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -2595,6 +2596,13 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     />
   </div>
 </div>
+
+{id ? (
+  <PropertyListingDetailsCard
+    propertyId={id}
+    maxGuests={form.maxGuests.trim() === "" ? null : Number(form.maxGuests)}
+  />
+) : null}
 
 {id ? <CancellationPolicyCard propertyId={id} /> : null}
 
