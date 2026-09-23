@@ -7,6 +7,8 @@ on:
       - "src/pages/reservation-detail/ReservationDetailDamageCase.contract.test.ts"
       - "src/pages/public-booking/GuestCancellationPage.tsx"
       - "src/pages/public-booking/GuestManagePropertyProtection.contract.test.ts"
+      - "src/pages/public-booking/PublicPropertyDetailPage.tsx"
+      - "src/pages/public-booking/PublicPropertyProtection.contract.test.ts"
       - ".github/workflows/property-protection-v1-dashboard-certification.yml"
 
 permissions:
@@ -35,3 +37,6 @@ jobs:
 
       - name: Build dashboard
         run: npm run build
+
+      - name: Certify public Property Protection disclosure
+        run: node --experimental-strip-types --test src/pages/public-booking/PublicPropertyProtection.contract.test.ts
