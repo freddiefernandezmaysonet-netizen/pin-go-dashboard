@@ -1,0 +1,35 @@
+name: Property Listing Details V1 Dashboard Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/property-listing-details-v1-dashboard-certification.yml'
+      - 'src/components/properties/PropertyListingDetailsCard.tsx'
+      - 'src/components/properties/RoomLayoutEditor.tsx'
+      - 'src/components/properties/ListingCollectionsEditor.tsx'
+      - 'src/components/properties/propertyListingDetails.*'
+      - 'src/pages/properties/PropertyEditPage.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: Listing details data preservation, types and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test listing details round trips, type-check components and build
+        run: npm run test:property-listing-details-v1
