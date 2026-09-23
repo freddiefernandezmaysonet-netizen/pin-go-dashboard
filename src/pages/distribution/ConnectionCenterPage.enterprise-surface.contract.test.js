@@ -25,12 +25,12 @@ function declaration(source, name) {
   return found.getText(ast);
 }
 
-const helpers = ["AIRBNB_LISTING_DISCOVERY_STATUSES", "isAirbnbListingDiscoveryEligible", "isExpediaConnectionExisting", "statusLabel", "providerPresentation"];
+const helpers = ["AIRBNB_LISTING_DISCOVERY_STATUSES", "isAirbnbListingDiscoveryEligible", "isExpediaConnectionExisting", "isVrboConnectionExisting", "statusLabel", "providerPresentation"];
 const compiled = ts.transpileModule(helpers.map(name => declaration(page, name)).join("\n"), {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }, reportDiagnostics: true,
 });
 assert.equal((compiled.diagnostics ?? []).filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
-const presentation = runInNewContext(`${compiled.outputText}\n({ providerPresentation, isAirbnbListingDiscoveryEligible })`, {}, { timeout: 1000 });
+const presentation = runInNewContext(`${compiled.outputText}\n({ providerPresentation, isAirbnbListingDiscoveryEligible, isVrboConnectionExisting })`, {}, { timeout: 1000 });
 
 function airbnb(status, channelLinked = true) {
   return { provider: "AIRBNB", name: "Airbnb", availability: "AVAILABLE", status, channelLinked };
@@ -129,4 +129,22 @@ test("Airbnb discovery is a property-scoped read and callback only verifies then
   assert.match(callbackPage, /verifyAirbnbHostCallback/);
   assert.match(callbackPage, /navigate\(`\/properties\/\$\{encodeURIComponent\(result\.propertyId\)\}\/distribution`,\s*\{\s*replace: true/);
   assert.doesNotMatch(callbackPage, /listAirbnbHostListings|confirmAirbnbHostMapping|activateAirbnbForHost|verifyAirbnbActivationForHost|load_future_reservations/);
+});
+
+
+test("Vrbo existing connection is managed without repeating preparation and refreshes canonical status", () => {
+  assert.equal(presentation.isVrboConnectionExisting({ provider: "VRBO", status: "MAPPING_REQUIRED", channelLinked: true }), true);
+  assert.equal(presentation.isVrboConnectionExisting({ provider: "VRBO", status: "ACTIVE", channelLinked: false }), true);
+  assert.equal(presentation.isVrboConnectionExisting({ provider: "VRBO", status: "NOT_CONNECTED", channelLinked: false }), false);
+
+  const connect = declaration(page, "connect");
+  assert.match(connect, /const existingVrbo = provider === "VRBO" && isVrboConnectionExisting/);
+  assert.match(connect, /!existingBookingCom && !existingExpedia && !existingVrbo/);
+
+  const completion = declaration(page, "completeSession");
+  assert.match(completion, /current\\.provider === "VRBO"/);
+  assert.match(completion, /await reconcileDistributionChannel\\(id, current\\.provider\\)/);
+
+  assert.match(page, /isVrboConnectionExisting\\(channel\\) \\? "Manage Vrbo"/);
+  assert.match(page, /channel\\.provider === "VRBO" && !isVrboConnectionExisting\\(channel\\)/);
 });

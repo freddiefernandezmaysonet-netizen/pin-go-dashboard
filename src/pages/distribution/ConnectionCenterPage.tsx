@@ -84,6 +84,15 @@ function isExpediaConnectionExisting(
   );
 }
 
+function isVrboConnectionExisting(
+  channel: DistributionConnectionCenter["channels"][number] | undefined
+): boolean {
+  return Boolean(
+    channel?.provider === "VRBO" &&
+      (channel.channelLinked || channel.status === "ACTIVE")
+  );
+}
+
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
     NOT_CONNECTED: "Not connected",
@@ -164,6 +173,17 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
       description: existing
         ? "Expedia is linked to this property. Review the existing channel setup and its activation status."
         : "Select Channex for connectivity in Expedia, then complete this property's setup in the secure window.",
+    };
+  }
+  if (channel.provider === "VRBO") {
+    const existing = isVrboConnectionExisting(channel);
+    const needsAttention = channel.status === "DEGRADED" || channel.status === "FAILED";
+    return {
+      status: statusLabel(channel.status),
+      tone: needsAttention ? "warning" as const : existing ? "progress" as const : "neutral" as const,
+      description: existing
+        ? "Vrbo is linked to this property. Review the existing channel setup and its activation status."
+        : "Connect Vrbo, then complete this property's setup in the secure window.",
     };
   }
   return {
@@ -466,7 +486,10 @@ export function ConnectionCenterPage() {
       const existingExpedia = provider === "EXPEDIA" && isExpediaConnectionExisting(
         center?.channels.find((channel) => channel.provider === "EXPEDIA")
       );
-      if (!existingBookingCom && !existingExpedia) await prepareDistributionChannel(id, provider);
+      const existingVrbo = provider === "VRBO" && isVrboConnectionExisting(
+        center?.channels.find((channel) => channel.provider === "VRBO")
+      );
+      if (!existingBookingCom && !existingExpedia && !existingVrbo) await prepareDistributionChannel(id, provider);
       if (provider === "AIRBNB") {
         const link = await issueAirbnbHostConnectionLink(id);
         window.location.assign(link.authorizationUrl);
@@ -540,7 +563,7 @@ export function ConnectionCenterPage() {
       if (!simulated) await transitionDistributionConnectionSession(current.value.sessionId, "completed");
       setSession(null); setFrameReady(false);
       let verificationFailed = false;
-      if (!simulated && (current.provider === "BOOKING_COM" || current.provider === "EXPEDIA")) {
+      if (!simulated && (current.provider === "BOOKING_COM" || current.provider === "EXPEDIA" || current.provider === "VRBO")) {
         setBusyProvider(current.provider);
         try {
           await reconcileDistributionChannel(id, current.provider);
@@ -550,10 +573,11 @@ export function ConnectionCenterPage() {
       }
       await load();
       if (verificationFailed) {
-        setError(`Setup window closed, but Pin&Go couldn't refresh ${current.provider === "BOOKING_COM" ? "Booking.com's" : "Expedia's"} verified status. Changes saved in Channex are not undone. Reopen Manage ${current.provider === "BOOKING_COM" ? "Booking.com" : "Expedia"} and use Close and refresh to try again.`);
+        const providerLabel = current.provider === "BOOKING_COM" ? "Booking.com" : current.provider === "EXPEDIA" ? "Expedia" : "Vrbo";
+        setError(`Setup window closed, but Pin&Go couldn't refresh ${providerLabel}'s verified status. Changes saved in Channex are not undone. Reopen Manage ${providerLabel} and use Close and refresh to try again.`);
       } else {
-        setNotice(simulated ? "Simulation complete. No data was changed." : current.provider === "BOOKING_COM" || current.provider === "EXPEDIA"
-          ? `${current.provider === "BOOKING_COM" ? "Booking.com" : "Expedia"} status verification completed. The card shows the latest saved status; closing does not confirm activation.`
+        setNotice(simulated ? "Simulation complete. No data was changed." : current.provider === "BOOKING_COM" || current.provider === "EXPEDIA" || current.provider === "VRBO"
+          ? `${current.provider === "BOOKING_COM" ? "Booking.com" : current.provider === "EXPEDIA" ? "Expedia" : "Vrbo"} status verification completed. The card shows the latest saved status; closing does not confirm activation.`
           : "Connection submitted for validation.");
       }
     } catch { setError("We couldn't complete the connection session."); }
@@ -608,7 +632,7 @@ export function ConnectionCenterPage() {
                   <BookingComConnectionGuide simulated={simulated} />
                 )}
 
-                {canConnect && channel.provider === "VRBO" && !channel.channelLinked && (
+                {canConnect && channel.provider === "VRBO" && !isVrboConnectionExisting(channel) && (
                   <VrboConnectionGuide />
                 )}
 
@@ -634,7 +658,7 @@ export function ConnectionCenterPage() {
                 {canConnect ? (
                   <div style={{ marginTop: "auto", paddingTop: 2 }}>
                     <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM" | "EXPEDIA" | "VRBO")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
-                      {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {isBookingComConnectionExisting(channel) ? "Manage Booking.com" : isExpediaConnectionExisting(channel) ? "Manage Expedia" : channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
+                      {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {isBookingComConnectionExisting(channel) ? "Manage Booking.com" : isExpediaConnectionExisting(channel) ? "Manage Expedia" : isVrboConnectionExisting(channel) ? "Manage Vrbo" : channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
                     </button>
                   </div>
                 ) : channel.availability === "ASSISTED_BETA" ? (
