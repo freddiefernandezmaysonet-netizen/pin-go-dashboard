@@ -1117,3 +1117,67 @@
     border-radius: 0;
   }
 }
+
+.pbe-listing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.pbe-listing-card {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 18px;
+  padding: 20px;
+  background: #fff;
+}
+
+.pbe-listing-card > span {
+  display: inline-block;
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.pbe-listing-card h3,
+.pbe-listing-know-grid h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.pbe-listing-card p {
+  margin: 0;
+  color: #5f6775;
+  line-height: 1.55;
+}
+
+.pbe-listing-know-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 18px;
+}
+
+.pbe-listing-know-grid > div {
+  border-top: 1px solid rgba(15, 23, 42, 0.12);
+  padding-top: 16px;
+}
+
+.pbe-listing-know-grid ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #3f4754;
+  line-height: 1.65;
+}
+
+.pbe-listing-know-grid li + li {
+  margin-top: 7px;
+}
+
+@media (max-width: 640px) {
+  .pbe-listing-card-grid,
+  .pbe-listing-know-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pbe-listing-card {
+    padding: 16px;
+  }
+}

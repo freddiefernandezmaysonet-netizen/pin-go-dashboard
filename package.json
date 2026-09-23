@@ -11,6 +11,7 @@
     "test:manual-reservation-date-change": "node --test src/components/reservations/manualReservationDateChangeFlow.test.js",
     "test:distribution-connection-center": "node --test src/api/distribution.contract.test.js",
     "test:property-listing-details-v1": "node --test src/components/properties/propertyListingDetails.contract.test.js src/components/properties/propertyListingDetails.form.test.js && tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --jsx react-jsx --lib ES2022,DOM --types vite/client src/components/properties/PropertyListingDetailsCard.tsx && vite build",
+    "test:public-booking-listing-details-v1": "node --test src/pages/public-booking/publicListingDetails.logic.test.js && vite build",
     "test:enterprise-reviews-e1": "node --test src/reviews.enterprise-e1.contract.test.js && eslint src/api/reviews.ts src/lib/reviewsConfig.ts src/lib/publicDocumentMetadata.ts src/lib/publicReviewsPagination.ts src/lib/reviewModerationPolicy.ts src/components/reviews/PublicReviewsSection.tsx src/pages/public-booking/GuestReviewPage.tsx src/pages/public-booking/PublicPropertyDetailPage.tsx src/pages/reputation/ReputationPage.tsx src/pages/admin/AdminReviewModerationPage.tsx src/app/layout/AppShell.tsx src/app/routes/router.tsx && vite build"
   },
   "dependencies": {

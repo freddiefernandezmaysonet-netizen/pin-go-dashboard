@@ -11,6 +11,8 @@ import type { PublicReviewsSummary } from "../../components/reviews/PublicReview
 import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 import { parseBookingSearchHandoff } from "./bookingSearchHandoff";
+import { PublicListingDetailsSections, listingFactLabels } from "./PublicListingDetailsSections";
+import type { PublicListingDetails } from "./publicListingDetails.types";
 import "./PublicBookingExperience.css";
 
 const PublicReviewsSection = lazy(async () => {
@@ -38,6 +40,7 @@ type PublicProperty = {
   checkInTime?: string | null;
   checkOutTime?: string | null;
   timezone?: string | null;
+  listingDetails?: PublicListingDetails | null;
   cancellationPolicy?: PublicCancellationPolicy | null;
   cancellationPolicyPresentation?:
   | PublicCancellationPolicyPresentation
@@ -1769,6 +1772,10 @@ export default function PublicPropertyDetailPage() {
     fallbackTitle: brand.displayName,
   });
   const photos = useMemo(() => getPhotoUrls(property?.publicPhotos), [property]);
+  const listingFacts = useMemo(
+    () => listingFactLabels(property?.listingDetails, property?.maxGuests, preferredLanguage),
+    [property?.listingDetails, property?.maxGuests, preferredLanguage]
+  );
   const nights = useMemo(() => diffNights(checkIn, checkOut), [checkIn, checkOut]);
 
 const localCancellationPolicySummary = useMemo(
@@ -2539,11 +2546,9 @@ return (
                 <div className="pbe-rescue-meta" style={styles.heroMeta}>
                   {location ? <span>📍 {location}</span> : null}
 
-                  {property.maxGuests ? (
-                    <span>
-                      👥 {copy.upToGuests} {property.maxGuests} {copy.guests}
-                    </span>
-                  ) : null}
+                  {listingFacts.map((fact, index) => (
+                    <span key={`${fact}-${index}`}>{fact}</span>
+                  ))}
                   <span>
                     🌙 {copy.minimum} {property.minimumNights ?? 1}{" "}
                     {copy.nights}
@@ -2799,6 +2804,11 @@ return (
                     </button>
                   ) : null}
                 </section>
+
+                <PublicListingDetailsSections
+                  details={property.listingDetails}
+                  language={preferredLanguage}
+                />
 
                 <section className="pbe-section pbe-highlights" aria-labelledby="pbe-highlights-title">
                   <div className="pbe-section-heading">
