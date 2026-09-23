@@ -5,6 +5,7 @@ import test from "node:test";
 const card = fs.readFileSync("src/components/properties/PropertyListingDetailsCard.tsx", "utf8");
 const boundary = fs.readFileSync("src/components/properties/propertyListingDetails.form.ts", "utf8");
 const editor = fs.readFileSync("src/components/properties/RoomLayoutEditor.tsx", "utf8");
+const collections = fs.readFileSync("src/components/properties/ListingCollectionsEditor.tsx", "utf8");
 const page = fs.readFileSync("src/pages/properties/PropertyEditPage.tsx", "utf8");
 
 test("property editor mounts canonical listing details card", () => {
@@ -47,4 +48,15 @@ test("an in-flight save disables the section, not just its save button", () => {
 test("Enter in a listing input cannot submit the outer property form", () => {
   assert.match(card, /event.key === "Enter"/);
   assert.match(card, /event.preventDefault\(\); event.stopPropagation\(\)/);
+});
+
+test("shared spaces, safety and additional considerations are editable", () => {
+  assert.match(card, /ListingCollectionsEditor/);
+  assert.match(collections, /Espacios compartidos \/ Shared spaces/);
+  assert.match(collections, /Consideraciones de seguridad \/ Safety considerations/);
+  assert.match(collections, /Condiciones particulares \/ Additional considerations/);
+});
+test("host listing configuration presents bilingual section labels", () => {
+  assert.match(card, /Información del alojamiento y requisitos \/ Accommodation & guest requirements/);
+  assert.match(editor, /Distribución de habitaciones y camas \/ Room & bed layout/);
 });
