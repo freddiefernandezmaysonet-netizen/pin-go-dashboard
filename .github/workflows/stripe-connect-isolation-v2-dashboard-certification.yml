@@ -8,6 +8,7 @@ on:
       - "src/components/payouts/StripeConnectIsolationV2Card.tsx"
       - "src/components/payouts/HostPayoutsExperience.tsx"
       - "src/components/payouts/stripe-connect-isolation-v2.contract.test.mjs"
+      - "src/components/payouts/host-payouts-experience.runtime.test.mjs"
       - "src/app/routes/router.tsx"
       - "vercel.json"
       - ".github/workflows/stripe-connect-isolation-v2-dashboard-certification.yml"
@@ -38,6 +39,11 @@ jobs:
 
       - name: Build dashboard
         run: npm run build
+
+      - name: Test payout experience with mocked API and Stripe surface
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund --prefix "$RUNNER_TEMP/payouts-renderer" react@19.2.4 react-test-renderer@19.2.4
+          PINGO_REACT_TEST_PACKAGE="$RUNNER_TEMP/payouts-renderer/package.json" node --test src/components/payouts/host-payouts-experience.runtime.test.mjs
 
       - name: Certify safety boundaries
         shell: bash
