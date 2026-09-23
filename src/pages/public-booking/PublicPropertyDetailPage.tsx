@@ -1785,6 +1785,14 @@ const localCancellationPolicySummary = useMemo(
   ]
 );
 
+const publicPropertyProtection =
+  property?.propertyProtection?.enabled === true &&
+  property.propertyProtection.mode === "CARD_ON_FILE" &&
+  Number.isFinite(Number(property.propertyProtection.maxDamageLiabilityAmount)) &&
+  Number(property.propertyProtection.maxDamageLiabilityAmount) > 0
+    ? property.propertyProtection
+    : null;
+
 const cancellationPolicySummary = useMemo(() => {
   const presentation =
     property?.cancellationPolicyPresentation;
@@ -2924,17 +2932,17 @@ return (
                   </section>
                 ) : null}
 
-                {cancellationPolicySummary ? (
+                {cancellationPolicySummary || publicPropertyProtection ? (
                   <section className="pbe-section pbe-policies" id="booking-policies" aria-labelledby="pbe-policies-title">
                     <div className="pbe-section-heading">
                       <p className="pbe-kicker">{preferredLanguage === "es" ? "ANTES DE RESERVAR" : "BEFORE YOU BOOK"}</p>
                       <h2 id="pbe-policies-title">
                         {preferredLanguage === "es" ? "Claridad antes de decidir." : "Clarity before you decide."}
                       </h2>
-                      <p className="pbe-lead">{cancellationPolicySummary.summaryText}</p>
+                      {cancellationPolicySummary ? <p className="pbe-lead">{cancellationPolicySummary.summaryText}</p> : null}
                     </div>
                     <div className="pbe-policy-list">
-                      <details>
+                      {cancellationPolicySummary ? <details>
                         <summary>
                           <strong>{cancellationPolicySummary.title}</strong>
                           <span>{preferredLanguage === "es" ? "Leer política completa" : "Read full policy"} ＋</span>
@@ -2958,7 +2966,37 @@ return (
                             {property.cancellationPolicyPresentation.feeDisclosure}
                           </p>
                         ) : null}
-                      </details>
+                      </details> : null}
+                      {publicPropertyProtection ? (
+                        <details id="property-protection-policy">
+                          <summary>
+                            <strong>
+                              {preferredLanguage === "es"
+                                ? "Protección por daños"
+                                : "Property Protection"}
+                            </strong>
+                            <span>{preferredLanguage === "es" ? "Cómo funciona" : "How it works"} ＋</span>
+                          </summary>
+                          <p>
+                            <strong>
+                              {preferredLanguage === "es"
+                                ? "Límite máximo de responsabilidad por daños: "
+                                : "Maximum damage responsibility: "}
+                              {formatMoney(publicPropertyProtection.maxDamageLiabilityAmount)}
+                            </strong>
+                          </p>
+                          <p>
+                            {preferredLanguage === "es"
+                              ? "No se cobra un depósito ni se retienen fondos por daños al reservar. Este límite no se añade al precio de tu estadía."
+                              : "No security deposit is charged and no funds are held for damages at booking. This limit is not added to the price of your stay."}
+                          </p>
+                          <p>
+                            {preferredLanguage === "es"
+                              ? "Esta propiedad utiliza una tarjeta guardada de forma segura (Card on File). Antes de completar la reserva, se solicitará tu autorización para conservar un método de pago compatible para posibles cargos posteriores por daños elegibles y documentados, hasta el límite indicado y conforme a la política aceptada."
+                              : "This property uses a securely stored card (Card on File). Before completing your booking, you will be asked to authorize saving a compatible payment method for possible later charges for eligible, documented damage, up to the stated limit and under the accepted policy."}
+                          </p>
+                        </details>
+                      ) : null}
                       {property.guestAgreementDisclosure ? (() => {
                         const disclosure =
                           preferredLanguage === "es"
