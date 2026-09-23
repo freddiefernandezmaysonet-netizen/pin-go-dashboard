@@ -35,6 +35,21 @@ function visit(node) {
     remove(node, node.name.text);
     return;
   }
+  if (ts.isFunctionDeclaration(node) && node.name?.text === 'getMissionActionLastSignalLabel') {
+    counts.set('action-signal-label', (counts.get('action-signal-label') ?? 0) + 1);
+    removals.push({start:node.getStart(file),end:node.getEnd(),value:`function getMissionActionLastSignalLabel(action: any) {
+  const rawDate = action?.lastSignalAt ?? missionControlSnapshot?.generatedAt;
+  const date = rawDate ? new Date(rawDate) : null;
+  if (!date || Number.isNaN(date.getTime())) return "Signal time unavailable";
+  const formattedDate = date.toLocaleString(undefined, {
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+  });
+  return action?.lastSignalAt
+    ? \`Last operational signal: \${formattedDate}\`
+    : \`Snapshot updated: \${formattedDate}\`;
+}`});
+    return;
+  }
   if (ts.isJsxElement(node)) {
     const opening = node.openingElement.getText(file);
     const body = node.getText(file);
@@ -52,7 +67,7 @@ function visit(node) {
   ts.forEachChild(node, visit);
 }
 visit(file);
-for (const key of [...variables,...functions,'autopilot-pill','mission-status-pill','engines-online','engine-health-panel','hero-columns']) {
+for (const key of [...variables,...functions,'action-signal-label','autopilot-pill','mission-status-pill','engines-online','engine-health-panel','hero-columns']) {
   if (counts.get(key) !== 1) throw new Error(`EXPECTED_ONE:${key}:${counts.get(key)}`);
 }
 removals.sort((a,b) => b.start-a.start);

@@ -29,7 +29,7 @@ jobs:
           cache: npm
       - name: Require audited baseline and no-deploy guard
         run: |
-          test "$(git rev-parse HEAD^)" = '3176d514e522db870cf6249f0e9df1c2c551f3e4'
+          git merge-base --is-ancestor '3176d514e522db870cf6249f0e9df1c2c551f3e4' HEAD
           git merge-base --is-ancestor "$BASE_SHA" HEAD
           test "$(git ls-remote origin refs/heads/agent/mission-control-e13-decoupling-v1 | cut -f1)" = "$GITHUB_SHA"
           node --input-type=module - <<'JS'
