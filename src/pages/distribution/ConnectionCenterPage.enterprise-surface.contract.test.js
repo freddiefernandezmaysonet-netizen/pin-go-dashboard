@@ -148,3 +148,16 @@ test("Vrbo existing connection is managed without repeating preparation and refr
   assert.match(page, /isVrboConnectionExisting\\(channel\\) \\? "Manage Vrbo"/);
   assert.match(page, /channel\\.provider === "VRBO" && !isVrboConnectionExisting\\(channel\\)/);
 });
+
+
+test("unlinked Vrbo exposes verified-status recovery without preparing a new connection", () => {
+  const refresh = declaration(page, "refreshVrboVerifiedStatus");
+  assert.match(refresh, /reconcileDistributionChannel\(id, "VRBO"\)/);
+  assert.match(refresh, /await load\(\)/);
+  assert.doesNotMatch(refresh, /prepareDistributionChannel/);
+  assert.doesNotMatch(refresh, /issueDistributionConnectionSession/);
+
+  assert.match(page, /channel\.provider === "VRBO" && !isVrboConnectionExisting\(channel\) && !simulated/);
+  assert.match(page, /Refresh Vrbo status/);
+  assert.match(page, /No new Vrbo connection was created/);
+});
