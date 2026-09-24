@@ -1120,6 +1120,7 @@
 
 .pbe-listing-card-grid {
   display: grid;
+  margin-top: 36px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
   align-items: stretch;
@@ -1192,6 +1193,10 @@
 }
 
 @media (max-width: 640px) {
+  .pbe-listing-card-grid {
+    margin-top: 28px;
+  }
+
   .pbe-listing-card-grid,
   .pbe-listing-know-grid {
     grid-template-columns: 1fr;
