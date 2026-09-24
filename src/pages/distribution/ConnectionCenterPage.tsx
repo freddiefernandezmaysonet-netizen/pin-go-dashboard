@@ -509,6 +509,23 @@ export function ConnectionCenterPage() {
     await load();
   }
 
+  async function refreshVrboVerifiedStatus() {
+    if (simulated) return;
+    setBusyProvider("VRBO");
+    setError(null);
+    setNotice(null);
+    try {
+      await reconcileDistributionChannel(id, "VRBO");
+      await load();
+      setNotice("Vrbo status verification completed. The card now shows the latest verified status.");
+    } catch {
+      setError("Pin&Go couldn't verify the existing Vrbo connection. No new Vrbo connection was created.");
+    } finally {
+      setBusyProvider(null);
+    }
+  }
+
+
   async function confirmAirbnbCandidate(listingId: string) {
     setError(null);
     setNotice(null);
@@ -656,10 +673,15 @@ export function ConnectionCenterPage() {
                 )}
 
                 {canConnect ? (
-                  <div style={{ marginTop: "auto", paddingTop: 2 }}>
+                  <div style={{ marginTop: "auto", paddingTop: 2, display: "grid", gap: 8 }}>
                     <button type="button" disabled={busyProvider !== null} onClick={() => void connect(channel.provider as "AIRBNB" | "BOOKING_COM" | "EXPEDIA" | "VRBO")} style={{ ...PRIMARY_BUTTON_STYLE, cursor: busyProvider !== null ? "not-allowed" : "pointer", opacity: busyProvider !== null ? 0.65 : 1 }}>
                       {busyProvider === channel.provider ? "Preparing…" : <><ExternalLink size={16} /> {isBookingComConnectionExisting(channel) ? "Manage Booking.com" : isExpediaConnectionExisting(channel) ? "Manage Expedia" : isVrboConnectionExisting(channel) ? "Manage Vrbo" : channel.provider === "AIRBNB" ? "Connect Airbnb" : `Connect ${channel.name}`}</>}
                     </button>
+                    {channel.provider === "VRBO" && !isVrboConnectionExisting(channel) && !simulated && (
+                      <button type="button" disabled={busyProvider !== null} onClick={() => void refreshVrboVerifiedStatus()} style={{ minHeight: 40, padding: "0 14px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: busyProvider !== null ? "not-allowed" : "pointer", fontWeight: 600, opacity: busyProvider !== null ? 0.65 : 1 }}>
+                        {busyProvider === "VRBO" ? "Refreshing…" : "Refresh Vrbo status"}
+                      </button>
+                    )}
                   </div>
                 ) : channel.availability === "ASSISTED_BETA" ? (
                   <div style={{ marginTop: "auto", color: "#6b7280", fontSize: 13 }}>Contact Pin&Go support for setup.</div>
