@@ -1120,33 +1120,46 @@
 
 .pbe-listing-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
+  gap: 20px;
+  align-items: stretch;
 }
 
 .pbe-listing-card {
+  min-height: 168px;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 18px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 26px;
   background: #fff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .pbe-listing-card > span {
-  display: inline-block;
-  font-size: 24px;
-  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 30px;
+  line-height: 1;
+  margin-bottom: 18px;
 }
 
 .pbe-listing-card h3,
 .pbe-listing-know-grid h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0 0 9px;
+  font-size: 18px;
+  line-height: 1.25;
 }
 
 .pbe-listing-card p {
   margin: 0;
   color: #5f6775;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .pbe-listing-know-grid {
@@ -1178,6 +1191,7 @@
   }
 
   .pbe-listing-card {
-    padding: 16px;
+    min-height: 148px;
+    padding: 22px;
   }
 }
