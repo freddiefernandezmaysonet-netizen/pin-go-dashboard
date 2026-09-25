@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import { GuestDamagePaymentAuthorization } from "./GuestDamagePaymentAuthorization";
+import { GuestPinAIChat } from "./GuestPinAIChat";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -1725,6 +1726,9 @@ export default function GuestCancellationPage() {
               </div>
             ) : null}
 
+            {guestToken && preview?.reservation ? (
+              <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
+            ) : null}
 
             {loading ? (
               <div style={styles.card}>
