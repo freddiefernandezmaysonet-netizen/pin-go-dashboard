@@ -335,6 +335,10 @@ export function ReservationDetailPage() {
   const [data, setData] = useState<Reservation | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
+  const [contactMessage, setContactMessage] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
@@ -378,6 +382,8 @@ export function ReservationDetailPage() {
         }
 
         const json = (await res.json()) as Reservation;
+        setGuestEmail(json.guestEmail ?? "");
+        setGuestPhone(json.guestPhone ?? "");
 
         if (!cancelled) {
           setData(json);
@@ -663,6 +669,33 @@ export function ReservationDetailPage() {
     }
   }
   
+  async function saveGuestContact() {
+    if (!data || String(data.externalProvider ?? "").toUpperCase() !== "CHANNEX") return;
+    try {
+      setSavingContact(true);
+      setContactMessage(null);
+      const payload: Record<string, string> = {};
+      if (!data.guestEmail && guestEmail.trim()) payload.guestEmail = guestEmail.trim();
+      if (!data.guestPhone && guestPhone.trim()) payload.guestPhone = guestPhone.trim();
+      const res = await fetch(`${API_BASE}/api/dashboard/reservations/${data.id}/guest-contact`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.message || json?.error || `API ${res.status}`);
+      setData((current) => current ? { ...current, guestEmail: json.guestEmail, guestPhone: json.guestPhone } : current);
+      setGuestEmail(json.guestEmail ?? "");
+      setGuestPhone(json.guestPhone ?? "");
+      setContactMessage("Guest contact information saved.");
+    } catch (error: any) {
+      setContactMessage(error?.message || "Unable to save guest contact information.");
+    } finally {
+      setSavingContact(false);
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: "grid", gap: 16 }}>
@@ -1267,8 +1300,47 @@ export function ReservationDetailPage() {
           </div>
 
           <div>
-            <b>Email:</b> {data.guestEmail ?? "—"}
+            <b>Email:</b> {data.guestEmail ?? "Missing"}
           </div>
+          <div>
+            <b>Phone:</b> {data.guestPhone ?? "Missing"}
+          </div>
+
+          {String(data.externalProvider ?? "").toUpperCase() === "CHANNEX" &&
+          (!data.guestEmail || !data.guestPhone) ? (
+            <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+              <div style={{ padding: 12, border: "1px solid #f59e0b", borderRadius: 10 }}>
+                This OTA reservation arrived without complete guest contact information. Add only the missing information from the OTA reservation.
+              </div>
+              {!data.guestEmail ? (
+                <input
+                  type="email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  placeholder="Guest email"
+                  style={{ padding: 10, border: "1px solid #d1d5db", borderRadius: 8 }}
+                />
+              ) : null}
+              {!data.guestPhone ? (
+                <input
+                  type="tel"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(e.target.value)}
+                  placeholder="+17875551234"
+                  style={{ padding: 10, border: "1px solid #d1d5db", borderRadius: 8 }}
+                />
+              ) : null}
+              <button
+                type="button"
+                onClick={saveGuestContact}
+                disabled={savingContact}
+                style={{ padding: "10px 14px", borderRadius: 8, border: 0, cursor: "pointer", fontWeight: 700 }}
+              >
+                {savingContact ? "Saving…" : "Save guest contact"}
+              </button>
+              {contactMessage ? <div style={mutedStyle()}>{contactMessage}</div> : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
