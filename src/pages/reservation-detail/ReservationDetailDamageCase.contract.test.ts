@@ -53,7 +53,7 @@ test("host can create a documented Damage Case only through authenticated API", 
   assert.match(source, /Create damage case/);
 });
 
-test("UI supports review and approval but makes no financial request", () => {
+test("UI supports review and approval before the isolated payment action", () => {
   assert.match(source, /\/submit-review/);
   assert.match(source, /\/approve/);
   assert.match(source, /GUEST_NOTIFICATION_PENDING/);
@@ -61,7 +61,7 @@ test("UI supports review and approval but makes no financial request", () => {
   assert.match(source, /No charge has been made/);
   assert.doesNotMatch(source, /paymentIntents/);
   assert.doesNotMatch(source, /charges\./);
-  assert.doesNotMatch(source, /Charge guest/);
+  assert.doesNotMatch(source, /paymentIntents|charges\.|capture_method/);
 });
 
 test("UI supports explicit close without charge", () => {
@@ -111,4 +111,50 @@ test("guest response presentation remains explicitly non-charging", () => {
   assert.doesNotMatch(source, /Charge accepted case/);
   assert.doesNotMatch(source, /Capture payment/);
   assert.doesNotMatch(source, /Create PaymentIntent/);
+});
+
+test("host payment action is exact, authenticated, bilingual and explicitly confirmed", () => {
+  assert.match(source, /\/api\/dashboard\/damage-cases\/\$\{damageCase\.id\}\/charge/);
+  assert.match(source, /method: "POST", credentials: "include"/);
+  assert.match(source, /authorization\.amountMinor \/ 100/);
+  assert.match(source, /window\.confirm/);
+  assert.match(source, /not a hold/);
+  assert.match(source, /no es una retención/);
+  assert.match(source, /Charge authorized amount/);
+  assert.match(source, /Cobrar monto autorizado/);
+  assert.doesNotMatch(source, /client_secret|stripeDamagePaymentMethodId/);
+});
+
+test("payment presentation fails closed for every non-ready state", () => {
+  const helper = source.slice(
+    source.indexOf("function getDamagePaymentPresentation("),
+    source.indexOf("export function ReservationDetailPage")
+  );
+  const evaluate = runInNewContext(
+    ts.transpile(helper) + ";getDamagePaymentPresentation"
+  );
+  const base = {
+    status: "GUEST_NOTIFIED",
+    guestResponse: "ACCEPTED",
+    paymentAuthorization: { amountMinor: 10025, currency: "usd" },
+    paymentAttempt: null,
+  };
+  assert.deepEqual({ ...evaluate(base, true) }, {
+    state: "READY", canCharge: true, canCloseWithoutCharge: true,
+  });
+  for (const [status, expected] of [
+    ["PREPARED", "PROCESSING"],
+    ["PROCESSING", "PROCESSING"],
+    ["REQUIRES_ACTION", "REQUIRES_ACTION"],
+    ["FAILED", "FAILED"],
+    ["CANCELED", "CANCELED"],
+    ["SUCCEEDED", "SUCCEEDED"],
+  ]) {
+    const result = evaluate({ ...base, paymentAttempt: { status } }, true);
+    assert.equal(result.state, expected);
+    assert.equal(result.canCharge, false);
+  }
+  assert.equal(evaluate({ ...base, paymentAuthorization: null }, true).state, "WAITING_PAYMENT_AUTHORIZATION");
+  assert.equal(evaluate({ ...base, guestResponse: "PENDING" }, true).state, "WAITING_GUEST_ACCEPTANCE");
+  assert.equal(evaluate(base, false).state, "WAITING_CHECKOUT");
 });

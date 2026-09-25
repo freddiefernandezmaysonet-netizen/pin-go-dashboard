@@ -118,6 +118,27 @@ type Reservation = {
     closedReason: string | null;
     createdAt: string;
     updatedAt: string;
+    paymentAuthorization: {
+      id: string;
+      amountMinor: number;
+      currency: string;
+      claimRevision: string;
+      authorizedAt: string;
+    } | null;
+    paymentAttempt: {
+      id: string;
+      status: "PREPARED" | "PROCESSING" | "REQUIRES_ACTION" | "SUCCEEDED" | "FAILED" | "CANCELED";
+      amountMinor: number;
+      currency: string;
+      providerStatus: string | null;
+      failureCode: string | null;
+      declineCode: string | null;
+      failureMessage: string | null;
+      firstAttemptedAt: string | null;
+      lastAttemptedAt: string | null;
+      succeededAt: string | null;
+      failedAt: string | null;
+    } | null;
   } | null;
   property?: { id: string; name: string; timezone?: string | null } | null;
   passcodes?: Passcode[];
@@ -325,9 +346,50 @@ function Stat({ title, value }: { title: string; value: React.ReactNode }) {
 
 const DAMAGE_CHECKOUT_MESSAGE = "You can document damage now. Approval and guest notification are available only after checkout. / Puedes documentar el daño ahora. La aprobación y notificación al huésped estarán disponibles después del checkout.";
 
+const DAMAGE_PAYMENT_ERROR_MESSAGES: Record<string, string> = {
+  PAYMENT_AUTHORIZATION_REQUIRED:
+    "The guest must authorize the exact amount before collection. / El huésped debe autorizar el monto exacto antes del cobro.",
+  GUEST_ACCEPTANCE_REQUIRED:
+    "Guest acceptance is required before collection. / Se requiere la aceptación del huésped antes del cobro.",
+  CASE_NOT_OPEN_FOR_PAYMENT:
+    "This case is not open for payment. Refresh the reservation for the latest status. / Este caso no está disponible para cobro. Actualiza la reservación para ver el estado más reciente.",
+  PAYMENT_REQUIRES_GUEST_ACTION:
+    "Stripe requires additional guest authentication. No payment is recorded as completed. / Stripe requiere autenticación adicional del huésped. El pago no figura como completado.",
+  PAYMENT_ATTEMPT_FAILED:
+    "The payment attempt failed. Do not retry automatically; review the payment status. / El intento de pago falló. No lo reintentes automáticamente; revisa el estado del pago.",
+  PAYMENT_ATTEMPT_CANCELED:
+    "The payment attempt was canceled. No completed payment was recorded. / El intento de pago fue cancelado. No se registró un pago completado.",
+  PAYMENT_PROVIDER_RESULT_UNCERTAIN:
+    "Stripe's result is still uncertain. Wait for reconciliation before taking another action. / El resultado de Stripe aún es incierto. Espera la reconciliación antes de realizar otra acción.",
+};
+
 function isDamageCheckoutComplete(checkOut: string | undefined, now: number): boolean {
   const checkoutTime = checkOut ? Date.parse(checkOut) : NaN;
   return Number.isFinite(checkoutTime) && Number.isFinite(now) && now > checkoutTime;
+}
+
+function getDamagePaymentPresentation(
+  damageCase: Reservation["damageCase"],
+  checkoutComplete: boolean
+) {
+  const attemptStatus = damageCase?.paymentAttempt?.status ?? null;
+  if (damageCase?.status === "CHARGED" || attemptStatus === "SUCCEEDED")
+    return { state: "SUCCEEDED", canCharge: false, canCloseWithoutCharge: false } as const;
+  if (attemptStatus === "PREPARED" || attemptStatus === "PROCESSING")
+    return { state: "PROCESSING", canCharge: false, canCloseWithoutCharge: false } as const;
+  if (attemptStatus === "REQUIRES_ACTION")
+    return { state: "REQUIRES_ACTION", canCharge: false, canCloseWithoutCharge: false } as const;
+  if (attemptStatus === "FAILED" || attemptStatus === "CANCELED")
+    return { state: attemptStatus, canCharge: false, canCloseWithoutCharge: true } as const;
+  if (!checkoutComplete)
+    return { state: "WAITING_CHECKOUT", canCharge: false, canCloseWithoutCharge: true } as const;
+  if (damageCase?.status !== "GUEST_NOTIFIED")
+    return { state: "WAITING_GUEST_NOTICE", canCharge: false, canCloseWithoutCharge: true } as const;
+  if (damageCase.guestResponse !== "ACCEPTED")
+    return { state: "WAITING_GUEST_ACCEPTANCE", canCharge: false, canCloseWithoutCharge: true } as const;
+  if (!damageCase.paymentAuthorization)
+    return { state: "WAITING_PAYMENT_AUTHORIZATION", canCharge: false, canCloseWithoutCharge: true } as const;
+  return { state: "READY", canCharge: true, canCloseWithoutCharge: true } as const;
 }
 
 export function ReservationDetailPage() {
@@ -358,6 +420,10 @@ export function ReservationDetailPage() {
   const [damageNotice, setDamageNotice] = useState<string | null>(null);
   const [damageClock, setDamageClock] = useState(Date.now);
   const damageCheckoutComplete = isDamageCheckoutComplete(data?.checkOut, damageClock);
+  const damagePayment = getDamagePaymentPresentation(
+    data?.damageCase ?? null,
+    damageCheckoutComplete
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => setDamageClock(Date.now()), 30_000);
@@ -664,6 +730,72 @@ export function ReservationDetailPage() {
       setRefreshKey((current) => current + 1);
     } catch (error) {
       setDamageError(error instanceof Error ? error.message : "Unable to close the damage case.");
+    } finally {
+      setDamageSubmitting(false);
+    }
+  }
+
+  async function chargeDamageCase() {
+    const damageCase = data?.damageCase;
+    const authorization = damageCase?.paymentAuthorization;
+    if (!damageCase?.id || !authorization || damageSubmitting || !damagePayment.canCharge) return;
+
+    const exactAmount = money(
+      authorization.amountMinor / 100,
+      authorization.currency
+    );
+    const confirmed = window.confirm(
+      `Charge the exact guest-authorized amount of ${exactAmount} now? This attempts an immediate payment through the host's connected Stripe account; it is not a hold.\n\n¿Cobrar ahora el monto exacto de ${exactAmount} autorizado por el huésped? Esto intenta un pago inmediato mediante la cuenta Stripe conectada del anfitrión; no es una retención.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDamageSubmitting(true);
+      setDamageError(null);
+      setDamageNotice(null);
+      const response = await fetch(
+        `${API_BASE}/api/dashboard/damage-cases/${damageCase.id}/charge`,
+        { method: "POST", credentials: "include" }
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+        inProgress?: boolean;
+        requiresAction?: boolean;
+        paymentAttempt?: { status?: string };
+      } | null;
+      if (!response.ok) {
+        const code = payload?.error ?? "";
+        throw new Error(
+          DAMAGE_PAYMENT_ERROR_MESSAGES[code] ||
+            code ||
+            "Unable to attempt the authorized payment. / No se pudo intentar el pago autorizado."
+        );
+      }
+
+      const status = payload?.paymentAttempt?.status;
+      if (payload?.ok === true || status === "SUCCEEDED") {
+        setDamageNotice(
+          "Stripe confirmed the authorized payment. / Stripe confirmó el pago autorizado."
+        );
+      } else if (payload?.inProgress || status === "PROCESSING" || status === "PREPARED") {
+        setDamageNotice(
+          "Payment processing is pending Stripe reconciliation. Do not submit another payment. / El pago está pendiente de reconciliación con Stripe. No envíes otro pago."
+        );
+      } else if (payload?.requiresAction || status === "REQUIRES_ACTION") {
+        setDamageError(DAMAGE_PAYMENT_ERROR_MESSAGES.PAYMENT_REQUIRES_GUEST_ACTION);
+      } else {
+        setDamageError(
+          "The payment was not completed. Review the updated status before taking another action. / El pago no se completó. Revisa el estado actualizado antes de realizar otra acción."
+        );
+      }
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setDamageError(
+        error instanceof Error
+          ? error.message
+          : "Unable to attempt the authorized payment. / No se pudo intentar el pago autorizado."
+      );
     } finally {
       setDamageSubmitting(false);
     }
@@ -1185,6 +1317,133 @@ export function ReservationDetailPage() {
                 ) : null}
               </div>
 
+              <div
+                style={{
+                  border: "1px solid #c7d2fe",
+                  borderRadius: 14,
+                  padding: 14,
+                  background: "#f5f7ff",
+                  color: "#1e1b4b",
+                  display: "grid",
+                  gap: 9,
+                }}
+              >
+                <div style={{ fontWeight: 800 }}>
+                  Payment execution / Ejecución del pago
+                </div>
+                {data.damageCase.paymentAuthorization ? (
+                  <>
+                    <div>
+                      <b>Authorized exact amount / Monto exacto autorizado:</b>{" "}
+                      {money(
+                        data.damageCase.paymentAuthorization.amountMinor / 100,
+                        data.damageCase.paymentAuthorization.currency
+                      )}
+                    </div>
+                    <div>
+                      <b>Authorized / Autorizado:</b>{" "}
+                      {fmt(
+                        data.damageCase.paymentAuthorization.authorizedAt,
+                        data.property?.timezone
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    No separate exact-amount payment authorization is recorded yet. / Aún no se
+                    ha registrado una autorización separada para pagar el monto exacto.
+                  </div>
+                )}
+
+                {data.damageCase.paymentAttempt ? (
+                  <div>
+                    <b>Payment status / Estado del pago:</b>{" "}
+                    {statusPill(data.damageCase.paymentAttempt.status)}
+                  </div>
+                ) : null}
+
+                {damagePayment.state === "READY" ? (
+                  <>
+                    <div>
+                      The guest accepted the case and separately authorized this exact amount.
+                      Charging attempts an immediate Direct Charge through the host&apos;s connected
+                      Stripe account; it is not a hold. / El huésped aceptó el caso y autorizó por
+                      separado este monto exacto. El cobro intenta un Direct Charge inmediato
+                      mediante la cuenta Stripe conectada del anfitrión; no es una retención.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={chargeDamageCase}
+                      disabled={damageSubmitting}
+                      style={{
+                        justifySelf: "start",
+                        border: 0,
+                        borderRadius: 10,
+                        padding: "10px 14px",
+                        background: damageSubmitting ? "#a5b4fc" : "#3730a3",
+                        color: "#fff",
+                        fontWeight: 800,
+                        cursor: damageSubmitting ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      Charge authorized amount / Cobrar monto autorizado
+                    </button>
+                  </>
+                ) : null}
+
+                {damagePayment.state === "PROCESSING" ? (
+                  <div>
+                    Stripe processing or reconciliation is pending. Do not submit another payment.
+                    / El procesamiento o la reconciliación de Stripe está pendiente. No envíes otro pago.
+                  </div>
+                ) : null}
+                {damagePayment.state === "REQUIRES_ACTION" ? (
+                  <div>
+                    Additional guest authentication is required. No completed payment is recorded.
+                    / Se requiere autenticación adicional del huésped. No hay un pago completado registrado.
+                  </div>
+                ) : null}
+                {damagePayment.state === "FAILED" || damagePayment.state === "CANCELED" ? (
+                  <div>
+                    The payment was not completed. Do not retry automatically. You may close the
+                    case without charge while the next recovery flow is prepared. / El pago no se
+                    completó. No lo reintentes automáticamente. Puedes cerrar el caso sin cobrar
+                    mientras se prepara el próximo flujo de recuperación.
+                    {data.damageCase.paymentAttempt?.failureMessage ? (
+                      <div style={{ marginTop: 6 }}>
+                        <b>Stripe detail / Detalle de Stripe:</b>{" "}
+                        {data.damageCase.paymentAttempt.failureMessage}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {damagePayment.state === "SUCCEEDED" ? (
+                  <div style={{ color: "#065f46", fontWeight: 800 }}>
+                    Stripe confirmed collection of the exact authorized amount. / Stripe confirmó
+                    el cobro del monto exacto autorizado.
+                  </div>
+                ) : null}
+                {damagePayment.state === "WAITING_GUEST_ACCEPTANCE" ? (
+                  <div>
+                    Waiting for the guest to accept the case. No charge can be attempted. /
+                    Esperando que el huésped acepte el caso. No se puede intentar ningún cobro.
+                  </div>
+                ) : null}
+                {damagePayment.state === "WAITING_CHECKOUT" ? (
+                  <div>
+                    Payment authorization and collection remain unavailable until checkout is
+                    complete. / La autorización de pago y el cobro permanecerán inhabilitados hasta
+                    que termine el checkout.
+                  </div>
+                ) : null}
+                {damagePayment.state === "WAITING_GUEST_NOTICE" ? (
+                  <div>
+                    Guest notification must be completed before payment authorization. /
+                    La notificación al huésped debe completarse antes de la autorización de pago.
+                  </div>
+                ) : null}
+              </div>
+
               {data.damageCase.status === "OPEN" ||
               data.damageCase.status === "EVIDENCE_PENDING" ? (
                 <button
@@ -1253,7 +1512,8 @@ export function ReservationDetailPage() {
                 </div>
               ) : null}
 
-              {data.damageCase.status !== "CLOSED_NO_CHARGE" ? (
+              {data.damageCase.status !== "CLOSED_NO_CHARGE" &&
+              damagePayment.canCloseWithoutCharge ? (
                 <div style={{ display: "grid", gap: 10, marginTop: 4 }}>
                   <textarea
                     value={damageCloseReason}
