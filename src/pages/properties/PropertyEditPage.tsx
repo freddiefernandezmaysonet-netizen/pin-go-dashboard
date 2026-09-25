@@ -345,6 +345,7 @@ export function PropertyEditPage() {
     timezone: "",
     cleaningDurationMinutes: 180,
     cleaningStartOffsetMinutes: 30,
+    checkOutTime: "11:00",
     latitude: "",
     longitude: "",
     slug: "",
@@ -624,6 +625,7 @@ fetch(`${API_BASE}/api/dashboard/properties/${id}/holiday-pricing`, {
           timezone: p.timezone ?? "",
           cleaningDurationMinutes: p.cleaningDurationMinutes ?? 180,
           cleaningStartOffsetMinutes: p.cleaningStartOffsetMinutes ?? 30,
+          checkOutTime: p.checkOutTime || "11:00",
           latitude:
             p.latitude !== null && p.latitude !== undefined
               ? String(p.latitude)
@@ -792,6 +794,7 @@ cleaningFee:
              .filter(Boolean),
           cleaningDurationMinutes: Number(form.cleaningDurationMinutes),
           cleaningStartOffsetMinutes: Number(form.cleaningStartOffsetMinutes),
+          checkOutTime: form.checkOutTime || "11:00",
           latitude,
           longitude,
           slug: form.slug,
@@ -1833,21 +1836,37 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
           <div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Cleaning Duration (minutes)</div>
-              <input
-                type="number"
+              <select
                 value={form.cleaningDurationMinutes}
                 onChange={(e) =>
                   setForm((s) => ({
                     ...s,
-                    cleaningDurationMinutes: Number(e.target.value || 0),
+                    cleaningDurationMinutes: Number(e.target.value),
                   }))
                 }
-                placeholder="180"
                 style={inputStyle}
-              />
+              >
+                <option value={180}>180 minutes</option>
+                <option value={240}>240 minutes</option>
+              </select>
               <div style={{ fontSize: 12, color: "#6b7280" }}>
                 Derived check-in time:{" "}
                 <b style={{ color: "#111827" }}>{derivedCheckInTime}</b>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 6 }}>
+              <div style={labelStyle}>Check-out Time</div>
+              <input
+                type="time"
+                value={form.checkOutTime}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, checkOutTime: e.target.value }))
+                }
+                style={inputStyle}
+              />
+              <div style={{ fontSize: 12, color: "#6b7280" }}>
+                Property-local time. Default: 11:00 AM.
               </div>
             </div>
 
