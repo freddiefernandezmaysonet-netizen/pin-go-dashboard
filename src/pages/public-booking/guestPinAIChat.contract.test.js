@@ -43,6 +43,7 @@ test("guest reservation portal mounts Pin AI with the existing URL token and API
     portal,
     /import \{ GuestPinAIChat \} from "\.\/GuestPinAIChat";/,
   );
+  assert.match(portal, /guestToken && preview\?\.reservation/);
   assert.match(
     portal,
     /<GuestPinAIChat apiBase=\{API_BASE\} guestToken=\{guestToken\} \/>/,
