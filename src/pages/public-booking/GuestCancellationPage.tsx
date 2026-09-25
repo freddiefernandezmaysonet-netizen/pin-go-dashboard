@@ -1726,7 +1726,9 @@ export default function GuestCancellationPage() {
               </div>
             ) : null}
 
-            <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
+            {guestToken && preview?.reservation ? (
+              <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
+            ) : null}
 
             {loading ? (
               <div style={styles.card}>
