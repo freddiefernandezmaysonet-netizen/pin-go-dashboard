@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
+
+const ReactMarkdown = lazy(() => import("react-markdown"));
 
 type ChatMessage = Readonly<{
   id: string;
@@ -24,6 +26,15 @@ type GuestPinAIChatProps = Readonly<{
 }>;
 
 const MAX_MESSAGE_LENGTH = 2_000;
+const PIN_AI_MARKDOWN_ELEMENTS = [
+  "p",
+  "strong",
+  "em",
+  "ul",
+  "ol",
+  "li",
+  "br",
+];
 
 function uiLanguage(): "es" | "en" {
   if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("es")) {
@@ -58,6 +69,31 @@ function requestErrorMessage(
   return language === "es"
     ? "No pudimos obtener una respuesta de Pin AI. Intenta nuevamente."
     : "We could not get a response from Pin AI. Please try again.";
+}
+
+function ChatMessageContent({ message }: Readonly<{ message: ChatMessage }>) {
+  if (message.role === "guest") {
+    return <>{message.text}</>;
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <ReactMarkdown
+        allowedElements={PIN_AI_MARKDOWN_ELEMENTS}
+        skipHtml
+        unwrapDisallowed
+        components={{
+          p: ({ children }) => (
+            <p style={styles.markdownParagraph}>{children}</p>
+          ),
+          ul: ({ children }) => <ul style={styles.markdownList}>{children}</ul>,
+          ol: ({ children }) => <ol style={styles.markdownList}>{children}</ol>,
+        }}
+      >
+        {message.text}
+      </ReactMarkdown>
+    </Suspense>
+  );
 }
 
 export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
@@ -192,7 +228,9 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
                 <div style={styles.messageLabel}>
                   {message.role === "guest" ? copy.you : copy.assistant}
                 </div>
-                <div style={styles.messageText}>{message.text}</div>
+                <div style={styles.messageText}>
+                  <ChatMessageContent message={message} />
+                </div>
                 {message.requiresHumanReview ? (
                   <div style={styles.reviewNotice}>{copy.review}</div>
                 ) : null}
@@ -340,6 +378,13 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.55,
     fontWeight: 650,
+  },
+  markdownParagraph: {
+    margin: 0,
+  },
+  markdownList: {
+    margin: "4px 0 0",
+    paddingLeft: 20,
   },
   reviewNotice: {
     marginTop: 4,
