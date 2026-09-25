@@ -1,0 +1,30 @@
+name: Pin AI Guest Chat Beta Dashboard Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/pin-ai-guest-chat-beta-dashboard.yml'
+      - 'package.json'
+      - 'src/pages/public-booking/GuestPinAIChat.tsx'
+      - 'src/pages/public-booking/GuestCancellationPage.tsx'
+      - 'src/pages/public-booking/guestPinAIChat.contract.test.js'
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: Guest chat contract, lint and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:pin-ai-guest-chat
