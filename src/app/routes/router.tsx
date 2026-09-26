@@ -42,6 +42,7 @@ import MessagesPage from "../../pages/messages/MessagesPage";
 import TeamPage from "../../pages/TeamPage";
 import AdminFinancialPage from "../../pages/admin/AdminFinancialPage";
 import LandingPage from "../../pages/LandingPage";
+import StaysPage from "../../pages/StaysPage";
 import TermsPage from "../../pages/TermsPage";
 import PrivacyPage from "../../pages/PrivacyPage";
 import GuestBookingTermsPage from "../../pages/GuestBookingTermsPage";
@@ -191,6 +192,14 @@ export const router = createBrowserRouter([
   {
   path: "/home",
   element: <LandingRoute />,
+  },
+  {
+  path: "/stays",
+  element: (
+    <StandardBrandRoute>
+      <StaysPage />
+    </StandardBrandRoute>
+  ),
   },
   {
   path: "/book/:organizationSlug",
