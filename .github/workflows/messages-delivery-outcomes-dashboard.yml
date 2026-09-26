@@ -1,0 +1,34 @@
+name: Messages Delivery Outcomes Dashboard Certification
+
+on:
+  pull_request:
+    paths:
+      - "src/pages/messages/MessagesPage.tsx"
+      - "src/pages/messages/messagesDeliveryOutcome.contract.test.js"
+      - ".github/workflows/messages-delivery-outcomes-dashboard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Messages delivery outcome contract
+        run: node --test src/pages/messages/messagesDeliveryOutcome.contract.test.js
+
+      - name: Lint Messages page
+        run: npx eslint src/pages/messages/MessagesPage.tsx
+
+      - name: Production build
+        run: npm run build
