@@ -197,7 +197,7 @@ export default function MessagesPage() {
 
       const json: Resp = await res.json();
       setData(json.items ?? []);
-    } catch (e) {
+    } catch {
       setData([]);
     } finally {
       setLoading(false);
@@ -212,7 +212,7 @@ export default function MessagesPage() {
 
       const json: Resp = await res.json();
       setPropertyOptions(uniquePropertiesFromMessages(json.items ?? []));
-    } catch (e) {
+    } catch {
       setPropertyOptions([]);
     }
   }
@@ -230,7 +230,8 @@ export default function MessagesPage() {
 
       await loadMessages();
       await loadPropertyOptions();
-    } catch (e) {
+    } catch {
+      return;
     }
   }
 
