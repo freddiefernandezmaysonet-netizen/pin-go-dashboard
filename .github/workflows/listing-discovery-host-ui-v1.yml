@@ -1,0 +1,31 @@
+name: Listing Discovery Host UI V1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/properties/PropertyListingDetailsCard.tsx"
+      - "src/components/properties/propertyListingDetails.types.ts"
+      - "src/components/properties/propertyListingDetails.form.ts"
+      - "src/components/properties/propertyListingDetails.discovery.contract.test.ts"
+      - ".github/workflows/listing-discovery-host-ui-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Discovery form contract
+        run: node --import tsx --test src/components/properties/propertyListingDetails.discovery.contract.test.ts
+      - name: Dashboard build
+        run: npm run build
