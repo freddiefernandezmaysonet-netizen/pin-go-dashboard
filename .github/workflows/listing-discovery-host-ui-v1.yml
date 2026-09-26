@@ -7,7 +7,7 @@ on:
       - "src/components/properties/PropertyListingDetailsCard.tsx"
       - "src/components/properties/propertyListingDetails.types.ts"
       - "src/components/properties/propertyListingDetails.form.ts"
-      - "src/components/properties/propertyListingDetails.discovery.contract.test.ts"
+      - "src/components/properties/propertyListingDetails.discovery.contract.test.js"
       - ".github/workflows/listing-discovery-host-ui-v1.yml"
   workflow_dispatch:
 
@@ -26,6 +26,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Discovery form contract
-        run: node --import tsx --test src/components/properties/propertyListingDetails.discovery.contract.test.ts
+        run: node --test src/components/properties/propertyListingDetails.discovery.contract.test.js
       - name: Dashboard build
         run: npm run build
