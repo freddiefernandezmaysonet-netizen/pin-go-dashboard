@@ -4,6 +4,7 @@ const truth = ["YES", "NO", "UNKNOWN"] as const;
 const permission = ["ALLOWED", "NOT_ALLOWED", "UNKNOWN"] as const;
 const choices = {
   accommodationType: ["ENTIRE_PLACE", "PRIVATE_ROOM", "SHARED_ROOM"],
+  propertyType: ["HOUSE", "APARTMENT", "CONDO", "CABIN", "COTTAGE", "VILLA", "TOWNHOUSE", "BUNGALOW", "LOFT", "STUDIO", "GUESTHOUSE", "FARM_STAY", "OTHER"],
   childrenPolicy: permission, infantsPolicy: permission, adultsOnly: truth,
   petsPolicy: permission, smokingPolicy: permission, vapingPolicy: permission,
   eventsPolicy: permission, unregisteredVisitorsPolicy: permission,
@@ -15,7 +16,7 @@ const choices = {
   accessibleParking: truth, stepFreeBedroomAccess: truth,
   stepFreeBathroomAccess: truth, stepFreeShower: truth,
 } as const;
-const nullableChoices = new Set(["accommodationType", "parkingType", "parkingFeeType"]);
+const nullableChoices = new Set(["accommodationType", "propertyType", "parkingType", "parkingFeeType"]);
 const numbers = {
   bedroomCount: [0, 100], fullBathroomCount: [0, 100], halfBathroomCount: [0, 100],
   minimumPrimaryBookingGuestAge: [18, 99], parkingVehicleCapacity: [0, 100],
@@ -29,6 +30,7 @@ const texts = {
 const bedTypes = ["KING", "QUEEN", "DOUBLE", "SINGLE", "BUNK", "SOFA_BED", "FUTON", "CRIB", "OTHER"];
 const spaceTypes = ["POOL", "HOT_TUB", "KITCHEN", "PATIO", "YARD", "LIVING_ROOM", "LAUNDRY", "OTHER"];
 const safetyTypes = ["POOL", "HOT_TUB", "WATERFRONT", "HEIGHTS", "STAIRS", "OTHER"];
+const featureTypes = ["WOOD_CONSTRUCTION", "OCEAN_VIEW", "MOUNTAIN_VIEW", "WATERFRONT", "BEACH_ACCESS", "POOL_TABLE", "GYM", "FIREPLACE", "OUTDOOR_GRILL", "WORKSPACE", "OTHER"];
 
 function fail(field: string): never {
   throw new Error(`Invalid listing details: ${field}. Reload or correct this value before saving.`);
@@ -78,6 +80,18 @@ function projectCollections(source: Record<string, unknown>) {
       labelEn: text(space.labelEn, "space.labelEn", 200),
       labelEs: text(space.labelEs, "space.labelEs", 200),
       sortOrder: integer(space.sortOrder, "space.sortOrder", 0, 1000),
+    })),
+    features: collection(source.features, "features").map((item) => ({
+      type: choice(item.type, featureTypes, "feature.type"),
+      labelEn: text(item.labelEn, "feature.labelEn", 200),
+      labelEs: text(item.labelEs, "feature.labelEs", 200),
+      isActive: boolean(item.isActive, "feature.isActive"),
+      sortOrder: integer(item.sortOrder, "feature.sortOrder", 0, 1000),
+    })),
+    experienceTags: collection(source.experienceTags, "experienceTags", 20).map((item) => ({
+      label: text(item.label, "experienceTag.label", 80) ?? fail("experienceTag.label"),
+      isActive: boolean(item.isActive, "experienceTag.isActive"),
+      sortOrder: integer(item.sortOrder, "experienceTag.sortOrder", 0, 1000),
     })),
     safetyConsiderations: collection(source.safetyConsiderations, "safetyConsiderations").map((item) => ({
       type: choice(item.type, safetyTypes, "safety.type"),
