@@ -1673,7 +1673,8 @@ export default function PublicPropertyDetailPage() {
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [stayNotificationsConsent, setStayNotificationsConsent] = useState(false);
-  const [legalDocument, setLegalDocument] = useState<"terms" | "privacy" | null>(null);  
+  const [legalDocument, setLegalDocument] = useState<"terms" | "privacy" | null>(null);
+  const [propertyProtectionPolicyOpen, setPropertyProtectionPolicyOpen] = useState(false);  
   const [cancellationTermsAccepted, setCancellationTermsAccepted] = useState(false);
   const [propertyProtectionConsentAccepted, setPropertyProtectionConsentAccepted] = useState(false);
   const [
@@ -3327,6 +3328,29 @@ return (
                       </div>
                     </div>
 
+                  {property.propertyProtection?.enabled &&
+                  property.propertyProtection.maxDamageLiabilityAmount !== null ? (
+                    <div className="pbe-agreement-card" style={styles.securePreCheckinAcceptanceCard}>
+                      <div style={styles.securePreCheckinAcceptanceTitle}>
+                        {preferredLanguage === "es" ? "Protección de la propiedad" : "Property Protection"}
+                      </div>
+                      <p style={styles.securePreCheckinAcceptanceText}>
+                        {preferredLanguage === "es"
+                          ? `Esta propiedad requiere autorización de responsabilidad por daños de hasta ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)} mediante Card on File. No se cobra depósito ni se retienen fondos al reservar.`
+                          : `This property requires damage responsibility authorization up to ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)} through Card on File. No security deposit is charged and no funds are held at booking.`}
+                      </p>
+                      <button
+                        type="button"
+                        className="pbe-inline-document"
+                        onClick={() => setPropertyProtectionPolicyOpen(true)}
+                      >
+                        {preferredLanguage === "es"
+                          ? "Ver política de responsabilidad por daños"
+                          : "View damage responsibility policy"}
+                      </button>
+                    </div>
+                  ) : null}
+
                   <div className="pbe-legacy-calendar pbe-calendar-stage" style={styles.calendarBox}>
   <div className="pbe-date-summary" style={styles.calendarHeader}>
     <div className="pbe-date-summary-card" style={styles.calendarDatePanel}>
@@ -4158,6 +4182,37 @@ property.propertyProtection.maxDamageLiabilityAmount !== null ? (
             </section>
           </>
         )}
+      {propertyProtectionPolicyOpen && property?.propertyProtection?.enabled ? (
+        <div className="pbe-legal-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="property-protection-policy-title">
+          <div className="pbe-legal-modal">
+            <header className="pbe-legal-modal-header">
+              <strong id="property-protection-policy-title">
+                {preferredLanguage === "es" ? "Política de responsabilidad por daños" : "Damage responsibility policy"}
+              </strong>
+              <button
+                type="button"
+                aria-label={preferredLanguage === "es" ? "Cerrar" : "Close"}
+                onClick={() => setPropertyProtectionPolicyOpen(false)}
+              >
+                ×
+              </button>
+            </header>
+            <div className="pbe-legal-modal-body">
+              <p>
+                {preferredLanguage === "es"
+                  ? `Límite máximo de responsabilidad: ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)}. Card on File no es un depósito de seguridad y no coloca un hold sobre los fondos al reservar. Antes del pago se solicitará tu autorización expresa. Un cargo posterior solo podrá iniciarse por daños elegibles y documentados, conforme a las condiciones aceptadas para esta reservación.`
+                  : `Maximum damage responsibility: ${formatMoney(property.propertyProtection.maxDamageLiabilityAmount)}. Card on File is not a security deposit and does not place a hold on funds at booking. Your explicit authorization will be requested before payment. A later charge may only be initiated for eligible, documented damage under the terms accepted for this reservation.`}
+              </p>
+            </div>
+            <footer className="pbe-legal-modal-footer">
+              <button type="button" onClick={() => setPropertyProtectionPolicyOpen(false)}>
+                {preferredLanguage === "es" ? "Cerrar" : "Close"}
+              </button>
+            </footer>
+          </div>
+        </div>
+      ) : null}
+
       {legalDocument ? (
         <div role="dialog" aria-modal="true" style={styles.legalModalBackdrop}>
           <div style={styles.legalModal}>
