@@ -78,16 +78,38 @@ test("Pin AI formats emphasis while dropping HTML, links, and images", () => {
   assert.doesNotMatch(html, /\*\*|script|href=|<img/i);
 });
 
-test("guest reservation portal mounts Pin AI with the existing URL token and API base", () => {
+test("guest reservation portal keeps Pin AI visible before and during the stay", () => {
   assert.match(
     portal,
     /import \{ GuestPinAIChat \} from "\.\/GuestPinAIChat";/,
   );
-  assert.match(portal, /guestToken && preview\?\.reservation/);
+  assert.match(portal, /managementPhase === "PRE_STAY"/);
+  assert.match(portal, /managementPhase === "IN_STAY"/);
+  assert.doesNotMatch(portal, /guestToken && preview\?\.reservation/);
   assert.match(
     portal,
     /<GuestPinAIChat apiBase=\{API_BASE\} guestToken=\{guestToken\} \/>/,
   );
+});
+
+test("guest reservation portal does not extend Pin AI visibility to cancelled or post-stay phases", () => {
+  const mountStart = portal.indexOf(
+    "{guestToken &&\n            preview &&",
+  );
+  const mountEnd = portal.indexOf(
+    ": null}",
+    mountStart,
+  );
+  const mountBlock = portal.slice(
+    mountStart,
+    mountEnd,
+  );
+
+  assert.ok(mountStart >= 0);
+  assert.match(mountBlock, /PRE_STAY/);
+  assert.match(mountBlock, /IN_STAY/);
+  assert.doesNotMatch(mountBlock, /POST_STAY/);
+  assert.doesNotMatch(mountBlock, /CANCELLED/);
 });
 
 
