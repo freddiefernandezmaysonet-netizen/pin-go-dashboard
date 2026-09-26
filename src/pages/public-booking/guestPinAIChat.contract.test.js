@@ -89,3 +89,64 @@ test("guest reservation portal mounts Pin AI with the existing URL token and API
     /<GuestPinAIChat apiBase=\{API_BASE\} guestToken=\{guestToken\} \/>/,
   );
 });
+
+
+test("Pin AI renders structured reservation-action quotes without exposing the confirmation credential", () => {
+  assert.match(chat, /actionProposal\?: ReservationActionProposal/);
+  assert.match(chat, /<ReservationActionCard/);
+  assert.match(chat, /quoteExpiresAt/);
+  assert.match(chat, /propertyTimezone/);
+  assert.match(chat, /availabilityHeld: false/);
+  assert.match(chat, /Las fechas no están retenidas/);
+  assert.match(chat, /Dates are not held/);
+
+  assert.doesNotMatch(
+    chat,
+    /\{proposal\.confirmationToken\}/,
+  );
+  assert.doesNotMatch(
+    chat,
+    /confirmationToken\}\s*<\//,
+  );
+});
+
+test("Pin AI confirmation control posts only the private token to the certified action endpoint", () => {
+  assert.match(
+    chat,
+    /\/pin-ai\/action-proposals\/\$\{encodeURIComponent\(proposal\.proposalId\)\}\/confirm/,
+  );
+  assert.match(chat, /method:\s*"POST"/);
+  assert.match(
+    chat,
+    /JSON\.stringify\(\{ confirmationToken: proposal\.confirmationToken \}\)/,
+  );
+  assert.doesNotMatch(
+    chat,
+    /JSON\.stringify\(\{[^}]*proposalId:/,
+  );
+  assert.match(chat, /type="button"/);
+  assert.match(chat, /Confirmar cambio/);
+  assert.match(chat, /Confirm change/);
+});
+
+test("Pin AI confirmation UI maps canonical action outcomes without claiming success early", () => {
+  assert.match(chat, /"EXECUTED"/);
+  assert.match(chat, /"WAITING_FOR_PAYMENT"/);
+  assert.match(chat, /"WAITING_FOR_HOST"/);
+  assert.match(chat, /"REVIEW_REQUIRED"/);
+  assert.match(chat, /Cambio confirmado/);
+  assert.match(chat, /Payment is required to complete this change/);
+  assert.match(chat, /Pendiente de revisión del anfitrión/);
+  assert.match(chat, /La cotización debe actualizarse antes de continuar/);
+  assert.match(chat, /result\?\.outcome === "WAITING_FOR_PAYMENT"/);
+  assert.match(chat, /result\.checkoutUrl/);
+});
+
+test("Pin AI confirmation UI handles invalid, expired, unavailable, and review-required actions", () => {
+  assert.match(chat, /INVALID_CONFIRMATION/);
+  assert.match(chat, /ACTION_PROPOSAL_NOT_FOUND/);
+  assert.match(chat, /ACTION_REVIEW_REQUIRED/);
+  assert.match(chat, /PIN_AI_ACTIONS_UNAVAILABLE/);
+  assert.match(chat, /Pídele a Pin AI una nueva cotización/);
+  assert.match(chat, /Ask Pin AI for an updated quote/);
+});
