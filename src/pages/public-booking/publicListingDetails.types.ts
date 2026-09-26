@@ -1,6 +1,7 @@
 export type PublicListingDetails = {
   version: number;
   accommodationType: "ENTIRE_PLACE"|"PRIVATE_ROOM"|"SHARED_ROOM"|null;
+  propertyType: "HOUSE"|"APARTMENT"|"CONDO"|"CABIN"|"COTTAGE"|"VILLA"|"TOWNHOUSE"|"BUNGALOW"|"LOFT"|"STUDIO"|"GUESTHOUSE"|"FARM_STAY"|"OTHER"|null;
   bedroomCount: number|null;
   fullBathroomCount: number|null;
   halfBathroomCount: number|null;
@@ -39,6 +40,7 @@ export type PublicListingDetails = {
     kind:"BEDROOM"|"SLEEPING_AREA"; nameEn:string|null; nameEs:string|null; sortOrder:number;
     beds:Array<{type:"KING"|"QUEEN"|"DOUBLE"|"SINGLE"|"BUNK"|"SOFA_BED"|"FUTON"|"CRIB"|"OTHER";quantity:number}>;
   }>;
+  features:Array<{type:"WOOD_CONSTRUCTION"|"OCEAN_VIEW"|"MOUNTAIN_VIEW"|"WATERFRONT"|"BEACH_ACCESS"|"POOL_TABLE"|"GYM"|"FIREPLACE"|"OUTDOOR_GRILL"|"WORKSPACE"|"OTHER";labelEn:string|null;labelEs:string|null;sortOrder:number}>;
   sharedSpaces:Array<{type:string;labelEn:string|null;labelEs:string|null;sortOrder:number}>;
   safetyConsiderations:Array<{type:string;descriptionEn:string|null;descriptionEs:string|null;sortOrder:number}>;
   additionalConsiderations:Array<{titleEn:string|null;titleEs:string|null;descriptionEn:string|null;descriptionEs:string|null;sortOrder:number}>;
