@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RoomLayoutEditor } from "./RoomLayoutEditor";
 import { ListingCollectionsEditor } from "./ListingCollectionsEditor";
-import { type ListingDetailsForm, type PermissionState, type TriState } from "./propertyListingDetails.types";
+import { type ListingDetailsForm, type ListingFeatureType, type PermissionState, type TriState } from "./propertyListingDetails.types";
 import { buildListingDetailsPayload, emptyListingDetails, requestListingDetails } from "./propertyListingDetails.form";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
@@ -43,6 +43,7 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [experienceTagDraft, setExperienceTagDraft] = useState("");
   const saveRequest = useRef<AbortController | null>(null);
   const url = `${API_BASE}/api/dashboard/properties/${encodeURIComponent(propertyId)}/listing-details`;
 
@@ -116,6 +117,35 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
     ["Niños / Children", "childrenPolicy"], ["Bebés / Infants", "infantsPolicy"], ["Mascotas / Pets", "petsPolicy"], ["Fumar / Smoking", "smokingPolicy"],
     ["Vapear / Vaping", "vapingPolicy"], ["Fiestas / eventos / Parties / events", "eventsPolicy"], ["Visitantes no registrados / Unregistered visitors", "unregisteredVisitorsPolicy"],
   ] as const;
+  const propertyTypes = [
+    ["HOUSE", "Casa / House"], ["APARTMENT", "Apartamento / Apartment"], ["CONDO", "Condominio / Condo"],
+    ["CABIN", "Cabaña / Cabin"], ["COTTAGE", "Casa de campo / Cottage"], ["VILLA", "Villa"],
+    ["TOWNHOUSE", "Townhouse"], ["BUNGALOW", "Bungalow"], ["LOFT", "Loft"], ["STUDIO", "Estudio / Studio"],
+    ["GUESTHOUSE", "Casa de huéspedes / Guesthouse"], ["FARM_STAY", "Estadía rural / Farm stay"], ["OTHER", "Otro / Other"],
+  ] as const;
+  const discoveryFeatures: Array<[ListingFeatureType, string]> = [
+    ["WOOD_CONSTRUCTION", "Construcción en madera / Wood construction"],
+    ["OCEAN_VIEW", "Vista al mar / Ocean view"], ["MOUNTAIN_VIEW", "Vista a la montaña / Mountain view"],
+    ["WATERFRONT", "Frente al agua / Waterfront"], ["BEACH_ACCESS", "Acceso a la playa / Beach access"],
+    ["POOL_TABLE", "Mesa de billar / Pool table"], ["GYM", "Gimnasio / Gym"],
+    ["FIREPLACE", "Chimenea / Fireplace"], ["OUTDOOR_GRILL", "Parrilla exterior / Outdoor grill"],
+    ["WORKSPACE", "Espacio de trabajo / Workspace"],
+  ];
+  function toggleFeature(type: ListingFeatureType) {
+    set("features", form.features.some((feature) => feature.type === type)
+      ? form.features.filter((feature) => feature.type !== type)
+      : [...form.features, { type, labelEn: null, labelEs: null, isActive: true, sortOrder: form.features.length }]);
+  }
+  function addExperienceTag() {
+    const label = experienceTagDraft.trim();
+    if (!label || form.experienceTags.length >= 20) return;
+    const normalized = label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const duplicate = form.experienceTags.some((tag) => tag.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") === normalized);
+    if (duplicate) { setError("Esa etiqueta ya existe. / That experience tag already exists."); return; }
+    set("experienceTags", [...form.experienceTags, { label, isActive: true, sortOrder: form.experienceTags.length }]);
+    setExperienceTagDraft(""); setError("");
+  }
+
   const safety = [
     ["Detector de humo / Smoke detector", "smokeDetector"], ["Detector de monóxido de carbono / Carbon monoxide detector", "carbonMonoxideDetector"],
     ["Ascensor disponible / Elevator available", "elevatorAvailable"], ["Estacionamiento accesible / Accessible parking", "accessibleParking"],
@@ -142,8 +172,23 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
         <Field label="Tipo de alojamiento / Accommodation type"><select style={input} value={form.accommodationType} onChange={(e) => set("accommodationType", e.target.value as ListingDetailsForm["accommodationType"])}>
           <option value="">No confirmado / Not confirmed</option><option value="ENTIRE_PLACE">Alojamiento completo / Entire place</option><option value="PRIVATE_ROOM">Habitación privada / Private room</option><option value="SHARED_ROOM">Habitación compartida / Shared room</option>
         </select></Field>
+        <Field label="Tipo de propiedad / Property type"><select style={input} value={form.propertyType} onChange={(e) => set("propertyType", e.target.value as ListingDetailsForm["propertyType"])}>
+          <option value="">No confirmado / Not confirmed</option>{propertyTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></Field>
         {facts.map(([label, key, placeholder]) => <Field key={key} label={label}><input style={input} type="number" min={key === "minimumPrimaryBookingGuestAge" ? 18 : 0} max={key === "minimumPrimaryBookingGuestAge" ? 99 : 100} step="1" placeholder={placeholder} value={form[key]} onChange={(e) => set(key, e.target.value)} /></Field>)}
       </div></div>
+      <div style={section}><b>Descubrimiento / Discovery</b>
+        <div style={{ fontSize: 12, color: "#64748b" }}>Marca únicamente características reales de la propiedad. Las etiquetas de experiencia son texto libre para describir el tipo de estadía. / Select only factual property features. Experience tags are free-form labels for the style of stay.</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{discoveryFeatures.map(([type, label]) => {
+          const active = form.features.some((feature) => feature.type === type);
+          return <button key={type} type="button" aria-pressed={active} onClick={() => toggleFeature(type)} style={{ border: active ? "1px solid #111827" : "1px solid #d1d5db", borderRadius: 999, padding: "8px 11px", background: active ? "#111827" : "#fff", color: active ? "#fff" : "#374151", fontWeight: 700, cursor: "pointer" }}>{label}</button>;
+        })}</div>
+        <Field label="Etiquetas de experiencia / Experience tags">
+          <div style={{ display: "flex", gap: 8 }}><input style={input} maxLength={80} placeholder="Romantic retreat, Couples retreat..." value={experienceTagDraft} onChange={(e) => setExperienceTagDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addExperienceTag(); } }} /><button type="button" onClick={addExperienceTag} disabled={!experienceTagDraft.trim() || form.experienceTags.length >= 20}>Añadir / Add</button></div>
+        </Field>
+        {form.experienceTags.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{form.experienceTags.map((tag, index) => <span key={tag.label + index} style={{ display: "inline-flex", gap: 7, alignItems: "center", border: "1px solid #d1d5db", borderRadius: 999, padding: "6px 9px", fontSize: 12 }}>{tag.label}<button type="button" aria-label={`Remove ${tag.label}`} onClick={() => set("experienceTags", form.experienceTags.filter((_, itemIndex) => itemIndex !== index).map((item, itemIndex) => ({ ...item, sortOrder: itemIndex })))} style={{ border: 0, background: "transparent", cursor: "pointer", fontWeight: 900 }}>×</button></span>)}</div> : null}
+        <div style={{ fontSize: 11, color: "#64748b" }}>{form.experienceTags.length}/20</div>
+      </div>
       <div style={section}><RoomLayoutEditor value={form.sleepingAreas} onChange={(value) => set("sleepingAreas", value)} /></div>
       <div style={section}>
         <ListingCollectionsEditor
