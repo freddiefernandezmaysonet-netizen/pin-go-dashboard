@@ -1726,7 +1726,10 @@ export default function GuestCancellationPage() {
               </div>
             ) : null}
 
-            {guestToken && preview?.reservation ? (
+            {guestToken &&
+            preview &&
+            (managementPhase === "PRE_STAY" ||
+              managementPhase === "IN_STAY") ? (
               <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
             ) : null}
 
