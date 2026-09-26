@@ -1,6 +1,11 @@
 export type TriState = "YES" | "NO" | "UNKNOWN";
 export type PermissionState = "ALLOWED" | "NOT_ALLOWED" | "UNKNOWN";
 export type SleepingAreaKind = "BEDROOM" | "SLEEPING_AREA";
+export type PropertyType = "HOUSE" | "APARTMENT" | "CONDO" | "CABIN" | "COTTAGE" | "VILLA" | "TOWNHOUSE" | "BUNGALOW" | "LOFT" | "STUDIO" | "GUESTHOUSE" | "FARM_STAY" | "OTHER";
+export type ListingFeatureType = "WOOD_CONSTRUCTION" | "OCEAN_VIEW" | "MOUNTAIN_VIEW" | "WATERFRONT" | "BEACH_ACCESS" | "POOL_TABLE" | "GYM" | "FIREPLACE" | "OUTDOOR_GRILL" | "WORKSPACE" | "OTHER";
+export type ListingFeature = { type: ListingFeatureType; labelEn: string | null; labelEs: string | null; isActive: boolean; sortOrder: number };
+export type ExperienceTag = { label: string; isActive: boolean; sortOrder: number };
+
 export type BedType =
   | "KING" | "QUEEN" | "DOUBLE" | "SINGLE" | "BUNK"
   | "SOFA_BED" | "FUTON" | "CRIB" | "OTHER";
@@ -39,6 +44,7 @@ export type AdditionalConsideration = {
 
 export type ListingDetailsForm = {
   accommodationType: "" | "ENTIRE_PLACE" | "PRIVATE_ROOM" | "SHARED_ROOM";
+  propertyType: "" | PropertyType;
   bedroomCount: string;
   fullBathroomCount: string;
   halfBathroomCount: string;
@@ -76,12 +82,15 @@ export type ListingDetailsForm = {
   sleepingAreas: SleepingArea[];
   // PUT replaces these collections. Preserve them even before their editors exist.
   sharedSpaces: SharedSpace[];
+  features: ListingFeature[];
+  experienceTags: ExperienceTag[];
   safetyConsiderations: SafetyConsideration[];
   additionalConsiderations: AdditionalConsideration[];
 };
 
 export const EMPTY_LISTING_DETAILS: ListingDetailsForm = {
   accommodationType: "",
+  propertyType: "",
   bedroomCount: "",
   fullBathroomCount: "",
   halfBathroomCount: "",
@@ -118,6 +127,8 @@ export const EMPTY_LISTING_DETAILS: ListingDetailsForm = {
   stepFreeShower: "UNKNOWN",
   sleepingAreas: [],
   sharedSpaces: [],
+  features: [],
+  experienceTags: [],
   safetyConsiderations: [],
   additionalConsiderations: [],
 };
