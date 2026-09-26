@@ -11,6 +11,12 @@ type MessageRow = {
   messageType?: string | null;
   displayBody?: string | null;
   status?: string | null;
+  provider?: string | null;
+  providerDeliveryStatus?: string | null;
+  providerStatusUpdatedAt?: string | null;
+  providerErrorCode?: string | null;
+  providerErrorMessage?: string | null;
+  deliveredAt?: string | null;
   retryCount: number;
   createdAt: string;
   propertyId?: string | null;
@@ -103,6 +109,41 @@ function StatusBadge({ status }: { status?: string | null }) {
   return <span style={badge("#f3f4f6", "#374151", "#e5e7eb")}>—</span>;
 }
 
+function DeliveryBadge({ status }: { status?: string | null }) {
+  const s = String(status || "").toUpperCase();
+
+  if (s === "DELIVERED" || s === "READ") {
+    return <span style={badge("#ecfdf5", "#065f46", "#a7f3d0")}>{s}</span>;
+  }
+
+  if (
+    ["FAILED", "BOUNCED", "SUPPRESSED", "COMPLAINED", "UNDELIVERED", "CANCELED"].includes(s)
+  ) {
+    return <span style={badge("#fef2f2", "#991b1b", "#fecaca")}>{s}</span>;
+  }
+
+  if (s === "DELIVERY_DELAYED") {
+    return <span style={badge("#fffbeb", "#92400e", "#fde68a")}>DELAYED</span>;
+  }
+
+  if (["ACCEPTED", "QUEUED", "SENDING", "SENT"].includes(s)) {
+    return <span style={badge("#eff6ff", "#1d4ed8", "#bfdbfe")}>{s}</span>;
+  }
+
+  return <span style={badge("#f3f4f6", "#6b7280", "#e5e7eb")}>—</span>;
+}
+
+function isProviderIssue(status?: string | null) {
+  return [
+    "FAILED",
+    "BOUNCED",
+    "SUPPRESSED",
+    "COMPLAINED",
+    "UNDELIVERED",
+    "CANCELED",
+  ].includes(String(status || "").toUpperCase());
+}
+
 function badge(bg: string, color: string, border: string) {
   return {
     background: bg,
@@ -156,7 +197,7 @@ export default function MessagesPage() {
 
       const json: Resp = await res.json();
       setData(json.items ?? []);
-    } catch (e) {
+    } catch {
       setData([]);
     } finally {
       setLoading(false);
@@ -171,7 +212,7 @@ export default function MessagesPage() {
 
       const json: Resp = await res.json();
       setPropertyOptions(uniquePropertiesFromMessages(json.items ?? []));
-    } catch (e) {
+    } catch {
       setPropertyOptions([]);
     }
   }
@@ -189,7 +230,8 @@ export default function MessagesPage() {
 
       await loadMessages();
       await loadPropertyOptions();
-    } catch (e) {
+    } catch {
+      return;
     }
   }
 
@@ -203,16 +245,24 @@ export default function MessagesPage() {
 
   const stats = useMemo(() => {
     let sent = 0;
-    let failed = 0;
+    let delivered = 0;
+    let providerIssues = 0;
     let retries = 0;
 
     for (const m of data) {
       if (String(m.status || "").toUpperCase() === "SENT") sent++;
-      if (String(m.status || "").toUpperCase() === "FAILED") failed++;
+      if (
+        ["DELIVERED", "READ"].includes(
+          String(m.providerDeliveryStatus || "").toUpperCase()
+        )
+      ) {
+        delivered++;
+      }
+      if (isProviderIssue(m.providerDeliveryStatus)) providerIssues++;
       if (m.retryCount > 0) retries++;
     }
 
-    return { sent, failed, retries };
+    return { sent, delivered, providerIssues, retries };
   }, [data]);
 
   const hasActiveFilters = Boolean(statusFilter || propertyFilter);
@@ -233,8 +283,9 @@ export default function MessagesPage() {
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
         }}
       >
-        <Stat title="Sent" value={stats.sent} />
-        <Stat title="Failed" value={stats.failed} />
+        <Stat title="Accepted / Sent" value={stats.sent} />
+        <Stat title="Delivered" value={stats.delivered} />
+        <Stat title="Provider Issues" value={stats.providerIssues} />
         <Stat title="With Retries" value={stats.retries} />
       </div>
 
@@ -361,7 +412,7 @@ export default function MessagesPage() {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: 980,
+                minWidth: 1180,
                 background: "#fff",
               }}
             >
@@ -369,7 +420,8 @@ export default function MessagesPage() {
                 <tr style={{ background: "#f9fafb" }}>
                   <th style={th}>To</th>
                   <th style={th}>Property</th>
-                  <th style={th}>Status</th>
+                  <th style={th}>Send Status</th>
+                  <th style={th}>Delivery</th>
                   <th style={th}>Retries</th>
                   <th style={th}>Message</th>
                   <th style={th}>Date</th>
@@ -394,6 +446,32 @@ export default function MessagesPage() {
                       <StatusBadge status={m.status} />
                     </td>
 
+                    <td style={td}>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        <DeliveryBadge status={m.providerDeliveryStatus} />
+                        {m.providerStatusUpdatedAt ? (
+                          <span style={{ fontSize: 11, color: "#6b7280" }}>
+                            {new Date(m.providerStatusUpdatedAt).toLocaleString()}
+                          </span>
+                        ) : null}
+                        {m.providerErrorMessage || m.providerErrorCode ? (
+                          <span
+                            title={m.providerErrorMessage ?? m.providerErrorCode ?? ""}
+                            style={{
+                              maxWidth: 220,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              fontSize: 11,
+                              color: "#991b1b",
+                            }}
+                          >
+                            {m.providerErrorMessage ?? m.providerErrorCode}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+
                     <td style={td}>{m.retryCount}</td>
 
                     <td
@@ -415,13 +493,16 @@ export default function MessagesPage() {
                     </td>
 
                     <td style={td}>
-                      {String(m.status || "").toUpperCase() === "FAILED" && (
+                      {String(m.channel || "").toLowerCase() === "sms" &&
+                        String(m.status || "").toUpperCase() === "FAILED" ? (
                         <button
                           onClick={() => retryMessage(m.id)}
                           style={retryButton}
                         >
                           Retry
                         </button>
+                      ) : (
+                        <span style={{ color: "#9ca3af" }}>—</span>
                       )}
                     </td>
                   </tr>
