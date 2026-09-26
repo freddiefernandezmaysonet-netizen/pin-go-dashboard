@@ -43,6 +43,7 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [experienceTagDraft, setExperienceTagDraft] = useState("");
   const saveRequest = useRef<AbortController | null>(null);
   const url = `${API_BASE}/api/dashboard/properties/${encodeURIComponent(propertyId)}/listing-details`;
 
@@ -130,8 +131,6 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
     ["FIREPLACE", "Chimenea / Fireplace"], ["OUTDOOR_GRILL", "Parrilla exterior / Outdoor grill"],
     ["WORKSPACE", "Espacio de trabajo / Workspace"],
   ];
-  const [experienceTagDraft, setExperienceTagDraft] = useState("");
-
   function toggleFeature(type: ListingFeatureType) {
     set("features", form.features.some((feature) => feature.type === type)
       ? form.features.filter((feature) => feature.type !== type)
