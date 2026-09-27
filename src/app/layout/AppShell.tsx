@@ -6,7 +6,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
-import { hostIncidentsEnabled, canManageHostIncidents } from "../../lib/hostIncidentConfig";
+import { canManageHostIncidents } from "../../lib/hostIncidentConfig";
 
 // ✅ NAV BASE (producto normal)
 const baseNav = [
@@ -219,7 +219,7 @@ const roleNav =
     : user?.role === "MEMBER"
       ? memberNav
       : organizationNav;
-  const nav = [...roleNav, ...(hostIncidentsEnabled && canManageHostIncidents(user?.role)
+  const nav = [...roleNav, ...(canManageHostIncidents(user?.role)
     ? [{ to: "/pin-ai/incidents", label: "Pin AI · Incidents" }] : [])];
   const pageTitle = getPageTitle(location.pathname);
 

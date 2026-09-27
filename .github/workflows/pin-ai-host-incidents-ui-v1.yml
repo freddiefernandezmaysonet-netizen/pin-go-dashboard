@@ -34,9 +34,5 @@ jobs:
         run: npx eslint src/api/hostIncidents.ts src/lib/hostIncidentConfig.ts src/pages/pin-ai/HostIncidentsPage.tsx src/pages/pin-ai/HostIncidentWorkspace.tsx src/pages/public-booking/GuestIncidentUpdates.tsx src/app/routes/router.tsx src/app/layout/AppShell.tsx src/pages/public-booking/GuestCancellationPage.tsx
       - name: Existing guest chat and session isolation regressions
         run: node --test src/pages/public-booking/guestPinAIChat.contract.test.js src/pages/public-booking/guestPinAIChat.interaction.test.js src/auth/public-route-session-isolation.contract.test.js
-      - name: Production build with capability disabled
-        run: npm run build
-      - name: Production build with synthetic capability enabled
-        env:
-          VITE_PIN_AI_HOST_INCIDENT_ENABLED: 'true'
+      - name: Production build without an incident UI activation variable
         run: npm run build
