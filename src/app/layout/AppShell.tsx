@@ -6,6 +6,7 @@ import { useAuth } from "../../auth/AuthProvider";
 import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
+import { hostIncidentsEnabled, canManageHostIncidents } from "../../lib/hostIncidentConfig";
 
 // ✅ NAV BASE (producto normal)
 const baseNav = [
@@ -68,6 +69,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/apms/decision-history")) return "APMS Decision History";
   if (pathname.startsWith("/automation/history")) return "Device Automation History";
   if (pathname.startsWith("/messages")) return "Messages";
+  if (pathname.startsWith("/pin-ai/incidents")) return "Pin AI · Guest incidents";
   if (pathname.startsWith("/reputation")) return "Reputation";
 
   // ✅ NUEVO
@@ -202,7 +204,7 @@ const organizationNav = canReviewOrganizationBrand
   : baseNav;
 
  // ✅ NAV DINÁMICO (solo tú ves admin)
-const nav =
+const roleNav =
   user?.role === "PLATFORM_ADMIN"
     ? [
         ...baseNav,
@@ -217,6 +219,8 @@ const nav =
     : user?.role === "MEMBER"
       ? memberNav
       : organizationNav;
+  const nav = [...roleNav, ...(hostIncidentsEnabled && canManageHostIncidents(user?.role)
+    ? [{ to: "/pin-ai/incidents", label: "Pin AI · Incidents" }] : [])];
   const pageTitle = getPageTitle(location.pathname);
 
   return (

@@ -5,6 +5,8 @@ import { useBrand } from "../../branding/BrandProvider";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import { GuestDamagePaymentAuthorization } from "./GuestDamagePaymentAuthorization";
 import { GuestPinAIChat } from "./GuestPinAIChat";
+import { GuestIncidentUpdates } from "./GuestIncidentUpdates";
+import { hostIncidentsEnabled } from "../../lib/hostIncidentConfig";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -1730,7 +1732,10 @@ export default function GuestCancellationPage() {
             preview &&
             (managementPhase === "PRE_STAY" ||
               managementPhase === "IN_STAY") ? (
+              <>
               <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
+                {hostIncidentsEnabled && <GuestIncidentUpdates key={guestToken} apiBase={API_BASE} guestToken={guestToken} />}
+              </>
             ) : null}
 
             {loading ? (
