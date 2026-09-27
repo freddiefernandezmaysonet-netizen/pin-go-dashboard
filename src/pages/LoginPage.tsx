@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   login,
   resendLoginMfa,
@@ -8,11 +8,12 @@ import {
 } from "../api/auth";
 import { fetchProperties } from "../api/properties";
 import { useAuth } from "../auth/AuthProvider";
-import { sessionNoticeFromSearch } from "../auth/sessionExpiry";
+import { incidentReturnFromSearch, sessionNoticeFromSearch } from "../auth/sessionExpiry";
 import { useBrand } from "../branding/BrandProvider";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { refresh } = useAuth();
   const { brand, isCustomBrand } = useBrand();
 
@@ -75,6 +76,11 @@ export default function LoginPage() {
 
   async function finishSignIn() {
     await refresh();
+    const destination = incidentReturnFromSearch(location.search);
+    if (destination) {
+      navigate(destination, { replace: true });
+      return;
+    }
     const propsData = await fetchProperties();
 
     if (!propsData.items?.length) {
