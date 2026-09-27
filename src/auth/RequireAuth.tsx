@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { incidentLoginPath } from "./incidentReturn";
 import { logout } from "../api/auth";
 import { loginPathForSessionError } from "./sessionExpiry";
 import { useBrand } from "../branding/BrandProvider";
@@ -7,6 +8,7 @@ import { useAuth } from "./AuthProvider";
 
 export function RequireAuth({ children }: { children: ReactElement }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading, sessionError, refresh } = useAuth();
   const { brand, isCustomBrand } = useBrand();
   const [signingOut, setSigningOut] = useState(false);
@@ -119,7 +121,7 @@ export function RequireAuth({ children }: { children: ReactElement }) {
   if (!user) {
     return (
       <Navigate
-        to={loginPathForSessionError(sessionError) ?? "/login"}
+        to={incidentLoginPath(loginPathForSessionError(sessionError) ?? "/login", location.pathname)}
         replace
       />
     );

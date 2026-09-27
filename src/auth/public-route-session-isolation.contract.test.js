@@ -83,6 +83,6 @@ test("protected routes preserve session-expiry and reauthentication redirects", 
   assert.match(requireAuth, /sessionError/);
   assert.match(
     requireAuth,
-    /to=\{loginPathForSessionError\(sessionError\) \?\? "\/login"\}/
+    /to=\{incidentLoginPath\(loginPathForSessionError\(sessionError\) \?\? "\/login", location\.pathname\)\}/
   );
 });
