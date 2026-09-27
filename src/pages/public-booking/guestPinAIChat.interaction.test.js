@@ -106,7 +106,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
       await act(async () => root.unmount());
       root = createRoot(container);
       await act(async () => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken: token })));
-      await until(() => !container.querySelector("textarea").disabled);
+      await until(() => !container.textContent.includes("Recuperando conversación") && !container.textContent.includes("Restoring conversation"));
     },
     confirm: () => [...container.querySelectorAll("button")].find(b => /Confirmar cambio|Confirm change/.test(b.textContent)) };
 }
@@ -274,7 +274,7 @@ test("a late receipt is aborted and ignored when switching to another reservatio
   assert.equal(h.container.querySelector("a"), null);
 });
 
-test("corrupt encrypted storage is discarded without rendering a confirmation", async t => {
+test("corrupt encrypted storage is preserved with a visible recovery error and no actions", async t => {
   const h = await mount(t);
   const key = window.sessionStorage.key(0);
   window.sessionStorage.setItem(key, '{"iv":"broken","data":"broken"}');
@@ -282,6 +282,13 @@ test("corrupt encrypted storage is discarded without rendering a confirmation", 
   assert.equal(h.confirm(), undefined);
   assert.doesNotMatch(h.container.textContent, /Cotización preparada/);
   assert.equal(h.calls.length, 1);
+  assert.equal(window.sessionStorage.getItem(key), '{"iv":"broken","data":"broken"}');
+  assert.match(h.container.textContent, /No se pudo recuperar la conversación/);
+  assert.match(h.container.textContent, /Reintentar recuperación/);
+  assert.equal(h.container.querySelector("textarea").disabled, true);
+  await assert.rejects(h.cache.load(), /CHAT_HISTORY_RECOVERY_FAILED/);
+  await assert.rejects(h.cache.save([]), /CHAT_HISTORY_RECOVERY_FAILED/);
+  assert.equal(window.sessionStorage.getItem(key), '{"iv":"broken","data":"broken"}');
 });
 
 test("saved dialogue expires after 24 hours even if the tab remains available", async t => {
@@ -300,7 +307,8 @@ test("cache scope includes API origin and encrypted data cannot be moved to anot
   await other.save([]);
   const otherKey = window.sessionStorage.key(1);
   window.sessionStorage.setItem(otherKey, original);
-  assert.deepEqual(await other.load(), []);
+  await assert.rejects(other.load(), /CHAT_HISTORY_RECOVERY_FAILED/);
+  assert.equal(window.sessionStorage.getItem(otherKey), original);
   assert.equal((await h.cache.load()).length, 2);
 });
 
@@ -313,13 +321,39 @@ test("snapshot writes retain only bounded recent dialogue", async t => {
   assert.equal(saved[39].id, "79");
 });
 
-test("unavailable storage surfaces a recovery warning while the chat remains usable", async t => {
+test("a temporary storage read failure preserves history and a retry restores it without requests", async t => {
   const h = await mount(t);
-  t.mock.method(dom.window.Storage.prototype, "getItem", () => { throw new Error("Storage denied"); });
+  const key = window.sessionStorage.key(0);
+  const original = window.sessionStorage.getItem(key);
+  const read = t.mock.method(dom.window.Storage.prototype, "getItem", () => { throw new Error("Storage denied"); });
   await h.remount();
-  assert.match(h.container.textContent, /no permite conservar la conversación/);
-  assert.equal(h.container.querySelector("textarea").disabled, false);
+  assert.match(h.container.textContent, /No se pudo recuperar la conversación/);
+  assert.equal(h.container.querySelector("textarea").disabled, true);
+  read.mock.restore();
+  assert.equal(window.sessionStorage.getItem(key), original);
+  await h.remount();
+  assert.match(h.container.textContent, /Cotización preparada/);
+  assert.equal(h.confirm().disabled, false);
   assert.equal(h.calls.length, 1);
+});
+
+test("temporary decryption failure preserves the paid card for verified recovery", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  await until(async () => (await h.cache.load())[1]?.actionResult?.outcome === "WAITING_FOR_PAYMENT");
+  const key = window.sessionStorage.key(0);
+  const original = window.sessionStorage.getItem(key);
+  const decrypt = t.mock.method(webcrypto.subtle, "decrypt", async () => { throw new Error("Temporary crypto failure"); });
+  await h.remount();
+  assert.match(h.container.textContent, /No se pudo recuperar la conversación/);
+  assert.equal(window.sessionStorage.getItem(key), original);
+  assert.equal(h.container.querySelector("a"), null);
+  decrypt.mock.restore();
+  h.setReceipt({ modificationStatus: "APPLIED", paymentStatus: "paid", appliedAt: new Date(deadline).toISOString() });
+  await h.remount();
+  await until(() => /Cambio aplicado/.test(h.container.textContent));
+  assert.equal(h.container.querySelector("a"), null);
+  assert.equal(h.calls.length, 2, "Recovery must not send messages or reconfirm");
 });
 
 for (const [outcome, expected] of [["WAITING_FOR_PAYMENT", /Pago requerido/],

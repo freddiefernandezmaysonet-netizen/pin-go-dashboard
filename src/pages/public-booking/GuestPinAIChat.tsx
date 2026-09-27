@@ -441,6 +441,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
   const [session, setSession] = useState<GuestChatSession | null>(null);
   const [restoring, setRestoring] = useState(true);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
+  const [historyRecoveryFailed, setHistoryRecoveryFailed] = useState(false);
   const [restored, setRestored] = useState(false);
   const [paymentChecks, setPaymentChecks] = useState<Record<string, "VERIFIED" | "ERROR">>({});
   const paymentNavigation = useRef<AbortController | null>(null);
@@ -534,8 +535,13 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
       setMessages(history);
       setRestored(history.length > 0);
       setSession(cache);
-    }).catch(() => {
-      if (active) setStorageUnavailable(true);
+    }).catch((caught: unknown) => {
+      if (!active) return;
+      if (caught instanceof Error && caught.message === "CHAT_HISTORY_RECOVERY_FAILED") {
+        setHistoryRecoveryFailed(true);
+      } else {
+        setStorageUnavailable(true);
+      }
     }).finally(() => {
       if (active) setRestoring(false);
     });
@@ -611,7 +617,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
     event.preventDefault();
     const message = draft.trim();
 
-    if (!message || message.length > MAX_MESSAGE_LENGTH || submitting || restoring) {
+    if (!message || message.length > MAX_MESSAGE_LENGTH || submitting || restoring || historyRecoveryFailed) {
       return;
     }
 
@@ -678,6 +684,17 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
       </div>
 
       <div style={styles.safetyNotice}>{copy.safety}</div>
+
+      {historyRecoveryFailed ? (
+        <div role="alert" style={styles.safetyNotice}>
+          <p>{language === "es"
+            ? "No se pudo recuperar la conversación guardada. No la hemos borrado ni reemplazado. Esto no indica que un pago haya fallado; no repitas el pago."
+            : "The saved conversation could not be restored. We have not deleted or replaced it. This does not mean a payment failed; do not pay again."}</p>
+          <button type="button" onClick={() => window.location.reload()}>
+            {language === "es" ? "Reintentar recuperación" : "Retry recovery"}
+          </button>
+        </div>
+      ) : null}
 
       {restoring || storageUnavailable || restored ? (
         <div role="status" style={styles.safetyNotice}>
@@ -747,7 +764,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
           onChange={(event) => setDraft(event.target.value)}
           placeholder={copy.placeholder}
           maxLength={MAX_MESSAGE_LENGTH}
-          disabled={submitting || restoring}
+          disabled={submitting || restoring || historyRecoveryFailed}
           rows={3}
           aria-label={copy.placeholder}
           style={styles.textarea}
@@ -758,7 +775,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
           </span>
           <button
             type="submit"
-            disabled={submitting || restoring || draft.trim().length === 0}
+            disabled={submitting || restoring || historyRecoveryFailed || draft.trim().length === 0}
             style={{
               ...styles.sendButton,
               ...(submitting || draft.trim().length === 0
