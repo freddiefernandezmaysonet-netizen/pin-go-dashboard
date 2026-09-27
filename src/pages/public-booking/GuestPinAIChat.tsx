@@ -1,4 +1,6 @@
 import { isPinAIProposalExpired } from "./pinAIProposalExpiry";
+import { createGuestChatSession } from "./pinAIChatSession";
+import type { GuestChatSession } from "./pinAIChatSession";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 
@@ -52,7 +54,7 @@ type ReservationActionResult = Readonly<{
   reasonCode: string | null;
 }>;
 
-type ChatMessage = Readonly<{
+export type ChatMessage = Readonly<{
   id: string;
   role: "guest" | "assistant";
   text: string;
@@ -380,6 +382,10 @@ function ChatMessageContent({ message }: Readonly<{ message: ChatMessage }>) {
 }
 
 export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
+  return <GuestPinAIChatSession key={JSON.stringify([apiBase, guestToken])} apiBase={apiBase} guestToken={guestToken} />;
+}
+
+function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
   const language = useMemo(uiLanguage, []);
   const copy =
     language === "es"
@@ -419,6 +425,35 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
   const [submitting, setSubmitting] = useState(false);
   const [confirmingProposalId, setConfirmingProposalId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<GuestChatSession | null>(null);
+  const [restoring, setRestoring] = useState(true);
+  const [storageUnavailable, setStorageUnavailable] = useState(false);
+  const [restored, setRestored] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void createGuestChatSession(apiBase, guestToken).then(async cache => {
+      const history = await cache.load();
+      if (!active) return;
+      setMessages(history);
+      setRestored(history.length > 0);
+      setSession(cache);
+    }).catch(() => {
+      if (active) setStorageUnavailable(true);
+    }).finally(() => {
+      if (active) setRestoring(false);
+    });
+    return () => { active = false; };
+  }, [apiBase, guestToken]);
+
+  useEffect(() => {
+    if (!session || restoring) return;
+    let active = true;
+    void session.save(messages).catch(() => {
+      if (active) setStorageUnavailable(true);
+    });
+    return () => { active = false; };
+  }, [messages, session, restoring]);
 
   async function confirmAction(messageId: string, proposal: ReservationActionProposal) {
     if (confirmingProposalId) {
@@ -480,7 +515,7 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
     event.preventDefault();
     const message = draft.trim();
 
-    if (!message || message.length > MAX_MESSAGE_LENGTH || submitting) {
+    if (!message || message.length > MAX_MESSAGE_LENGTH || submitting || restoring) {
       return;
     }
 
@@ -548,6 +583,18 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
 
       <div style={styles.safetyNotice}>{copy.safety}</div>
 
+      {restoring || storageUnavailable || restored ? (
+        <div role="status" style={styles.safetyNotice}>
+          {restoring
+            ? (language === "es" ? "Recuperando conversación…" : "Restoring conversation…")
+            : storageUnavailable
+              ? (language === "es" ? "Este navegador no permite conservar la conversación al recargar. Puedes continuar aquí."
+                : "This browser cannot keep the conversation across reloads. You can continue here.")
+              : (language === "es" ? "Conversación recuperada en esta pestaña. Las cotizaciones conservan su vencimiento original."
+                : "Conversation restored in this tab. Quotes keep their original expiry.")}
+        </div>
+      ) : null}
+
       {messages.length > 0 ? (
         <div style={styles.messages} aria-live="polite">
           {messages.map((message) => (
@@ -602,7 +649,7 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
           onChange={(event) => setDraft(event.target.value)}
           placeholder={copy.placeholder}
           maxLength={MAX_MESSAGE_LENGTH}
-          disabled={submitting}
+          disabled={submitting || restoring}
           rows={3}
           aria-label={copy.placeholder}
           style={styles.textarea}
@@ -613,7 +660,7 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
           </span>
           <button
             type="submit"
-            disabled={submitting || draft.trim().length === 0}
+            disabled={submitting || restoring || draft.trim().length === 0}
             style={{
               ...styles.sendButton,
               ...(submitting || draft.trim().length === 0
