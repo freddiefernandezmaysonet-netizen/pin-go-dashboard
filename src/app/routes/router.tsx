@@ -65,6 +65,8 @@ import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 
+const HostIncidentsPage = lazy(() => import("../../pages/pin-ai/HostIncidentsPage"));
+
 const GuestReviewPage = lazy(() => import("../../pages/public-booking/GuestReviewPage"));
 const ReputationPage = lazy(() => import("../../pages/reputation/ReputationPage"));
 const AdminReviewModerationPage = lazy(() => import("../../pages/admin/AdminReviewModerationPage"));
@@ -327,6 +329,7 @@ export const router = createBrowserRouter([
       { path: "/automation/history", element: <DeviceAutomationHistoryPage /> },
       { path: "/apms/decision-history", element: <ApmsDecisionHistoryPage /> },
       { path: "/messages", element: <MessagesPage /> },
+      { path: "/pin-ai/incidents/:reference?", element: <Suspense fallback={<p role="status">Cargando / Loading…</p>}><HostIncidentsPage /></Suspense> },
       ...(reviewsE1Enabled
         ? [{ path: "/reputation", element: <ReviewManagerRoute><ReviewRouteBoundary><ReputationPage /></ReviewRouteBoundary></ReviewManagerRoute> }]
         : []),
