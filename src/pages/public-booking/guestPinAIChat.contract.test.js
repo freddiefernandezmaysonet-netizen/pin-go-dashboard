@@ -209,7 +209,7 @@ test("Pin AI confirmation UI maps canonical action outcomes without claiming suc
   assert.match(chat, /"WAITING_FOR_PAYMENT"/);
   assert.match(chat, /"WAITING_FOR_HOST"/);
   assert.match(chat, /"REVIEW_REQUIRED"/);
-  assert.match(chat, /Cambio confirmado/);
+  assert.match(chat, /Cambio aplicado/);
   assert.match(chat, /Payment is required to complete this change/);
   assert.match(chat, /Pendiente de revisión del anfitrión/);
   assert.match(chat, /La cotización debe actualizarse antes de continuar/);
