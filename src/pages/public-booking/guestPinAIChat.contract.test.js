@@ -4,6 +4,47 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ReactMarkdown from "react-markdown";
+import ts from "typescript";
+
+const expirySource = readFileSync(new URL("./pinAIProposalExpiry.ts", import.meta.url), "utf8");
+const expiryModule = ts.transpileModule(expirySource, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const { isPinAIProposalExpired } = await import(
+  `data:text/javascript;base64,${Buffer.from(expiryModule).toString("base64")}`
+);
+
+test("proposal is confirmable before its deadline and expires exactly at it", () => {
+  const deadline = "2026-09-27T14:30:00Z";
+  const proposal = { expiresAt: deadline, quote: { quoteExpiresAt: deadline } };
+  const now = Date.parse(deadline);
+  assert.equal(isPinAIProposalExpired(proposal, now - 1), false);
+  assert.equal(isPinAIProposalExpired(proposal, now), true);
+  assert.equal(isPinAIProposalExpired(proposal, now + 1), true);
+});
+
+test("the earliest proposal or quote deadline controls confirmation", () => {
+  for (const [expiresAt, quoteExpiresAt] of [
+    ["2026-09-27T14:00:00Z", "2026-09-27T15:00:00Z"],
+    ["2026-09-27T15:00:00Z", "2026-09-27T14:00:00Z"],
+  ]) {
+    assert.equal(isPinAIProposalExpired({ expiresAt, quote: { quoteExpiresAt } },
+      Date.parse("2026-09-27T14:00:00Z")), true);
+  }
+});
+
+test("invalid deadlines or clock fail closed", () => {
+  const valid = "2026-09-27T14:30:00Z";
+  assert.equal(isPinAIProposalExpired({ expiresAt: "invalid", quote: { quoteExpiresAt: valid } }, 0), true);
+  assert.equal(isPinAIProposalExpired({ expiresAt: valid, quote: { quoteExpiresAt: "" } }, 0), true);
+  assert.equal(isPinAIProposalExpired({ expiresAt: valid, quote: { quoteExpiresAt: valid } }, NaN), true);
+});
+
+test("expiry compares instants across timezone offsets", () => {
+  const proposal = { expiresAt: "2026-09-27T10:30:00-04:00", quote: { quoteExpiresAt: "2026-09-27T14:30:00Z" } };
+  assert.equal(isPinAIProposalExpired(proposal, Date.parse("2026-09-27T14:29:59Z")), false);
+  assert.equal(isPinAIProposalExpired(proposal, Date.parse("2026-09-27T14:30:00Z")), true);
+});
 
 const chat = readFileSync(
   new URL("./GuestPinAIChat.tsx", import.meta.url),
@@ -149,6 +190,18 @@ test("Pin AI confirmation control posts only the private token to the certified 
   assert.match(chat, /type="button"/);
   assert.match(chat, /Confirmar cambio/);
   assert.match(chat, /Confirm change/);
+});
+
+test("expired proposals disable confirmation and guard the request before fetch", () => {
+  assert.match(chat, /disabled=\{confirming \|\| expired\}/);
+  assert.match(chat, /!result && expired/);
+  const start = chat.indexOf("async function confirmAction");
+  assert.ok(start >= 0);
+  const handler = chat.slice(start);
+  const guard = handler.indexOf("if (isPinAIProposalExpired(proposal, Date.now()))");
+  const request = handler.indexOf("await fetch(");
+  assert.ok(guard >= 0 && request > guard);
+  assert.match(handler.slice(guard, request), /return;/);
 });
 
 test("Pin AI confirmation UI maps canonical action outcomes without claiming success early", () => {
