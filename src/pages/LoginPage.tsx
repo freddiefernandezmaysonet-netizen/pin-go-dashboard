@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { incidentReturnFromSearch } from "../auth/incidentReturn";
 import {
   login,
   resendLoginMfa,
@@ -9,7 +8,7 @@ import {
 } from "../api/auth";
 import { fetchProperties } from "../api/properties";
 import { useAuth } from "../auth/AuthProvider";
-import { sessionNoticeFromSearch } from "../auth/sessionExpiry";
+import { incidentReturnFromSearch, sessionNoticeFromSearch } from "../auth/sessionExpiry";
 import { useBrand } from "../branding/BrandProvider";
 
 export default function LoginPage() {

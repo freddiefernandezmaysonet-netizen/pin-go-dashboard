@@ -1,8 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { incidentLoginPath } from "./incidentReturn";
 import { logout } from "../api/auth";
-import { loginPathForSessionError } from "./sessionExpiry";
+import { incidentLoginPath, loginPathForSessionError } from "./sessionExpiry";
 import { useBrand } from "../branding/BrandProvider";
 import { useAuth } from "./AuthProvider";
 
