@@ -40,6 +40,29 @@ function validMessage(v: unknown): v is ChatMessage {
   return true;
 }
 
+export async function readGuestChatHistory(apiBase: string, guestToken: string, signal: AbortSignal): Promise<ChatMessage[]> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal.addEventListener("abort", abort, { once: true });
+  if (signal.aborted) abort();
+  const timeout = window.setTimeout(abort, 10_000);
+  try {
+    const response = await fetch(`${apiBase}/api/public-booking/manage/${encodeURIComponent(guestToken)}/pin-ai/history`, {
+      method: "GET", cache: "no-store", signal: controller.signal,
+    });
+    const payload = await response.json();
+    if (!response.ok || payload?.ok !== true || payload.version !== 1 || !Array.isArray(payload.messages) ||
+        payload.messages.length > 40 || !payload.messages.every(validMessage) ||
+        encoder.encode(JSON.stringify(payload.messages)).byteLength > MAX_BYTES) {
+      throw new Error("CHAT_HISTORY_RECOVERY_FAILED");
+    }
+    return payload.messages;
+  } finally {
+    window.clearTimeout(timeout);
+    signal.removeEventListener("abort", abort);
+  }
+}
+
 export type GuestChatSession = Readonly<{
   load: () => Promise<ChatMessage[]>;
   save: (messages: readonly ChatMessage[]) => Promise<void>;

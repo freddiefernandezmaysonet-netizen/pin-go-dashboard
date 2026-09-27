@@ -62,11 +62,20 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   t.mock.method(Date, "now", () => now);
   const calls = [];
   const statusCalls = [];
+  const historyCalls = [];
+  let serverHistory = [];
   let receipt = { proposalId: "synthetic-proposal", proposalStatus: "CONFIRMED", modificationId: "synthetic-modification",
     modificationStatus: "AWAITING_PAYMENT", paymentStatus: "unpaid", paymentExpiresAt: new Date(deadline + 3_600_000).toISOString(),
     appliedAt: null, checkedAt: new Date(now).toISOString() };
   t.mock.method(globalThis, "fetch", async (url, init) => {
     assert.ok(url.startsWith("https://api.example.test/"), "Network must stay synthetic");
+    if (url.endsWith("/history")) {
+      historyCalls.push({ url, init });
+      assert.equal(init.method, "GET");
+      assert.equal(init.cache, "no-store");
+      if (serverHistory instanceof Error) throw serverHistory;
+      return { ok: true, status: 200, async json() { return { ok: true, version: 1, messages: serverHistory }; } };
+    }
     if (url.endsWith("/status")) {
       statusCalls.push({url, init});
       assert.equal(init.method, "GET");
@@ -100,6 +109,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   const cache = await createGuestChatSession("https://api.example.test", "synthetic-guest-token");
   await until(async () => (await cache.load()).length === 2);
   return { container, calls, setNow: value => { now = value; },
+    historyCalls, setHistory: value => { serverHistory = value; },
     statusCalls, setReceipt: value => { receipt = value instanceof Error ? value : { ...receipt, ...value }; },
     cache,
     async remount(token = "synthetic-guest-token") {
@@ -289,6 +299,58 @@ test("corrupt encrypted storage is preserved with a visible recovery error and n
   await assert.rejects(h.cache.load(), /CHAT_HISTORY_RECOVERY_FAILED/);
   await assert.rejects(h.cache.save([]), /CHAT_HISTORY_RECOVERY_FAILED/);
   assert.equal(window.sessionStorage.getItem(key), '{"iv":"broken","data":"broken"}');
+});
+
+test("server history restores a paid conversation with no browser snapshot and no confirmation POST", async t => {
+  const h = await mount(t);
+  const history = await h.cache.load();
+  h.setHistory(history.map(m => m.actionProposal ? { ...m, actionResult: {
+    actionType: "RESERVATION_MODIFICATION", proposalId: m.actionProposal.proposalId,
+    outcome: "EXECUTED", actionExecuted: true, checkoutUrl: null,
+    modificationId: "synthetic-modification", modificationStatus: "APPLIED",
+  } } : m));
+  window.sessionStorage.clear();
+  await h.remount();
+  assert.match(h.container.textContent, /Cotización preparada/);
+  assert.match(h.container.textContent, /Cambio aplicado/);
+  assert.equal(h.confirm(), undefined);
+  assert.equal(h.container.querySelector("a"), null);
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.historyCalls.length, 2);
+});
+
+test("valid server history wins over corrupt local storage without deleting the ciphertext", async t => {
+  const h = await mount(t);
+  h.setHistory(await h.cache.load());
+  const key = window.sessionStorage.key(0);
+  window.sessionStorage.setItem(key, "corrupt-local-copy");
+  await h.remount();
+  assert.match(h.container.textContent, /Cotización preparada/);
+  assert.equal(h.container.querySelector("textarea").disabled, false);
+  assert.equal(window.sessionStorage.getItem(key), "corrupt-local-copy");
+  assert.equal(h.calls.length, 1);
+});
+
+test("server history outage cannot overwrite local history or present a fresh empty conversation", async t => {
+  const h = await mount(t);
+  const key = window.sessionStorage.key(0);
+  const original = window.sessionStorage.getItem(key);
+  h.setHistory(new Error("Service unavailable"));
+  await h.remount();
+  assert.match(h.container.textContent, /No se pudo recuperar la conversación/);
+  assert.equal(h.container.querySelector("textarea").disabled, true);
+  assert.equal(h.confirm(), undefined);
+  assert.equal(window.sessionStorage.getItem(key), original);
+  assert.equal(h.calls.length, 1);
+});
+
+test("invalid server proposal payload is not rendered or written over valid local history", async t => {
+  const h = await mount(t);
+  h.setHistory([{ id: "bad", role: "assistant", text: "Invalid", actionProposal: { proposalId: "foreign" } }]);
+  await h.remount();
+  assert.match(h.container.textContent, /No se pudo recuperar la conversación/);
+  assert.equal((await h.cache.load()).length, 2);
+  assert.equal(h.confirm(), undefined);
 });
 
 test("saved dialogue expires after 24 hours even if the tab remains available", async t => {
