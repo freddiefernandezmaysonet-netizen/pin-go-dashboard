@@ -1,7 +1,8 @@
 import { isPinAIProposalExpired } from "./pinAIProposalExpiry";
 import { createGuestChatSession } from "./pinAIChatSession";
 import type { GuestChatSession } from "./pinAIChatSession";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { readPinAIActionStatus } from "./pinAIActionStatus";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
@@ -207,16 +208,20 @@ function ReservationActionCard({
   result,
   confirming,
   onConfirm,
+  paymentStatusCheck,
+  onPayment,
 }: Readonly<{
   language: "es" | "en";
   proposal: ReservationActionProposal;
   result?: ReservationActionResult;
   confirming: boolean;
   onConfirm: () => void;
+  paymentStatusCheck?: "VERIFIED" | "ERROR";
+  onPayment: (proposalId: string, url: string) => Promise<void>;
 }>) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (result) return;
+    if (result && result.outcome !== "WAITING_FOR_PAYMENT") return;
     const refresh = () => setNow(Date.now());
     const timer = window.setInterval(refresh, 1000);
     window.addEventListener("focus", refresh);
@@ -241,7 +246,10 @@ function ReservationActionCard({
           confirm: "Confirmar cambio",
           confirming: "Confirmando…",
           expired: "La cotización venció. Pídele a Pin AI una nueva cotización.",
-          executed: "Cambio confirmado",
+          executed: "Cambio aplicado",
+          processing: "Pago en proceso. Estamos verificando la aplicación del cambio; no vuelvas a pagar.",
+          checking: "Verificando el estado del pago…",
+          statusError: "No se pudo verificar el pago. No repitas el pago; vuelve a esta pestaña para reintentar la consulta.",
           payment: "Pago requerido para completar el cambio",
           pay: "Continuar al pago",
           host: "Pendiente de revisión del anfitrión",
@@ -258,7 +266,10 @@ function ReservationActionCard({
           confirm: "Confirm change",
           confirming: "Confirming…",
           expired: "This quote has expired. Ask Pin AI for a new quote.",
-          executed: "Change confirmed",
+          executed: "Change applied",
+          processing: "Payment is processing. We are checking the reservation change; do not pay again.",
+          checking: "Checking payment status…",
+          statusError: "Payment status could not be verified. Do not pay again; return to this tab to retry the check.",
           payment: "Payment is required to complete this change",
           pay: "Continue to payment",
           host: "Waiting for host review",
@@ -269,7 +280,8 @@ function ReservationActionCard({
     result?.outcome === "EXECUTED"
       ? copy.executed
       : result?.outcome === "WAITING_FOR_PAYMENT"
-        ? copy.payment
+        ? paymentStatusCheck !== "VERIFIED" ? (paymentStatusCheck === "ERROR" ? copy.statusError : copy.checking)
+          : ["PAYMENT_PROCESSING", "APPLYING"].includes(result.modificationStatus ?? "") ? copy.processing : copy.payment
         : result?.outcome === "WAITING_FOR_HOST"
           ? copy.host
           : result?.outcome === "REVIEW_REQUIRED"
@@ -312,7 +324,7 @@ function ReservationActionCard({
         </div>
       </div>
 
-      <div style={styles.actionExpiry}>
+      {!result && <div style={styles.actionExpiry}>
         <strong>{copy.validUntil}:</strong>{" "}
         {formatQuoteExpiry(
           proposal.quote.quoteExpiresAt,
@@ -320,9 +332,9 @@ function ReservationActionCard({
           language,
         )}{" "}
         ({proposal.quote.propertyTimezone})
-      </div>
+      </div>}
 
-      <div style={styles.actionAvailability}>{copy.availability}</div>
+      {!result && <div style={styles.actionAvailability}>{copy.availability}</div>}
 
       {outcomeText ? <div style={styles.actionOutcome}>{outcomeText}</div> : null}
 
@@ -342,11 +354,12 @@ function ReservationActionCard({
         </button>
       ) : null}
 
-      {result?.outcome === "WAITING_FOR_PAYMENT" && result.checkoutUrl ? (
+      {result?.outcome === "WAITING_FOR_PAYMENT" && result.modificationStatus === "AWAITING_PAYMENT" &&
+        paymentStatusCheck === "VERIFIED" && result.paymentExpiresAt && Date.parse(result.paymentExpiresAt) > now && result.checkoutUrl ? (
         <a
           href={result.checkoutUrl}
-          target="_blank"
           rel="noreferrer"
+          onClick={event => { event.preventDefault(); void onPayment(proposal.proposalId, result.checkoutUrl!); }}
           style={styles.paymentLink}
         >
           {copy.pay}
@@ -429,6 +442,89 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
   const [restoring, setRestoring] = useState(true);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [restored, setRestored] = useState(false);
+  const [paymentChecks, setPaymentChecks] = useState<Record<string, "VERIFIED" | "ERROR">>({});
+  const paymentNavigation = useRef<AbortController | null>(null);
+  useEffect(() => () => { paymentNavigation.current?.abort(); }, []);
+  const pendingProposalIds = JSON.stringify(messages.filter(message =>
+    message.actionResult?.outcome === "WAITING_FOR_PAYMENT"
+  ).map(message => message.actionResult!.proposalId).sort());
+
+  useEffect(() => {
+    if (restoring) return;
+    const ids = JSON.parse(pendingProposalIds) as string[];
+    if (!ids.length) return;
+    let active = true;
+    let busy = false;
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (busy || !active || document.visibilityState === "hidden") return;
+      busy = true;
+      try {
+        await Promise.all(ids.map(async proposalId => {
+          try {
+            const status = await readPinAIActionStatus(apiBase, guestToken, proposalId, controller.signal);
+            if (!active) return;
+            setPaymentChecks(current => ({ ...current, [proposalId]: "VERIFIED" }));
+            setMessages(current => current.map(message => {
+              const result = message.actionResult;
+              if (result?.proposalId !== proposalId || result.outcome !== "WAITING_FOR_PAYMENT") return message;
+              if (!status.modificationId || status.modificationId !== result.modificationId) return {
+                ...message, actionResult: { ...result, outcome: "REVIEW_REQUIRED", checkoutUrl: null, reasonCode: "ACTION_STATUS_MISMATCH" },
+              };
+              const applied = status.modificationStatus === "APPLIED" && Boolean(status.appliedAt);
+              const payable = status.proposalStatus === "CONFIRMED" && status.modificationStatus === "AWAITING_PAYMENT" &&
+                status.paymentStatus === "unpaid" && status.paymentExpiresAt && Date.parse(status.paymentExpiresAt) > Date.parse(status.checkedAt);
+              const processing = ["PAYMENT_PROCESSING", "APPLYING"].includes(status.modificationStatus ?? "") ||
+                (status.modificationStatus === "AWAITING_PAYMENT" && status.paymentStatus === "paid");
+              return { ...message, actionResult: { ...result,
+                outcome: applied ? "EXECUTED" : status.modificationStatus === "HOST_APPROVAL_REQUIRED" ? "WAITING_FOR_HOST" : payable || processing ? "WAITING_FOR_PAYMENT" : "REVIEW_REQUIRED",
+                actionExecuted: applied, modificationStatus: processing ? "PAYMENT_PROCESSING" : status.modificationStatus,
+                paymentExpiresAt: status.paymentExpiresAt, checkoutUrl: payable ? result.checkoutUrl : null,
+              } };
+            }));
+          } catch {
+            if (active) setPaymentChecks(current => ({ ...current, [proposalId]: "ERROR" }));
+          }
+        }));
+      } finally { busy = false; }
+    };
+    void refresh();
+    const onResume = () => { void refresh(); };
+    const timer = window.setInterval(onResume, 15_000);
+    window.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [apiBase, guestToken, pendingProposalIds, restoring]);
+
+  async function continueToPayment(proposalId: string, url: string) {
+    paymentNavigation.current?.abort();
+    const controller = new AbortController();
+    paymentNavigation.current = controller;
+    try {
+      if (!session) throw new Error("CHAT_SESSION_UNAVAILABLE");
+      const status = await readPinAIActionStatus(apiBase, guestToken, proposalId, controller.signal);
+      if (controller.signal.aborted) return;
+      const result = messages.find(message => message.actionResult?.proposalId === proposalId)?.actionResult;
+      if (!result || status.modificationId !== result.modificationId || status.proposalStatus !== "CONFIRMED" ||
+          status.modificationStatus !== "AWAITING_PAYMENT" || status.paymentStatus !== "unpaid" ||
+          !status.paymentExpiresAt || Date.parse(status.paymentExpiresAt) <= Date.parse(status.checkedAt)) {
+        window.dispatchEvent(new Event("focus"));
+        return;
+      }
+      await session.save(messages);
+      if (!controller.signal.aborted) window.location.assign(url);
+    } catch {
+      if (controller.signal.aborted) return;
+      setPaymentChecks(current => ({ ...current, [proposalId]: "ERROR" }));
+      setError(language === "es" ? "No se pudo verificar el pago o guardar la conversación. No repitas el pago; intenta consultar el estado nuevamente." : "Payment could not be verified or the conversation saved. Do not pay again; retry the status check.");
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -629,6 +725,8 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
                     result={message.actionResult}
                     confirming={confirmingProposalId === message.actionProposal.proposalId}
                     onConfirm={() => confirmAction(message.id, message.actionProposal!)}
+                    paymentStatusCheck={paymentChecks[message.actionProposal.proposalId]}
+                    onPayment={continueToPayment}
                   />
                 ) : null}
               </div>

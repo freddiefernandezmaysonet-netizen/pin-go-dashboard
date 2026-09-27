@@ -6,9 +6,10 @@ import ts from "typescript";
 import { webcrypto } from "node:crypto";
 
 // Render the actual component with React DOM; all HTTP responses are synthetic.
-const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "https://portal.example.test" });
+const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "https://portal.example.test", pretendToBeVisual: true });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
+globalThis.Event = dom.window.Event;
 Object.defineProperty(dom.window, "crypto", { value: webcrypto });
 Object.defineProperty(globalThis, "navigator", { value: dom.window.navigator, configurable: true });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -30,6 +31,7 @@ const { createGuestChatSession } = await import(sessionModule);
 const { GuestPinAIChat } = await import(compiledModule("./GuestPinAIChat.tsx", {
   "./pinAIProposalExpiry": compiledModule("./pinAIProposalExpiry.ts"),
   "./pinAIChatSession": sessionModule,
+  "./pinAIActionStatus": compiledModule("./pinAIActionStatus.ts"),
 }));
 
 async function until(check) {
@@ -59,13 +61,25 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   let now = deadline - 60_000;
   t.mock.method(Date, "now", () => now);
   const calls = [];
+  const statusCalls = [];
+  let receipt = { proposalId: "synthetic-proposal", proposalStatus: "CONFIRMED", modificationId: "synthetic-modification",
+    modificationStatus: "AWAITING_PAYMENT", paymentStatus: "unpaid", paymentExpiresAt: new Date(deadline + 3_600_000).toISOString(),
+    appliedAt: null, checkedAt: new Date(now).toISOString() };
   t.mock.method(globalThis, "fetch", async (url, init) => {
     assert.ok(url.startsWith("https://api.example.test/"), "Network must stay synthetic");
+    if (url.endsWith("/status")) {
+      statusCalls.push({url, init});
+      assert.equal(init.method, "GET");
+      assert.equal(init.cache, "no-store");
+      if (receipt instanceof Error) throw receipt;
+      return { ok: true, status: 200, async json() { return { ok: true, status: receipt }; } };
+    }
     calls.push({ url, body: JSON.parse(init.body) });
     return { ok: true, status: 200, async json() { return url.endsWith("/messages")
       ? { ok: true, reply: "Cotización preparada.", requiresHumanReview: false, actionProposal: proposal(expiry) }
       : { ok: true, action: { actionType: "RESERVATION_MODIFICATION", proposalId: "synthetic-proposal",
-          outcome, actionExecuted: outcome === "EXECUTED", checkoutUrl: "https://checkout.example.test/synthetic" } }; } };
+          outcome, actionExecuted: outcome === "EXECUTED", checkoutUrl: "https://checkout.example.test/synthetic",
+          modificationId: "synthetic-modification", modificationStatus: "AWAITING_PAYMENT", paymentExpiresAt: new Date(deadline + 3_600_000).toISOString() } }; } };
   });
   const container = document.createElement("div");
   document.body.append(container);
@@ -86,6 +100,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   const cache = await createGuestChatSession("https://api.example.test", "synthetic-guest-token");
   await until(async () => (await cache.load()).length === 2);
   return { container, calls, setNow: value => { now = value; },
+    statusCalls, setReceipt: value => { receipt = value instanceof Error ? value : { ...receipt, ...value }; },
     cache,
     async remount(token = "synthetic-guest-token") {
       await act(async () => root.unmount());
@@ -150,6 +165,115 @@ test("confirmed result restores without replaying confirmation", async t => {
   assert.equal(h.calls.length, 2);
 });
 
+test("payment link stays in the same tab and restored dialogue checks the paid receipt without another POST", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  assert.equal(h.container.querySelector("a").getAttribute("target"), null);
+  await until(async () => Boolean((await h.cache.load())[1]?.actionResult));
+  h.setReceipt({ modificationStatus: "APPLIED", paymentStatus: "paid", appliedAt: new Date(deadline - 1000).toISOString() });
+  await h.remount();
+  await until(() => /Cambio aplicado/.test(h.container.textContent));
+  assert.match(h.container.textContent, /Cotización preparada/);
+  assert.equal(h.container.querySelector("a"), null);
+  assert.equal(h.calls.length, 2, "No repeated confirmation, model call, or payment action on return");
+  await until(async () => (await h.cache.load())[1]?.actionResult?.outcome === "EXECUTED");
+  const reads = h.statusCalls.length;
+  await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+  assert.equal(h.statusCalls.length, reads, "Terminal receipts stop polling");
+});
+
+test("the previous tab replaces its stale payment link on focus", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  h.setReceipt({ modificationStatus: "APPLIED", paymentStatus: "paid", appliedAt: new Date(deadline - 1000).toISOString() });
+  await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+  assert.match(h.container.textContent, /Cambio aplicado/);
+  assert.equal(h.container.querySelector("a"), null);
+  assert.equal(h.calls.length, 2);
+});
+
+for (const status of ["PAYMENT_PROCESSING", "APPLYING", "EXPIRED", "CANCELLED", "PAYMENT_FAILED"]) {
+  test(`receipt ${status} never offers another payment`, async t => {
+    const h = await mount(t);
+    await act(async () => h.confirm().click());
+    h.setReceipt({ modificationStatus: status });
+    await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+    assert.equal(h.container.querySelector("a"), null);
+    assert.doesNotMatch(h.container.textContent, /Cambio aplicado/);
+    assert.match(h.container.textContent, /Pago en proceso|cotización debe actualizarse/);
+    assert.equal(h.calls.length, 2);
+  });
+}
+
+test("status lookup failure hides the payment link instead of claiming success", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  h.setReceipt(new Error("Offline"));
+  await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+  assert.match(h.container.textContent, /No se pudo verificar el pago/);
+  assert.equal(h.container.querySelector("a"), null);
+  assert.doesNotMatch(h.container.textContent, /Cambio aplicado/);
+});
+
+test("a receipt for another proposal is rejected without changing the conversation", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  h.setReceipt({ proposalId: "other-proposal", modificationStatus: "APPLIED", appliedAt: new Date(deadline).toISOString() });
+  await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+  assert.match(h.container.textContent, /No se pudo verificar el pago/);
+  assert.equal(h.container.querySelector("a"), null);
+});
+
+test("a receipt for another modification cannot mark this proposal as applied", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  h.setReceipt({ modificationId: "other-modification", modificationStatus: "APPLIED", appliedAt: new Date(deadline).toISOString() });
+  await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+  assert.doesNotMatch(h.container.textContent, /Cambio aplicado/);
+  assert.equal(h.container.querySelector("a"), null);
+});
+
+test("payment success query parameters cannot replace the persisted receipt", async t => {
+  const h = await mount(t);
+  window.history.replaceState({}, "", "?modificationPayment=success&modificationId=synthetic-modification");
+  t.after(() => window.history.replaceState({}, "", "/"));
+  await act(async () => h.confirm().click());
+  assert.match(h.container.textContent, /Pago requerido/);
+  assert.doesNotMatch(h.container.textContent, /Cambio aplicado/);
+});
+
+test("a fresh paid receipt at payment click blocks navigation to the old checkout", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  h.setReceipt({ modificationStatus: "APPLIED", paymentStatus: "paid", appliedAt: new Date(deadline - 1000).toISOString() });
+  await act(async () => h.container.querySelector("a").click());
+  assert.match(h.container.textContent, /Cambio aplicado/);
+  assert.equal(h.container.querySelector("a"), null);
+  assert.equal(h.calls.length, 2);
+});
+
+test("a late receipt is aborted and ignored when switching to another reservation", async t => {
+  const h = await mount(t);
+  await act(async () => h.confirm().click());
+  let resolveReceipt;
+  let signal;
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    assert.match(url, /\/status$/);
+    signal = init.signal;
+    return new Promise(resolve => { resolveReceipt = resolve; });
+  });
+  await act(async () => window.dispatchEvent(new dom.window.Event("focus")));
+  await h.remount("different-guest-token");
+  assert.equal(signal.aborted, true);
+  await act(async () => resolveReceipt({ ok: true, json: async () => ({ ok: true, status: {
+    proposalId: "synthetic-proposal", proposalStatus: "CONFIRMED", modificationId: "synthetic-modification",
+    modificationStatus: "APPLIED", paymentStatus: "paid", paymentExpiresAt: null,
+    appliedAt: new Date(deadline).toISOString(), checkedAt: new Date(deadline).toISOString(),
+  } }) }));
+  assert.doesNotMatch(h.container.textContent, /Cotización preparada|Cambio aplicado/);
+  assert.equal(h.container.querySelector("a"), null);
+});
+
 test("corrupt encrypted storage is discarded without rendering a confirmation", async t => {
   const h = await mount(t);
   const key = window.sessionStorage.key(0);
@@ -200,7 +324,7 @@ test("unavailable storage surfaces a recovery warning while the chat remains usa
 
 for (const [outcome, expected] of [["WAITING_FOR_PAYMENT", /Pago requerido/],
   ["WAITING_FOR_HOST", /Pendiente de revisión/], ["REVIEW_REQUIRED", /cotización debe actualizarse/],
-  ["EXECUTED", /Cambio confirmado/]]) {
+  ["EXECUTED", /Cambio aplicado/]]) {
   test(`explicit synthetic confirmation renders ${outcome}`, async t => {
     const h = await mount(t, { outcome });
     assert.equal(h.calls.length, 1, "Rendering must not confirm automatically");
@@ -211,7 +335,7 @@ for (const [outcome, expected] of [["WAITING_FOR_PAYMENT", /Pago requerido/],
     assert.match(h.container.textContent, expected);
     assert.equal(h.confirm(), undefined);
     assert.equal(Boolean(h.container.querySelector("a")), outcome === "WAITING_FOR_PAYMENT");
-    if (outcome !== "EXECUTED") assert.doesNotMatch(h.container.textContent, /Cambio confirmado/);
+    if (outcome !== "EXECUTED") assert.doesNotMatch(h.container.textContent, /Cambio aplicado/);
   });
 }
 
