@@ -1,4 +1,5 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { isPinAIProposalExpired } from "./pinAIProposalExpiry";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
@@ -211,6 +212,20 @@ function ReservationActionCard({
   confirming: boolean;
   onConfirm: () => void;
 }>) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (result) return;
+    const refresh = () => setNow(Date.now());
+    const timer = window.setInterval(refresh, 1000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [result]);
+  const expired = isPinAIProposalExpired(proposal, now);
   const copy =
     language === "es"
       ? {
@@ -223,6 +238,7 @@ function ReservationActionCard({
             "Las fechas no están retenidas. La disponibilidad se verificará nuevamente al confirmar.",
           confirm: "Confirmar cambio",
           confirming: "Confirmando…",
+          expired: "La cotización venció. Pídele a Pin AI una nueva cotización.",
           executed: "Cambio confirmado",
           payment: "Pago requerido para completar el cambio",
           pay: "Continuar al pago",
@@ -239,6 +255,7 @@ function ReservationActionCard({
             "Dates are not held. Availability will be checked again when you confirm.",
           confirm: "Confirm change",
           confirming: "Confirming…",
+          expired: "This quote has expired. Ask Pin AI for a new quote.",
           executed: "Change confirmed",
           payment: "Payment is required to complete this change",
           pay: "Continue to payment",
@@ -307,14 +324,16 @@ function ReservationActionCard({
 
       {outcomeText ? <div style={styles.actionOutcome}>{outcomeText}</div> : null}
 
+      {!result && expired ? <div role="status" style={styles.actionOutcome}>{copy.expired}</div> : null}
+
       {!result ? (
         <button
           type="button"
           onClick={onConfirm}
-          disabled={confirming}
+          disabled={confirming || expired}
           style={{
             ...styles.confirmButton,
-            ...(confirming ? styles.sendButtonDisabled : {}),
+            ...(confirming || expired ? styles.sendButtonDisabled : {}),
           }}
         >
           {confirming ? copy.confirming : copy.confirm}
@@ -403,6 +422,13 @@ export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
 
   async function confirmAction(messageId: string, proposal: ReservationActionProposal) {
     if (confirmingProposalId) {
+      return;
+    }
+
+    if (isPinAIProposalExpired(proposal, Date.now())) {
+      setError(language === "es"
+        ? "La cotización venció. Pídele a Pin AI una nueva cotización."
+        : "This quote has expired. Ask Pin AI for a new quote.");
       return;
     }
 
