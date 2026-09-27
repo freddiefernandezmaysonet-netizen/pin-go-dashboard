@@ -6,10 +6,12 @@ on:
     paths:
       - '.github/workflows/pin-ai-guest-chat-beta-dashboard.yml'
       - 'package.json'
+      - 'package-lock.json'
       - 'src/pages/public-booking/GuestPinAIChat.tsx'
       - 'src/pages/public-booking/pinAIProposalExpiry.ts'
       - 'src/pages/public-booking/GuestCancellationPage.tsx'
       - 'src/pages/public-booking/guestPinAIChat.contract.test.js'
+      - 'src/pages/public-booking/guestPinAIChat.interaction.test.js'
 
 permissions:
   contents: read
