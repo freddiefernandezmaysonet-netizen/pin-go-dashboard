@@ -40,6 +40,29 @@ function validMessage(v: unknown): v is ChatMessage {
   return true;
 }
 
+export async function readGuestChatHistory(apiBase: string, guestToken: string, signal: AbortSignal): Promise<ChatMessage[]> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal.addEventListener("abort", abort, { once: true });
+  if (signal.aborted) abort();
+  const timeout = window.setTimeout(abort, 10_000);
+  try {
+    const response = await fetch(`${apiBase}/api/public-booking/manage/${encodeURIComponent(guestToken)}/pin-ai/history`, {
+      method: "GET", cache: "no-store", signal: controller.signal,
+    });
+    const payload = await response.json();
+    if (!response.ok || payload?.ok !== true || payload.version !== 1 || !Array.isArray(payload.messages) ||
+        payload.messages.length > 40 || !payload.messages.every(validMessage) ||
+        encoder.encode(JSON.stringify(payload.messages)).byteLength > MAX_BYTES) {
+      throw new Error("CHAT_HISTORY_RECOVERY_FAILED");
+    }
+    return payload.messages;
+  } finally {
+    window.clearTimeout(timeout);
+    signal.removeEventListener("abort", abort);
+  }
+}
+
 export type GuestChatSession = Readonly<{
   load: () => Promise<ChatMessage[]>;
   save: (messages: readonly ChatMessage[]) => Promise<void>;
@@ -60,12 +83,13 @@ export async function createGuestChatSession(apiBase: string, guestToken: string
   const storage = window.sessionStorage;
   const aad = encoder.encode(scope);
   let writes = Promise.resolve();
+  let recoveryFailed = false;
 
   return {
     async load() {
-      const raw = storage.getItem(storageKey);
-      if (!raw) return [];
       try {
+        const raw = storage.getItem(storageKey);
+        if (!raw) { recoveryFailed = false; return []; }
         if (raw.length > MAX_BYTES * 2) throw new Error("oversized");
         const envelope = JSON.parse(raw);
         if (!record(envelope) || typeof envelope.iv !== "string" || typeof envelope.data !== "string") throw new Error("invalid");
@@ -73,17 +97,26 @@ export async function createGuestChatSession(apiBase: string, guestToken: string
         if (plain.byteLength > MAX_BYTES) throw new Error("oversized");
         const saved = JSON.parse(decoder.decode(plain));
         if (!record(saved) || saved.version !== 1 || typeof saved.savedAt !== "number" ||
-            !Number.isFinite(saved.savedAt) || saved.savedAt > Date.now() || Date.now() - saved.savedAt >= TTL ||
+            !Number.isFinite(saved.savedAt) || saved.savedAt > Date.now() ||
             !Array.isArray(saved.messages) || saved.messages.length > 40 || !saved.messages.every(validMessage)) throw new Error("invalid");
+        if (Date.now() - saved.savedAt >= TTL) {
+          storage.removeItem(storageKey);
+          recoveryFailed = false;
+          return [];
+        }
+        recoveryFailed = false;
         return saved.messages;
       } catch {
-        storage.removeItem(storageKey);
-        return [];
+        recoveryFailed = true;
+        // Keep the original ciphertext for a later recovery attempt. Never turn a
+        // failed read into an empty snapshot that the component can overwrite.
+        throw new Error("CHAT_HISTORY_RECOVERY_FAILED");
       }
     },
     save(messages) {
       // Serial writes prevent an older encryption operation from overwriting a newer reply.
       writes = writes.catch(() => {}).then(async () => {
+        if (recoveryFailed) throw new Error("CHAT_HISTORY_RECOVERY_FAILED");
         const bounded: ChatMessage[] = [];
         let length = 0;
         for (const message of messages.slice(-40).reverse()) {

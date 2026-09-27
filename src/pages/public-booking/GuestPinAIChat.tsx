@@ -1,5 +1,5 @@
 import { isPinAIProposalExpired } from "./pinAIProposalExpiry";
-import { createGuestChatSession } from "./pinAIChatSession";
+import { createGuestChatSession, readGuestChatHistory } from "./pinAIChatSession";
 import type { GuestChatSession } from "./pinAIChatSession";
 import { readPinAIActionStatus } from "./pinAIActionStatus";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -441,6 +441,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
   const [session, setSession] = useState<GuestChatSession | null>(null);
   const [restoring, setRestoring] = useState(true);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
+  const [historyRecoveryFailed, setHistoryRecoveryFailed] = useState(false);
   const [restored, setRestored] = useState(false);
   const [paymentChecks, setPaymentChecks] = useState<Record<string, "VERIFIED" | "ERROR">>({});
   const paymentNavigation = useRef<AbortController | null>(null);
@@ -507,7 +508,6 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
     const controller = new AbortController();
     paymentNavigation.current = controller;
     try {
-      if (!session) throw new Error("CHAT_SESSION_UNAVAILABLE");
       const status = await readPinAIActionStatus(apiBase, guestToken, proposalId, controller.signal);
       if (controller.signal.aborted) return;
       const result = messages.find(message => message.actionResult?.proposalId === proposalId)?.actionResult;
@@ -517,7 +517,9 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
         window.dispatchEvent(new Event("focus"));
         return;
       }
-      await session.save(messages);
+      // Server history and receipts are authoritative; browser storage is only
+      // a best-effort fallback and may be unavailable in this tab.
+      if (session) await session.save(messages).catch(() => setStorageUnavailable(true));
       if (!controller.signal.aborted) window.location.assign(url);
     } catch {
       if (controller.signal.aborted) return;
@@ -528,18 +530,30 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
 
   useEffect(() => {
     let active = true;
-    void createGuestChatSession(apiBase, guestToken).then(async cache => {
-      const history = await cache.load();
+    const controller = new AbortController();
+    const local = createGuestChatSession(apiBase, guestToken).then(async cache => ({ cache, messages: await cache.load() }));
+    void Promise.allSettled([readGuestChatHistory(apiBase, guestToken, controller.signal), local]).then(([server, browser]) => {
       if (!active) return;
+      if (server.status === "rejected") {
+        setHistoryRecoveryFailed(true);
+        return;
+      }
+      // Existing pre-migration conversations can still use a valid local copy.
+      // A nonempty server transcript always wins over stale browser snapshots.
+      if (server.value.length === 0 && browser.status === "rejected" &&
+          browser.reason instanceof Error && browser.reason.message === "CHAT_HISTORY_RECOVERY_FAILED") {
+        setHistoryRecoveryFailed(true);
+        return;
+      }
+      const history = server.value.length > 0 ? server.value : browser.status === "fulfilled" ? browser.value.messages : [];
       setMessages(history);
       setRestored(history.length > 0);
-      setSession(cache);
-    }).catch(() => {
-      if (active) setStorageUnavailable(true);
+      if (browser.status === "fulfilled") setSession(browser.value.cache);
+      else setStorageUnavailable(true);
     }).finally(() => {
       if (active) setRestoring(false);
     });
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [apiBase, guestToken]);
 
   useEffect(() => {
@@ -611,7 +625,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
     event.preventDefault();
     const message = draft.trim();
 
-    if (!message || message.length > MAX_MESSAGE_LENGTH || submitting || restoring) {
+    if (!message || message.length > MAX_MESSAGE_LENGTH || submitting || restoring || historyRecoveryFailed) {
       return;
     }
 
@@ -679,15 +693,26 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
 
       <div style={styles.safetyNotice}>{copy.safety}</div>
 
+      {historyRecoveryFailed ? (
+        <div role="alert" style={styles.safetyNotice}>
+          <p>{language === "es"
+            ? "No se pudo recuperar la conversación guardada. No la hemos borrado ni reemplazado. Esto no indica que un pago haya fallado; no repitas el pago."
+            : "The saved conversation could not be restored. We have not deleted or replaced it. This does not mean a payment failed; do not pay again."}</p>
+          <button type="button" onClick={() => window.location.reload()}>
+            {language === "es" ? "Reintentar recuperación" : "Retry recovery"}
+          </button>
+        </div>
+      ) : null}
+
       {restoring || storageUnavailable || restored ? (
         <div role="status" style={styles.safetyNotice}>
           {restoring
             ? (language === "es" ? "Recuperando conversación…" : "Restoring conversation…")
             : storageUnavailable
-              ? (language === "es" ? "Este navegador no permite conservar la conversación al recargar. Puedes continuar aquí."
-                : "This browser cannot keep the conversation across reloads. You can continue here.")
-              : (language === "es" ? "Conversación recuperada en esta pestaña. Las cotizaciones conservan su vencimiento original."
-                : "Conversation restored in this tab. Quotes keep their original expiry.")}
+              ? (language === "es" ? "La copia local no está disponible. Los nuevos mensajes se guardan con tu reserva."
+                : "The local copy is unavailable. New messages are saved with your reservation.")
+              : (language === "es" ? "Conversación recuperada. Las cotizaciones conservan su vencimiento original."
+                : "Conversation restored. Quotes keep their original expiry.")}
         </div>
       ) : null}
 
@@ -747,7 +772,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
           onChange={(event) => setDraft(event.target.value)}
           placeholder={copy.placeholder}
           maxLength={MAX_MESSAGE_LENGTH}
-          disabled={submitting || restoring}
+          disabled={submitting || restoring || historyRecoveryFailed}
           rows={3}
           aria-label={copy.placeholder}
           style={styles.textarea}
@@ -758,7 +783,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
           </span>
           <button
             type="submit"
-            disabled={submitting || restoring || draft.trim().length === 0}
+            disabled={submitting || restoring || historyRecoveryFailed || draft.trim().length === 0}
             style={{
               ...styles.sendButton,
               ...(submitting || draft.trim().length === 0
