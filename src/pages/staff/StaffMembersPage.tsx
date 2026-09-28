@@ -22,6 +22,9 @@ type PropertyAssignmentRow = {
     role: "PRIMARY" | "BACKUP";
     backupOrder: number | null;
     isActive: boolean;
+    cleaningDurationCommitmentMinutes: number | null;
+    cleaningStartConfirmationGraceMinutes: number;
+    cleaningFollowupGraceMinutes: number;
   } | null;
 };
 
@@ -299,6 +302,12 @@ export function StaffMembersPage() {
                   ? current.assignment?.backupOrder ?? 1
                   : null,
               isActive: true,
+              cleaningDurationCommitmentMinutes:
+                current.assignment?.cleaningDurationCommitmentMinutes ?? null,
+              cleaningStartConfirmationGraceMinutes:
+                current.assignment?.cleaningStartConfirmationGraceMinutes ?? 30,
+              cleaningFollowupGraceMinutes:
+                current.assignment?.cleaningFollowupGraceMinutes ?? 15,
             }
           : null,
       };
@@ -336,6 +345,27 @@ export function StaffMembersPage() {
     });
   }
 
+  function updateCleaningTiming(
+    staffId: string,
+    propertyIndex: number,
+    field:
+      | "cleaningDurationCommitmentMinutes"
+      | "cleaningStartConfirmationGraceMinutes"
+      | "cleaningFollowupGraceMinutes",
+    value: number | null
+  ) {
+    setAssignments((prev) => {
+      const list = [...(prev[staffId] || [])];
+      const current = list[propertyIndex];
+      if (!current?.assignment) return prev;
+      list[propertyIndex] = {
+        ...current,
+        assignment: { ...current.assignment, [field]: value },
+      };
+      return { ...prev, [staffId]: list };
+    });
+  }
+
   async function savePropertyAssignments(staffId: string) {
     setSavingAssignments((prev) => ({ ...prev, [staffId]: true }));
     setErr(null);
@@ -346,6 +376,16 @@ export function StaffMembersPage() {
         role: p.assignment?.role,
         backupOrder: p.assignment?.backupOrder ?? 1,
         isActive: Boolean(p.assignment?.role),
+        ...(p.assignment?.role
+          ? {
+              cleaningDurationCommitmentMinutes:
+                p.assignment.cleaningDurationCommitmentMinutes,
+              cleaningStartConfirmationGraceMinutes:
+                p.assignment.cleaningStartConfirmationGraceMinutes,
+              cleaningFollowupGraceMinutes:
+                p.assignment.cleaningFollowupGraceMinutes,
+            }
+          : {}),
       }));
 
       const res = await fetch(`${API_BASE}/staff/${staffId}/property-assignments`, {
@@ -743,7 +783,74 @@ export function StaffMembersPage() {
                               padding: "0 8px",
                             }}
                           />
-                        </div>
+
+
+                          {p.assignment?.role ? (
+                            <div
+                              style={{
+                                gridColumn: "1 / -1",
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+                                gap: 8,
+                                padding: 10,
+                                borderRadius: 10,
+                                background: "#fff",
+                                border: "1px solid #e5e7eb",
+                              }}
+                            >
+                              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#374151" }}>
+                                Standard cleaning time (minutes)
+                                <input
+                                  type="number"
+                                  min={15}
+                                  max={1440}
+                                  step={1}
+                                  value={p.assignment.cleaningDurationCommitmentMinutes ?? ""}
+                                  placeholder="Not configured"
+                                  onChange={(e) =>
+                                    updateCleaningTiming(
+                                      s.id,
+                                      idx,
+                                      "cleaningDurationCommitmentMinutes",
+                                      e.target.value === "" ? null : Number(e.target.value)
+                                    )
+                                  }
+                                  style={{ height: 34, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 8px" }}
+                                />
+                              </label>
+                              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#374151" }}>
+                                Start confirmation grace (minutes)
+                                <input
+                                  type="number"
+                                  min={5}
+                                  max={240}
+                                  step={1}
+                                  value={p.assignment.cleaningStartConfirmationGraceMinutes}
+                                  onChange={(e) =>
+                                    updateCleaningTiming(s.id, idx, "cleaningStartConfirmationGraceMinutes", Number(e.target.value))
+                                  }
+                                  style={{ height: 34, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 8px" }}
+                                />
+                              </label>
+                              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#374151" }}>
+                                Follow-up grace (minutes)
+                                <input
+                                  type="number"
+                                  min={5}
+                                  max={240}
+                                  step={1}
+                                  value={p.assignment.cleaningFollowupGraceMinutes}
+                                  onChange={(e) =>
+                                    updateCleaningTiming(s.id, idx, "cleaningFollowupGraceMinutes", Number(e.target.value))
+                                  }
+                                  style={{ height: 34, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 8px" }}
+                                />
+                              </label>
+                              <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#6b7280", lineHeight: 1.45 }}>
+                                Pin&amp;Go uses these assignment-specific times for cleaner start and completion reminders. Existing NFC access remains unchanged.
+                              </div>
+                            </div>
+                          ) : null}                        </div>
                       ))}
                     </div>
                   )}
