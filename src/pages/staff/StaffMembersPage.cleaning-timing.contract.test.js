@@ -11,8 +11,8 @@ test("Staff property assignments expose all Cleaning Follow-up timing fields", (
     "cleaningFollowupGraceMinutes",
   ]) assert.match(source, new RegExp(field));
   assert.match(source, /Standard cleaning time \(minutes\)/);
-  assert.match(source, /Start confirmation grace \(minutes\)/);
-  assert.match(source, /Follow-up grace \(minutes\)/);
+  assert.match(source, /Start reminder after \(minutes\)/);
+  assert.match(source, /Follow-up after \(minutes\)/);
 });
 
 test("timings are sent only for active property roles and NFC copy remains unchanged", () => {
