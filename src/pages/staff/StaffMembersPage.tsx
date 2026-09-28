@@ -70,6 +70,7 @@ export function StaffMembersPage() {
   const [savingAssignments, setSavingAssignments] = useState<
     Record<string, boolean>
   >({});
+  const [expandedTiming, setExpandedTiming] = useState<Record<string, boolean>>({});
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -417,6 +418,18 @@ export function StaffMembersPage() {
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .staff-assignment-header { display: none !important; }
+          .staff-assignment-row { grid-template-columns: minmax(0, 1fr) minmax(120px, .7fr) 80px !important; }
+          .staff-assignment-row > :nth-child(4) { grid-column: 1 / 3; }
+          .staff-assignment-row > :nth-child(5) { grid-column: 3; grid-row: 2; }
+        }
+        @media (max-width: 620px) {
+          .staff-assignment-row { grid-template-columns: minmax(0, 1fr) !important; }
+          .staff-assignment-row > * { grid-column: 1 !important; grid-row: auto !important; }
+        }
+      `}</style>
       <div
         style={{
           display: "flex",
@@ -603,7 +616,7 @@ export function StaffMembersPage() {
           style={{
             display: "grid",
             gap: 16,
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gridTemplateColumns: "minmax(0, 1fr)",
           }}
         >
           {items.map((s) => {
@@ -667,14 +680,17 @@ export function StaffMembersPage() {
                 <div
                   style={{
                     display: "grid",
-                    gap: 12,
-                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: 10,
+                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                   }}
                 >
                   <Metric label="Phone" value={s.phoneE164 ?? "-"} />
                   <Metric label="Company" value={s.companyName ?? "-"} />
-                  <Metric label="TTLock Card Ref" value={s.ttlockCardRef ?? "-"} />
-                  <Metric label="Photo" value={s.photoUrl ? "YES" : "NO"} />
+                  <Metric label="NFC card" value={s.ttlockCardRef ? "ASSIGNED" : "-"} />
+                  <Metric
+                    label="Cleaning properties"
+                    value={staffAssignments.filter((p) => Boolean(p.assignment?.role)).length}
+                  />
                 </div>
 
                 <div
@@ -705,153 +721,124 @@ export function StaffMembersPage() {
                   </div>
 
                   {isLoadingAssignments ? (
-                    <div style={{ color: "#6b7280", fontSize: 13 }}>
-                      Loading property assignments...
-                    </div>
+                    <div style={{ color: "#6b7280", fontSize: 13 }}>Loading property assignments...</div>
                   ) : staffAssignments.length === 0 ? (
-                    <div style={{ color: "#6b7280", fontSize: 13 }}>
-                      No active properties found.
-                    </div>
+                    <div style={{ color: "#6b7280", fontSize: 13 }}>No active properties found.</div>
                   ) : (
                     <div style={{ display: "grid", gap: 8 }}>
-                      {staffAssignments.map((p, idx) => (
-                        <div
-                          key={p.id}
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
+                      <div
+                        className="staff-assignment-header"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(180px, 1.6fr) minmax(130px, .8fr) 90px minmax(280px, 1.4fr) 110px",
+                          gap: 10,
+                          padding: "0 10px",
+                          fontSize: 11,
+                          fontWeight: 800,
+                          color: "#6b7280",
+                          textTransform: "uppercase",
+                          letterSpacing: ".04em",
+                        }}
+                      >
+                        <span>Property</span><span>Role</span><span>Priority</span><span>Cleaning timing</span><span />
+                      </div>
+                      {staffAssignments.map((p, idx) => {
+                        const timingKey = `${s.id}:${p.id}`;
+                        const timingOpen = Boolean(expandedTiming[timingKey]);
+                        const timingSummary = p.assignment?.role
+                          ? `${p.assignment.cleaningDurationCommitmentMinutes ?? "Not set"} min · start +${p.assignment.cleaningStartConfirmationGraceMinutes} · follow-up +${p.assignment.cleaningFollowupGraceMinutes}`
+                          : "Not assigned";
+                        return (
                           <div
+                            key={p.id}
                             style={{
-                              fontSize: 13,
-                              color: "#111827",
-                              fontWeight: 700,
-                              minWidth: 0,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                            title={p.name}
-                          >
-                            {p.name}
-                          </div>
-
-                          <select
-                            value={p.assignment?.role || ""}
-                            disabled={!s.isActive}
-                            onChange={(e) =>
-                              updatePropertyRole(
-                                s.id,
-                                idx,
-                                e.target.value as "" | "PRIMARY" | "BACKUP"
-                              )
-                            }
-                            style={{
-                              height: 34,
-                              borderRadius: 10,
-                              border: "1px solid #d1d5db",
+                              border: "1px solid #e5e7eb",
+                              borderRadius: 12,
                               background: "#fff",
-                              fontSize: 13,
-                              padding: "0 8px",
+                              padding: 10,
+                              display: "grid",
+                              gap: 10,
                             }}
                           >
-                            <option value="">None</option>
-                            <option value="PRIMARY">Primary</option>
-                            <option value="BACKUP">Backup</option>
-                          </select>
-
-                          <input
-                            type="number"
-                            min={1}
-                            disabled={!s.isActive || p.assignment?.role !== "BACKUP"}
-                            value={p.assignment?.backupOrder ?? 1}
-                            onChange={(e) =>
-                              updateBackupOrder(s.id, idx, Number(e.target.value))
-                            }
-                            style={{
-                              height: 34,
-                              borderRadius: 10,
-                              border: "1px solid #d1d5db",
-                              background:
-                                p.assignment?.role === "BACKUP"
-                                  ? "#fff"
-                                  : "#f3f4f6",
-                              fontSize: 13,
-                              padding: "0 8px",
-                            }}
-                          />
-
-                          {p.assignment?.role ? (
                             <div
+                              className="staff-assignment-row"
                               style={{
-                                gridColumn: "1 / -1",
                                 display: "grid",
-                                gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-                                gap: 8,
-                                padding: 10,
-                                borderRadius: 10,
-                                background: "#fff",
-                                border: "1px solid #e5e7eb",
+                                gridTemplateColumns: "minmax(180px, 1.6fr) minmax(130px, .8fr) 90px minmax(280px, 1.4fr) 110px",
+                                gap: 10,
+                                alignItems: "center",
                               }}
                             >
-                              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#374151" }}>
-                                Standard cleaning time (minutes)
-                                <input
-                                  type="number"
-                                  min={15}
-                                  max={1440}
-                                  step={1}
-                                  value={p.assignment.cleaningDurationCommitmentMinutes ?? ""}
-                                  placeholder="Not configured"
-                                  onChange={(e) =>
-                                    updateCleaningTiming(
-                                      s.id,
-                                      idx,
-                                      "cleaningDurationCommitmentMinutes",
-                                      e.target.value === "" ? null : Number(e.target.value)
-                                    )
-                                  }
-                                  style={{ height: 34, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 8px" }}
-                                />
-                              </label>
-                              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#374151" }}>
-                                Start confirmation grace (minutes)
-                                <input
-                                  type="number"
-                                  min={5}
-                                  max={240}
-                                  step={1}
-                                  value={p.assignment.cleaningStartConfirmationGraceMinutes}
-                                  onChange={(e) =>
-                                    updateCleaningTiming(s.id, idx, "cleaningStartConfirmationGraceMinutes", Number(e.target.value))
-                                  }
-                                  style={{ height: 34, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 8px" }}
-                                />
-                              </label>
-                              <label style={{ display: "grid", gap: 4, fontSize: 12, color: "#374151" }}>
-                                Follow-up grace (minutes)
-                                <input
-                                  type="number"
-                                  min={5}
-                                  max={240}
-                                  step={1}
-                                  value={p.assignment.cleaningFollowupGraceMinutes}
-                                  onChange={(e) =>
-                                    updateCleaningTiming(s.id, idx, "cleaningFollowupGraceMinutes", Number(e.target.value))
-                                  }
-                                  style={{ height: 34, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 8px" }}
-                                />
-                              </label>
-                              <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#6b7280", lineHeight: 1.45 }}>
-                                Pin&amp;Go uses these assignment-specific times for cleaner start and completion reminders. Existing NFC access remains unchanged.
-                              </div>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: "#111827", minWidth: 0 }}>{p.name}</div>
+                              <select
+                                value={p.assignment?.role || ""}
+                                disabled={!s.isActive}
+                                onChange={(e) => updatePropertyRole(s.id, idx, e.target.value as "" | "PRIMARY" | "BACKUP")}
+                                style={{ height: 36, borderRadius: 9, border: "1px solid #d1d5db", background: "#fff", padding: "0 8px" }}
+                              >
+                                <option value="">None</option><option value="PRIMARY">Primary</option><option value="BACKUP">Backup</option>
+                              </select>
+                              <input
+                                aria-label={`${p.name} backup priority`}
+                                type="number"
+                                min={1}
+                                disabled={!s.isActive || p.assignment?.role !== "BACKUP"}
+                                value={p.assignment?.backupOrder ?? 1}
+                                onChange={(e) => updateBackupOrder(s.id, idx, Number(e.target.value))}
+                                style={{ height: 36, borderRadius: 9, border: "1px solid #d1d5db", background: p.assignment?.role === "BACKUP" ? "#fff" : "#f3f4f6", padding: "0 8px" }}
+                              />
+                              <div style={{ fontSize: 12, color: p.assignment?.role ? "#374151" : "#9ca3af" }}>{timingSummary}</div>
+                              <button
+                                type="button"
+                                disabled={!p.assignment?.role}
+                                onClick={() => setExpandedTiming((prev) => ({ ...prev, [timingKey]: !prev[timingKey] }))}
+                                style={{ height: 36, borderRadius: 9, border: "1px solid #d1d5db", background: "#fff", fontWeight: 700, cursor: p.assignment?.role ? "pointer" : "not-allowed" }}
+                              >
+                                {timingOpen ? "Close" : "Configure"}
+                              </button>
                             </div>
-                          ) : null}
-                        </div>
-                      ))}
+                            {p.assignment?.role && timingOpen ? (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                                  gap: 10,
+                                  padding: 12,
+                                  borderRadius: 10,
+                                  background: "#f8fafc",
+                                  border: "1px solid #e2e8f0",
+                                }}
+                              >
+                                <label style={{ display: "grid", gap: 5, fontSize: 12, color: "#374151" }}>
+                                  Standard cleaning time (minutes)
+                                  <input type="number" min={15} max={1440} step={1}
+                                    value={p.assignment.cleaningDurationCommitmentMinutes ?? ""}
+                                    placeholder="Not configured"
+                                    onChange={(e) => updateCleaningTiming(s.id, idx, "cleaningDurationCommitmentMinutes", e.target.value === "" ? null : Number(e.target.value))}
+                                    style={{ height: 38, borderRadius: 9, border: "1px solid #d1d5db", padding: "0 10px" }} />
+                                </label>
+                                <label style={{ display: "grid", gap: 5, fontSize: 12, color: "#374151" }}>
+                                  Start reminder after (minutes)
+                                  <input type="number" min={5} max={240} step={1}
+                                    value={p.assignment.cleaningStartConfirmationGraceMinutes}
+                                    onChange={(e) => updateCleaningTiming(s.id, idx, "cleaningStartConfirmationGraceMinutes", Number(e.target.value))}
+                                    style={{ height: 38, borderRadius: 9, border: "1px solid #d1d5db", padding: "0 10px" }} />
+                                </label>
+                                <label style={{ display: "grid", gap: 5, fontSize: 12, color: "#374151" }}>
+                                  Follow-up after (minutes)
+                                  <input type="number" min={5} max={240} step={1}
+                                    value={p.assignment.cleaningFollowupGraceMinutes}
+                                    onChange={(e) => updateCleaningTiming(s.id, idx, "cleaningFollowupGraceMinutes", Number(e.target.value))}
+                                    style={{ height: 38, borderRadius: 9, border: "1px solid #d1d5db", padding: "0 10px" }} />
+                                </label>
+                                <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#6b7280" }}>
+                                  These times control cleaner follow-up reminders only. NFC access is unchanged.
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
