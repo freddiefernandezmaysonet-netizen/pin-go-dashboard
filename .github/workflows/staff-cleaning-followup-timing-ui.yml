@@ -1,0 +1,32 @@
+name: Staff Cleaning Follow-up Timing UI
+
+on:
+  pull_request:
+    paths:
+      - "src/pages/staff/StaffMembersPage.tsx"
+      - "src/pages/staff/StaffMembersPage.cleaning-timing.contract.test.js"
+      - ".github/workflows/staff-cleaning-followup-timing-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Staff timing contract
+        run: node --test src/pages/staff/StaffMembersPage.cleaning-timing.contract.test.js
+      - name: Typecheck
+        run: npx tsc -p tsconfig.app.json --noEmit
+      - name: Production build
+        run: npm run build
