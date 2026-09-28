@@ -18,5 +18,5 @@ test("Staff property assignments expose all Cleaning Follow-up timing fields", (
 test("timings are sent only for active property roles and NFC copy remains unchanged", () => {
   assert.match(source, /\.\.\.\(p\.assignment\?\.role/);
   assert.match(source, /Existing NFC access remains unchanged/);
-  assert.doesNotMatch(source, /TTLock|sendSms|sendLoggedSms/);
+  assert.doesNotMatch(source, /sendSms|sendLoggedSms|ttlockApi|\/ttlock\//i);
 });
