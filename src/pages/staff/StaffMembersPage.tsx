@@ -784,7 +784,6 @@ export function StaffMembersPage() {
                             }}
                           />
 
-
                           {p.assignment?.role ? (
                             <div
                               style={{
@@ -850,7 +849,8 @@ export function StaffMembersPage() {
                                 Pin&amp;Go uses these assignment-specific times for cleaner start and completion reminders. Existing NFC access remains unchanged.
                               </div>
                             </div>
-                          ) : null}                        </div>
+                          ) : null}
+                        </div>
                       ))}
                     </div>
                   )}
