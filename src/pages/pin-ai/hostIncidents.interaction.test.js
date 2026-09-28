@@ -19,19 +19,40 @@ const { createIncidentApi, IncidentApiError } = await import(apiModule);
 const { HostIncidentWorkspace } = await import(moduleUrl("./HostIncidentWorkspace.tsx", { "../../api/hostIncidents": apiModule }));
 const { GuestIncidentUpdates } = await import(moduleUrl("../public-booking/GuestIncidentUpdates.tsx"));
 const reference = "GI-123456789ABC";
-test("guest refresh shows canonical closure and acknowledgement without private outcome", async t => {
+test("guest status renders without a published message and never exposes private outcome", async t => {
   let resolution = "OPEN";
   t.mock.method(globalThis, "fetch", async () => ({ ok: true, status: 200, json: async () => ({ ok: true,
-    updates: [{ id: "public-status", reference, createdAt: "2026-09-27T19:00:00Z", text: "Published update", resolution, hostAcknowledged: true,
-      privateOutcome: "PRIVATE OUTCOME MUST NEVER RENDER" }], nextAfter: null }) }));
+    incidents: [{ reference, createdAt: "2026-09-27T19:00:00Z", resolution, hostAcknowledged: true,
+      privateOutcome: "PRIVATE OUTCOME MUST NEVER RENDER" }], updates: [], nextAfter: null }) }));
   const { el } = await mount(t, GuestIncidentUpdates, { apiBase: "https://api.synthetic.test", guestToken: "synthetic-guest-token" });
   await until(() => el.textContent.includes("Resolution pending"));
   assert.match(el.textContent, /Confirmada \/ Confirmed/);
+  assert.doesNotMatch(el.textContent, /PRIVATE OUTCOME/);
   resolution = "RESOLVED"; await click(el, "Refresh");
   await until(() => el.textContent.includes("Recorded as resolved"));
   assert.doesNotMatch(el.textContent, /PRIVATE OUTCOME|Resolution pending/);
   assert.match(el.textContent, /does not verify a physical repair/);
 });
+
+test("visible portal refreshes incident status automatically without provider polling", async t => {
+  let interval, resolution = "OPEN", calls = 0;
+  Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+  t.mock.method(window, "setInterval", fn => { interval = fn; return 123; });
+  t.mock.method(window, "clearInterval", () => {});
+  t.mock.method(globalThis, "fetch", async () => {
+    calls++;
+    return { ok: true, status: 200, json: async () => ({ ok: true,
+      incidents: [{ reference, createdAt: "2026-09-27T19:00:00Z", resolution, hostAcknowledged: false }],
+      updates: [], nextAfter: null }) };
+  });
+  const { el } = await mount(t, GuestIncidentUpdates, { apiBase: "https://api.synthetic.test", guestToken: "synthetic-guest-token" });
+  await until(() => el.textContent.includes("Resolution pending"));
+  resolution = "RESOLVED";
+  await act(async () => interval());
+  await until(() => el.textContent.includes("Recorded as resolved"));
+  assert.equal(calls, 2);
+});
+
 function sample(ref = reference) { return { reference: ref, state: "ACTION_REQUIRED", propertyName: "Synthetic home", reservationNumber: "PG-TEST", version: 0, reportedFacts: "Cold water", acknowledgedAt: null, messages: [], nextAfter: null }; }
 async function until(check) { for (let i = 0; i < 100; i++) { if (check()) return; await act(async () => { await new Promise(r => setTimeout(r, 5)); }); } assert.fail("UI did not settle"); }
 async function mount(t, Component, props) { const el = document.createElement("div"); document.body.append(el); const root = createRoot(el); await act(async () => root.render(createElement(Component, props))); t.after(async () => { await act(async () => root.unmount()); el.remove(); }); return { el, async render(next) { await act(async () => root.render(createElement(Component, next))); } }; }
