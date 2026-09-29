@@ -367,6 +367,14 @@ export function StaffMembersPage() {
     });
   }
 
+  function cleaningTimingError(assignment: PropertyAssignmentRow["assignment"]) {
+    if (!assignment?.role || assignment.cleaningDurationCommitmentMinutes === null) return null;
+    if (assignment.cleaningStartConfirmationGraceMinutes >= assignment.cleaningDurationCommitmentMinutes) {
+      return "Start reminder must be earlier than the standard cleaning time.";
+    }
+    return null;
+  }
+
   async function savePropertyAssignments(staffId: string) {
     setSavingAssignments((prev) => ({ ...prev, [staffId]: true }));
     setErr(null);
@@ -748,6 +756,7 @@ export function StaffMembersPage() {
                         const timingSummary = p.assignment?.role
                           ? `${p.assignment.cleaningDurationCommitmentMinutes ?? "Not set"} min · start +${p.assignment.cleaningStartConfirmationGraceMinutes} · follow-up +${p.assignment.cleaningFollowupGraceMinutes}`
                           : "Not assigned";
+                        const timingError = cleaningTimingError(p.assignment);
                         return (
                           <div
                             key={p.id}
@@ -819,7 +828,8 @@ export function StaffMembersPage() {
                                 </label>
                                 <label style={{ display: "grid", gap: 5, fontSize: 12, color: "#374151" }}>
                                   Start reminder after (minutes)
-                                  <input type="number" min={5} max={240} step={1}
+                                  <input type="number" min={5} max={Math.max(5, (p.assignment.cleaningDurationCommitmentMinutes ?? 241) - 1)} step={1}
+                                    aria-invalid={Boolean(timingError)}
                                     value={p.assignment.cleaningStartConfirmationGraceMinutes}
                                     onChange={(e) => updateCleaningTiming(s.id, idx, "cleaningStartConfirmationGraceMinutes", Number(e.target.value))}
                                     style={{ height: 38, borderRadius: 9, border: "1px solid #d1d5db", padding: "0 10px" }} />
@@ -831,8 +841,13 @@ export function StaffMembersPage() {
                                     onChange={(e) => updateCleaningTiming(s.id, idx, "cleaningFollowupGraceMinutes", Number(e.target.value))}
                                     style={{ height: 38, borderRadius: 9, border: "1px solid #d1d5db", padding: "0 10px" }} />
                                 </label>
-                                <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#6b7280" }}>
-                                  These times control cleaner follow-up reminders only. NFC access is unchanged.
+                                {timingError ? (
+                                  <div role="alert" style={{ gridColumn: "1 / -1", fontSize: 12, fontWeight: 700, color: "#b91c1c" }}>
+                                    {timingError}
+                                  </div>
+                                ) : null}
+                                <div style={{ gridColumn: "1 / -1", fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
+                                  The start reminder must occur before the committed cleaning completion. NFC access is unchanged.
                                 </div>
                               </div>
                             ) : null}
