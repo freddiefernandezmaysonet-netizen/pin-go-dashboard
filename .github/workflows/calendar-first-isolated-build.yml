@@ -76,7 +76,7 @@ jobs:
           const destination = original.lastIndexOf('\n',before.back.getStart(before.file)) + 1;
           assert.ok(destination > end);
           const moved = original.slice(start,end).replace(/[\t ]+$/gm,'');
-          const candidate = original.slice(0,start) + original.slice(end,destination) + moved + '\n' + original.slice(destination);
+          const candidate = original.slice(0,start) + original.slice(end,destination).replace(/^[\t ]+$/gm,'') + moved + '\n' + original.slice(destination);
           const after = inspect(candidate);
           const expected = before.children.filter(n => n !== before.mission && n !== before.back).concat(before.mission,before.back);
           const normalize = text => text.replace(/[\t ]+$/gm,'');
