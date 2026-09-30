@@ -93,3 +93,43 @@ test('this candidate branch cannot trigger automatic Vercel deployments',()=>{
   assert.equal(config.git.deploymentEnabled['agent/mission-control-e13-decoupling-v1'],false);
   assert.notEqual(config.git.deploymentEnabled.main,false);
 });
+
+
+test('calendar and date controls appear before the single expanded Mission Control',()=>{
+  const mission = source.indexOf('<div style={styles.missionControlCard}>');
+  assert.ok(mission > 0);
+  assert.equal(source.split('<div style={styles.missionControlCard}>').length-1,1);
+  for (const marker of ['<div style={styles.calendarToolbar}>','<div style={styles.calendarGrid}>','{hasSelectedRange && (','{selectedDay && (']) {
+    const position = source.indexOf(marker);
+    assert.ok(position >= 0 && position < mission,marker+' must remain above Mission Control');
+  }
+  assert.ok(source.indexOf('style={styles.backLink}') > mission);
+});
+
+test('rendered calendar precedes Mission Control for live, unavailable, and legacy-alert snapshots',async()=>{
+  const legacy = {...fixture('ERROR'),operationalItems:undefined,recommendedActions:[{
+    priority:'CRITICAL',requiresHumanAction:true,engine:'Messaging',title:'Legacy fallback retained',
+    reservationId:'fixture-internal-id',reservationNumber:'PG-2026-000002',canAutoResolve:false,
+  }]};
+  for (const snapshot of [fixture('ACTIVE'),null,legacy]) {
+    const html = await renderWithSnapshot(snapshot);
+    const mission = html.indexOf('>Mission Control<');
+    assert.ok(mission > 0);
+    assert.equal(html.split('>Mission Control<').length-1,1);
+    for (const marker of ['>Today</button>','>SUN<','>SAT<']) {
+      const position = html.indexOf(marker);
+      assert.ok(position >= 0 && position < mission,marker+' must render before Mission Control');
+    }
+    assert.ok(html.indexOf('Back to property') > mission);
+    assert.doesNotMatch(html,/<details|<summary|aria-expanded="false"/);
+    if (snapshot === null) assert.match(html,/Mission Control live state is unavailable/);
+    else if (snapshot === legacy) assert.match(html,/Legacy fallback retained/);
+    else assert.match(html,/Legacy communication needs review/);
+  }
+});
+
+test('calendar-first candidate keeps automatic deployment disabled without disabling main',()=>{
+  const config = JSON.parse(readFileSync('vercel.json','utf8'));
+  assert.equal(config.git.deploymentEnabled['agent/calendar-first-mission-control-v1'],false);
+  assert.notEqual(config.git.deploymentEnabled.main,false);
+});
