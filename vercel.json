@@ -9,7 +9,8 @@
       "agent/booking-com-auto-reconcile": false,
       "agent/expedia-connection-center-dashboard": false,
       "agent/mission-control-e13-decoupling-v1": false,
-      "agent/calendar-first-mission-control-v1": false
+      "agent/calendar-first-mission-control-v1": false,
+      "agent/stay-restrictions-removal-ui-v1": false
     }
   },
   "headers": [
