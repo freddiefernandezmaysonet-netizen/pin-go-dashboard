@@ -1693,455 +1693,7 @@ paymentState: manualPaymentState,
         </div>
       </div>
     
-       <div style={styles.missionControlCard}>
-  <div style={styles.missionEnterpriseHeader}>
-    <div>
-      <div style={styles.missionEyebrow}>Mission Control</div>
-      <div style={styles.missionEnterpriseTitle}>
-        Property operations overview
-      </div>
-      <div style={styles.missionEnterpriseSubtitle}>
-        Reservation readiness, operational alerts, and recorded activity for this property.
-      </div>
-      <div role="note" style={styles.missionEnterpriseSubtitle}>
-        Global engine health is not assessed in this view.
-      </div>
-    </div>
 
-    <div style={styles.missionStatusCluster}>
-      <div style={styles.missionGeneratedLabel}>
-        {loading
-          ? "Verifying live snapshot"
-          : hasLiveMissionControlSnapshot
-          ? "Live snapshot"
-          : "Live snapshot unavailable"}
-      </div>
-    </div>
-  </div>
-
-  {!hasLiveMissionControlSnapshot && !loading ? (
-    <div style={styles.missionUnavailableState}>
-      <strong>Mission Control live state is unavailable.</strong>
-      <span>
-        Operational data is unavailable for this property. No activity or
-        readiness metrics are inferred while the snapshot is unavailable.
-      </span>
-    </div>
-  ) : null}
-
-  <div style={styles.missionHeroGrid}>
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Autonomy Score</div>
-      <div style={styles.missionHeroValue}>
-        {autonomyScore === null ? "—" : `${autonomyScore}%`}
-      </div>
-      <div style={styles.missionProgressShell}>
-        <div
-          style={{
-            ...styles.missionProgressFill,
-            width: `${
-              autonomyScore === null
-                ? 0
-                : Math.min(Math.max(autonomyScore, 0), 100)
-            }%`,
-          }}
-        />
-      </div>
-      <div style={styles.missionHeroHint}>
-        Operations completed without manual intervention
-      </div>
-    </div>
-
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Interventions Avoided</div>
-      <div style={styles.missionHeroValue}>
-        {interventionsAvoided === null ? "—" : interventionsAvoided}
-      </div>
-      <div style={styles.missionHeroHint}>
-        Host actions avoided in this APMS window
-      </div>
-    </div>
-
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Autonomous Decisions</div>
-      <div style={styles.missionHeroValue}>
-        {autonomousDecisions === null ? "—" : autonomousDecisions}
-      </div>
-      <div style={styles.missionHeroHint}>
-        Decisions executed by Pin&Go engines
-      </div>
-    </div>
-
-  </div>
-    
-     {guestJourneyMetrics ? (
-    <div style={styles.guestJourneyPanel}>
-      <div style={styles.guestJourneyHeader}>
-        <div>
-          <div style={styles.guestJourneyEyebrow}>
-            Guest Journey Engine
-          </div>
-
-          <div style={styles.guestJourneyTitle}>
-            Arrival readiness pipeline
-          </div>
-
-          <div style={styles.guestJourneySubtitle}>
-            Live progress from reservation confirmation through secure
-            verification and digital access readiness.
-          </div>
-        </div>
-
-        <div style={styles.guestJourneyCompletion}>
-          <div style={styles.guestJourneyCompletionValue}>
-            {guestJourneyCompletionRate}%
-          </div>
-          <div style={styles.guestJourneyCompletionLabel}>
-            Completion rate
-          </div>
-        </div>
-      </div>
-
-      <div style={styles.guestJourneyMetricGrid}>
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyActiveReservations}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Active reservations
-          </div>
-        </div>
-       
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyReservationConfirmed}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Reservation confirmed
-          </div>
-        </div>
-
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyVerificationPending}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Verification pending
-          </div>
-        </div>
-
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyVerificationCompleted}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Verification completed
-          </div>
-        </div>
-
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyAccessScheduled}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Access scheduled
-          </div>
-        </div>
-
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyReadyForArrival}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Ready for arrival
-          </div>
-        </div>
-
-        <div
-          style={{
-            ...styles.guestJourneyMetricCard,
-            ...(guestJourneyHostInterventionRequired > 0
-              ? styles.guestJourneyAttentionCard
-              : styles.guestJourneyClearCard),
-          }}
-        >
-          <div style={styles.guestJourneyMetricValue}>
-            {guestJourneyHostInterventionRequired}
-          </div>
-          <div style={styles.guestJourneyMetricLabel}>
-            Host intervention required
-          </div>
-        </div>
-      </div>
-    </div>
-  ) : null}         
-
-  {hasOperationalIntelligenceContract ? (
-    <OperationalIntelligencePanel
-      items={missionControlOperationalItems}
-      onOpenReservation={(reservationId) => {
-        navigate(`/reservations/${reservationId}`);
-      }}
-    />
-  ) : null}
-
-  
-  {recentApmsActivities.length > 0 ? (
-    <div style={styles.missionPanel}>
-      <div style={styles.missionPanelHeader}>
-        <div>
-          <div style={styles.missionPanelTitle}>Recent APMS Activity</div>
-          <div style={styles.missionPanelMeta}>
-            Latest autonomous actions completed by Pin&Go
-          </div>
-        </div>
-      </div>
-
-      <div style={styles.missionActivityTimeline}>
-        {recentApmsActivities.map((entry: any) => (
-          <div
-            key={entry.decisionId ?? `${entry.engine}-${entry.summary}`}
-            style={styles.missionActivityRow}
-          >
-            <div style={styles.missionActivityMarker} />
-
-            <div style={styles.missionActivityContent}>
-              <div style={styles.missionActivityTopRow}>
-                <div style={styles.missionActivityEngine}>
-                  {getMissionActivityEngineLabel(entry.engine)}
-                </div>
-
-                <div
-                  style={{
-                    ...styles.missionStatusPill,
-                    ...getMissionStatusPillStyle(entry.status ?? "SUCCESS"),
-                  }}
-                >
-                  {entry.status ?? "SUCCESS"}
-                </div>
-              </div>
-               <div style={styles.missionActivityReason}>
-  {getMissionActivityReasonLabel(entry)}
-</div>
-
-{getMissionActivityDetail(entry) ? (
-  <div style={styles.missionActivityDetail}>
-    {getMissionActivityDetail(entry)}
-  </div>
-) : null}
-
-<div style={styles.missionActivitySummary}>
-  {sanitizeWhiteLabelText(entry.summary)}
-</div>
-
-<div style={styles.missionActivityMeta}>
-  {formatMissionActivityTime(entry)}
-</div>
-              
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-   ) : null}
-
-  {(
-  !hasOperationalIntelligenceContract ||
-  shouldShowLegacyCriticalFallback
-) && primaryMissionControlAction ? (
-  <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
-    <div style={styles.missionActionHeader}>
-      <div>
-        <div style={getMissionActionTitleStyle(primaryMissionControlAction)}>
-          Recommended Action
-        </div>
-
-        <div style={styles.missionActionTopMeta}>
-          <span style={styles.missionActionEngineBadge}>
-            {getMissionActionEngineDisplayLabel(
-              primaryMissionControlAction.engine
-            )}
-          </span>
-
-          <span style={styles.missionActionSignal}>
-            {getMissionActionLastSignalLabel(primaryMissionControlAction)}
-          </span>
-        </div>
-
-        <div style={styles.missionActionText}>
-          {sanitizeWhiteLabelText(primaryMissionControlAction.title)}
-        </div>
-      </div>
-
-      <div
-        style={{
-          ...styles.missionStatusPill,
-          ...getMissionStatusPillStyle(
-            getMissionActionVisualStatus(primaryMissionControlAction)
-          ),
-        }}
-      >
-        {getMissionActionBadgeLabel(primaryMissionControlAction)}
-      </div>
-    </div>
-
-    {renderMissionActionDetails(primaryMissionControlAction)}
-    
-    <div style={styles.missionActionFooterRow}>
-      <div style={getMissionActionFooterStyle(primaryMissionControlAction)}>
-        {getMissionActionFooterLabel(primaryMissionControlAction)}
-      </div>
-
-      <div style={styles.missionActionTrustText}>
-        {primaryMissionControlAction.requiresHumanAction
-          ? "Pin&Go detected a real signal that needs host review."
-          : "Pin&Go is monitoring this property and no host action is needed."}
-      </div>
-    </div>
-
-    {secondaryMissionControlActions.length > 0 ? (
-      <div style={styles.missionActionList}>
-        {secondaryMissionControlActions.map((action: any, index: number) => (
-          <div
-            key={`${
-  action.reservationNumber ??
-  action.reservationId ??
-  "property"
-}-${action.engine}-${action.title}-${index}`}
-            style={styles.missionActionItem}
-          >
-            <div style={styles.missionActionItemTopRow}>
-              <div>
-                <div style={styles.missionActionMiniMeta}>
-                  <span style={styles.missionActionEngineBadge}>
-                    {getMissionActionEngineDisplayLabel(action.engine)}
-                  </span>
-
-                  <span style={styles.missionActionSignal}>
-                    {getMissionActionLastSignalLabel(action)}
-                  </span>
-                </div>
-
-                <div style={styles.missionActionText}>
-                  {sanitizeWhiteLabelText(action.title)}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...styles.missionStatusPill,
-                  ...getMissionStatusPillStyle(
-                    getMissionActionVisualStatus(action)
-                  ),
-                }}
-              >
-                {getMissionActionBadgeLabel(action)}
-              </div>
-            </div>
-
-           {renderMissionActionDetails(action)}
-          </div>
-        ))}
-
-        {hiddenMissionControlActionCount > 0 ? (
-          <div style={styles.missionActionCount}>
-            +{hiddenMissionControlActionCount} more grouped action
-            {hiddenMissionControlActionCount === 1 ? "" : "s"}
-          </div>
-        ) : null}
-      </div>
-    ) : null}
-  </div>
-) : null}
-     {!hasOperationalIntelligenceContract && autoResolutionLogItems.length > 0 ? (
-  <div style={styles.autoResolutionPanel}>
-    <div style={styles.autoResolutionHeader}>
-      <div>
-        <div style={styles.autoResolutionEyebrow}>
-          Auto Resolution Log
-        </div>
-
-        <div style={styles.autoResolutionHeading}>
-          Operations resolved by Pin&Go
-        </div>
-
-        <div style={styles.autoResolutionSubheading}>
-          Autonomous APMS actions completed without host intervention.
-        </div>
-      </div>
-
-      <div style={styles.autoResolutionStats}>
-        <div style={styles.autoResolutionStatCard}>
-          <div style={styles.autoResolutionStatValue}>
-            {autoResolutionLogItems.length}
-          </div>
-          <div style={styles.autoResolutionStatLabel}>
-            Resolved automatically
-          </div>
-        </div>
-
-        <div style={styles.autoResolutionStatCard}>
-          <div style={styles.autoResolutionStatValue}>0</div>
-          <div style={styles.autoResolutionStatLabel}>
-            Host actions required
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style={styles.autoResolutionTimeline}>
-      {autoResolutionLogItems.map((entry: any, index: number) => (
-        <div
-          key={`${entry.decisionId ?? entry.id ?? index}-auto-resolution`}
-          style={styles.autoResolutionTimelineRow}
-        >
-          <div style={styles.autoResolutionTimelineRail}>
-            <div style={styles.autoResolutionTimelineDot}>✓</div>
-            {index < autoResolutionLogItems.length - 1 ? (
-              <div style={styles.autoResolutionTimelineLine} />
-            ) : null}
-          </div>
-
-          <div style={styles.autoResolutionEnterpriseCard}>
-            <div style={styles.autoResolutionCardTopRow}>
-              <div>
-                <div style={styles.autoResolutionEngineBadge}>
-                  {getMissionActivityEngineLabel(entry.engine)}
-                </div>
-
-                <div style={styles.autoResolutionTitle}>
-                  {getAutoResolutionTitle(entry)}
-                </div>
-              </div>
-
-              <div style={styles.autoResolutionResolvedPill}>
-                Resolved automatically
-              </div>
-            </div>
-
-            <div style={styles.autoResolutionDescription}>
-              {getAutoResolutionDescription(entry)}
-            </div>
-
-            {getMissionActivityDetail(entry) ? (
-              <div style={styles.autoResolutionDetail}>
-                {getMissionActivityDetail(entry)}
-              </div>
-            ) : null}
-
-            <div style={styles.autoResolutionFooter}>
-              <span>APMS execution completed</span>
-              <span>{formatMissionActivityTime(entry)}</span>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-) : null}
-    
-      </div>
-       
        <div style={styles.controlCenterCard}>
         <div style={styles.legendColumn}>
           <div style={styles.sectionTitle}>Calendar Intelligence</div>
@@ -2587,7 +2139,7 @@ paymentState: manualPaymentState,
   <option value="NONE">Payment not recorded</option>
   <option value="PAID">Payment collected manually</option>
 </select>
-          
+
 <div style={styles.manualQuoteCard}>
   <div style={styles.manualQuoteHeader}>
     <div>
@@ -2683,7 +2235,7 @@ paymentState: manualPaymentState,
           </div>
 
                    {getSelectedPricingBreakdown().length > 0 ? (
-                        
+
                           <div
               style={{
                 marginTop: 18,
@@ -2885,6 +2437,455 @@ paymentState: manualPaymentState,
           )}
         </div>
       )}
+
+       <div style={styles.missionControlCard}>
+  <div style={styles.missionEnterpriseHeader}>
+    <div>
+      <div style={styles.missionEyebrow}>Mission Control</div>
+      <div style={styles.missionEnterpriseTitle}>
+        Property operations overview
+      </div>
+      <div style={styles.missionEnterpriseSubtitle}>
+        Reservation readiness, operational alerts, and recorded activity for this property.
+      </div>
+      <div role="note" style={styles.missionEnterpriseSubtitle}>
+        Global engine health is not assessed in this view.
+      </div>
+    </div>
+
+    <div style={styles.missionStatusCluster}>
+      <div style={styles.missionGeneratedLabel}>
+        {loading
+          ? "Verifying live snapshot"
+          : hasLiveMissionControlSnapshot
+          ? "Live snapshot"
+          : "Live snapshot unavailable"}
+      </div>
+    </div>
+  </div>
+
+  {!hasLiveMissionControlSnapshot && !loading ? (
+    <div style={styles.missionUnavailableState}>
+      <strong>Mission Control live state is unavailable.</strong>
+      <span>
+        Operational data is unavailable for this property. No activity or
+        readiness metrics are inferred while the snapshot is unavailable.
+      </span>
+    </div>
+  ) : null}
+
+  <div style={styles.missionHeroGrid}>
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Autonomy Score</div>
+      <div style={styles.missionHeroValue}>
+        {autonomyScore === null ? "—" : `${autonomyScore}%`}
+      </div>
+      <div style={styles.missionProgressShell}>
+        <div
+          style={{
+            ...styles.missionProgressFill,
+            width: `${
+              autonomyScore === null
+                ? 0
+                : Math.min(Math.max(autonomyScore, 0), 100)
+            }%`,
+          }}
+        />
+      </div>
+      <div style={styles.missionHeroHint}>
+        Operations completed without manual intervention
+      </div>
+    </div>
+
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Interventions Avoided</div>
+      <div style={styles.missionHeroValue}>
+        {interventionsAvoided === null ? "—" : interventionsAvoided}
+      </div>
+      <div style={styles.missionHeroHint}>
+        Host actions avoided in this APMS window
+      </div>
+    </div>
+
+    <div style={styles.missionHeroCard}>
+      <div style={styles.missionHeroLabel}>Autonomous Decisions</div>
+      <div style={styles.missionHeroValue}>
+        {autonomousDecisions === null ? "—" : autonomousDecisions}
+      </div>
+      <div style={styles.missionHeroHint}>
+        Decisions executed by Pin&Go engines
+      </div>
+    </div>
+
+  </div>
+
+     {guestJourneyMetrics ? (
+    <div style={styles.guestJourneyPanel}>
+      <div style={styles.guestJourneyHeader}>
+        <div>
+          <div style={styles.guestJourneyEyebrow}>
+            Guest Journey Engine
+          </div>
+
+          <div style={styles.guestJourneyTitle}>
+            Arrival readiness pipeline
+          </div>
+
+          <div style={styles.guestJourneySubtitle}>
+            Live progress from reservation confirmation through secure
+            verification and digital access readiness.
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyCompletion}>
+          <div style={styles.guestJourneyCompletionValue}>
+            {guestJourneyCompletionRate}%
+          </div>
+          <div style={styles.guestJourneyCompletionLabel}>
+            Completion rate
+          </div>
+        </div>
+      </div>
+
+      <div style={styles.guestJourneyMetricGrid}>
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyActiveReservations}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Active reservations
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyReservationConfirmed}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Reservation confirmed
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyVerificationPending}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Verification pending
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyVerificationCompleted}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Verification completed
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyAccessScheduled}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Access scheduled
+          </div>
+        </div>
+
+        <div style={styles.guestJourneyMetricCard}>
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyReadyForArrival}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Ready for arrival
+          </div>
+        </div>
+
+        <div
+          style={{
+            ...styles.guestJourneyMetricCard,
+            ...(guestJourneyHostInterventionRequired > 0
+              ? styles.guestJourneyAttentionCard
+              : styles.guestJourneyClearCard),
+          }}
+        >
+          <div style={styles.guestJourneyMetricValue}>
+            {guestJourneyHostInterventionRequired}
+          </div>
+          <div style={styles.guestJourneyMetricLabel}>
+            Host intervention required
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null}
+
+  {hasOperationalIntelligenceContract ? (
+    <OperationalIntelligencePanel
+      items={missionControlOperationalItems}
+      onOpenReservation={(reservationId) => {
+        navigate(`/reservations/${reservationId}`);
+      }}
+    />
+  ) : null}
+
+
+  {recentApmsActivities.length > 0 ? (
+    <div style={styles.missionPanel}>
+      <div style={styles.missionPanelHeader}>
+        <div>
+          <div style={styles.missionPanelTitle}>Recent APMS Activity</div>
+          <div style={styles.missionPanelMeta}>
+            Latest autonomous actions completed by Pin&Go
+          </div>
+        </div>
+      </div>
+
+      <div style={styles.missionActivityTimeline}>
+        {recentApmsActivities.map((entry: any) => (
+          <div
+            key={entry.decisionId ?? `${entry.engine}-${entry.summary}`}
+            style={styles.missionActivityRow}
+          >
+            <div style={styles.missionActivityMarker} />
+
+            <div style={styles.missionActivityContent}>
+              <div style={styles.missionActivityTopRow}>
+                <div style={styles.missionActivityEngine}>
+                  {getMissionActivityEngineLabel(entry.engine)}
+                </div>
+
+                <div
+                  style={{
+                    ...styles.missionStatusPill,
+                    ...getMissionStatusPillStyle(entry.status ?? "SUCCESS"),
+                  }}
+                >
+                  {entry.status ?? "SUCCESS"}
+                </div>
+              </div>
+               <div style={styles.missionActivityReason}>
+  {getMissionActivityReasonLabel(entry)}
+</div>
+
+{getMissionActivityDetail(entry) ? (
+  <div style={styles.missionActivityDetail}>
+    {getMissionActivityDetail(entry)}
+  </div>
+) : null}
+
+<div style={styles.missionActivitySummary}>
+  {sanitizeWhiteLabelText(entry.summary)}
+</div>
+
+<div style={styles.missionActivityMeta}>
+  {formatMissionActivityTime(entry)}
+</div>
+
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+   ) : null}
+
+  {(
+  !hasOperationalIntelligenceContract ||
+  shouldShowLegacyCriticalFallback
+) && primaryMissionControlAction ? (
+  <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
+    <div style={styles.missionActionHeader}>
+      <div>
+        <div style={getMissionActionTitleStyle(primaryMissionControlAction)}>
+          Recommended Action
+        </div>
+
+        <div style={styles.missionActionTopMeta}>
+          <span style={styles.missionActionEngineBadge}>
+            {getMissionActionEngineDisplayLabel(
+              primaryMissionControlAction.engine
+            )}
+          </span>
+
+          <span style={styles.missionActionSignal}>
+            {getMissionActionLastSignalLabel(primaryMissionControlAction)}
+          </span>
+        </div>
+
+        <div style={styles.missionActionText}>
+          {sanitizeWhiteLabelText(primaryMissionControlAction.title)}
+        </div>
+      </div>
+
+      <div
+        style={{
+          ...styles.missionStatusPill,
+          ...getMissionStatusPillStyle(
+            getMissionActionVisualStatus(primaryMissionControlAction)
+          ),
+        }}
+      >
+        {getMissionActionBadgeLabel(primaryMissionControlAction)}
+      </div>
+    </div>
+
+    {renderMissionActionDetails(primaryMissionControlAction)}
+
+    <div style={styles.missionActionFooterRow}>
+      <div style={getMissionActionFooterStyle(primaryMissionControlAction)}>
+        {getMissionActionFooterLabel(primaryMissionControlAction)}
+      </div>
+
+      <div style={styles.missionActionTrustText}>
+        {primaryMissionControlAction.requiresHumanAction
+          ? "Pin&Go detected a real signal that needs host review."
+          : "Pin&Go is monitoring this property and no host action is needed."}
+      </div>
+    </div>
+
+    {secondaryMissionControlActions.length > 0 ? (
+      <div style={styles.missionActionList}>
+        {secondaryMissionControlActions.map((action: any, index: number) => (
+          <div
+            key={`${
+  action.reservationNumber ??
+  action.reservationId ??
+  "property"
+}-${action.engine}-${action.title}-${index}`}
+            style={styles.missionActionItem}
+          >
+            <div style={styles.missionActionItemTopRow}>
+              <div>
+                <div style={styles.missionActionMiniMeta}>
+                  <span style={styles.missionActionEngineBadge}>
+                    {getMissionActionEngineDisplayLabel(action.engine)}
+                  </span>
+
+                  <span style={styles.missionActionSignal}>
+                    {getMissionActionLastSignalLabel(action)}
+                  </span>
+                </div>
+
+                <div style={styles.missionActionText}>
+                  {sanitizeWhiteLabelText(action.title)}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  ...styles.missionStatusPill,
+                  ...getMissionStatusPillStyle(
+                    getMissionActionVisualStatus(action)
+                  ),
+                }}
+              >
+                {getMissionActionBadgeLabel(action)}
+              </div>
+            </div>
+
+           {renderMissionActionDetails(action)}
+          </div>
+        ))}
+
+        {hiddenMissionControlActionCount > 0 ? (
+          <div style={styles.missionActionCount}>
+            +{hiddenMissionControlActionCount} more grouped action
+            {hiddenMissionControlActionCount === 1 ? "" : "s"}
+          </div>
+        ) : null}
+      </div>
+    ) : null}
+  </div>
+) : null}
+     {!hasOperationalIntelligenceContract && autoResolutionLogItems.length > 0 ? (
+  <div style={styles.autoResolutionPanel}>
+    <div style={styles.autoResolutionHeader}>
+      <div>
+        <div style={styles.autoResolutionEyebrow}>
+          Auto Resolution Log
+        </div>
+
+        <div style={styles.autoResolutionHeading}>
+          Operations resolved by Pin&Go
+        </div>
+
+        <div style={styles.autoResolutionSubheading}>
+          Autonomous APMS actions completed without host intervention.
+        </div>
+      </div>
+
+      <div style={styles.autoResolutionStats}>
+        <div style={styles.autoResolutionStatCard}>
+          <div style={styles.autoResolutionStatValue}>
+            {autoResolutionLogItems.length}
+          </div>
+          <div style={styles.autoResolutionStatLabel}>
+            Resolved automatically
+          </div>
+        </div>
+
+        <div style={styles.autoResolutionStatCard}>
+          <div style={styles.autoResolutionStatValue}>0</div>
+          <div style={styles.autoResolutionStatLabel}>
+            Host actions required
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style={styles.autoResolutionTimeline}>
+      {autoResolutionLogItems.map((entry: any, index: number) => (
+        <div
+          key={`${entry.decisionId ?? entry.id ?? index}-auto-resolution`}
+          style={styles.autoResolutionTimelineRow}
+        >
+          <div style={styles.autoResolutionTimelineRail}>
+            <div style={styles.autoResolutionTimelineDot}>✓</div>
+            {index < autoResolutionLogItems.length - 1 ? (
+              <div style={styles.autoResolutionTimelineLine} />
+            ) : null}
+          </div>
+
+          <div style={styles.autoResolutionEnterpriseCard}>
+            <div style={styles.autoResolutionCardTopRow}>
+              <div>
+                <div style={styles.autoResolutionEngineBadge}>
+                  {getMissionActivityEngineLabel(entry.engine)}
+                </div>
+
+                <div style={styles.autoResolutionTitle}>
+                  {getAutoResolutionTitle(entry)}
+                </div>
+              </div>
+
+              <div style={styles.autoResolutionResolvedPill}>
+                Resolved automatically
+              </div>
+            </div>
+
+            <div style={styles.autoResolutionDescription}>
+              {getAutoResolutionDescription(entry)}
+            </div>
+
+            {getMissionActivityDetail(entry) ? (
+              <div style={styles.autoResolutionDetail}>
+                {getMissionActivityDetail(entry)}
+              </div>
+            ) : null}
+
+            <div style={styles.autoResolutionFooter}>
+              <span>APMS execution completed</span>
+              <span>{formatMissionActivityTime(entry)}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+) : null}
+
+      </div>
 
       <Link to={`/properties/${id}/edit`} style={styles.backLink}>
         Back to property
