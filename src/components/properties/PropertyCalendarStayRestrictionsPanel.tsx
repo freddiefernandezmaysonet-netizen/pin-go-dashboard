@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { useParams } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || "https://api.pin-ngo.com";
@@ -47,13 +47,24 @@ export function PropertyCalendarStayRestrictionsPanel() {
   const [minimumNightsInput, setMinimumNightsInput] = useState("");
   const [maximumNightsInput, setMaximumNightsInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeMinimum, setRemoveMinimum] = useState(false);
+  const [removeMaximum, setRemoveMaximum] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mutationPending = useRef(false);
+  const propertyIdRef = useRef(id);
+  propertyIdRef.current = id;
+  const busy = saving || removing;
 
-  const selectedDateCount = useMemo(() => inclusiveDateKeys(fromDate, toDate || fromDate)?.length ?? 0, [fromDate, toDate]);
+  const selectedDateCount = useMemo(() => {
+    const start = parseDateKey(fromDate);
+    const end = parseDateKey(toDate || fromDate);
+    return start && end && end.date >= start.date ? Math.round((end.date.getTime() - start.date.getTime()) / 86_400_000) + 1 : 0;
+  }, [fromDate, toDate]);
 
   async function handleApply() {
-    if (!id) return;
+    if (!id || mutationPending.current) return;
     setMessage(null);
     setError(null);
     const dateKeys = inclusiveDateKeys(fromDate, toDate || fromDate);
@@ -76,15 +87,54 @@ export function PropertyCalendarStayRestrictionsPanel() {
     });
 
     try {
+      mutationPending.current = true;
       setSaving(true);
       const response = await fetch(`${API_BASE}/api/dashboard/properties/${id}/calendar-overrides`, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ overrides }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || "Failed to apply stay restrictions");
-      setMessage(`Applied to ${dateKeys.length} date${dateKeys.length === 1 ? "" : "s"}.`);
+      if (propertyIdRef.current === id) setMessage(`Applied to ${dateKeys.length} date${dateKeys.length === 1 ? "" : "s"}.`);
     } catch (requestError: any) {
-      setError(String(requestError?.message || requestError));
+      if (propertyIdRef.current === id) setError(String(requestError?.message || requestError));
     } finally {
+      mutationPending.current = false;
       setSaving(false);
+    }
+  }
+
+  async function handleRemove() {
+    if (!id || mutationPending.current) return;
+    setMessage(null);
+    setError(null);
+    if (selectedDateCount < 1) { setError("Select a valid start date and end date."); return; }
+    if (selectedDateCount > 500) { setError("Remove restrictions from no more than 500 dates at a time."); return; }
+    const fields = [removeMinimum ? "minimumNights" : null, removeMaximum ? "maximumNights" : null].filter((field): field is string => field !== null);
+    if (!fields.length) { setError("Choose Minimum Nights, Maximum Nights, or both to remove."); return; }
+    const dateKeys = inclusiveDateKeys(fromDate, toDate || fromDate);
+    if (!dateKeys?.length) { setError("Select a valid start date and end date."); return; }
+    const fieldLabel = [removeMinimum ? "Minimum Nights" : null, removeMaximum ? "Maximum Nights" : null].filter(Boolean).join(" and ");
+    const rangeLabel = dateKeys.length === 1 ? dateKeys[0] : `${dateKeys[0]} through ${dateKeys[dateKeys.length - 1]}`;
+    if (!window.confirm(`Remove saved ${fieldLabel} overrides for ${rangeLabel} (${dateKeys.length} date${dateKeys.length === 1 ? "" : "s"})?\n\nProperty defaults will apply to the removed fields. Nightly rates, reservations, blocked dates, and other restrictions will not change.`)) return;
+
+    try {
+      mutationPending.current = true;
+      setRemoving(true);
+      const response = await fetch(`${API_BASE}/api/dashboard/properties/${encodeURIComponent(id)}/calendar-overrides`, {
+        method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dateKeys, fields }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data?.ok !== true) throw new Error(data?.error || "Failed to remove stay restrictions");
+      if (!Number.isInteger(data.affectedDates) || data.affectedDates < 0 || data.affectedDates > dateKeys.length) throw new Error("The server did not confirm the removal result. Review the dates before retrying.");
+      if (propertyIdRef.current !== id) return;
+      if (fields.includes("minimumNights")) setMinimumNightsInput("");
+      if (fields.includes("maximumNights")) setMaximumNightsInput("");
+      setMessage(data.affectedDates === 0
+        ? "No matching saved restrictions were found. Nothing was changed."
+        : `Removed from ${data.affectedDates} date${data.affectedDates === 1 ? "" : "s"}. Property defaults apply to the removed fields.${data.syncQueued === true ? " Channel update queued." : ""}`);
+    } catch (requestError: unknown) {
+      if (propertyIdRef.current === id) setError(requestError instanceof Error ? requestError.message : "Failed to remove stay restrictions");
+    } finally {
+      mutationPending.current = false;
+      setRemoving(false);
     }
   }
 
@@ -99,16 +149,25 @@ export function PropertyCalendarStayRestrictionsPanel() {
         <div style={styles.countBadge}>{selectedDateCount > 0 ? `${selectedDateCount} date${selectedDateCount === 1 ? "" : "s"}` : "No dates selected"}</div>
       </div>
       <div style={styles.grid}>
-        <label style={styles.field}><span style={styles.label}>Start Date</span><input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>End Date</span><input type="date" value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>Nightly Rate</span><input type="number" min="0.01" step="0.01" value={rateInput} onChange={(event) => setRateInput(event.target.value)} placeholder="432.00" style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>Minimum Nights</span><input type="number" min="1" step="1" value={minimumNightsInput} onChange={(event) => setMinimumNightsInput(event.target.value)} placeholder="2" style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>Maximum Nights</span><input type="number" min="1" step="1" value={maximumNightsInput} onChange={(event) => setMaximumNightsInput(event.target.value)} placeholder="4" style={styles.input} /></label>
+        <label style={styles.field}><span style={styles.label}>Start Date</span><input type="date" disabled={busy} value={fromDate} onChange={(event) => setFromDate(event.target.value)} style={styles.input} /></label>
+        <label style={styles.field}><span style={styles.label}>End Date</span><input type="date" disabled={busy} value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} style={styles.input} /></label>
+        <label style={styles.field}><span style={styles.label}>Nightly Rate</span><input type="number" disabled={busy} min="0.01" step="0.01" value={rateInput} onChange={(event) => setRateInput(event.target.value)} placeholder="432.00" style={styles.input} /></label>
+        <label style={styles.field}><span style={styles.label}>Minimum Nights</span><input type="number" disabled={busy} min="1" step="1" value={minimumNightsInput} onChange={(event) => setMinimumNightsInput(event.target.value)} placeholder="2" style={styles.input} /></label>
+        <label style={styles.field}><span style={styles.label}>Maximum Nights</span><input type="number" disabled={busy} min="1" step="1" value={maximumNightsInput} onChange={(event) => setMaximumNightsInput(event.target.value)} placeholder="4" style={styles.input} /></label>
       </div>
       <div style={styles.footer}>
-        <div style={styles.feedback}>{error ? <span style={styles.error}>{error}</span> : !error && message ? <span style={styles.success}>{message}</span> : <span style={styles.hint}>Blank fields are left unchanged.</span>}</div>
-        <button type="button" onClick={handleApply} disabled={saving} style={{ ...styles.button, ...(saving ? styles.buttonDisabled : {}) }}>{saving ? "Applying..." : "Apply Stay Restrictions"}</button>
+        <div style={styles.feedback} aria-live="polite">{error ? <span role="alert" style={styles.error}>{error}</span> : !error && message ? <span role="status" style={styles.success}>{message}</span> : <span style={styles.hint}>Blank fields are left unchanged.</span>}</div>
+        <button type="button" onClick={handleApply} disabled={busy} style={{ ...styles.button, ...(busy ? styles.buttonDisabled : {}) }}>{saving ? "Applying..." : "Apply Stay Restrictions"}</button>
       </div>
+      <details style={styles.removalPanel}>
+        <summary style={styles.removalSummary}>Remove saved stay restrictions</summary>
+        <p style={styles.subtitle}>Use the Start Date and End Date above. Choose which saved limits to remove; property defaults will apply. Nightly rates will not be removed.</p>
+        <div style={styles.removalActions}>
+          <label style={styles.removalChoice}><input type="checkbox" aria-label="Remove Minimum Nights" disabled={busy} checked={removeMinimum} onChange={(event) => setRemoveMinimum(event.target.checked)} />Minimum Nights</label>
+          <label style={styles.removalChoice}><input type="checkbox" aria-label="Remove Maximum Nights" disabled={busy} checked={removeMaximum} onChange={(event) => setRemoveMaximum(event.target.checked)} />Maximum Nights</label>
+          <button type="button" onClick={handleRemove} disabled={busy || (!removeMinimum && !removeMaximum)} style={{ ...styles.removeButton, ...(busy || (!removeMinimum && !removeMaximum) ? styles.buttonDisabled : {}) }}>{removing ? "Removing..." : "Remove Stay Restrictions"}</button>
+        </div>
+      </details>
     </section>
   );
 }
@@ -127,4 +186,9 @@ const styles: Record<string, CSSProperties> = {
   feedback: { minHeight: 20, fontSize: 12, fontWeight: 700 }, hint: { color: "#64748b" }, error: { color: "#b91c1c" }, success: { color: "#166534" },
   button: { minHeight: 42, padding: "0 16px", border: 0, borderRadius: 10, background: "#2563eb", color: "#ffffff", fontWeight: 900, cursor: "pointer" },
   buttonDisabled: { opacity: 0.65, cursor: "not-allowed" },
+  removalPanel: { borderTop: "1px solid #cbd5e1", paddingTop: 12 },
+  removalSummary: { cursor: "pointer", fontSize: 13, fontWeight: 800, color: "#334155", padding: "8px 0", minHeight: 28 },
+  removalActions: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, marginTop: 12 },
+  removalChoice: { display: "flex", alignItems: "center", gap: 7, minHeight: 44, fontSize: 13, color: "#334155" },
+  removeButton: { minHeight: 44, padding: "0 16px", border: "1px solid #fca5a5", borderRadius: 10, background: "#ffffff", color: "#b91c1c", fontWeight: 900, cursor: "pointer" },
 };

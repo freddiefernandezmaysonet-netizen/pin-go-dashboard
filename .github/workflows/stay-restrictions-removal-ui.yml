@@ -1,0 +1,42 @@
+name: Stay Restriction Removal Dashboard Certification
+on:
+  push:
+    branches: [agent/stay-restrictions-removal-ui-v1]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/properties/PropertyCalendarStayRestrictionsPanel.tsx'
+      - 'src/components/properties/PropertyCalendarStayRestrictionsPanel.removal.test.mjs'
+      - '.github/workflows/stay-restrictions-removal-ui.yml'
+      - 'vercel.json'
+permissions:
+  contents: read
+concurrency:
+  group: stay-restrictions-removal-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Removal confirmation and form interactions (all API calls mocked)
+        run: node --test src/components/properties/PropertyCalendarStayRestrictionsPanel.removal.test.mjs
+      - name: Existing dashboard and calendar-first regressions
+        run: >-
+          node --test
+          src/dashboard-typescript-baseline.contract.test.mjs
+          src/lib/apmsMissionControlPresentation.test.mjs
+          src/lib/apmsMissionControlFreshness.test.mjs
+          src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
+      - name: Full dashboard TypeScript
+        run: npx --no-install tsc -p tsconfig.app.json --noEmit
+      - name: Production bundle only (no publish or deployment)
+        run: npm run build
