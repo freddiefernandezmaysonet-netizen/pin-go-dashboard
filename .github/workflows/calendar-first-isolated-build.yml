@@ -1,0 +1,180 @@
+name: Calendar First Isolated Build
+on:
+  push:
+    branches: [agent/calendar-first-mission-control-v1]
+    paths: ['.github/workflows/calendar-first-isolated-build.yml']
+permissions:
+  contents: read
+concurrency:
+  group: calendar-first-isolated-build
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.repository == 'freddiefernandezmaysonet-netizen/pin-go-dashboard' && github.ref == 'refs/heads/agent/calendar-first-mission-control-v1'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify audited base and disabled candidate deployment
+        run: |
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = af4a52a3bb1f6eddced841909c09d8cf8ef417a3
+          test "$(git hash-object src/pages/properties/PropertyCalendarPage.tsx)" = 9a271155249fc936de8e53d8d4224e88c656a15b
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const config = JSON.parse(fs.readFileSync('vercel.json','utf8'));
+          assert.equal(config.git.deploymentEnabled['agent/calendar-first-mission-control-v1'],false);
+          assert.notEqual(config.git.deploymentEnabled.main,false);
+          JS
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Original Mission Control regressions (no real requests)
+        run: node --test src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
+      - name: Move existing JSX only and add order regressions
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import ts from 'typescript';
+          const path = 'src/pages/properties/PropertyCalendarPage.tsx';
+          const original = fs.readFileSync(path,'utf8');
+          function inspect(text) {
+            const file = ts.createSourceFile(path,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+            assert.equal(file.parseDiagnostics.length,0);
+            const page = file.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === 'PropertyCalendarPage');
+            assert.ok(page?.body);
+            const returns = page.body.statements.filter(ts.isReturnStatement);
+            assert.equal(returns.length,1);
+            let root = returns[0].expression;
+            while (ts.isParenthesizedExpression(root)) root = root.expression;
+            assert.ok(ts.isJsxElement(root));
+            const children = root.children.filter(n => !ts.isJsxText(n));
+            const byStyle = value => children.filter(n => ts.isJsxElement(n) && n.openingElement.attributes.properties.some(a => ts.isJsxAttribute(a) && a.name.getText(file) === 'style' && ts.isJsxExpression(a.initializer) && a.initializer.expression?.getText(file) === value));
+            const missions = byStyle('styles.missionControlCard');
+            const calendars = byStyle('styles.calendarGrid');
+            const backs = byStyle('styles.backLink');
+            assert.equal(missions.length,1);
+            assert.equal(calendars.length,1);
+            assert.equal(backs.length,1);
+            return {file,root,children,mission:missions[0],calendar:calendars[0],back:backs[0],ret:returns[0]};
+          }
+          const before = inspect(original);
+          assert.ok(before.mission.getStart(before.file) < before.calendar.getStart(before.file));
+          assert.equal(before.children.at(-1),before.back);
+          const start = original.lastIndexOf('\n',before.mission.getStart(before.file)) + 1;
+          const end = original.indexOf('\n',before.mission.end) + 1;
+          assert.ok(end > before.mission.end);
+          assert.equal(original.slice(before.mission.end,end).trim(),'');
+          const destination = original.lastIndexOf('\n',before.back.getStart(before.file)) + 1;
+          assert.ok(destination > end);
+          const moved = original.slice(start,end).replace(/[\t ]+$/gm,'');
+          const candidate = original.slice(0,start) + original.slice(end,destination) + moved + '\n' + original.slice(destination);
+          const after = inspect(candidate);
+          const expected = before.children.filter(n => n !== before.mission && n !== before.back).concat(before.mission,before.back);
+          const normalize = text => text.replace(/[\t ]+$/gm,'');
+          assert.deepEqual(after.children.map(n => normalize(n.getText(after.file))),expected.map(n => normalize(n.getText(before.file))),'Preserve every existing child; only move Mission Control before the final back link');
+          assert.equal(candidate.slice(0,after.ret.getStart(after.file)),original.slice(0,before.ret.getStart(before.file)),'Do not change state, effects, requests, or handlers');
+          assert.equal(candidate.slice(after.root.end),original.slice(before.root.end),'Do not change styles or trailing code');
+          assert.ok(after.calendar.getStart(after.file) < after.mission.getStart(after.file));
+          fs.writeFileSync(path,candidate);
+          const testPath = 'src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs';
+          const originalTest = fs.readFileSync(testPath,'utf8');
+          const extra = `
+          test('calendar and date controls appear before the single expanded Mission Control',()=>{
+            const mission = source.indexOf('<div style={styles.missionControlCard}>');
+            assert.ok(mission > 0);
+            assert.equal(source.split('<div style={styles.missionControlCard}>').length-1,1);
+            for (const marker of ['<div style={styles.calendarToolbar}>','<div style={styles.calendarGrid}>','{hasSelectedRange && (','{selectedDay && (']) {
+              const position = source.indexOf(marker);
+              assert.ok(position >= 0 && position < mission,marker+' must remain above Mission Control');
+            }
+            assert.ok(source.indexOf('style={styles.backLink}') > mission);
+          });
+
+          test('rendered calendar precedes Mission Control for live, unavailable, and legacy-alert snapshots',async()=>{
+            const legacy = {...fixture('ERROR'),operationalItems:undefined,recommendedActions:[{
+              priority:'CRITICAL',requiresHumanAction:true,engine:'Messaging',title:'Legacy fallback retained',
+              reservationId:'fixture-internal-id',reservationNumber:'PG-2026-000002',canAutoResolve:false,
+            }]};
+            for (const snapshot of [fixture('ACTIVE'),null,legacy]) {
+              const html = await renderWithSnapshot(snapshot);
+              const mission = html.indexOf('>Mission Control<');
+              assert.ok(mission > 0);
+              assert.equal(html.split('>Mission Control<').length-1,1);
+              for (const marker of ['>Today</button>','>SUN<','>SAT<']) {
+                const position = html.indexOf(marker);
+                assert.ok(position >= 0 && position < mission,marker+' must render before Mission Control');
+              }
+              assert.ok(html.indexOf('Back to property') > mission);
+              assert.doesNotMatch(html,/<details|<summary|aria-expanded="false"/);
+              if (snapshot === null) assert.match(html,/Mission Control live state is unavailable/);
+              else if (snapshot === legacy) assert.match(html,/Legacy fallback retained/);
+              else assert.match(html,/Legacy communication needs review/);
+            }
+          });
+
+          test('calendar-first candidate keeps automatic deployment disabled without disabling main',()=>{
+            const config = JSON.parse(readFileSync('vercel.json','utf8'));
+            assert.equal(config.git.deploymentEnabled['agent/calendar-first-mission-control-v1'],false);
+            assert.notEqual(config.git.deploymentEnabled.main,false);
+          });
+          `;
+          assert.ok(!originalTest.includes('calendar and date controls appear before'));
+          fs.writeFileSync(testPath,originalTest + '\n' + extra.split('\n').map(line => line.startsWith('          ') ? line.slice(10) : line).join('\n'));
+          console.log('Only moved existing Mission Control JSX after calendar controls; no functions, requests, polling, routes, or styles changed.');
+          JS
+      - name: Baseline dashboard regressions (mocked)
+        run: node --test src/dashboard-typescript-baseline.contract.test.mjs
+      - name: Candidate Mission Control and calendar-order regressions (mocked)
+        run: node --test src/lib/apmsMissionControlPresentation.test.mjs src/lib/apmsMissionControlFreshness.test.mjs src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
+      - name: Dashboard TypeScript
+        run: npx --no-install tsc -p tsconfig.app.json --noEmit
+      - name: Production bundle only (no deploy)
+        run: npm run build
+      - name: Verify exactly two working-file changes and clean whitespace
+        run: |
+          git diff --check
+          git diff --stat
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import {execFileSync} from 'node:child_process';
+          const actual=execFileSync('git',['diff','--name-only'],{encoding:'utf8'}).trim().split('\n').sort();
+          assert.deepEqual(actual,['src/pages/properties/PropertyCalendarPage.tsx','src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs'].sort());
+          assert.equal(execFileSync('git',['ls-files','--others','--exclude-standard'],{encoding:'utf8'}).trim(),'');
+          JS
+      - name: Publish validated code only to the isolated candidate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const assert = require('node:assert/strict');
+            const args = {...context.repo};
+            const branch = 'agent/calendar-first-mission-control-v1';
+            assert.equal(context.repo.owner,'freddiefernandezmaysonet-netizen');
+            assert.equal(context.repo.repo,'pin-go-dashboard');
+            assert.equal(context.ref,'refs/heads/'+branch);
+            const main = await github.rest.git.getRef({...args,ref:'heads/main'});
+            assert.equal(main.data.object.sha,'af4a52a3bb1f6eddced841909c09d8cf8ef417a3','Stop if main advanced');
+            const head = await github.rest.git.getRef({...args,ref:'heads/'+branch});
+            assert.equal(head.data.object.sha,context.sha,'Stop if the candidate changed');
+            const parent = await github.rest.git.getCommit({...args,commit_sha:context.sha});
+            const tree = [];
+            for (const path of ['src/pages/properties/PropertyCalendarPage.tsx','src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs']) {
+              const blob = await github.rest.git.createBlob({...args,content:fs.readFileSync(path,'utf8'),encoding:'utf-8'});
+              tree.push({path,mode:'100644',type:'blob',sha:blob.data.sha});
+            }
+            const result = await github.rest.git.createTree({...args,base_tree:parent.data.tree.sha,tree});
+            const commit = await github.rest.git.createCommit({...args,message:'fix: show calendar before Mission Control without changing behavior',tree:result.data.sha,parents:[context.sha]});
+            const current = await github.rest.git.getRef({...args,ref:'heads/'+branch});
+            assert.equal(current.data.object.sha,context.sha);
+            await github.rest.git.updateRef({...args,ref:'heads/'+branch,sha:commit.data.sha,force:false});
+            core.info('VALIDATED_CANDIDATE_COMMIT='+commit.data.sha);
+            core.info('No main changes, merge, deployment, backend calls, database changes, or migrations.');
