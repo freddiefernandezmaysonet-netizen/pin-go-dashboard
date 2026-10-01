@@ -1,0 +1,376 @@
+.host-calendar {
+  color: #17243a;
+  min-width: 0;
+  max-width: 100%;
+  padding: 24px;
+  background: #f6f9fe;
+  border-radius: 20px;
+  font:
+    15px system-ui,
+    sans-serif;
+}
+.host-calendar * {
+  box-sizing: border-box;
+}
+.hc-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.hc-eyebrow {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #2563eb;
+  font-weight: 800;
+}
+.hc-heading h1 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+.hc-heading p,
+.hc-hint {
+  color: #5c6e86;
+  line-height: 1.5;
+}
+.hc-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
+.host-calendar button,
+.host-calendar select,
+.host-calendar input,
+.hc-primary {
+  min-height: 44px;
+  border: 1px solid #cad6e7;
+  border-radius: 10px;
+  background: white;
+  color: #183350;
+  padding: 10px 14px;
+  font: inherit;
+}
+.host-calendar button {
+  cursor: pointer;
+}
+.host-calendar button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.host-calendar :focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+.hc-controls label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.hc-controls select {
+  max-width: 250px;
+}
+.hc-segment,
+.hc-nav {
+  display: flex;
+  gap: 4px;
+}
+.hc-segment {
+  background: #e5edf9;
+  border-radius: 12px;
+  padding: 4px;
+}
+.hc-segment button {
+  border: none;
+  background: transparent;
+}
+.hc-segment button[aria-pressed="true"] {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 3px 10px #2563eb30;
+}
+.hc-scroll {
+  overflow: auto;
+  max-height: 68vh;
+  border: 1px solid #d6e0ed;
+  border-radius: 14px;
+  background: white;
+  isolation: isolate;
+  overscroll-behavior-x: contain;
+}
+.hc-scroll table {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.hc-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #eef4ff;
+  height: 66px;
+  font-weight: 500;
+  border-bottom: 1px solid #d6e0ed;
+}
+.hc-scroll thead span {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+.hc-scroll thead strong {
+  display: block;
+  font-size: 14px;
+  margin-top: 4px;
+}
+.hc-scroll .hc-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: white;
+  box-shadow: 2px 0 5px #142c4710;
+}
+.hc-scroll thead .hc-sticky {
+  z-index: 4;
+  background: #eef4ff;
+  font-size: 12px;
+}
+.hc-property {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 8px solid #f6f9fe;
+  vertical-align: top;
+}
+.hc-property img,
+.hc-placeholder {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.hc-placeholder {
+  display: grid;
+  place-items: center;
+  background: #e9f1ff;
+  color: #2563eb;
+  font-size: 30px;
+}
+.hc-property a {
+  display: block;
+  color: #17243a;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.hc-property small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: #64748b;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.hc-bookings {
+  padding: 0;
+  background: repeating-linear-gradient(
+    to right,
+    #fff,
+    #fff 87px,
+    #eef2f7 87px,
+    #eef2f7 88px
+  );
+}
+.hc-stay {
+  position: absolute;
+  display: block;
+  border-radius: 7px;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 44px;
+  padding: 0 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 44px;
+}
+.hc-day {
+  padding: 0;
+  border-right: 1px solid #edf1f6;
+  border-bottom: 8px solid #f6f9fe;
+  height: 98px;
+}
+.hc-day button {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 0;
+  padding: 7px 2px;
+  background: transparent;
+}
+.hc-day small {
+  font-size: 12px;
+  color: #586b83;
+}
+.hc-day strong {
+  font-size: 19px;
+  white-space: nowrap;
+  color: #17447d;
+}
+.hc-day span {
+  font-size: 12px;
+  color: #586b83;
+}
+.hc-day.booked {
+  background: #edf4ff;
+}
+.hc-day.blocked {
+  background: repeating-linear-gradient(
+    135deg,
+    #f0f2f5,
+    #f0f2f5 7px,
+    #e6e9ee 7px,
+    #e6e9ee 8px
+  );
+}
+.hc-day.unknown {
+  background: #f1f3f7;
+}
+.hc-day.today {
+  box-shadow: inset 2px 0 #2563eb;
+}
+.hc-day.selected {
+  box-shadow: inset 0 0 0 2px #2563eb;
+  background: #dbeafe;
+}
+.hc-unavailable {
+  display: block;
+  padding: 10px;
+  color: #9f1239;
+  font-size: 13px;
+}
+.hc-selection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px;
+  background: #eaf2ff;
+  border: 1px solid #b9d4ff;
+  border-radius: 14px;
+  margin-top: 16px;
+}
+.hc-selection p {
+  margin: 6px 0;
+  color: #64748b;
+}
+.hc-primary {
+  display: inline-flex;
+  align-items: center;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  border-color: #2563eb;
+}
+.hc-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  font-size: 13px;
+}
+.hc-error {
+  padding: 14px;
+  background: #fff1f2;
+  color: #9f1239;
+  border-radius: 10px;
+}
+.hc-property-list {
+  display: grid;
+  gap: 12px;
+}
+.hc-property-list a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #d6e0ed;
+  border-radius: 12px;
+  color: #17447d;
+  text-decoration: none;
+}
+.hc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@media (max-width: 600px) {
+  .host-calendar {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .hc-heading {
+    align-items: start;
+  }
+  .hc-heading h1 {
+    font-size: 25px;
+  }
+  .hc-heading > button {
+    font-size: 12px;
+  }
+  .hc-heading p {
+    font-size: 13px;
+  }
+  .hc-controls {
+    gap: 10px;
+  }
+  .hc-controls label {
+    flex: 1;
+    min-width: 140px;
+  }
+  .hc-controls select,
+  .hc-controls input {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+  }
+  .hc-segment {
+    width: 100%;
+  }
+  .hc-segment button {
+    flex: 1;
+  }
+  .hc-scroll {
+    max-height: 65vh;
+  }
+  .hc-selection {
+    align-items: stretch;
+  }
+  .hc-selection .hc-primary {
+    width: 100%;
+    justify-content: center;
+  }
+  .hc-hint {
+    font-size: 12px;
+  }
+  .hc-footer {
+    gap: 8px;
+  }
+  .hc-footer span {
+    width: 100%;
+  }
+}

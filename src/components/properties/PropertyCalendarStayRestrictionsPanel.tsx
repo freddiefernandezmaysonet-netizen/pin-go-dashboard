@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type CSSProperties } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || "https://api.pin-ngo.com";
 
@@ -41,8 +41,9 @@ function parseOptionalPositiveInteger(value: string) {
 
 export function PropertyCalendarStayRestrictionsPanel() {
   const { id } = useParams();
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [params] = useSearchParams();
+  const [fromDate, setFromDate] = useState(parseDateKey(params.get("from") || "")?.key || "");
+  const [toDate, setToDate] = useState(parseDateKey(params.get("to") || "")?.key || "");
   const [rateInput, setRateInput] = useState("");
   const [minimumNightsInput, setMinimumNightsInput] = useState("");
   const [maximumNightsInput, setMaximumNightsInput] = useState("");

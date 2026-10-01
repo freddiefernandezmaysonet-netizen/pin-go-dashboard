@@ -1,3 +1,4 @@
+import { validDate } from "../../calendar/model";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   format,
@@ -11,7 +12,7 @@ import {
   eachDayOfInterval,
   isSameMonth,
 } from "date-fns";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   OperationalIntelligencePanel,
   type OperationalIntelligenceItem,
@@ -33,11 +34,18 @@ const API_BASE =
   import.meta.env.VITE_API_BASE ||
   "https://api.pin-ngo.com";
 
-export function PropertyCalendarPage() {
+export function PropertyCalendarPage({ view = "combined" }: { view?: "combined" | "mission" | "actions" }) {
+  const [searchParams] = useSearchParams();
+  const initialFrom = searchParams.get("from");
+  const initialTo = searchParams.get("to");
+  const safeDate = (value: string | null) => validDate(value) ? new Date(value + "T12:00:00") : null;
+  const initialDay = safeDate(initialFrom);
+  const candidateEnd = safeDate(initialTo);
+  const initialEnd = initialDay && candidateEnd && candidateEnd >= initialDay && candidateEnd.getTime() - initialDay.getTime() <= 30 * 86400000 ? candidateEnd : initialDay;
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [month, setMonth] = useState(() => startOfMonth(new Date()));
+  const [month, setMonth] = useState(() => startOfMonth(initialDay || new Date()));
   const [nightlyRates, setNightlyRates] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
   const [blockedDates, setBlockedDates] = useState<any[]>([]);
@@ -45,7 +53,7 @@ export function PropertyCalendarPage() {
   const [missionControlSnapshot, setMissionControlSnapshot] =
     useState<any | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(initialDay);
   const [showCreateReservationForm, setShowCreateReservationForm] =
     useState(false);
   const [manualGuestName, setManualGuestName] = useState("");
@@ -65,7 +73,7 @@ export function PropertyCalendarPage() {
   const [selectedRange, setSelectedRange] = useState<{
     start: Date | null;
     end: Date | null;
-  }>({ start: null, end: null });
+  }>({ start: initialDay, end: initialEnd || initialDay });
 
   const [rateInput, setRateInput] = useState("");
   const [showSetRateForm, setShowSetRateForm] = useState(false);
@@ -76,11 +84,8 @@ export function PropertyCalendarPage() {
   
   const today = startOfDay(new Date());
 
-  const from = useMemo(() => format(startOfMonth(month), "yyyy-MM-dd"), [month]);
-  const to = useMemo(
-    () => format(startOfMonth(addMonths(month, 1)), "yyyy-MM-dd"),
-    [month]
-  );
+  const from = view === "actions" && selectedRange.start ? format(selectedRange.start, "yyyy-MM-dd") : format(startOfMonth(month), "yyyy-MM-dd");
+  const to = view === "actions" && selectedRange.start ? format(addDays(selectedRange.end || selectedRange.start, 1), "yyyy-MM-dd") : format(startOfMonth(addMonths(month, 1)), "yyyy-MM-dd");
 
   const calendarDays = useMemo(
     () =>
@@ -158,7 +163,7 @@ export function PropertyCalendarPage() {
   }, [id, from, to]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || view === "actions") return;
 
     let active = true;
     let requestSequence = 0;
@@ -201,7 +206,7 @@ export function PropertyCalendarPage() {
       requestSequence += 1;
       window.clearInterval(intervalId);
     };
-  }, [id, from, to]);
+  }, [id, from, to, view]);
 
   const rateByDate = useMemo(() => {
     return new Map(nightlyRates.map((item) => [item.date, item]));
@@ -1638,7 +1643,8 @@ paymentState: manualPaymentState,
     <div className="pgc-page" style={styles.page}>
       <div className="pgc-header" style={styles.header}>
         <div>
-          <h1 className="pgc-title" style={styles.title}>Property Calendar</h1>
+          <h1 className="pgc-title" style={styles.title}>{view === "mission" ? "Mission Control" : view === "actions" ? "Gestionar fechas / Manage dates" : "Property Calendar"}</h1>
+          {view !== "combined" && <Link to={`/calendar?propertyId=${id}`}>← Calendario / Calendar</Link>}
           <p className="pgc-subtitle" style={styles.subtitle}>
             {loading
               ? "Loading calendar intelligence..."
@@ -1647,6 +1653,7 @@ paymentState: manualPaymentState,
         </div>
       </div>
 
+      {view === "combined" && <>
       <div className="pgc-summaryGrid" style={styles.summaryGrid}>
         <div className="pgc-summaryCard" style={styles.summaryCard}>
           <div>
@@ -1987,6 +1994,8 @@ paymentState: manualPaymentState,
         })}
       </div>
 
+      </>}
+      {view !== "mission" && <>
       {hasSelectedRange && (
         <div className="pgc-rangeActionPanel" style={styles.rangeActionPanel}>
           <div>
@@ -2438,6 +2447,8 @@ paymentState: manualPaymentState,
         </div>
       )}
 
+      </>}
+      {view !== "actions" && <>
        <div className="pgc-missionControlCard" style={styles.missionControlCard}>
   <div className="pgc-missionEnterpriseHeader" style={styles.missionEnterpriseHeader}>
     <div>
@@ -2887,6 +2898,7 @@ paymentState: manualPaymentState,
 
       </div>
 
+      </>}
       <Link to={`/properties/${id}/edit`} style={styles.backLink}>
         Back to property
       </Link>
