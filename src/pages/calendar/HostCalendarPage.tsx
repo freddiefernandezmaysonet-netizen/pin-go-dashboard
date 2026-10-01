@@ -122,16 +122,14 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
       <header className="hc-heading">
         <div>
           <span className="hc-eyebrow">PIN&GO · HOST</span>
-          <h1>{mission ? "Mission Control" : "Calendario / Calendar"}</h1>
+          <h1>{mission ? "Mission Control" : "Calendario"}</h1>
           <p>
             {mission
               ? "Selecciona una propiedad para ver sus alertas y acciones."
-              : "Disponibilidad, reservas y precios por propiedad. / Availability, stays and nightly rates."}
+              : "Disponibilidad, reservas y precios por propiedad."}
           </p>
         </div>
-        <button onClick={() => setVersion((v) => v + 1)}>
-          Actualizar / Refresh
-        </button>
+        <button onClick={() => setVersion((v) => v + 1)}>Actualizar</button>
       </header>
       <div className="hc-controls">
         {!mission && (
@@ -140,7 +138,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
               aria-pressed={!propertyId}
               onClick={() => change({ propertyId: "", page: "1" })}
             >
-              Todas / All
+              Multi
             </button>
             <button
               aria-pressed={!!propertyId}
@@ -152,18 +150,18 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 })
               }
             >
-              Individual / Single
+              Individual
             </button>
           </div>
         )}
         <label>
-          Propiedad / Property
+          Propiedad
           <select
             aria-label="Property"
             value={propertyId}
             onChange={(e) => change({ propertyId: e.target.value, page: "1" })}
           >
-            <option value="">Todas / All properties</option>
+            <option value="">Todas las propiedades</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -174,7 +172,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
         {!mission && (
           <>
             <label>
-              Desde / From
+              Desde
               <input
                 aria-label="From date"
                 type="date"
@@ -193,7 +191,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 ‹
               </button>
               <button onClick={() => change({ from: localToday() })}>
-                Hoy / Today
+                Hoy
               </button>
               <button
                 aria-label="Next 14 days"
@@ -399,12 +397,12 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 className="hc-primary"
                 to={`/calendar/property/${selection.propertyId}?from=${selection.from}&to=${selection.to}`}
               >
-                Gestionar fechas / Manage dates
+                Gestionar fechas
               </Link>
               <Link to={`/properties/${selection.propertyId}/mission-control`}>
                 Mission Control
               </Link>
-              <button onClick={() => setSelection(null)}>Cerrar / Close</button>
+              <button onClick={() => setSelection(null)}>Cerrar</button>
             </aside>
           )}
           {data && (
@@ -416,13 +414,13 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 disabled={page <= 1}
                 onClick={() => change({ page: String(page - 1) })}
               >
-                Anterior / Previous
+                Anterior
               </button>
               <button
                 disabled={!data.hasMore}
                 onClick={() => change({ page: String(page + 1) })}
               >
-                Más propiedades / More
+                Más propiedades
               </button>
               <Link to="/mission-control">Mission Control →</Link>
             </footer>

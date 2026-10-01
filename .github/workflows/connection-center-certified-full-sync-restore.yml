@@ -99,13 +99,14 @@ jobs:
             src/pages/distribution/AirbnbConnectionCallbackPage.tsx \
             src/lib/distributionFramePolicy.ts
 
-          if [ "$branch" = "agent/property-calendar-responsive-v1" ]; then
+          if [ "$branch" = "agent/property-calendar-responsive-v1" ] || [ "$branch" = "agent/host-calendar-v1" ]; then
             node --input-type=module - <<'JS'
           import assert from "node:assert/strict";
           import fs from "node:fs";
           import { execFileSync } from "node:child_process";
 
-          const guard = "agent/property-calendar-responsive-v1";
+          const guard = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME;
+          assert.ok(["agent/property-calendar-responsive-v1", "agent/host-calendar-v1"].includes(guard));
           const current = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
           const baseline = JSON.parse(
             execFileSync("git", ["show", "origin/main:vercel.json"], { encoding: "utf8" }),
@@ -114,13 +115,13 @@ jobs:
           assert.equal(
             current?.git?.deploymentEnabled?.[guard],
             false,
-            "responsive branch must remain protected from automatic Vercel deployment",
+            "calendar branch must remain protected from automatic Vercel deployment",
           );
-          delete current.git.deploymentEnabled[guard];
+          baseline.git.deploymentEnabled[guard] = false;
           assert.deepEqual(
             current,
             baseline,
-            "vercel.json may differ from main only by the exact responsive branch deployment guard",
+            "vercel.json may differ from main only by the exact calendar branch deployment guard",
           );
           JS
           else

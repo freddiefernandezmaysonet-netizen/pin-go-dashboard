@@ -60,6 +60,16 @@ async def intercept(route):
         data = {'ok':True,'active':True,'touched':True}
     elif path == '/api/org/branding/review':
         data = {'ok':True,'profile':None,'pendingRevisions':[]}
+    elif path == '/api/dashboard/properties':
+        data = {'items':[PROPERTY]}
+    elif path == '/api/dashboard/calendar':
+        q = parse_qs(url.query)
+        start = datetime.fromisoformat(q['from'][0])
+        dates = [(start+timedelta(days=i)).strftime('%Y-%m-%d') for i in range(14)]
+        data = {'page':1,'pageSize':10,'total':1,'hasMore':False,'from':dates[0],'to':q['to'][0],
+                'items':[{**PROPERTY,'timezone':'America/Puerto_Rico','photoUrl':None,'today':'2026-10-15','state':'READY','pricingUnavailable':False,
+                          'reservations':[{'id':'local-reservation','number':'PG-LOCAL','guestName':'LOCAL guest','from':'2026-10-24','to':'2026-10-26'}],
+                          'blocks':[], 'days':[{'date':d,'rate':1234 if d.endswith('20') else 432,'minimumNights':2,'maximumNights':14,'status':'BOOKED' if '2026-10-24'<=d<'2026-10-26' else 'OPEN'} for d in dates]}]}
     elif path == '/api/dashboard/properties/local-property':
         data = {'ok':True,'item':PROPERTY}
     elif path.endswith('/nightly-rates') and req.method == 'GET':
@@ -126,7 +136,7 @@ async def geometry(page, name, width):
     assert RESULTS[-1]['passed'],json.dumps(RESULTS[-1])
     if width <= 720:
         assert not metrics['smallInputs'] and not metrics['smallButtons'],metrics
-    assert await page.locator('.pgc-calendarGrid').evaluate('(el)=>el.getBoundingClientRect().top < document.querySelector(".pgc-missionControlCard").getBoundingClientRect().top')
+
 
 async def exercise(page, browser_name):
     page.set_default_timeout(12000)
@@ -134,28 +144,39 @@ async def exercise(page, browser_name):
     page.on('console', lambda m: STATE['console'].append(m.text) if m.type=='error' else None)
     await page.clock.set_fixed_time(datetime(2026,10,15,12,tzinfo=timezone.utc))
     await page.goto(URL)
-    await page.locator('.pgo-heading').wait_for()
+    await page.locator('.hc-scroll').wait_for()
+    assert '/calendar?propertyId=local-property' in page.url
+    assert await page.locator('.pgc-missionControlCard').count() == 0
     for width,height in [(320,780),(360,800),(390,844),(430,932),(720,900),(768,1024),(844,390),(1024,768),(1440,1000),(1920,1080)]:
         await page.set_viewport_size({'width':width,'height':height})
-        await page.wait_for_timeout(60)
-        await geometry(page,f'{browser_name} full route {width}x{height}',width)
+        metrics=await page.evaluate("""() => {
+          const root=document.querySelector('.host-calendar'), scroll=document.querySelector('.hc-scroll');
+          return {viewport:innerWidth,width:document.documentElement.scrollWidth,right:root.getBoundingClientRect().right,
+            scrollable:scroll.scrollWidth>scroll.clientWidth,days:root.querySelectorAll('.hc-day').length,
+            smallButtons:[...root.querySelectorAll('button')].filter(e=>e.getBoundingClientRect().height<44).length};
+        }""")
+        assert metrics['width']<=width+1 and metrics['right']<=width+1 and metrics['days']==14 and metrics['smallButtons']==0, metrics
+        if width<=844:
+            assert metrics['scrollable'],metrics
+        RESULTS.append({'case':f'{browser_name} timeline {width}x{height}','passed':True,**metrics})
         if width in (320,390,1440):
             await page.screenshot(path=str(OUT/f'{browser_name}-{width}-page.png'),full_page=True)
-            await page.locator('.pgc-calendarGrid').screenshot(path=str(OUT/f'{browser_name}-{width}-calendar.png'))
-        for state, start, end in [('filled','2026-10-20','2026-10-21'),('cleared','','')]:
-            await page.get_by_label('Start Date',exact=True).fill(start)
-            await page.get_by_label('End Date',exact=True).fill(end)
-            await expect(page.get_by_label('Start Date',exact=True)).to_have_value(start)
-            await expect(page.get_by_label('End Date',exact=True)).to_have_value(end)
-            assert await page.get_by_label('End Date',exact=True).get_attribute('min') == (start or None)
-            await geometry(page,f'{browser_name} date fields {state} {width}x{height}',width)
-            if width == 390:
-                await page.locator('.pgs-panel').screenshot(path=str(OUT/f'{browser_name}-date-fields-{state}.png'))
     await page.set_viewport_size({'width':390,'height':844})
-    await page.locator('[data-calendar-date="2026-10-20"]').click()
-    await page.locator('[data-calendar-date="2026-10-21"]').click()
+    first=await page.locator('.hc-property').bounding_box()
+    await page.locator('.hc-scroll').evaluate('(e)=>e.scrollLeft=450')
+    second=await page.locator('.hc-property').bounding_box()
+    assert abs(first['x']-second['x'])<=1
+    await page.locator('.hc-day button').nth(5).click()
+    await page.locator('.hc-day button').nth(6).click()
+    await expect(page.locator('.hc-primary')).to_have_attribute('href','/calendar/property/local-property?from=2026-10-20&to=2026-10-21')
+    await page.locator('.hc-primary').click()
     await page.locator('.pgc-rangeActionPanel').wait_for()
-    await geometry(page,f'{browser_name} selected range',390)
+    await expect(page.get_by_label('Start Date',exact=True)).to_have_value('2026-10-20')
+    await expect(page.get_by_label('End Date',exact=True)).to_have_value('2026-10-21')
+    for width,height in [(320,780),(390,844),(768,1024),(1440,1000)]:
+        await page.set_viewport_size({'width':width,'height':height})
+        await geometry(page,f'{browser_name} date management {width}',width)
+    await page.set_viewport_size({'width':390,'height':844})
     await page.get_by_role('button',name='Manual Rate',exact=True).click()
     await page.get_by_placeholder('199.00').fill('250')
     await geometry(page,f'{browser_name} manual rate form',390)
@@ -163,25 +184,14 @@ async def exercise(page, browser_name):
     await page.get_by_placeholder('Guest name',exact=True).fill('LOCAL long guest name')
     await page.get_by_placeholder('Guest email',exact=True).fill('local@example.invalid')
     await geometry(page,f'{browser_name} manual reservation form',390)
-    await page.locator('.pgc-rangeActionPanel').screenshot(path=str(OUT/f'{browser_name}-range-forms.png'))
-    await page.get_by_role('button',name='Clear',exact=True).click()
-    await page.locator('.pgc-iconButton').last.click()
-    await expect(page.locator('.pgc-monthTitle')).to_contain_text('November')
-    await page.locator('.pgc-iconButton').first.click()
-    await expect(page.locator('.pgc-monthTitle')).to_contain_text('October')
-    await page.locator('[data-calendar-date="2026-10-20"]').press('Enter')
-    await expect(page.locator('[data-calendar-date="2026-10-20"]')).to_have_attribute('aria-pressed','true')
-    await page.get_by_role('button',name='Clear',exact=True).click()
-    await page.get_by_label('Start Date',exact=True).fill('2026-10-20')
-    await page.get_by_label('End Date',exact=True).fill('2026-10-21')
     await page.get_by_label('Minimum Nights',exact=True).fill('3')
     before_put = sum(c['method']=='PUT' for c in STATE['calls'])
     await page.locator('.pgs-button').click()
+    await expect(page.get_by_role('status')).to_contain_text('Applied')
     assert sum(c['method']=='PUT' for c in STATE['calls']) == before_put+1
     await page.locator('.pgs-removalSummary').click()
     await page.get_by_label('Remove Minimum Nights',exact=True).check()
     await geometry(page,f'{browser_name} expanded removal controls',390)
-    await page.locator('.pgs-panel').screenshot(path=str(OUT/f'{browser_name}-stay-restrictions.png'))
     before = sum(c['method']=='DELETE' for c in STATE['calls'])
     page.once('dialog',lambda dialog: dialog.dismiss())
     await page.locator('.pgs-removeButton').click()
@@ -189,22 +199,22 @@ async def exercise(page, browser_name):
     page.once('dialog',lambda dialog: dialog.accept())
     await page.locator('.pgs-removeButton').click()
     await expect(page.get_by_role('status')).to_contain_text('Removed from')
-    deletion = [c for c in STATE['calls'] if c['method']=='DELETE'][-1]
-    assert deletion['body']=={'dateKeys':['2026-10-20','2026-10-21'],'fields':['minimumNights']}
-    RESULTS.append({'case':browser_name+' local apply, cancel, remove, keyboard and month controls','passed':True})
-    for mode in ('unavailable','legacy'):
+    assert [c for c in STATE['calls'] if c['method']=='DELETE'][-1]['body']=={'dateKeys':['2026-10-20','2026-10-21'],'fields':['minimumNights']}
+    RESULTS.append({'case':browser_name+' manage dates, apply, cancel and remove','passed':True})
+    for mode in ('live','unavailable','legacy'):
         STATE['mode']=mode
-        await page.reload()
-        await page.get_by_text('Mission Control live state is unavailable.' if mode=='unavailable' else 'Local legacy alert remains visible',exact=True).wait_for()
-        await geometry(page,browser_name+' '+mode+' snapshot',390)
+        await page.goto(URL+'#mission-control')
+        await page.get_by_text('Mission Control live state is unavailable.' if mode=='unavailable' else 'Local legacy alert remains visible' if mode=='legacy' else 'Cleaning requires host attention',exact=True).first.wait_for()
+        assert '/mission-control' in page.url
+        assert await page.locator('.hc-scroll,.pgc-calendarGrid,.pgs-panel').count()==0
     STATE['mode']='live'
-    await page.reload()
-    await page.locator('.pgo-heading').wait_for()
+    await page.goto(URL)
+    await page.locator('.hc-scroll').wait_for()
     await page.get_by_role('button',name='Open navigation',exact=True).click()
     await page.get_by_role('dialog',name='Main navigation',exact=True).wait_for()
     await page.keyboard.press('Escape')
     await expect(page.get_by_role('button',name='Open navigation',exact=True)).to_be_focused()
-    RESULTS.append({'case':browser_name+' mobile menu and focus return','passed':True})
+    RESULTS.append({'case':browser_name+' separate mission control, mobile menu and focus return','passed':True})
 
 async def main():
     global DIST
@@ -222,7 +232,7 @@ async def main():
             await context.route('**/*',intercept)
             await agent('open',URL)
             await agent('snapshot','-i')
-            page=next(p for p in context.pages if '/properties/' in p.url)
+            page=next(p for p in context.pages if '127.0.0.1:4173' in p.url)
             await exercise(page,'chromium')
             await agent('screenshot',str(OUT/'agent-browser-final.png'),'--full')
             # Measure the unmodified production baseline in the same browser.
@@ -241,7 +251,8 @@ async def main():
             await safari.close()
             RESULTS.append({'case':'all APIs mocked; no external requests or runtime errors','passed':not STATE['unexpected'] and not STATE['errors'] and not STATE['console'],'unexpected':STATE['unexpected'],'errors':STATE['errors'],'console':STATE['console']})
     except Exception as error:
-        RESULTS.append({'case':'runner','passed':False,'error':str(error)})
+        import traceback
+        RESULTS.append({'case':'runner','passed':False,'error':repr(error),'traceback':traceback.format_exc()})
         try:
             await agent('screenshot',str(OUT/'failure.png'),'--full')
         except Exception:
