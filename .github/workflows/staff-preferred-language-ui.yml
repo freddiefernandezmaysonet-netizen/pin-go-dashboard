@@ -1,0 +1,29 @@
+name: Staff Preferred Language Dashboard
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/pages/staff/**'
+      - 'src/api/staff.ts'
+      - '.github/workflows/staff-preferred-language-ui.yml'
+permissions:
+  contents: read
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Staff form interactions and retained timing contracts
+        run: node --test src/pages/staff/*.test.js src/pages/staff/*.test.mjs
+      - name: Full dashboard TypeScript
+        run: npx --no-install tsc -p tsconfig.app.json --noEmit
+      - name: Production bundle only
+        run: npm run build
