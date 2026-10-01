@@ -123,4 +123,44 @@ test("host can select nights and manage them; failed refresh never retains open 
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+test("Single restores the monthly calendar, supports month navigation and property changes, and returns to Multi", async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/calendar" });
+  const previous = { window: globalThis.window, document: globalThis.document, fetch: globalThis.fetch };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    const path = String(url); calls.push(path);
+    return { ok: true, json: async () => path.endsWith('/api/dashboard/properties')
+      ? { items: [{id:'p1',name:'First property'},{id:'p2',name:'Second property'}] }
+      : path.includes('/calendar?') ? { page:1,total:0,hasMore:false,items:[] }
+      : { item:{name:'Property',baseNightlyRate:90},rates:[],items:[] } };
+  };
+  const root = createRoot(document.getElementById('root'));
+  try {
+    await act(async () => root.render(React.createElement(MemoryRouter, {initialEntries:['/calendar?propertyId=p1&from=2026-10-01']},React.createElement(HostCalendarPage))));
+    assert.ok(document.querySelector('.pgc-calendarGrid'));
+    assert.equal(document.querySelector('.hc-scroll'),null);
+    assert.equal(document.querySelector('.pgc-missionControlCard'),null);
+    assert.equal(document.querySelector('.pgc-summaryGrid'),null);
+    assert.ok(document.querySelector('.pgs-panel'));
+    assert.match(document.querySelector('.pgc-monthTitle').textContent,/October 2026/);
+    assert.equal(calls.some(url=>url.includes('/api/dashboard/calendar?') || url.includes('/mission-control')),false);
+    await act(async () => document.querySelectorAll('.pgc-iconButton')[1].click());
+    assert.match(document.querySelector('.pgc-monthTitle').textContent,/November 2026/);
+    await act(async () => document.querySelectorAll('.pgc-iconButton')[0].click());
+    await act(async () => document.querySelector('[data-calendar-date="2026-10-20"]').click());
+    assert.ok(document.querySelector('.pgc-rangeActionPanel'));
+    const select = document.querySelector('.hc-controls select');
+    await act(async () => {select.value='p2';select.dispatchEvent(new dom.window.Event('change',{bubbles:true}));});
+    assert.ok(calls.some(url=>url.includes('/properties/p2/nightly-rates')));
+    await act(async () => document.querySelector('.hc-segment button').click());
+    assert.equal(document.querySelector('.pgc-calendarGrid'),null);
+    assert.ok(calls.some(url=>url.includes('/api/dashboard/calendar?')));
+  } finally {
+    await act(async()=>root.unmount());dom.window.close();Object.assign(globalThis,previous);delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
 test.after(() => rmSync(temp, { recursive: true, force: true }));

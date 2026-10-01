@@ -1,3 +1,5 @@
+import { PropertyCalendarPage } from "../properties/PropertyCalendarPage";
+import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -70,7 +72,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
     return () => abort.abort();
   }, [version]);
   useEffect(() => {
-    if (mission) return;
+    if (mission || propertyId) return;
     const abort = new AbortController();
     const query = new URLSearchParams({
       from,
@@ -169,7 +171,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
             ))}
           </select>
         </label>
-        {!mission && (
+        {!mission && !propertyId && (
           <>
             <label>
               From
@@ -203,9 +205,9 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
           </>
         )}
       </div>
-      {(error || propertiesError) && (
+      {((!propertyId && error) || propertiesError) && (
         <p role="alert" className="hc-error">
-          {error || propertiesError}
+          {(!propertyId && error) || propertiesError}
         </p>
       )}
       {mission ? (
@@ -217,6 +219,12 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 {p.name} <span>Mission Control →</span>
               </Link>
             ))}
+        </div>
+      ) : propertyId ? (
+        <div key={`${propertyId}:${version}`} className="pg-calendar-route hc-single" style={{ display: "grid", gap: 20 }}>
+          <PropertyCalendarPage view="single" propertyId={propertyId} />
+          <PropertyCalendarStayRestrictionsPanel propertyId={propertyId} />
+          <Link to={`/properties/${propertyId}/mission-control`}>Mission Control →</Link>
         </div>
       ) : (
         <>

@@ -39,8 +39,9 @@ function parseOptionalPositiveInteger(value: string) {
   return parsed;
 }
 
-export function PropertyCalendarStayRestrictionsPanel() {
-  const { id } = useParams();
+export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { propertyId?: string }) {
+  const { id: routeId } = useParams();
+  const id = propertyId || routeId;
   const [params] = useSearchParams();
   const [fromDate, setFromDate] = useState(parseDateKey(params.get("from") || "")?.key || "");
   const [toDate, setToDate] = useState(parseDateKey(params.get("to") || "")?.key || "");

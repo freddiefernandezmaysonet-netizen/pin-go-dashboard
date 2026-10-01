@@ -144,8 +144,22 @@ async def exercise(page, browser_name):
     page.on('console', lambda m: STATE['console'].append(m.text) if m.type=='error' else None)
     await page.clock.set_fixed_time(datetime(2026,10,15,12,tzinfo=timezone.utc))
     await page.goto(URL)
-    await page.locator('.hc-scroll').wait_for()
+    await page.locator('.pgc-calendarGrid').wait_for()
     assert '/calendar?propertyId=local-property' in page.url
+    assert await page.locator('.hc-scroll,.pgc-missionControlCard').count() == 0
+    for width,height in [(320,780),(390,844),(1440,1000)]:
+        await page.set_viewport_size({'width':width,'height':height})
+        await geometry(page,f'{browser_name} Single monthly calendar {width}',width)
+        await page.locator('.pgc-calendarGrid').screenshot(path=str(OUT/f'{browser_name}-{width}-single-month.png'))
+    await page.locator('.pgc-iconButton').last.click()
+    await expect(page.locator('.pgc-monthTitle')).to_contain_text('November')
+    await page.locator('.pgc-iconButton').first.click()
+    await expect(page.locator('.pgc-monthTitle')).to_contain_text('October')
+    await page.locator('[data-calendar-date="2026-10-20"]').press('Enter')
+    await expect(page.locator('[data-calendar-date="2026-10-20"]')).to_have_attribute('aria-pressed','true')
+    await page.get_by_role('button',name='Multi',exact=True).click()
+    await page.locator('.hc-scroll').wait_for()
+    assert await page.locator('.pgc-calendarGrid').count() == 0
     assert await page.locator('.pgc-missionControlCard').count() == 0
     for width,height in [(320,780),(360,800),(390,844),(430,932),(720,900),(768,1024),(844,390),(1024,768),(1440,1000),(1920,1080)]:
         await page.set_viewport_size({'width':width,'height':height})
@@ -210,7 +224,8 @@ async def exercise(page, browser_name):
         assert await page.locator('.hc-scroll,.pgc-calendarGrid,.pgs-panel').count()==0
     STATE['mode']='live'
     await page.goto(URL)
-    await page.locator('.hc-scroll').wait_for()
+    await page.locator('.pgc-calendarGrid').wait_for()
+    await expect(page.locator('.pgc-subtitle')).not_to_contain_text('Loading')
     await page.get_by_role('button',name='Open navigation',exact=True).click()
     await page.get_by_role('dialog',name='Main navigation',exact=True).wait_for()
     await page.keyboard.press('Escape')
