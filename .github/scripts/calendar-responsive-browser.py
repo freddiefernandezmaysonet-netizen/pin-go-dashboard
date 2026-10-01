@@ -240,7 +240,7 @@ async def main():
             DIST=Path(os.environ['BASELINE_DIST'])
             await page.goto(URL+'?baseline=1')
             await page.get_by_role('heading',name='Property Calendar',exact=True).wait_for()
-            await expect(page.locator('.pgc-subtitle')).not_to_contain_text('Loading')
+            await expect(page.get_by_role('heading',name='Property Calendar',exact=True).locator('..').locator('p')).not_to_contain_text('Loading')
             baseline=await page.evaluate('({viewport:innerWidth,width:document.documentElement.scrollWidth})')
             RESULTS.append({'case':'baseline overflow reproduced at 390','passed':baseline['width']>390,**baseline})
             await page.screenshot(path=str(OUT/'baseline-390.png'),full_page=True)
