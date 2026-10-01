@@ -1,7 +1,7 @@
 import "../../pages/properties/PropertyCalendarResponsive.css";
 /* eslint-disable react-refresh/only-export-components -- Router modules intentionally export route configuration alongside route components. */
 import { lazy, Suspense, type ReactElement, type ReactNode } from "react";
-import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams, useLocation } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
 import { OverviewPage } from "../../pages/overview/OverviewPage";
 import { ReservationsPage } from "../../pages/reservations/ReservationsPage";
@@ -12,6 +12,7 @@ import { AccessPage } from "../../pages/access/AccessPage";
 import { PropertiesPage } from "../../pages/properties/PropertiesPage";
 import { PropertyDetailPage } from "../../pages/property-detail/PropertyDetailPage";
 import { PropertyEditPage } from "../../pages/properties/PropertyEditPage";
+import { HostCalendarPage } from "../../pages/calendar/HostCalendarPage";
 import { PropertyCalendarPage } from "../../pages/properties/PropertyCalendarPage";
 import { ConnectionCenterPage } from "../../pages/distribution/ConnectionCenterPage";
 import { ConnectionCenterFullSyncControl } from "../../components/distribution/ConnectionCenterFullSyncControl";
@@ -163,12 +164,17 @@ function PropertyDetailRoute() {
 }
 
 function PropertyCalendarRoute() {
-  return (
-    <div className="pg-calendar-route" style={{ display: "grid", gap: 20 }}>
-      <PropertyCalendarStayRestrictionsPanel />
-      <PropertyCalendarPage />
-    </div>
-  );
+  const { id } = useParams();
+  const location = useLocation();
+  return <Navigate replace to={location.hash.includes("mission-control") ? `/properties/${id}/mission-control` : `/calendar?propertyId=${encodeURIComponent(id || "")}`} />;
+}
+
+function CalendarDatesRoute() {
+  const location = useLocation();
+  return <div key={location.pathname + location.search} className="pg-calendar-route" style={{ display: "grid", gap: 20 }}>
+    <PropertyCalendarStayRestrictionsPanel />
+    <PropertyCalendarPage view="actions" />
+  </div>;
 }
 
 function ConnectionCenterRoute() {
@@ -299,6 +305,10 @@ export const router = createBrowserRouter([
       { path: "/onboarding/property", element: <CreatePropertyPage /> },
       { path: "/overview", element: <OverviewPage /> },
 
+      { path: "/calendar", element: <HostCalendarPage /> },
+      { path: "/calendar/property/:id", element: <CalendarDatesRoute /> },
+      { path: "/mission-control", element: <HostCalendarPage mission /> },
+      { path: "/properties/:id/mission-control", element: <div className="pg-calendar-route"><PropertyCalendarPage view="mission" /></div> },
       { path: "/properties", element: <PropertiesPage /> },
       { path: "/properties/:id", element: <PropertyDetailRoute /> },
       { path: "/properties/:id/edit", element: <PropertyEditPage /> },

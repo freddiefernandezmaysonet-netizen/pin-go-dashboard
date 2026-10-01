@@ -12,6 +12,8 @@ import { canManageHostIncidents } from "../../lib/hostIncidentConfig";
 const baseNav = [
   { to: "/overview", label: "Overview" },
   { to: "/properties", label: "Properties" },
+  { to: "/calendar", label: "Calendar" },
+  { to: "/mission-control", label: "Mission Control" },
   { to: "/locks", label: "Locks" },
   { to: "/health", label: "Locks Health Center" },
   { to: "/reservations", label: "Reservations" },
@@ -55,6 +57,8 @@ function SideItem({ to, label }: { to: string; label: string }) {
 }
 
 function getPageTitle(pathname: string) {
+  if (pathname.startsWith("/calendar")) return "Calendar";
+  if (pathname.includes("/mission-control")) return "Mission Control";
   if (pathname.startsWith("/overview")) return "Overview";
   if (/^\/properties\/[^/]+\/distribution(?:\/|$)/.test(pathname)) return "Booking channels";
   if (pathname.startsWith("/properties")) return "Properties";
