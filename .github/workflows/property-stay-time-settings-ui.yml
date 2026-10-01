@@ -1,0 +1,29 @@
+name: Property Stay Time Settings Dashboard
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/properties/StayTimeSettingsCard.tsx"
+      - "src/components/properties/stayTimeSettings*"
+      - "src/api/stayTimeSettings.ts"
+      - "src/pages/properties/PropertyEditPage.tsx"
+      - ".github/workflows/property-stay-time-settings-ui.yml"
+permissions:
+  contents: read
+jobs:
+  settings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test src/components/properties/stayTimeSettings.interaction.test.mjs
+      - run: npx eslint src/api/stayTimeSettings.ts src/components/properties/stayTimeSettingsForm.ts src/components/properties/StayTimeSettingsCard.tsx
+      - run: npx tsc -p tsconfig.app.json --noEmit
+      - run: npm run build
