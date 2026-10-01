@@ -1,0 +1,194 @@
+/* Scoped to the property-calendar route. Important rules override existing inline
+   presentation only; no global overflow clipping or viewport/zoom restrictions. */
+.pg-calendar-route {
+  min-width: 0;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  container: property-calendar / inline-size;
+}
+.pg-calendar-route *, .pg-calendar-route *::before, .pg-calendar-route *::after {
+  box-sizing: border-box;
+}
+.pg-calendar-route :where(div, section, article, label) {
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+.pg-calendar-route .pgc-summaryGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+.pg-calendar-route .pgc-controlCenterCard {
+  grid-template-columns: minmax(150px, .8fr) minmax(0, 2fr) minmax(200px, 1fr) !important;
+}
+.pg-calendar-route .pgc-aiMetricsRow {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)) !important;
+}
+.pg-calendar-route .pgc-calendarGrid {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+.pg-calendar-route .pgc-dayCard {
+  touch-action: manipulation;
+}
+.pg-calendar-route .pgc-dayCard:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+.pg-calendar-route .pgc-aiFooter {
+  height: auto !important;
+  min-height: 40px;
+  padding: 10px;
+  text-align: center;
+}
+.pg-calendar-route .pgc-guestJourneyMetricGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)) !important;
+}
+.pg-calendar-route .pgc-missionEngineGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
+}
+.pg-calendar-route .pgo-stats {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: min(100%, 180px);
+}
+.pg-calendar-route :is(.pgc-missionEnterpriseHeader, .pgc-missionPanelHeader,
+  .pgc-missionActivityTopRow, .pgc-missionActionItemTopRow,
+  .pgc-autoResolutionHeader, .pgc-autoResolutionCardTopRow,
+  .pgc-manualQuoteHeader, .pgo-cardTopRow) {
+  flex-wrap: wrap;
+}
+.pg-calendar-route :is(.pgc-missionActivityRow, .pgc-autoResolutionTimelineRow, .pgo-timelineRow) {
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+}
+.pg-calendar-route :is(.pgc-inlineActionInput, .pgs-input) {
+  max-width: 100%;
+}
+@container property-calendar (max-width: 1100px) {
+  .pg-calendar-route .pgc-controlCenterCard {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px !important;
+  }
+  .pg-calendar-route :is(.pgc-legendColumn, .pgc-aiColumn) {
+    border-right: 0 !important;
+    padding-right: 0 !important;
+  }
+  .pg-calendar-route .pgc-legendList {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 10px 18px !important;
+    margin-top: 12px !important;
+  }
+  .pg-calendar-route .pgc-summaryGrid { gap: 12px !important; }
+  .pg-calendar-route .pgc-summaryCard { padding: 12px !important; }
+  .pg-calendar-route .pgc-dayRate { font-size: clamp(15px, 3cqi, 30px) !important; }
+  .pg-calendar-route .pgc-dayCard { padding: 8px !important; }
+  .pg-calendar-route .pgc-dayStatus { font-size: 11px !important; }
+  .pg-calendar-route .pgc-reasonPill { padding: 3px 5px !important; }
+}
+@container property-calendar (max-width: 720px) {
+  .pg-calendar-route .pgc-page { padding: 12px !important; }
+  .pg-calendar-route .pgc-title { font-size: 25px !important; }
+  .pg-calendar-route .pgc-summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-top: 18px !important;
+  }
+  .pg-calendar-route .pgc-summaryValue { font-size: 25px !important; }
+  .pg-calendar-route .pgc-summaryLabel { font-size: 10px !important; }
+  .pg-calendar-route .pgc-summaryHint { font-size: 11px !important; }
+  .pg-calendar-route :is(.pgc-summaryIcon, .pgc-summaryIconGreen, .pgc-summaryIconRed, .pgc-summaryIconPurple) {
+    width: 30px !important; height: 30px !important; font-size: 18px !important; flex-shrink: 0;
+  }
+  .pg-calendar-route .pgc-controlCenterCard { padding: 14px !important; }
+  .pg-calendar-route .pgc-aiMetricsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .pg-calendar-route .pgc-aiMetricCard { padding: 10px !important; gap: 8px !important; }
+  .pg-calendar-route .pgc-aiMetricValue { font-size: 23px !important; }
+  .pg-calendar-route .pgc-aiMetricLabel { font-size: 11px !important; }
+  .pg-calendar-route :is(.pgc-aiIconUp, .pgc-aiIconDown, .pgc-aiIconUpWarm, .pgc-aiIconDownBlue) {
+    width: 28px !important; height: 28px !important; font-size: 18px !important; flex-shrink: 0;
+  }
+  .pg-calendar-route .pgc-guardrailsBox { padding: 12px !important; gap: 8px !important; margin-top: 12px !important; }
+  .pg-calendar-route .pgc-guardrailValue { font-size: 20px !important; }
+  .pg-calendar-route .pgc-calendarToolbar {
+    grid-template-columns: auto 44px 44px minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+  .pg-calendar-route .pgc-monthTitle {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: start !important;
+    margin-bottom: 4px;
+    font-size: 21px !important;
+  }
+  .pg-calendar-route .pgc-viewButtons { justify-self: end; }
+  .pg-calendar-route :is(.pgc-todayButton, .pgc-viewButtonActive) { padding: 0 12px !important; }
+  .pg-calendar-route :is(.pgc-missionEnterpriseHeader, .pgc-autoResolutionHeader, .pgo-header) {
+    flex-direction: column;
+    align-items: stretch !important;
+    padding: 16px !important;
+  }
+  .pg-calendar-route .pgc-missionStatusCluster { justify-items: start !important; }
+  .pg-calendar-route .pgc-missionHeroGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+  .pg-calendar-route .pgc-missionHeroCard { padding: 14px !important; }
+  .pg-calendar-route :is(.pgc-guestJourneyPanel, .pgc-missionPanel,
+    .pgc-autoResolutionPanel, .pgc-missionUnavailableState, .pgo-panel) {
+    margin-left: 10px !important; margin-right: 10px !important;
+  }
+  .pg-calendar-route .pgc-guestJourneyPanel { padding: 12px !important; }
+  .pg-calendar-route .pgc-guestJourneyMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .pg-calendar-route .pgc-guestJourneyMetricCard { padding: 10px !important; }
+  .pg-calendar-route :is(.pgc-missionActivityTimeline, .pgc-autoResolutionTimeline, .pgo-timeline) { padding: 12px !important; }
+  .pg-calendar-route :is(.pgc-missionActivityContent, .pgc-autoResolutionEnterpriseCard, .pgo-enterpriseCard) { padding: 12px !important; }
+  .pg-calendar-route .pgc-autoResolutionStats { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; width: 100%; }
+  .pg-calendar-route .pgo-stats { width: 100%; }
+  .pg-calendar-route :is(.pgc-rangeActionPanel, .pgc-selectedDayPanel) { padding: 14px !important; }
+  .pg-calendar-route .pgc-rangeActionButtons { width: 100%; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pg-calendar-route .pgc-inlineActionForm { align-items: stretch !important; }
+  .pg-calendar-route .pgc-inlineActionInput { width: 100% !important; }
+  .pg-calendar-route :is(input:not([type="checkbox"]), select, textarea) {
+    font-size: 16px !important;
+    min-height: 44px !important;
+  }
+  .pg-calendar-route button {
+    min-height: 44px !important;
+    height: auto !important;
+    white-space: normal;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    max-width: 100%;
+  }
+  .pg-calendar-route .pgs-panel { padding: 16px !important; }
+  .pg-calendar-route .pgs-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)) !important; }
+  .pg-calendar-route :is(.pgs-button, .pgs-removeButton) { width: 100%; }
+  .pg-calendar-route .pgs-removalSummary { min-height: 44px !important; }
+}
+@container property-calendar (max-width: 480px) {
+  .pg-calendar-route .pgc-calendarGrid { gap: 3px !important; }
+  .pg-calendar-route .pgc-weekday { font-size: 9px !important; }
+  .pg-calendar-route .pgc-dayCard {
+    padding: 5px 2px !important;
+    min-height: 88px !important;
+    border-radius: 8px !important;
+    gap: 6px !important;
+  }
+  .pg-calendar-route .pgc-dayNumber { font-size: 12px !important; }
+  .pg-calendar-route .pgc-statusDot { width: 5px !important; height: 5px !important; flex-shrink: 0; }
+  .pg-calendar-route .pgc-dayRate { font-size: clamp(10px, 3.1cqi, 15px) !important; line-height: 1.2 !important; }
+  .pg-calendar-route .pgc-dayStatus { font-size: 0 !important; }
+  .pg-calendar-route .pgc-dayStatus::after {
+    content: attr(data-compact-status);
+    font-size: clamp(8px, 2.7cqi, 11px);
+    line-height: 1.3;
+  }
+  /* Secondary details remain in the date's accessible label/title and the
+     existing selected-day or reservation view, not squeezed into tiny cells. */
+  .pg-calendar-route .pgc-dayCard :is(.pgc-reasonPill, .pgc-dayMeta, .pgc-dayMetaMuted) { display: none !important; }
+  .pg-calendar-route .pgc-missionEnterpriseTitle { font-size: 21px !important; }
+  .pg-calendar-route .pgc-rangeActionButtons { grid-template-columns: minmax(0, 1fr); }
+}
