@@ -139,33 +139,33 @@ export function PropertyCalendarStayRestrictionsPanel() {
   }
 
   return (
-    <section style={styles.panel}>
-      <div style={styles.header}>
+    <section className="pgs-panel" style={styles.panel}>
+      <div className="pgs-header" style={styles.header}>
         <div>
-          <div style={styles.eyebrow}>Calendar Controls</div>
-          <h2 style={styles.title}>Stay Restrictions</h2>
-          <p style={styles.subtitle}>Apply a nightly rate, minimum stay, maximum stay, or an exact combination across one date or a date range.</p>
+          <div className="pgs-eyebrow" style={styles.eyebrow}>Calendar Controls</div>
+          <h2 className="pgs-title" style={styles.title}>Stay Restrictions</h2>
+          <p className="pgs-subtitle" style={styles.subtitle}>Apply a nightly rate, minimum stay, maximum stay, or an exact combination across one date or a date range.</p>
         </div>
-        <div style={styles.countBadge}>{selectedDateCount > 0 ? `${selectedDateCount} date${selectedDateCount === 1 ? "" : "s"}` : "No dates selected"}</div>
+        <div className="pgs-countBadge" style={styles.countBadge}>{selectedDateCount > 0 ? `${selectedDateCount} date${selectedDateCount === 1 ? "" : "s"}` : "No dates selected"}</div>
       </div>
-      <div style={styles.grid}>
-        <label style={styles.field}><span style={styles.label}>Start Date</span><input type="date" disabled={busy} value={fromDate} onChange={(event) => setFromDate(event.target.value)} style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>End Date</span><input type="date" disabled={busy} value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>Nightly Rate</span><input type="number" disabled={busy} min="0.01" step="0.01" value={rateInput} onChange={(event) => setRateInput(event.target.value)} placeholder="432.00" style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>Minimum Nights</span><input type="number" disabled={busy} min="1" step="1" value={minimumNightsInput} onChange={(event) => setMinimumNightsInput(event.target.value)} placeholder="2" style={styles.input} /></label>
-        <label style={styles.field}><span style={styles.label}>Maximum Nights</span><input type="number" disabled={busy} min="1" step="1" value={maximumNightsInput} onChange={(event) => setMaximumNightsInput(event.target.value)} placeholder="4" style={styles.input} /></label>
+      <div className="pgs-grid" style={styles.grid}>
+        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Start Date</span><input type="date" disabled={busy} value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="pgs-input" style={styles.input} /></label>
+        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>End Date</span><input type="date" disabled={busy} value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} className="pgs-input" style={styles.input} /></label>
+        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Nightly Rate</span><input type="number" disabled={busy} min="0.01" step="0.01" value={rateInput} onChange={(event) => setRateInput(event.target.value)} placeholder="432.00" className="pgs-input" style={styles.input} /></label>
+        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Minimum Nights</span><input type="number" disabled={busy} min="1" step="1" value={minimumNightsInput} onChange={(event) => setMinimumNightsInput(event.target.value)} placeholder="2" className="pgs-input" style={styles.input} /></label>
+        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Maximum Nights</span><input type="number" disabled={busy} min="1" step="1" value={maximumNightsInput} onChange={(event) => setMaximumNightsInput(event.target.value)} placeholder="4" className="pgs-input" style={styles.input} /></label>
       </div>
-      <div style={styles.footer}>
-        <div style={styles.feedback} aria-live="polite">{error ? <span role="alert" style={styles.error}>{error}</span> : !error && message ? <span role="status" style={styles.success}>{message}</span> : <span style={styles.hint}>Blank fields are left unchanged.</span>}</div>
-        <button type="button" onClick={handleApply} disabled={busy} style={{ ...styles.button, ...(busy ? styles.buttonDisabled : {}) }}>{saving ? "Applying..." : "Apply Stay Restrictions"}</button>
+      <div className="pgs-footer" style={styles.footer}>
+        <div className="pgs-feedback" style={styles.feedback} aria-live="polite">{error ? <span role="alert" className="pgs-error" style={styles.error}>{error}</span> : !error && message ? <span role="status" className="pgs-success" style={styles.success}>{message}</span> : <span className="pgs-hint" style={styles.hint}>Blank fields are left unchanged.</span>}</div>
+        <button type="button" onClick={handleApply} disabled={busy} className="pgs-button" style={{ ...styles.button, ...(busy ? styles.buttonDisabled : {}) }}>{saving ? "Applying..." : "Apply Stay Restrictions"}</button>
       </div>
-      <details style={styles.removalPanel}>
-        <summary style={styles.removalSummary}>Remove saved stay restrictions</summary>
-        <p style={styles.subtitle}>Use the Start Date and End Date above. Choose which saved limits to remove; property defaults will apply. Nightly rates will not be removed.</p>
-        <div style={styles.removalActions}>
-          <label style={styles.removalChoice}><input type="checkbox" aria-label="Remove Minimum Nights" disabled={busy} checked={removeMinimum} onChange={(event) => setRemoveMinimum(event.target.checked)} />Minimum Nights</label>
-          <label style={styles.removalChoice}><input type="checkbox" aria-label="Remove Maximum Nights" disabled={busy} checked={removeMaximum} onChange={(event) => setRemoveMaximum(event.target.checked)} />Maximum Nights</label>
-          <button type="button" onClick={handleRemove} disabled={busy || (!removeMinimum && !removeMaximum)} style={{ ...styles.removeButton, ...(busy || (!removeMinimum && !removeMaximum) ? styles.buttonDisabled : {}) }}>{removing ? "Removing..." : "Remove Stay Restrictions"}</button>
+      <details className="pgs-removalPanel" style={styles.removalPanel}>
+        <summary className="pgs-removalSummary" style={styles.removalSummary}>Remove saved stay restrictions</summary>
+        <p className="pgs-subtitle" style={styles.subtitle}>Use the Start Date and End Date above. Choose which saved limits to remove; property defaults will apply. Nightly rates will not be removed.</p>
+        <div className="pgs-removalActions" style={styles.removalActions}>
+          <label className="pgs-removalChoice" style={styles.removalChoice}><input type="checkbox" aria-label="Remove Minimum Nights" disabled={busy} checked={removeMinimum} onChange={(event) => setRemoveMinimum(event.target.checked)} />Minimum Nights</label>
+          <label className="pgs-removalChoice" style={styles.removalChoice}><input type="checkbox" aria-label="Remove Maximum Nights" disabled={busy} checked={removeMaximum} onChange={(event) => setRemoveMaximum(event.target.checked)} />Maximum Nights</label>
+          <button type="button" onClick={handleRemove} disabled={busy || (!removeMinimum && !removeMaximum)} className="pgs-removeButton" style={{ ...styles.removeButton, ...(busy || (!removeMinimum && !removeMaximum) ? styles.buttonDisabled : {}) }}>{removing ? "Removing..." : "Remove Stay Restrictions"}</button>
         </div>
       </details>
     </section>

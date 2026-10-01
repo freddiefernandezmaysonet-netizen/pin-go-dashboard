@@ -1,3 +1,4 @@
+import "../../pages/properties/PropertyCalendarResponsive.css";
 /* eslint-disable react-refresh/only-export-components -- Router modules intentionally export route configuration alongside route components. */
 import { lazy, Suspense, type ReactElement, type ReactNode } from "react";
 import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
@@ -163,7 +164,7 @@ function PropertyDetailRoute() {
 
 function PropertyCalendarRoute() {
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className="pg-calendar-route" style={{ display: "grid", gap: 20 }}>
       <PropertyCalendarStayRestrictionsPanel />
       <PropertyCalendarPage />
     </div>
