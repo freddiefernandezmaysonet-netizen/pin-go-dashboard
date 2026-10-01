@@ -194,10 +194,10 @@ function OperationalTimelineItem({
   const canOpenReservation = Boolean(item.reservationId && onOpenReservation);
 
   return (
-    <div style={styles.timelineRow}>
-      <div style={styles.timelineRail}>
+    <div className="pgo-timelineRow" style={styles.timelineRow}>
+      <div className="pgo-timelineRail" style={styles.timelineRail}>
         <div
-          style={{
+          className="pgo-timelineDot" style={{
             ...styles.timelineDot,
             color: presentation.pillColor,
             background: presentation.dotBackground,
@@ -207,29 +207,29 @@ function OperationalTimelineItem({
         >
           {presentation.dot}
         </div>
-        {!isLast ? <div style={styles.timelineLine} /> : null}
+        {!isLast ? <div className="pgo-timelineLine" style={styles.timelineLine} /> : null}
       </div>
 
       <article
-        style={{
+        className="pgo-enterpriseCard" style={{
           ...styles.enterpriseCard,
           background: presentation.cardBackground,
         }}
       >
-        <div style={styles.cardTopRow}>
+        <div className="pgo-cardTopRow" style={styles.cardTopRow}>
           <div>
-            <div style={styles.contextRow}>
-              <span style={styles.engineBadge}>{item.engine} Engine</span>
+            <div className="pgo-contextRow" style={styles.contextRow}>
+              <span className="pgo-engineBadge" style={styles.engineBadge}>{item.engine} Engine</span>
               {reservationNumber ? (
-                <span style={styles.reservationNumber}>#{reservationNumber}</span>
+                <span className="pgo-reservationNumber" style={styles.reservationNumber}>#{reservationNumber}</span>
               ) : null}
-              {item.guestName ? <span style={styles.contextText}>{item.guestName}</span> : null}
+              {item.guestName ? <span className="pgo-contextText" style={styles.contextText}>{item.guestName}</span> : null}
             </div>
-            <h4 style={styles.itemTitle}>{sanitizeWhiteLabelText(item.title)}</h4>
+            <h4 className="pgo-itemTitle" style={styles.itemTitle}>{sanitizeWhiteLabelText(item.title)}</h4>
           </div>
 
           <div
-            style={{
+            className="pgo-statePill" style={{
               ...styles.statePill,
               color: presentation.pillColor,
               background: presentation.pillBackground,
@@ -240,22 +240,22 @@ function OperationalTimelineItem({
           </div>
         </div>
 
-        <div style={styles.issue}>{sanitizeWhiteLabelText(item.issue)}</div>
+        <div className="pgo-issue" style={styles.issue}>{sanitizeWhiteLabelText(item.issue)}</div>
 
         {item.operationalImpact ? (
-          <div style={styles.impactBox}>
-            <span style={styles.detailLabel}>Operational impact</span>
+          <div className="pgo-impactBox" style={styles.impactBox}>
+            <span className="pgo-detailLabel" style={styles.detailLabel}>Operational impact</span>
             <span>{sanitizeWhiteLabelText(item.operationalImpact)}</span>
           </div>
         ) : null}
 
-        <div style={styles.nextStepBox}>
-          <span style={styles.detailLabel}>{presentation.nextStepLabel}</span>
+        <div className="pgo-nextStepBox" style={styles.nextStepBox}>
+          <span className="pgo-detailLabel" style={styles.detailLabel}>{presentation.nextStepLabel}</span>
           <span>{getNextStep(item)}</span>
         </div>
 
-        <div style={styles.cardFooter}>
-          <div style={styles.footerMeta}>
+        <div className="pgo-cardFooter" style={styles.cardFooter}>
+          <div className="pgo-footerMeta" style={styles.footerMeta}>
             <span>
               Responsible: <strong>{formatActor(item.responsibleActor)}</strong>
             </span>
@@ -273,7 +273,7 @@ function OperationalTimelineItem({
             <button
               type="button"
               onClick={() => onOpenReservation?.(String(item.reservationId))}
-              style={styles.openButton}
+              className="pgo-openButton" style={styles.openButton}
             >
               Open Reservation
             </button>
@@ -325,27 +325,27 @@ export function OperationalIntelligencePanel({
   const needsAttention = counts.ACTION_REQUIRED;
 
   return (
-    <section style={styles.panel}>
-      <div style={styles.header}>
+    <section className="pgo-panel" style={styles.panel}>
+      <div className="pgo-header" style={styles.header}>
         <div>
-          <div style={styles.eyebrow}>Operational Command Center</div>
-          <div style={styles.heading}>What needs attention right now</div>
-          <div style={styles.subheading}>
+          <div className="pgo-eyebrow" style={styles.eyebrow}>Operational Command Center</div>
+          <div className="pgo-heading" style={styles.heading}>What needs attention right now</div>
+          <div className="pgo-subheading" style={styles.subheading}>
             Pin&Go classifies every workflow by who must act and what happens next.
           </div>
         </div>
 
-               <div style={styles.stats}>
-          <div style={styles.statCard}>
+               <div className="pgo-stats" style={styles.stats}>
+          <div className="pgo-statCard" style={styles.statCard}>
             <div
-              style={{
+              className="pgo-statValue" style={{
                 ...styles.statValue,
                 color: "#fca5a5",
               }}
             >
               {counts.ACTION_REQUIRED}
             </div>
-            <div style={styles.statLabel}>
+            <div className="pgo-statLabel" style={styles.statLabel}>
               Host actions required
             </div>
           </div>
@@ -353,7 +353,7 @@ export function OperationalIntelligencePanel({
       </div>
 
            <div
-        style={{
+        className="pgo-trustBanner" style={{
           ...styles.trustBanner,
           color: "#991b1b",
           background: "#fef2f2",
@@ -367,7 +367,7 @@ export function OperationalIntelligencePanel({
           Pin&Go identified the exact operational impact and required next step below.
         </span>
       </div>
-            <div style={styles.timeline}>
+            <div className="pgo-timeline" style={styles.timeline}>
         {sortedItems.length > 0 ? (
           sortedItems.map((item, index) => (
             <OperationalTimelineItem
@@ -378,7 +378,7 @@ export function OperationalIntelligencePanel({
             />
           ))
         ) : (
-          <div style={styles.emptyState}>
+          <div className="pgo-emptyState" style={styles.emptyState}>
             <strong>All operational workflows are clear.</strong>
             <span>
               Pin&Go has not detected any host-facing issue that requires action.

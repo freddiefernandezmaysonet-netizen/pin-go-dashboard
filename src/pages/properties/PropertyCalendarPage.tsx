@@ -1635,11 +1635,11 @@ paymentState: manualPaymentState,
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
+    <div className="pgc-page" style={styles.page}>
+      <div className="pgc-header" style={styles.header}>
         <div>
-          <h1 style={styles.title}>Property Calendar</h1>
-          <p style={styles.subtitle}>
+          <h1 className="pgc-title" style={styles.title}>Property Calendar</h1>
+          <p className="pgc-subtitle" style={styles.subtitle}>
             {loading
               ? "Loading calendar intelligence..."
               : `${nightlyRates.length} rate signal(s), ${reservations.length} reservation(s), and ${blockedDates.length} blocked date(s) loaded.`}
@@ -1647,186 +1647,186 @@ paymentState: manualPaymentState,
         </div>
       </div>
 
-      <div style={styles.summaryGrid}>
-        <div style={styles.summaryCard}>
+      <div className="pgc-summaryGrid" style={styles.summaryGrid}>
+        <div className="pgc-summaryCard" style={styles.summaryCard}>
           <div>
-            <div style={styles.summaryLabel}>Occupancy</div>
-            <div style={styles.summaryValue}>
+            <div className="pgc-summaryLabel" style={styles.summaryLabel}>Occupancy</div>
+            <div className="pgc-summaryValue" style={styles.summaryValue}>
               {occupancySummary.occupancyPercent}%
             </div>
-            <div style={styles.summaryHint}>
+            <div className="pgc-summaryHint" style={styles.summaryHint}>
  {format(month, "MMMM yyyy")} ·{" "}
 {occupancySummary.bookedDays} booked ·{" "}
 {occupancySummary.blockedDays} blocked
 </div>
           </div>
-          <div style={styles.summaryIcon}>◔</div>
+          <div className="pgc-summaryIcon" style={styles.summaryIcon}>◔</div>
         </div>
 
-        <div style={styles.summaryCard}>
+        <div className="pgc-summaryCard" style={styles.summaryCard}>
           <div>
-            <div style={styles.summaryLabel}>Revenue Optimizations</div>
-            <div style={styles.summaryValue}>
+            <div className="pgc-summaryLabel" style={styles.summaryLabel}>Revenue Optimizations</div>
+            <div className="pgc-summaryValue" style={styles.summaryValue}>
               {revenueSummary.totalOptimizations}
             </div>
-            <div style={styles.summaryHint}>Pricing engine actions this month</div>
+            <div className="pgc-summaryHint" style={styles.summaryHint}>Pricing engine actions this month</div>
           </div>
-          <div style={styles.summaryIconGreen}>⌁</div>
+          <div className="pgc-summaryIconGreen" style={styles.summaryIconGreen}>⌁</div>
         </div>
 
-        <div style={styles.summaryCard}>
+        <div className="pgc-summaryCard" style={styles.summaryCard}>
           <div>
-            <div style={styles.summaryLabel}>Blocked Dates</div>
-            <div style={styles.summaryValue}>{occupancySummary.blockedDays}</div>
-            <div style={styles.summaryHint}>Owner stay or maintenance</div>
+            <div className="pgc-summaryLabel" style={styles.summaryLabel}>Blocked Dates</div>
+            <div className="pgc-summaryValue" style={styles.summaryValue}>{occupancySummary.blockedDays}</div>
+            <div className="pgc-summaryHint" style={styles.summaryHint}>Owner stay or maintenance</div>
           </div>
-          <div style={styles.summaryIconRed}>▣</div>
+          <div className="pgc-summaryIconRed" style={styles.summaryIconRed}>▣</div>
         </div>
 
-        <div style={styles.summaryCard}>
+        <div className="pgc-summaryCard" style={styles.summaryCard}>
           <div>
-            <div style={styles.summaryLabel}>Manual Overrides</div>
-            <div style={styles.summaryValue}>{revenueSummary.manualOverrides}</div>
-            <div style={styles.summaryHint}>Human pricing adjustments</div>
+            <div className="pgc-summaryLabel" style={styles.summaryLabel}>Manual Overrides</div>
+            <div className="pgc-summaryValue" style={styles.summaryValue}>{revenueSummary.manualOverrides}</div>
+            <div className="pgc-summaryHint" style={styles.summaryHint}>Human pricing adjustments</div>
           </div>
-          <div style={styles.summaryIconPurple}>✎</div>
+          <div className="pgc-summaryIconPurple" style={styles.summaryIconPurple}>✎</div>
         </div>
       </div>
     
 
-       <div style={styles.controlCenterCard}>
-        <div style={styles.legendColumn}>
-          <div style={styles.sectionTitle}>Calendar Intelligence</div>
+       <div className="pgc-controlCenterCard" style={styles.controlCenterCard}>
+        <div className="pgc-legendColumn" style={styles.legendColumn}>
+          <div className="pgc-sectionTitle" style={styles.sectionTitle}>Calendar Intelligence</div>
 
-          <div style={styles.legendList}>
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: "#16a34a" }} />
+          <div className="pgc-legendList" style={styles.legendList}>
+            <div className="pgc-legendItem" style={styles.legendItem}>
+              <span className="pgc-legendDot" style={{ ...styles.legendDot, background: "#16a34a" }} />
               Available
             </div>
 
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: "#2563eb" }} />
+            <div className="pgc-legendItem" style={styles.legendItem}>
+              <span className="pgc-legendDot" style={{ ...styles.legendDot, background: "#2563eb" }} />
               Booked
             </div>
 
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: "#dc2626" }} />
+            <div className="pgc-legendItem" style={styles.legendItem}>
+              <span className="pgc-legendDot" style={{ ...styles.legendDot, background: "#dc2626" }} />
               Blocked
             </div>
 
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: "#8b5cf6" }} />
+            <div className="pgc-legendItem" style={styles.legendItem}>
+              <span className="pgc-legendDot" style={{ ...styles.legendDot, background: "#8b5cf6" }} />
               Selected range
             </div>
 
-            <div style={styles.legendItem}>
-              <span style={{ ...styles.legendDot, background: "#94a3b8" }} />
+            <div className="pgc-legendItem" style={styles.legendItem}>
+              <span className="pgc-legendDot" style={{ ...styles.legendDot, background: "#94a3b8" }} />
               Past or inactive
             </div>
           </div>
         </div>
 
-        <div style={styles.aiColumn}>
-          <div style={styles.aiHeader}>
+        <div className="pgc-aiColumn" style={styles.aiColumn}>
+          <div className="pgc-aiHeader" style={styles.aiHeader}>
             <div>
-              <div style={styles.sectionTitle}>AI Revenue Summary</div>
-              <div style={styles.sectionSubtitle}>
+              <div className="pgc-sectionTitle" style={styles.sectionTitle}>AI Revenue Summary</div>
+              <div className="pgc-sectionSubtitle" style={styles.sectionSubtitle}>
                 Pin&Go pricing activity for {format(month, "MMMM yyyy")}
               </div>
             </div>
 
-            <div style={styles.liveBadge}>Live</div>
+            <div className="pgc-liveBadge" style={styles.liveBadge}>Live</div>
           </div>
 
-          <div style={styles.aiMetricsRow}>
-            <div style={styles.aiMetricCard}>
-              <div style={styles.aiIconUp}>↑</div>
+          <div className="pgc-aiMetricsRow" style={styles.aiMetricsRow}>
+            <div className="pgc-aiMetricCard" style={styles.aiMetricCard}>
+              <div className="pgc-aiIconUp" style={styles.aiIconUp}>↑</div>
               <div>
-                <div style={styles.aiMetricValue}>
+                <div className="pgc-aiMetricValue" style={styles.aiMetricValue}>
                   {revenueSummary.seasonalAdjustments}
                 </div>
-                <div style={styles.aiMetricLabel}>Seasonal</div>
+                <div className="pgc-aiMetricLabel" style={styles.aiMetricLabel}>Seasonal</div>
               </div>
             </div>
 
-           <div style={styles.aiMetricCard}>
-  <div style={styles.aiIconUp}>↑</div>
+           <div className="pgc-aiMetricCard" style={styles.aiMetricCard}>
+  <div className="pgc-aiIconUp" style={styles.aiIconUp}>↑</div>
   <div>
-    <div style={styles.aiMetricValue}>
+    <div className="pgc-aiMetricValue" style={styles.aiMetricValue}>
       {revenueSummary.weekendBoosts}
     </div>
-    <div style={styles.aiMetricLabel}>Weekend Boosts</div>
+    <div className="pgc-aiMetricLabel" style={styles.aiMetricLabel}>Weekend Boosts</div>
   </div>
 </div>
 
-            <div style={styles.aiMetricCard}>
-              <div style={styles.aiIconDown}>↓</div>
+            <div className="pgc-aiMetricCard" style={styles.aiMetricCard}>
+              <div className="pgc-aiIconDown" style={styles.aiIconDown}>↓</div>
               <div>
-                <div style={styles.aiMetricValue}>
+                <div className="pgc-aiMetricValue" style={styles.aiMetricValue}>
                   {revenueSummary.lastMinuteDiscounts}
                 </div>
-                <div style={styles.aiMetricLabel}>Last Minute</div>
+                <div className="pgc-aiMetricLabel" style={styles.aiMetricLabel}>Last Minute</div>
               </div>
             </div>
 
-            <div style={styles.aiMetricCard}>
-              <div style={styles.aiIconUpWarm}>↑</div>
+            <div className="pgc-aiMetricCard" style={styles.aiMetricCard}>
+              <div className="pgc-aiIconUpWarm" style={styles.aiIconUpWarm}>↑</div>
               <div>
-                <div style={styles.aiMetricValue}>
+                <div className="pgc-aiMetricValue" style={styles.aiMetricValue}>
                   {revenueSummary.highDemandAdjustments}
                 </div>
-                <div style={styles.aiMetricLabel}>High Demand</div>
+                <div className="pgc-aiMetricLabel" style={styles.aiMetricLabel}>High Demand</div>
               </div>
             </div>
 
-            <div style={styles.aiMetricCard}>
-              <div style={styles.aiIconDownBlue}>↓</div>
+            <div className="pgc-aiMetricCard" style={styles.aiMetricCard}>
+              <div className="pgc-aiIconDownBlue" style={styles.aiIconDownBlue}>↓</div>
               <div>
-                <div style={styles.aiMetricValue}>
+                <div className="pgc-aiMetricValue" style={styles.aiMetricValue}>
                   {revenueSummary.lowDemandAdjustments}
                 </div>
-                <div style={styles.aiMetricLabel}>Low Demand</div>
+                <div className="pgc-aiMetricLabel" style={styles.aiMetricLabel}>Low Demand</div>
               </div>
             </div>
           </div>
 
-          <div style={styles.aiFooter}>
+          <div className="pgc-aiFooter" style={styles.aiFooter}>
             🦾 Pin&Go is monitoring demand and applying pricing rules automatically.
           </div>
         </div>
 
-        <div style={styles.guardrailsColumn}>
-          <div style={styles.sectionTitle}>Pricing Guardrails</div>
+        <div className="pgc-guardrailsColumn" style={styles.guardrailsColumn}>
+          <div className="pgc-sectionTitle" style={styles.sectionTitle}>Pricing Guardrails</div>
 
-          <div style={styles.guardrailsBox}>
+          <div className="pgc-guardrailsBox" style={styles.guardrailsBox}>
             <div>
-              <div style={styles.guardrailLabel}>Base</div>
-              <div style={styles.guardrailValue}>${baseNightlyRate.toFixed(0)}</div>
+              <div className="pgc-guardrailLabel" style={styles.guardrailLabel}>Base</div>
+              <div className="pgc-guardrailValue" style={styles.guardrailValue}>${baseNightlyRate.toFixed(0)}</div>
             </div>
 
             <div>
-              <div style={styles.guardrailLabel}>Min</div>
-              <div style={styles.guardrailValue}>
+              <div className="pgc-guardrailLabel" style={styles.guardrailLabel}>Min</div>
+              <div className="pgc-guardrailValue" style={styles.guardrailValue}>
                 ${minimumNightlyRate.toFixed(0)}
               </div>
             </div>
 
             <div>
-              <div style={styles.guardrailLabel}>Max</div>
-              <div style={styles.guardrailValue}>
+              <div className="pgc-guardrailLabel" style={styles.guardrailLabel}>Max</div>
+              <div className="pgc-guardrailValue" style={styles.guardrailValue}>
                 ${maximumNightlyRate.toFixed(0)}
               </div>
             </div>
           </div>
 
-          <div style={styles.guardrailsActive}>● Guardrails are active</div>
+          <div className="pgc-guardrailsActive" style={styles.guardrailsActive}>● Guardrails are active</div>
         </div>
       </div>
 
-      <div style={styles.calendarToolbar}>
+      <div className="pgc-calendarToolbar" style={styles.calendarToolbar}>
         <button
           type="button"
-          style={styles.todayButton}
+          className="pgc-todayButton" style={styles.todayButton}
           onClick={() => setMonth(startOfMonth(new Date()))}
         >
           Today
@@ -1834,7 +1834,7 @@ paymentState: manualPaymentState,
 
         <button
           type="button"
-          style={styles.iconButton}
+          className="pgc-iconButton" style={styles.iconButton}
           onClick={() => setMonth(startOfMonth(addMonths(month, -1)))}
         >
           ‹
@@ -1842,23 +1842,23 @@ paymentState: manualPaymentState,
 
         <button
           type="button"
-          style={styles.iconButton}
+          className="pgc-iconButton" style={styles.iconButton}
           onClick={() => setMonth(startOfMonth(addMonths(month, 1)))}
         >
           ›
         </button>
 
-        <div style={styles.monthTitle}>{format(month, "MMMM yyyy")}⌄</div>
+        <div className="pgc-monthTitle" style={styles.monthTitle}>{format(month, "MMMM yyyy")}⌄</div>
 
-        <div style={styles.viewButtons}>
-          <button type="button" style={styles.viewButtonActive}>
+        <div className="pgc-viewButtons" style={styles.viewButtons}>
+          <button type="button" className="pgc-viewButtonActive" style={styles.viewButtonActive}>
             Month
           </button>
                </div>
               </div>
-      <div style={styles.calendarGrid}>
+      <div className="pgc-calendarGrid" style={styles.calendarGrid}>
         {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((weekday) => (
-          <div key={weekday} style={styles.weekday}>
+          <div key={weekday} className="pgc-weekday" style={styles.weekday}>
             {weekday}
           </div>
         ))}
@@ -1885,7 +1885,7 @@ paymentState: manualPaymentState,
 
                 handleDayClick(day);
               }}
-              style={{
+              className="pgc-dayCard" data-calendar-date={dateKey} role="button" tabIndex={0} aria-pressed={selected} aria-label={`${format(day, "EEEE, MMMM d, yyyy")}. ${status}. Nightly rate ${status === "Blocked" ? "$0" : displayRate !== null ? `$${displayRate.toFixed(0)}` : "unavailable"}. ${reservation?.guestName || blockedDate?.reason || rateReason || ""}${reservation?.reservationNumber ? `. ${reservation.reservationNumber}` : ""}`} title={`${dateKey} · ${status} · ${status === "Blocked" ? "$0" : displayRate !== null ? `$${displayRate.toFixed(0)}` : "—"} · ${reservation?.guestName || blockedDate?.reason || rateReason || ""}`} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.currentTarget.click(); } }} style={{
                 ...styles.dayCard,
                 opacity: !isSameMonth(day, month) || isPastDay ? 0.45 : 1,
                 borderColor: selected
@@ -1901,10 +1901,10 @@ paymentState: manualPaymentState,
                     : "#ffffff",
               }}
             >
-              <div style={styles.dayTopRow}>
-                <div style={styles.dayNumber}>{format(day, "d")}</div>
+              <div className="pgc-dayTopRow" style={styles.dayTopRow}>
+                <div className="pgc-dayNumber" style={styles.dayNumber}>{format(day, "d")}</div>
                 <span
-                  style={{
+                  className="pgc-statusDot" style={{
                     ...styles.statusDot,
                     background:
                       status === "Booked"
@@ -1917,7 +1917,7 @@ paymentState: manualPaymentState,
               </div>
 
               <div
-                style={{
+                className="pgc-dayRate" style={{
                   ...styles.dayRate,
                   color: status === "Blocked" ? "#dc2626" : "#2563eb",
                 }}
@@ -1930,7 +1930,7 @@ paymentState: manualPaymentState,
               </div>
 
               <div
-                style={{
+                className="pgc-dayStatus" data-compact-status={status === "Available" ? "Open" : status} style={{
                   ...styles.dayStatus,
                   color:
                     status === "Booked"
@@ -1944,16 +1944,16 @@ paymentState: manualPaymentState,
               </div>
 
               {reservation ? (
-                <div style={styles.dayMeta}>
+                <div className="pgc-dayMeta" style={styles.dayMeta}>
                   {reservation.guestName || "Guest"}
                 </div>
               ) : blockedDate ? (
-                <div style={styles.dayMeta}>
+                <div className="pgc-dayMeta" style={styles.dayMeta}>
                   {blockedDate.reason || "Owner Stay"}
                 </div>
               ) : (
                 <div
-                  style={{
+                  className="pgc-reasonPill" style={{
                     ...styles.reasonPill,
                     color:
                       rateReason === "High Demand"
@@ -1974,7 +1974,7 @@ paymentState: manualPaymentState,
               )}
 
               {reservation ? (
-  <div style={styles.dayMetaMuted}>
+  <div className="pgc-dayMetaMuted" style={styles.dayMetaMuted}>
     {reservation.reservationNumber
       ? `#${reservation.reservationNumber}`
       : "Pending Reference"}
@@ -1988,31 +1988,31 @@ paymentState: manualPaymentState,
       </div>
 
       {hasSelectedRange && (
-        <div style={styles.rangeActionPanel}>
+        <div className="pgc-rangeActionPanel" style={styles.rangeActionPanel}>
           <div>
-            <div style={styles.rangeActionTitle}>Range selected</div>
-            <div style={styles.rangeActionSubtitle}>{selectedRangeLabel}</div>
+            <div className="pgc-rangeActionTitle" style={styles.rangeActionTitle}>Range selected</div>
+            <div className="pgc-rangeActionSubtitle" style={styles.rangeActionSubtitle}>{selectedRangeLabel}</div>
           </div>
 
-          <div style={styles.inlineActionForm}>
-  <div style={styles.inlineActionLabel}>Block reason</div>
+          <div className="pgc-inlineActionForm" style={styles.inlineActionForm}>
+  <div className="pgc-inlineActionLabel" style={styles.inlineActionLabel}>Block reason</div>
 
   <input
     type="text"
     value={blockReason}
     onChange={(e) => setBlockReason(e.target.value)}
     placeholder="Owner stay, maintenance, personal use..."
-    style={{
+    className="pgc-inlineActionInput" style={{
       ...styles.inlineActionInput,
       width: 280,
     }}
   />
 </div>
 
-          <div style={styles.rangeActionButtons}>
+          <div className="pgc-rangeActionButtons" style={styles.rangeActionButtons}>
             <button
               type="button"
-              style={styles.primaryActionButton}
+              className="pgc-primaryActionButton" style={styles.primaryActionButton}
               onClick={() => {
                 setShowCreateReservationForm((value) => !value);
                 setShowSetRateForm(false);
@@ -2025,7 +2025,7 @@ paymentState: manualPaymentState,
               type="button"
               onClick={handleBlockDates}
               disabled={savingBlock}
-              style={styles.actionButton}
+              className="pgc-actionButton" style={styles.actionButton}
             >
               {savingBlock ? "Blocking..." : "Block Dates"}
             </button>
@@ -2034,14 +2034,14 @@ paymentState: manualPaymentState,
               type="button"
               onClick={handleUnblockDates}
               disabled={savingUnblock}
-              style={styles.secondaryActionButton}
+              className="pgc-secondaryActionButton" style={styles.secondaryActionButton}
             >
               {savingUnblock ? "Unblocking..." : "Unblock Dates"}
             </button>
 
             <button
               type="button"
-              style={styles.secondaryActionButton}
+              className="pgc-secondaryActionButton" style={styles.secondaryActionButton}
               onClick={() => setShowSetRateForm((value) => !value)}
             >
               Manual Rate
@@ -2049,7 +2049,7 @@ paymentState: manualPaymentState,
 
             <button
               type="button"
-              style={styles.clearButton}
+              className="pgc-clearButton" style={styles.clearButton}
               onClick={() => {
                 setSelectedRange({ start: null, end: null });
                 setShowSetRateForm(false);
@@ -2062,8 +2062,8 @@ paymentState: manualPaymentState,
           </div>
 
           {showSetRateForm && (
-            <div style={styles.inlineActionForm}>
-              <div style={styles.inlineActionLabel}>
+            <div className="pgc-inlineActionForm" style={styles.inlineActionForm}>
+              <div className="pgc-inlineActionLabel" style={styles.inlineActionLabel}>
                 Manual nightly rate override
               </div>
 
@@ -2074,14 +2074,14 @@ paymentState: manualPaymentState,
                 value={rateInput}
                 onChange={(e) => setRateInput(e.target.value)}
                 placeholder="199.00"
-                style={styles.inlineActionInput}
+                className="pgc-inlineActionInput" style={styles.inlineActionInput}
               />
 
               <button
                 type="button"
                 onClick={handleApplyRate}
                 disabled={savingRate}
-                style={styles.actionButton}
+                className="pgc-actionButton" style={styles.actionButton}
               >
                 {savingRate ? "Applying..." : "Apply Manual Rate"}
               </button>
@@ -2089,15 +2089,15 @@ paymentState: manualPaymentState,
           )}
 
           {showCreateReservationForm && (
-            <div style={styles.inlineActionForm}>
-              <div style={styles.inlineActionLabel}>Create manual reservation</div>
+            <div className="pgc-inlineActionForm" style={styles.inlineActionForm}>
+              <div className="pgc-inlineActionLabel" style={styles.inlineActionLabel}>Create manual reservation</div>
 
               <input
                 type="text"
                 value={manualGuestName}
                 onChange={(e) => setManualGuestName(e.target.value)}
                 placeholder="Guest name"
-                style={styles.inlineActionInput}
+                className="pgc-inlineActionInput" style={styles.inlineActionInput}
               />
 
               <input
@@ -2105,7 +2105,7 @@ paymentState: manualPaymentState,
                 value={manualGuestEmail}
                 onChange={(e) => setManualGuestEmail(e.target.value)}
                 placeholder="Guest email"
-                style={styles.inlineActionInput}
+                className="pgc-inlineActionInput" style={styles.inlineActionInput}
               />
 
               <input
@@ -2113,10 +2113,10 @@ paymentState: manualPaymentState,
                 value={manualGuestPhone}
                 onChange={(e) => setManualGuestPhone(e.target.value)}
                 placeholder="Guest phone"
-                style={styles.inlineActionInput}
+                className="pgc-inlineActionInput" style={styles.inlineActionInput}
               />
 
-              <label style={styles.manualQuoteLabel}>
+              <label className="pgc-manualQuoteLabel" style={styles.manualQuoteLabel}>
                 Guest communication language
               </label>
 
@@ -2125,7 +2125,7 @@ paymentState: manualPaymentState,
                 onChange={(e) =>
                   setManualGuestLanguage(e.target.value === "es" ? "es" : "en")
                 }
-                style={styles.inlineActionInput}
+                className="pgc-inlineActionInput" style={styles.inlineActionInput}
               >
                 <option value="en">English</option>
                 <option value="es">Español</option>
@@ -2134,42 +2134,42 @@ paymentState: manualPaymentState,
              <select
   value={manualPaymentState}
   onChange={(e) => setManualPaymentState(e.target.value)}
-  style={styles.inlineActionInput}
+  className="pgc-inlineActionInput" style={styles.inlineActionInput}
 >
   <option value="NONE">Payment not recorded</option>
   <option value="PAID">Payment collected manually</option>
 </select>
 
-<div style={styles.manualQuoteCard}>
-  <div style={styles.manualQuoteHeader}>
+<div className="pgc-manualQuoteCard" style={styles.manualQuoteCard}>
+  <div className="pgc-manualQuoteHeader" style={styles.manualQuoteHeader}>
     <div>
-      <div style={styles.manualQuoteLabel}>
+      <div className="pgc-manualQuoteLabel" style={styles.manualQuoteLabel}>
         Pin&Go calculated total
       </div>
 
-      <div style={styles.manualQuoteHint}>
+      <div className="pgc-manualQuoteHint" style={styles.manualQuoteHint}>
         Based on selected dates, pricing rules, fees, amenities, and taxes.
       </div>
     </div>
 
-    <div style={styles.manualQuoteBadge}>Pricing Engine</div>
+    <div className="pgc-manualQuoteBadge" style={styles.manualQuoteBadge}>Pricing Engine</div>
   </div>
 
   {loadingManualReservationQuote ? (
-    <div style={styles.manualQuoteMuted}>
+    <div className="pgc-manualQuoteMuted" style={styles.manualQuoteMuted}>
       Calculating reservation total...
     </div>
   ) : manualReservationQuoteError ? (
-    <div style={styles.manualQuoteError}>
+    <div className="pgc-manualQuoteError" style={styles.manualQuoteError}>
       {manualReservationQuoteError}
     </div>
   ) : manualReservationQuote ? (
     <>
-      <div style={styles.manualQuoteTotal}>
+      <div className="pgc-manualQuoteTotal" style={styles.manualQuoteTotal}>
         {formatMoney(manualReservationQuote.totalAmount)}
       </div>
 
-      <div style={styles.manualQuoteBreakdown}>
+      <div className="pgc-manualQuoteBreakdown" style={styles.manualQuoteBreakdown}>
         <span>{manualReservationQuote.nights ?? 0} night(s)</span>
         <span>
           Nightly: {formatMoney(manualReservationQuote.nightlySubtotal)}
@@ -2185,14 +2185,14 @@ paymentState: manualPaymentState,
         </span>
       </div>
 
-      <div style={styles.manualQuoteMuted}>
+      <div className="pgc-manualQuoteMuted" style={styles.manualQuoteMuted}>
         {manualPaymentState === "PAID"
           ? "Host should collect this calculated amount from the guest."
           : "This amount is calculated, but payment is not marked as collected."}
       </div>
     </>
   ) : (
-    <div style={styles.manualQuoteMuted}>
+    <div className="pgc-manualQuoteMuted" style={styles.manualQuoteMuted}>
       Select dates to calculate the reservation total.
     </div>
   )}
@@ -2202,7 +2202,7 @@ paymentState: manualPaymentState,
                 type="button"
                 onClick={handleCreateManualReservation}
                 disabled={savingManualReservation}
-                style={styles.primaryActionButton}
+                className="pgc-primaryActionButton" style={styles.primaryActionButton}
               >
                 {savingManualReservation ? "Creating..." : "Create Reservation"}
               </button>
@@ -2212,16 +2212,16 @@ paymentState: manualPaymentState,
       )}
 
       {selectedDay && (
-        <div style={styles.selectedDayPanel}>
-          <h3 style={styles.selectedDayTitle}>
+        <div className="pgc-selectedDayPanel" style={styles.selectedDayPanel}>
+          <h3 className="pgc-selectedDayTitle" style={styles.selectedDayTitle}>
             {format(selectedDay, "MMMM d, yyyy")}
           </h3>
 
-          <div style={styles.detailLine}>
+          <div className="pgc-detailLine" style={styles.detailLine}>
             Status: {getStatusForDay(selectedDay)}
           </div>
 
-          <div style={styles.detailLine}>
+          <div className="pgc-detailLine" style={styles.detailLine}>
             Rate:{" "}
             {getDisplayRateForDay(
               selectedDay,
@@ -2411,20 +2411,20 @@ paymentState: manualPaymentState,
 
          {getReservationForDay(selectedDay) && (
   <>
-    <div style={styles.detailLine}>
+    <div className="pgc-detailLine" style={styles.detailLine}>
       Reservation:{" "}
       {getReservationForDay(selectedDay)?.reservationNumber
         ? `#${getReservationForDay(selectedDay)?.reservationNumber}`
         : "Pending Reference"}
     </div>
 
-    <div style={styles.detailLine}>
+    <div className="pgc-detailLine" style={styles.detailLine}>
       Guest: {getReservationForDay(selectedDay)?.guestName || "Guest"}
     </div>
 
     <button
                 type="button"
-                style={styles.primaryActionButton}
+                className="pgc-primaryActionButton" style={styles.primaryActionButton}
                 onClick={() => {
                   const reservation = getReservationForDay(selectedDay);
                   if (!reservation?.id) return;
@@ -2438,23 +2438,23 @@ paymentState: manualPaymentState,
         </div>
       )}
 
-       <div style={styles.missionControlCard}>
-  <div style={styles.missionEnterpriseHeader}>
+       <div className="pgc-missionControlCard" style={styles.missionControlCard}>
+  <div className="pgc-missionEnterpriseHeader" style={styles.missionEnterpriseHeader}>
     <div>
-      <div style={styles.missionEyebrow}>Mission Control</div>
-      <div style={styles.missionEnterpriseTitle}>
+      <div className="pgc-missionEyebrow" style={styles.missionEyebrow}>Mission Control</div>
+      <div className="pgc-missionEnterpriseTitle" style={styles.missionEnterpriseTitle}>
         Property operations overview
       </div>
-      <div style={styles.missionEnterpriseSubtitle}>
+      <div className="pgc-missionEnterpriseSubtitle" style={styles.missionEnterpriseSubtitle}>
         Reservation readiness, operational alerts, and recorded activity for this property.
       </div>
-      <div role="note" style={styles.missionEnterpriseSubtitle}>
+      <div role="note" className="pgc-missionEnterpriseSubtitle" style={styles.missionEnterpriseSubtitle}>
         Global engine health is not assessed in this view.
       </div>
     </div>
 
-    <div style={styles.missionStatusCluster}>
-      <div style={styles.missionGeneratedLabel}>
+    <div className="pgc-missionStatusCluster" style={styles.missionStatusCluster}>
+      <div className="pgc-missionGeneratedLabel" style={styles.missionGeneratedLabel}>
         {loading
           ? "Verifying live snapshot"
           : hasLiveMissionControlSnapshot
@@ -2465,7 +2465,7 @@ paymentState: manualPaymentState,
   </div>
 
   {!hasLiveMissionControlSnapshot && !loading ? (
-    <div style={styles.missionUnavailableState}>
+    <div className="pgc-missionUnavailableState" style={styles.missionUnavailableState}>
       <strong>Mission Control live state is unavailable.</strong>
       <span>
         Operational data is unavailable for this property. No activity or
@@ -2474,15 +2474,15 @@ paymentState: manualPaymentState,
     </div>
   ) : null}
 
-  <div style={styles.missionHeroGrid}>
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Autonomy Score</div>
-      <div style={styles.missionHeroValue}>
+  <div className="pgc-missionHeroGrid" style={styles.missionHeroGrid}>
+    <div className="pgc-missionHeroCard" style={styles.missionHeroCard}>
+      <div className="pgc-missionHeroLabel" style={styles.missionHeroLabel}>Autonomy Score</div>
+      <div className="pgc-missionHeroValue" style={styles.missionHeroValue}>
         {autonomyScore === null ? "—" : `${autonomyScore}%`}
       </div>
-      <div style={styles.missionProgressShell}>
+      <div className="pgc-missionProgressShell" style={styles.missionProgressShell}>
         <div
-          style={{
+          className="pgc-missionProgressFill" style={{
             ...styles.missionProgressFill,
             width: `${
               autonomyScore === null
@@ -2492,27 +2492,27 @@ paymentState: manualPaymentState,
           }}
         />
       </div>
-      <div style={styles.missionHeroHint}>
+      <div className="pgc-missionHeroHint" style={styles.missionHeroHint}>
         Operations completed without manual intervention
       </div>
     </div>
 
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Interventions Avoided</div>
-      <div style={styles.missionHeroValue}>
+    <div className="pgc-missionHeroCard" style={styles.missionHeroCard}>
+      <div className="pgc-missionHeroLabel" style={styles.missionHeroLabel}>Interventions Avoided</div>
+      <div className="pgc-missionHeroValue" style={styles.missionHeroValue}>
         {interventionsAvoided === null ? "—" : interventionsAvoided}
       </div>
-      <div style={styles.missionHeroHint}>
+      <div className="pgc-missionHeroHint" style={styles.missionHeroHint}>
         Host actions avoided in this APMS window
       </div>
     </div>
 
-    <div style={styles.missionHeroCard}>
-      <div style={styles.missionHeroLabel}>Autonomous Decisions</div>
-      <div style={styles.missionHeroValue}>
+    <div className="pgc-missionHeroCard" style={styles.missionHeroCard}>
+      <div className="pgc-missionHeroLabel" style={styles.missionHeroLabel}>Autonomous Decisions</div>
+      <div className="pgc-missionHeroValue" style={styles.missionHeroValue}>
         {autonomousDecisions === null ? "—" : autonomousDecisions}
       </div>
-      <div style={styles.missionHeroHint}>
+      <div className="pgc-missionHeroHint" style={styles.missionHeroHint}>
         Decisions executed by Pin&Go engines
       </div>
     </div>
@@ -2520,100 +2520,100 @@ paymentState: manualPaymentState,
   </div>
 
      {guestJourneyMetrics ? (
-    <div style={styles.guestJourneyPanel}>
-      <div style={styles.guestJourneyHeader}>
+    <div className="pgc-guestJourneyPanel" style={styles.guestJourneyPanel}>
+      <div className="pgc-guestJourneyHeader" style={styles.guestJourneyHeader}>
         <div>
-          <div style={styles.guestJourneyEyebrow}>
+          <div className="pgc-guestJourneyEyebrow" style={styles.guestJourneyEyebrow}>
             Guest Journey Engine
           </div>
 
-          <div style={styles.guestJourneyTitle}>
+          <div className="pgc-guestJourneyTitle" style={styles.guestJourneyTitle}>
             Arrival readiness pipeline
           </div>
 
-          <div style={styles.guestJourneySubtitle}>
+          <div className="pgc-guestJourneySubtitle" style={styles.guestJourneySubtitle}>
             Live progress from reservation confirmation through secure
             verification and digital access readiness.
           </div>
         </div>
 
-        <div style={styles.guestJourneyCompletion}>
-          <div style={styles.guestJourneyCompletionValue}>
+        <div className="pgc-guestJourneyCompletion" style={styles.guestJourneyCompletion}>
+          <div className="pgc-guestJourneyCompletionValue" style={styles.guestJourneyCompletionValue}>
             {guestJourneyCompletionRate}%
           </div>
-          <div style={styles.guestJourneyCompletionLabel}>
+          <div className="pgc-guestJourneyCompletionLabel" style={styles.guestJourneyCompletionLabel}>
             Completion rate
           </div>
         </div>
       </div>
 
-      <div style={styles.guestJourneyMetricGrid}>
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
+      <div className="pgc-guestJourneyMetricGrid" style={styles.guestJourneyMetricGrid}>
+        <div className="pgc-guestJourneyMetricCard" style={styles.guestJourneyMetricCard}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyActiveReservations}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Active reservations
           </div>
         </div>
 
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
+        <div className="pgc-guestJourneyMetricCard" style={styles.guestJourneyMetricCard}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyReservationConfirmed}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Reservation confirmed
           </div>
         </div>
 
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
+        <div className="pgc-guestJourneyMetricCard" style={styles.guestJourneyMetricCard}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyVerificationPending}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Verification pending
           </div>
         </div>
 
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
+        <div className="pgc-guestJourneyMetricCard" style={styles.guestJourneyMetricCard}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyVerificationCompleted}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Verification completed
           </div>
         </div>
 
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
+        <div className="pgc-guestJourneyMetricCard" style={styles.guestJourneyMetricCard}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyAccessScheduled}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Access scheduled
           </div>
         </div>
 
-        <div style={styles.guestJourneyMetricCard}>
-          <div style={styles.guestJourneyMetricValue}>
+        <div className="pgc-guestJourneyMetricCard" style={styles.guestJourneyMetricCard}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyReadyForArrival}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Ready for arrival
           </div>
         </div>
 
         <div
-          style={{
+          className="pgc-guestJourneyMetricCard" style={{
             ...styles.guestJourneyMetricCard,
             ...(guestJourneyHostInterventionRequired > 0
               ? styles.guestJourneyAttentionCard
               : styles.guestJourneyClearCard),
           }}
         >
-          <div style={styles.guestJourneyMetricValue}>
+          <div className="pgc-guestJourneyMetricValue" style={styles.guestJourneyMetricValue}>
             {guestJourneyHostInterventionRequired}
           </div>
-          <div style={styles.guestJourneyMetricLabel}>
+          <div className="pgc-guestJourneyMetricLabel" style={styles.guestJourneyMetricLabel}>
             Host intervention required
           </div>
         </div>
@@ -2632,32 +2632,32 @@ paymentState: manualPaymentState,
 
 
   {recentApmsActivities.length > 0 ? (
-    <div style={styles.missionPanel}>
-      <div style={styles.missionPanelHeader}>
+    <div className="pgc-missionPanel" style={styles.missionPanel}>
+      <div className="pgc-missionPanelHeader" style={styles.missionPanelHeader}>
         <div>
-          <div style={styles.missionPanelTitle}>Recent APMS Activity</div>
-          <div style={styles.missionPanelMeta}>
+          <div className="pgc-missionPanelTitle" style={styles.missionPanelTitle}>Recent APMS Activity</div>
+          <div className="pgc-missionPanelMeta" style={styles.missionPanelMeta}>
             Latest autonomous actions completed by Pin&Go
           </div>
         </div>
       </div>
 
-      <div style={styles.missionActivityTimeline}>
+      <div className="pgc-missionActivityTimeline" style={styles.missionActivityTimeline}>
         {recentApmsActivities.map((entry: any) => (
           <div
             key={entry.decisionId ?? `${entry.engine}-${entry.summary}`}
-            style={styles.missionActivityRow}
+            className="pgc-missionActivityRow" style={styles.missionActivityRow}
           >
-            <div style={styles.missionActivityMarker} />
+            <div className="pgc-missionActivityMarker" style={styles.missionActivityMarker} />
 
-            <div style={styles.missionActivityContent}>
-              <div style={styles.missionActivityTopRow}>
-                <div style={styles.missionActivityEngine}>
+            <div className="pgc-missionActivityContent" style={styles.missionActivityContent}>
+              <div className="pgc-missionActivityTopRow" style={styles.missionActivityTopRow}>
+                <div className="pgc-missionActivityEngine" style={styles.missionActivityEngine}>
                   {getMissionActivityEngineLabel(entry.engine)}
                 </div>
 
                 <div
-                  style={{
+                  className="pgc-missionStatusPill" style={{
                     ...styles.missionStatusPill,
                     ...getMissionStatusPillStyle(entry.status ?? "SUCCESS"),
                   }}
@@ -2665,21 +2665,21 @@ paymentState: manualPaymentState,
                   {entry.status ?? "SUCCESS"}
                 </div>
               </div>
-               <div style={styles.missionActivityReason}>
+               <div className="pgc-missionActivityReason" style={styles.missionActivityReason}>
   {getMissionActivityReasonLabel(entry)}
 </div>
 
 {getMissionActivityDetail(entry) ? (
-  <div style={styles.missionActivityDetail}>
+  <div className="pgc-missionActivityDetail" style={styles.missionActivityDetail}>
     {getMissionActivityDetail(entry)}
   </div>
 ) : null}
 
-<div style={styles.missionActivitySummary}>
+<div className="pgc-missionActivitySummary" style={styles.missionActivitySummary}>
   {sanitizeWhiteLabelText(entry.summary)}
 </div>
 
-<div style={styles.missionActivityMeta}>
+<div className="pgc-missionActivityMeta" style={styles.missionActivityMeta}>
   {formatMissionActivityTime(entry)}
 </div>
 
@@ -2695,31 +2695,31 @@ paymentState: manualPaymentState,
   shouldShowLegacyCriticalFallback
 ) && primaryMissionControlAction ? (
   <div style={getMissionActionBoxStyle(primaryMissionControlAction)}>
-    <div style={styles.missionActionHeader}>
+    <div className="pgc-missionActionHeader" style={styles.missionActionHeader}>
       <div>
         <div style={getMissionActionTitleStyle(primaryMissionControlAction)}>
           Recommended Action
         </div>
 
-        <div style={styles.missionActionTopMeta}>
-          <span style={styles.missionActionEngineBadge}>
+        <div className="pgc-missionActionTopMeta" style={styles.missionActionTopMeta}>
+          <span className="pgc-missionActionEngineBadge" style={styles.missionActionEngineBadge}>
             {getMissionActionEngineDisplayLabel(
               primaryMissionControlAction.engine
             )}
           </span>
 
-          <span style={styles.missionActionSignal}>
+          <span className="pgc-missionActionSignal" style={styles.missionActionSignal}>
             {getMissionActionLastSignalLabel(primaryMissionControlAction)}
           </span>
         </div>
 
-        <div style={styles.missionActionText}>
+        <div className="pgc-missionActionText" style={styles.missionActionText}>
           {sanitizeWhiteLabelText(primaryMissionControlAction.title)}
         </div>
       </div>
 
       <div
-        style={{
+        className="pgc-missionStatusPill" style={{
           ...styles.missionStatusPill,
           ...getMissionStatusPillStyle(
             getMissionActionVisualStatus(primaryMissionControlAction)
@@ -2732,12 +2732,12 @@ paymentState: manualPaymentState,
 
     {renderMissionActionDetails(primaryMissionControlAction)}
 
-    <div style={styles.missionActionFooterRow}>
+    <div className="pgc-missionActionFooterRow" style={styles.missionActionFooterRow}>
       <div style={getMissionActionFooterStyle(primaryMissionControlAction)}>
         {getMissionActionFooterLabel(primaryMissionControlAction)}
       </div>
 
-      <div style={styles.missionActionTrustText}>
+      <div className="pgc-missionActionTrustText" style={styles.missionActionTrustText}>
         {primaryMissionControlAction.requiresHumanAction
           ? "Pin&Go detected a real signal that needs host review."
           : "Pin&Go is monitoring this property and no host action is needed."}
@@ -2745,7 +2745,7 @@ paymentState: manualPaymentState,
     </div>
 
     {secondaryMissionControlActions.length > 0 ? (
-      <div style={styles.missionActionList}>
+      <div className="pgc-missionActionList" style={styles.missionActionList}>
         {secondaryMissionControlActions.map((action: any, index: number) => (
           <div
             key={`${
@@ -2753,27 +2753,27 @@ paymentState: manualPaymentState,
   action.reservationId ??
   "property"
 }-${action.engine}-${action.title}-${index}`}
-            style={styles.missionActionItem}
+            className="pgc-missionActionItem" style={styles.missionActionItem}
           >
-            <div style={styles.missionActionItemTopRow}>
+            <div className="pgc-missionActionItemTopRow" style={styles.missionActionItemTopRow}>
               <div>
-                <div style={styles.missionActionMiniMeta}>
-                  <span style={styles.missionActionEngineBadge}>
+                <div className="pgc-missionActionMiniMeta" style={styles.missionActionMiniMeta}>
+                  <span className="pgc-missionActionEngineBadge" style={styles.missionActionEngineBadge}>
                     {getMissionActionEngineDisplayLabel(action.engine)}
                   </span>
 
-                  <span style={styles.missionActionSignal}>
+                  <span className="pgc-missionActionSignal" style={styles.missionActionSignal}>
                     {getMissionActionLastSignalLabel(action)}
                   </span>
                 </div>
 
-                <div style={styles.missionActionText}>
+                <div className="pgc-missionActionText" style={styles.missionActionText}>
                   {sanitizeWhiteLabelText(action.title)}
                 </div>
               </div>
 
               <div
-                style={{
+                className="pgc-missionStatusPill" style={{
                   ...styles.missionStatusPill,
                   ...getMissionStatusPillStyle(
                     getMissionActionVisualStatus(action)
@@ -2789,7 +2789,7 @@ paymentState: manualPaymentState,
         ))}
 
         {hiddenMissionControlActionCount > 0 ? (
-          <div style={styles.missionActionCount}>
+          <div className="pgc-missionActionCount" style={styles.missionActionCount}>
             +{hiddenMissionControlActionCount} more grouped action
             {hiddenMissionControlActionCount === 1 ? "" : "s"}
           </div>
@@ -2799,82 +2799,82 @@ paymentState: manualPaymentState,
   </div>
 ) : null}
      {!hasOperationalIntelligenceContract && autoResolutionLogItems.length > 0 ? (
-  <div style={styles.autoResolutionPanel}>
-    <div style={styles.autoResolutionHeader}>
+  <div className="pgc-autoResolutionPanel" style={styles.autoResolutionPanel}>
+    <div className="pgc-autoResolutionHeader" style={styles.autoResolutionHeader}>
       <div>
-        <div style={styles.autoResolutionEyebrow}>
+        <div className="pgc-autoResolutionEyebrow" style={styles.autoResolutionEyebrow}>
           Auto Resolution Log
         </div>
 
-        <div style={styles.autoResolutionHeading}>
+        <div className="pgc-autoResolutionHeading" style={styles.autoResolutionHeading}>
           Operations resolved by Pin&Go
         </div>
 
-        <div style={styles.autoResolutionSubheading}>
+        <div className="pgc-autoResolutionSubheading" style={styles.autoResolutionSubheading}>
           Autonomous APMS actions completed without host intervention.
         </div>
       </div>
 
-      <div style={styles.autoResolutionStats}>
-        <div style={styles.autoResolutionStatCard}>
-          <div style={styles.autoResolutionStatValue}>
+      <div className="pgc-autoResolutionStats" style={styles.autoResolutionStats}>
+        <div className="pgc-autoResolutionStatCard" style={styles.autoResolutionStatCard}>
+          <div className="pgc-autoResolutionStatValue" style={styles.autoResolutionStatValue}>
             {autoResolutionLogItems.length}
           </div>
-          <div style={styles.autoResolutionStatLabel}>
+          <div className="pgc-autoResolutionStatLabel" style={styles.autoResolutionStatLabel}>
             Resolved automatically
           </div>
         </div>
 
-        <div style={styles.autoResolutionStatCard}>
-          <div style={styles.autoResolutionStatValue}>0</div>
-          <div style={styles.autoResolutionStatLabel}>
+        <div className="pgc-autoResolutionStatCard" style={styles.autoResolutionStatCard}>
+          <div className="pgc-autoResolutionStatValue" style={styles.autoResolutionStatValue}>0</div>
+          <div className="pgc-autoResolutionStatLabel" style={styles.autoResolutionStatLabel}>
             Host actions required
           </div>
         </div>
       </div>
     </div>
 
-    <div style={styles.autoResolutionTimeline}>
+    <div className="pgc-autoResolutionTimeline" style={styles.autoResolutionTimeline}>
       {autoResolutionLogItems.map((entry: any, index: number) => (
         <div
           key={`${entry.decisionId ?? entry.id ?? index}-auto-resolution`}
-          style={styles.autoResolutionTimelineRow}
+          className="pgc-autoResolutionTimelineRow" style={styles.autoResolutionTimelineRow}
         >
-          <div style={styles.autoResolutionTimelineRail}>
-            <div style={styles.autoResolutionTimelineDot}>✓</div>
+          <div className="pgc-autoResolutionTimelineRail" style={styles.autoResolutionTimelineRail}>
+            <div className="pgc-autoResolutionTimelineDot" style={styles.autoResolutionTimelineDot}>✓</div>
             {index < autoResolutionLogItems.length - 1 ? (
-              <div style={styles.autoResolutionTimelineLine} />
+              <div className="pgc-autoResolutionTimelineLine" style={styles.autoResolutionTimelineLine} />
             ) : null}
           </div>
 
-          <div style={styles.autoResolutionEnterpriseCard}>
-            <div style={styles.autoResolutionCardTopRow}>
+          <div className="pgc-autoResolutionEnterpriseCard" style={styles.autoResolutionEnterpriseCard}>
+            <div className="pgc-autoResolutionCardTopRow" style={styles.autoResolutionCardTopRow}>
               <div>
-                <div style={styles.autoResolutionEngineBadge}>
+                <div className="pgc-autoResolutionEngineBadge" style={styles.autoResolutionEngineBadge}>
                   {getMissionActivityEngineLabel(entry.engine)}
                 </div>
 
-                <div style={styles.autoResolutionTitle}>
+                <div className="pgc-autoResolutionTitle" style={styles.autoResolutionTitle}>
                   {getAutoResolutionTitle(entry)}
                 </div>
               </div>
 
-              <div style={styles.autoResolutionResolvedPill}>
+              <div className="pgc-autoResolutionResolvedPill" style={styles.autoResolutionResolvedPill}>
                 Resolved automatically
               </div>
             </div>
 
-            <div style={styles.autoResolutionDescription}>
+            <div className="pgc-autoResolutionDescription" style={styles.autoResolutionDescription}>
               {getAutoResolutionDescription(entry)}
             </div>
 
             {getMissionActivityDetail(entry) ? (
-              <div style={styles.autoResolutionDetail}>
+              <div className="pgc-autoResolutionDetail" style={styles.autoResolutionDetail}>
                 {getMissionActivityDetail(entry)}
               </div>
             ) : null}
 
-            <div style={styles.autoResolutionFooter}>
+            <div className="pgc-autoResolutionFooter" style={styles.autoResolutionFooter}>
               <span>APMS execution completed</span>
               <span>{formatMissionActivityTime(entry)}</span>
             </div>

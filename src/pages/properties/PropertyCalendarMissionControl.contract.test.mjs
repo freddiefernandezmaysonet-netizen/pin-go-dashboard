@@ -96,10 +96,10 @@ test('this candidate branch cannot trigger automatic Vercel deployments',()=>{
 
 
 test('calendar and date controls appear before the single expanded Mission Control',()=>{
-  const mission = source.indexOf('<div style={styles.missionControlCard}>');
+  const mission = source.indexOf('<div className="pgc-missionControlCard" style={styles.missionControlCard}>');
   assert.ok(mission > 0);
-  assert.equal(source.split('<div style={styles.missionControlCard}>').length-1,1);
-  for (const marker of ['<div style={styles.calendarToolbar}>','<div style={styles.calendarGrid}>','{hasSelectedRange && (','{selectedDay && (']) {
+  assert.equal(source.split('<div className="pgc-missionControlCard" style={styles.missionControlCard}>').length-1,1);
+  for (const marker of ['<div className="pgc-calendarToolbar" style={styles.calendarToolbar}>','<div className="pgc-calendarGrid" style={styles.calendarGrid}>','{hasSelectedRange && (','{selectedDay && (']) {
     const position = source.indexOf(marker);
     assert.ok(position >= 0 && position < mission,marker+' must remain above Mission Control');
   }

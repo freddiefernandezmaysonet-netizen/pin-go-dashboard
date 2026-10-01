@@ -1,0 +1,73 @@
+name: Property Calendar Responsive Certification
+on:
+  push:
+    branches: [agent/property-calendar-responsive-v1]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/pages/properties/PropertyCalendar*'
+      - 'src/components/properties/PropertyCalendarStayRestrictionsPanel*'
+      - 'src/components/properties/OperationalIntelligencePanel.tsx'
+      - 'src/app/routes/router.tsx'
+      - '.github/scripts/calendar-responsive-browser.py'
+      - '.github/workflows/property-calendar-responsive.yml'
+      - 'vercel.json'
+permissions:
+  contents: read
+concurrency:
+  group: property-calendar-responsive-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify isolated branch deployment guard
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import assert from 'node:assert/strict';const c=JSON.parse(fs.readFileSync('vercel.json','utf8'));assert.equal(c.git.deploymentEnabled['agent/property-calendar-responsive-v1'],false);assert.notEqual(c.git.deploymentEnabled.main,false);"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile unmodified production baseline without publishing
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/calendar-baseline" 2e0429911851379065a8819333a3b6a07c0bbcfd
+          cd "$RUNNER_TEMP/calendar-baseline"
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+      - name: Existing removal, calendar and dashboard regressions (mocked)
+        run: >-
+          node --test src/components/properties/PropertyCalendarStayRestrictionsPanel.removal.test.mjs
+          src/dashboard-typescript-baseline.contract.test.mjs
+          src/lib/apmsMissionControlPresentation.test.mjs
+          src/lib/apmsMissionControlFreshness.test.mjs
+          src/pages/properties/PropertyCalendarMissionControl.contract.test.mjs
+      - name: Complete dashboard TypeScript
+        run: npx --no-install tsc -p tsconfig.app.json --noEmit
+      - name: Production bundle only, no deployment
+        run: npm run build
+      - name: Install isolated browser verification tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/calendar-browser-tools" --no-audit --no-fund agent-browser@0.27.0
+          python3 -m venv "$RUNNER_TEMP/calendar-browser-python"
+          "$RUNNER_TEMP/calendar-browser-python/bin/pip" install playwright==1.57.0
+          "$RUNNER_TEMP/calendar-browser-python/bin/playwright" install --with-deps chromium webkit
+          echo "AGENT_BROWSER_BIN=$RUNNER_TEMP/calendar-browser-tools/node_modules/.bin/agent-browser" >> "$GITHUB_ENV"
+          echo "BASELINE_DIST=$RUNNER_TEMP/calendar-baseline/dist" >> "$GITHUB_ENV"
+      - name: Full route in Chromium and iPhone WebKit emulation, local fixtures only
+        run: '"$RUNNER_TEMP/calendar-browser-python/bin/python" .github/scripts/calendar-responsive-browser.py'
+      - name: Verify tests did not modify repository sources
+        run: git diff --exit-code
+      - name: Preserve screenshots and acceptance measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: calendar-responsive-${{ github.run_id }}
+          path: evidence/calendar-responsive
+          if-no-files-found: ignore
+          retention-days: 14

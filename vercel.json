@@ -10,7 +10,8 @@
       "agent/expedia-connection-center-dashboard": false,
       "agent/mission-control-e13-decoupling-v1": false,
       "agent/calendar-first-mission-control-v1": false,
-      "agent/stay-restrictions-removal-ui-v1": false
+      "agent/stay-restrictions-removal-ui-v1": false,
+      "agent/property-calendar-responsive-v1": false
     }
   },
   "headers": [
