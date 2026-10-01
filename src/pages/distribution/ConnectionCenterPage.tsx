@@ -55,6 +55,8 @@ const SECONDARY_BUTTON_STYLE = { minHeight: 42, padding: "0 16px", borderRadius:
 type ListingDiscoveryStatus = "IDLE" | "LOADING" | "LOADED" | "FAILED";
 type AirbnbMappingStatus = "IDLE" | "SUBMITTING" | "SUBMITTED" | "ALREADY_MAPPED";
 
+const PROPERTY_TYPE_REQUIRED_MESSAGE = "Selecciona un tipo de propiedad específico y guarda la información del alojamiento antes de conectar. / Select a specific property type and save accommodation details before connecting.";
+
 function isAirbnbListingDiscoveryEligible(
   channel: DistributionConnectionCenter["channels"][number] | undefined
 ) {
@@ -499,6 +501,8 @@ export function ConnectionCenterPage() {
       setSession({ provider, value: await issueDistributionConnectionSession(id, provider) });
     } catch (caught) {
       if (caught instanceof DistributionApiError && caught.code === "OTA_CONNECTION_CENTER_RUNTIME_DISABLED") setNotice("Booking channel connections are being prepared and are not yet available for commercial use.");
+      else if (caught instanceof DistributionApiError && caught.code === "OTA_PROPERTY_TYPE_REQUIRED") setError(PROPERTY_TYPE_REQUIRED_MESSAGE);
+      else if (caught instanceof DistributionApiError && caught.code === "OTA_PROVIDER_RECONCILIATION_REQUIRED") setError("La conexión necesita revisión. Contacta a soporte antes de volver a conectar. / This connection needs review. Contact support before reconnecting.");
       else setError("We couldn't start this connection. Please try again.");
     } finally { setBusyProvider(null); }
   }
@@ -626,7 +630,7 @@ export function ConnectionCenterPage() {
 
       {simulated && <div role="status" style={{ ...CARD_STYLE, padding: 14, borderColor: "#bfdbfe", background: "#eff6ff", color: "#1d4ed8" }}>Simulation mode is active. No external calls or data changes will be made.</div>}
       {notice && <div role="status" style={{ ...CARD_STYLE, padding: 14, borderColor: "#a7f3d0", background: "#ecfdf5", color: "#065f46" }}>{notice}</div>}
-      {error && <div role="alert" style={{ ...CARD_STYLE, padding: 14, borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>{error}</div>}
+      {error && <div role="alert" style={{ ...CARD_STYLE, padding: 14, borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>{error}{error === PROPERTY_TYPE_REQUIRED_MESSAGE ? <p><Link to={`/properties/${id}`}>Editar información del alojamiento / Edit accommodation details</Link></p> : null}</div>}
       {loading && <div role="status" style={{ ...CARD_STYLE, display: "flex", alignItems: "center", gap: 10, color: "#6b7280" }}><LoaderCircle size={18} /> Loading booking channels…</div>}
 
       {!loading && center && (
