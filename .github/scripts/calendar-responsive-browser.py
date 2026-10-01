@@ -137,17 +137,6 @@ async def geometry(page, name, width):
     RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping'] and not metrics['overflowingCellText'] and date_fields_ok})
     if not RESULTS[-1]['passed']:
         await page.screenshot(path=str(OUT/'geometry-failure.png'),full_page=True)
-        diagnostics = {}
-        for label, css in {
-            'select-appearance': '.hc-controls select { appearance: none !important; -webkit-appearance: none !important; }',
-            'panel-shadow': '.hc-single .pgs-panel { box-shadow: none !important; }',
-            'all-shadows': '.host-calendar * { box-shadow: none !important; }',
-            'number-appearance': '.hc-single input[type="number"] { appearance: textfield !important; -webkit-appearance: none !important; }',
-        }.items():
-            style = await page.add_style_tag(content=css)
-            diagnostics[label] = await page.locator('.pin-go-app-shell__main').evaluate('(el)=>el.scrollWidth')
-            await style.evaluate('(el)=>el.remove()')
-        RESULTS[-1]['diagnostics'] = diagnostics
     assert RESULTS[-1]['passed'],json.dumps(RESULTS[-1])
     if width <= 720:
         assert not metrics['smallInputs'] and not metrics['smallButtons'],metrics
