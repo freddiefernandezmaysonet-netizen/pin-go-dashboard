@@ -64,9 +64,8 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/calendar-browser-tools" --no-audit --no-fund agent-browser@0.27.0
           python3 -m venv "$RUNNER_TEMP/calendar-browser-python"
           "$RUNNER_TEMP/calendar-browser-python/bin/pip" install playwright==1.57.0
-          "$RUNNER_TEMP/calendar-browser-python/bin/playwright" install --with-deps webkit
+          "$RUNNER_TEMP/calendar-browser-python/bin/playwright" install --with-deps chromium webkit
           echo "AGENT_BROWSER_BIN=$RUNNER_TEMP/calendar-browser-tools/node_modules/.bin/agent-browser" >> "$GITHUB_ENV"
-          echo "CHROME_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
           echo "BASELINE_DIST=$RUNNER_TEMP/calendar-baseline/dist" >> "$GITHUB_ENV"
       - name: Full route in Chromium and iPhone WebKit emulation, local fixtures only
         run: '"$RUNNER_TEMP/calendar-browser-python/bin/python" .github/scripts/calendar-responsive-browser.py'

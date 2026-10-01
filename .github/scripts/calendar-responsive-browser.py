@@ -105,9 +105,10 @@ async def geometry(page, name, width):
       const clipping=[document.documentElement,document.body,main,root].some(el=>['hidden','clip'].includes(getComputedStyle(el).overflowX));
       const smallInputs=[...root.querySelectorAll('input:not([type="checkbox"]),select')].filter(el=>el.getClientRects().length && (parseFloat(getComputedStyle(el).fontSize)<16 || el.getBoundingClientRect().height<44)).length;
       const smallButtons=[...root.querySelectorAll('button')].filter(el=>el.getClientRects().length && el.getBoundingClientRect().height<44).map(el=>el.textContent);
-      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,outside,clipping,smallInputs,smallButtons};
+      const overflowingCellText=[...root.querySelectorAll('.pgc-dayRate,.pgc-dayStatus')].filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>el.textContent);
+      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,outside,clipping,smallInputs,smallButtons,overflowingCellText};
     }''')
-    RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping']})
+    RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping'] and not metrics['overflowingCellText']})
     assert RESULTS[-1]['passed'],json.dumps(RESULTS[-1])
     if width <= 720:
         assert not metrics['smallInputs'] and not metrics['smallButtons'],metrics
@@ -124,7 +125,7 @@ async def exercise(page, browser_name):
         await page.set_viewport_size({'width':width,'height':height})
         await page.wait_for_timeout(60)
         await geometry(page,f'{browser_name} full route {width}x{height}',width)
-        if width in (390,1440):
+        if width in (320,390,1440):
             await page.screenshot(path=str(OUT/f'{browser_name}-{width}-page.png'),full_page=True)
             await page.locator('.pgc-calendarGrid').screenshot(path=str(OUT/f'{browser_name}-{width}-calendar.png'))
     await page.set_viewport_size({'width':390,'height':844})
@@ -151,8 +152,9 @@ async def exercise(page, browser_name):
     await page.get_by_label('Start Date',exact=True).fill('2026-10-20')
     await page.get_by_label('End Date',exact=True).fill('2026-10-21')
     await page.get_by_label('Minimum Nights',exact=True).fill('3')
+    before_put = sum(c['method']=='PUT' for c in STATE['calls'])
     await page.locator('.pgs-button').click()
-    assert STATE['calls'][-1]['method']=='PUT'
+    assert sum(c['method']=='PUT' for c in STATE['calls']) == before_put+1
     await page.locator('.pgs-removalSummary').click()
     await page.get_by_label('Remove Minimum Nights',exact=True).check()
     await geometry(page,f'{browser_name} expanded removal controls',390)
@@ -185,19 +187,15 @@ async def main():
     global DIST
     server=ThreadingHTTPServer(('127.0.0.1',4173),Static)
     threading.Thread(target=server.serve_forever,daemon=True).start()
-    chrome=None
     try:
         async with async_playwright() as pw:
-            chrome=await asyncio.create_subprocess_exec(os.environ['CHROME_PATH'],'--headless','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--remote-debugging-port=9222',f"--user-data-dir={os.environ['RUNNER_TEMP']}/calendar-responsive-chrome",'about:blank',stdout=asyncio.subprocess.DEVNULL,stderr=asyncio.subprocess.DEVNULL)
-            for _ in range(80):
-                try:
-                    browser=await pw.chromium.connect_over_cdp('http://127.0.0.1:9222')
-                    break
-                except Exception:
-                    await asyncio.sleep(.1)
-            else:
-                raise RuntimeError('Chromium startup failed')
-            context=browser.contexts[0]
+            # Use Playwright's version-pinned Chromium and wait for launch readiness,
+            # rather than the runner's unrelated system Chrome and an 8-second loop.
+            context=await pw.chromium.launch_persistent_context(
+                user_data_dir=str(Path(os.environ['RUNNER_TEMP'])/'calendar-responsive-chrome'),
+                headless=True,
+                args=['--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--remote-debugging-port=9222'],
+            )
             await context.route('**/*',intercept)
             await agent('open',URL)
             await agent('snapshot','-i')
@@ -212,7 +210,7 @@ async def main():
             RESULTS.append({'case':'baseline overflow reproduced at 390','passed':baseline['width']>390,**baseline})
             await page.screenshot(path=str(OUT/'baseline-390.png'),full_page=True)
             DIST=Path.cwd()/'dist'
-            await browser.close()
+            await context.close()
             safari=await pw.webkit.launch()
             safari_context=await safari.new_context(**pw.devices['iPhone 13'],timezone_id='America/Puerto_Rico',service_workers='block')
             await safari_context.route('**/*',intercept)
@@ -230,9 +228,6 @@ async def main():
         (OUT/'results.json').write_text(json.dumps(report,indent=2))
         print(json.dumps(report,indent=2),flush=True)
         server.shutdown()
-        if chrome is not None and chrome.returncode is None:
-            chrome.terminate()
-            await chrome.wait()
     return bool(RESULTS) and all(r['passed'] for r in RESULTS)
 
 if __name__=='__main__':
