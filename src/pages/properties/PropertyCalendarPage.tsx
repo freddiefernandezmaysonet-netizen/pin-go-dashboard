@@ -1643,8 +1643,8 @@ paymentState: manualPaymentState,
     <div className="pgc-page" style={styles.page}>
       <div className="pgc-header" style={styles.header}>
         <div>
-          <h1 className="pgc-title" style={styles.title}>{view === "mission" ? "Mission Control" : view === "actions" ? "Gestionar fechas / Manage dates" : "Property Calendar"}</h1>
-          {view !== "combined" && <Link to={`/calendar?propertyId=${id}`}>← Calendario / Calendar</Link>}
+          <h1 className="pgc-title" style={styles.title}>{view === "mission" ? "Mission Control" : view === "actions" ? "Manage dates" : "Property Calendar"}</h1>
+          {view !== "combined" && <Link to={`/calendar?propertyId=${id}`}>← Calendar</Link>}
           <p className="pgc-subtitle" style={styles.subtitle}>
             {loading
               ? "Loading calendar intelligence..."
