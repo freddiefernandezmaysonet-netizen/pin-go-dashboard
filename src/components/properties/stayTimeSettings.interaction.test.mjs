@@ -72,7 +72,7 @@ async function setValue(element, value) {
 }
 async function enablePaid(app) {
   await act(async () => app.field("lateCheckout-enabled").click());
-  await setValue(app.field("lateCheckout-fee"), "PER_HOUR");
+  await setValue(app.field("lateCheckout-fee"), "FIXED");
   await setValue(app.field("lateCheckout-amount"), "25.50");
 }
 test("renders Spanish disabled defaults and discloses requests are not active", async t => {
@@ -86,9 +86,9 @@ test("renders Spanish disabled defaults and discloses requests are not active", 
 test("renders English copy", async t => {
   const app = await mount(t, { language: "en" });
   assert.match(app.container.textContent, /Early check-in/);
-  assert.match(app.container.textContent, /prorated by minute/);
+  assert.match(app.container.textContent, /Prorated by minute/);
 });
-test("saves independent hourly price in cents with expected revision", async t => {
+test("saves independent fixed price in cents with expected revision", async t => {
   const app = await mount(t); await enablePaid(app);
   await act(async () => app.save().click());
   await until(() => app.container.textContent.includes("Preferencias de horario guardadas"));
@@ -178,4 +178,17 @@ test("property switch aborts prior request and cannot display the prior property
   await until(() => container.querySelector("fieldset"));
   assert.ok(container.querySelector('[id="property-b-lateCheckout-time"]'));
   assert.doesNotMatch(container.textContent, /Honolulu/);
+});
+
+ test("automatic hourly pricing has no manual amount and saves a derived-rate policy", async t => {
+  const app = await mount(t);
+  await act(async () => app.field("lateCheckout-enabled").click());
+  await setValue(app.field("lateCheckout-fee"), "PER_HOUR");
+  assert.equal(app.field("lateCheckout-amount"), null);
+  assert.match(app.container.textContent, /20/);
+  assert.match(app.container.textContent, /19/);
+  await act(async () => app.save().click());
+  await until(() => app.calls.some(call => call.init.method === "PUT"));
+  const body = JSON.parse(app.calls.find(call => call.init.method === "PUT").init.body);
+  assert.deepEqual(body.settings.lateCheckout.fee, { mode: "PER_HOUR", amountMinor: 0, currency: "USD" });
 });

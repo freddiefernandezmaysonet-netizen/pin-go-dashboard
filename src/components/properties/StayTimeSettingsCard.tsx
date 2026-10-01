@@ -9,14 +9,14 @@ const copy = {
   en: {
     title: "Early check-in & late checkout", description: "Set a time limit and price for each service. Times use the property's timezone.",
     early: "Early check-in", late: "Late checkout", enabled: "Allow this service", earliest: "Earliest arrival", latest: "Latest departure",
-    fee: "Pricing", free: "Free", fixed: "Fixed fee", hourly: "Per hour", amount: "Amount (USD, before tax)",
-    rounding: "Hourly prices are prorated by minute and rounded to the nearest cent.",
+    fee: "Pricing", free: "Free", fixed: "Fixed fee", hourly: "Automatic hourly rate", amount: "Amount (USD, before tax)",
+    rounding: "Hourly pricing uses the first booked night for early arrival and the last for late departure, divided by the standard overnight hours (3 pm–11 am: 20; 4 pm–11 am: 19). Prorated by minute and rounded once at the end.",
     availability: "Requests must meet availability, cleaning and access requirements.",
     pending: "You can save your preferences. Automatic guest requests are not available yet.",
     save: "Save time preferences", saving: "Saving…", saved: "Time preferences saved.", loading: "Loading time preferences…",
     error: "Unable to load or save these preferences. Try again.", forbidden: "Only an organization administrator can manage these preferences.",
     conflict: "These preferences or property hours changed in another session. Reload before saving again; your unsaved edits will be replaced.",
-    invalid: "Check the time limits and enter a positive amount with no more than two decimal places for paid services.",
+    invalid: "Check the time limits and enter a positive amount with no more than two decimal places for fixed fees.",
     hours: "Early arrival must be before standard check-in, and late departure after standard checkout.",
     timezone: "Set a valid property timezone before allowing these services.", reload: "Reload saved preferences", retry: "Retry",
     standard: "Standard hours", timezoneMissing: "Timezone not configured",
@@ -24,14 +24,14 @@ const copy = {
   es: {
     title: "Entrada anticipada y salida tardía", description: "Configura el horario límite y precio de cada servicio. Se usa la zona horaria de la propiedad.",
     early: "Entrada anticipada", late: "Salida tardía", enabled: "Permitir este servicio", earliest: "Entrada más temprana", latest: "Salida más tardía",
-    fee: "Precio", free: "Gratis", fixed: "Tarifa fija", hourly: "Por hora", amount: "Importe (USD, antes de impuestos)",
-    rounding: "La tarifa por hora se calcula proporcionalmente a los minutos y se redondea al centavo.",
+    fee: "Precio", free: "Gratis", fixed: "Tarifa fija", hourly: "Por hora automático", amount: "Importe (USD, antes de impuestos)",
+    rounding: "Se usa el precio de la primera noche reservada para entrada anticipada y la última para salida tardía, dividido entre las horas habituales de estadía (3 p. m.–11 a. m.: 20; 4 p. m.–11 a. m.: 19). Se calcula por minutos y se redondea una sola vez al final.",
     availability: "Las solicitudes deben cumplir los requisitos de disponibilidad, limpieza y acceso.",
     pending: "Puedes guardar tus preferencias. Las solicitudes automáticas de huéspedes aún no están disponibles.",
     save: "Guardar preferencias de horario", saving: "Guardando…", saved: "Preferencias de horario guardadas.", loading: "Cargando preferencias de horario…",
     error: "No se pudieron cargar o guardar las preferencias. Intenta nuevamente.", forbidden: "Solo un administrador de la organización puede gestionar estas preferencias.",
     conflict: "Otra sesión cambió estas preferencias o el horario de la propiedad. Recarga antes de guardar; se reemplazarán tus cambios sin guardar.",
-    invalid: "Revisa los límites de horario e indica un importe positivo con hasta dos decimales para servicios con costo.",
+    invalid: "Revisa los límites de horario e indica un importe positivo con hasta dos decimales para tarifas fijas.",
     hours: "La entrada anticipada debe ser antes de la entrada habitual, y la salida tardía después de la salida habitual.",
     timezone: "Configura una zona horaria válida en la propiedad antes de permitir estos servicios.", reload: "Recargar preferencias guardadas", retry: "Reintentar",
     standard: "Horario habitual", timezoneMissing: "Zona horaria sin configurar",
@@ -118,11 +118,11 @@ function StayTimeSettingsFormCard({ propertyId, language }: Props) {
               <input id={`${prefix}-time`} type="time" step="60" disabled={!rule.enabled} value={rule.limitLocalTime} onChange={event => update(key, { limitLocalTime: event.target.value })} style={inputStyle} />
             </label>
             <label htmlFor={`${prefix}-fee`}>{text.fee}
-              <select id={`${prefix}-fee`} disabled={!rule.enabled} value={rule.mode} onChange={event => update(key, { mode: event.target.value as StayTimeRuleForm["mode"], ...(event.target.value === "FREE" ? { amount: "0.00" } : {}) })} style={inputStyle}>
+              <select id={`${prefix}-fee`} disabled={!rule.enabled} value={rule.mode} onChange={event => update(key, { mode: event.target.value as StayTimeRuleForm["mode"], ...(event.target.value !== "FIXED" ? { amount: "0.00" } : {}) })} style={inputStyle}>
                 <option value="FREE">{text.free}</option><option value="FIXED">{text.fixed}</option><option value="PER_HOUR">{text.hourly}</option>
               </select>
             </label>
-            {rule.mode !== "FREE" && <label htmlFor={`${prefix}-amount`}>{text.amount}
+            {rule.mode === "FIXED" && <label htmlFor={`${prefix}-amount`}>{text.amount}
               <input id={`${prefix}-amount`} type="text" inputMode="decimal" disabled={!rule.enabled} value={rule.amount} onChange={event => update(key, { amount: event.target.value })} style={inputStyle} />
             </label>}
           </fieldset>;

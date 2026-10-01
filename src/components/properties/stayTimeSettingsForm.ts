@@ -14,7 +14,7 @@ export function formToSettings(form: StayTimeSettingsForm): StayTimeSettings {
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value.limitLocalTime)) throw new Error("INVALID_TIME");
     const normalized = value.amount.trim().replace(",", ".");
     let amountMinor = 0;
-    if (value.mode !== "FREE") {
+    if (value.mode === "FIXED") {
       if (!/^\d{1,6}(?:\.\d{1,2})?$/.test(normalized)) throw new Error("INVALID_AMOUNT");
       const [whole, fraction = ""] = normalized.split(".");
       amountMinor = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
