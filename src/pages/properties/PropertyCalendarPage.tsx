@@ -54,7 +54,7 @@ export function PropertyCalendarPage({ view = "combined", propertyId }: { view?:
   const [missionControlSnapshot, setMissionControlSnapshot] =
     useState<any | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(initialDay);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(view === "single" ? null : initialDay);
   const [showCreateReservationForm, setShowCreateReservationForm] =
     useState(false);
   const [manualGuestName, setManualGuestName] = useState("");
@@ -74,7 +74,7 @@ export function PropertyCalendarPage({ view = "combined", propertyId }: { view?:
   const [selectedRange, setSelectedRange] = useState<{
     start: Date | null;
     end: Date | null;
-  }>({ start: initialDay, end: initialEnd || initialDay });
+  }>({ start: view === "single" ? null : initialDay, end: view === "single" ? null : initialEnd || initialDay });
 
   const [rateInput, setRateInput] = useState("");
   const [showSetRateForm, setShowSetRateForm] = useState(false);

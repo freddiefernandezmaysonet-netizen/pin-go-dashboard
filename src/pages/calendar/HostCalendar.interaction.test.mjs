@@ -145,6 +145,7 @@ test("Single restores the monthly calendar, supports month navigation and proper
     assert.equal(document.querySelector('.pgc-missionControlCard'),null);
     assert.equal(document.querySelector('.pgc-summaryGrid'),null);
     assert.ok(document.querySelector('.pgs-panel'));
+    assert.equal(document.querySelector('.pgc-rangeActionPanel'),null);
     assert.match(document.querySelector('.pgc-monthTitle').textContent,/October 2026/);
     assert.equal(calls.some(url=>url.includes('/api/dashboard/calendar?') || url.includes('/mission-control')),false);
     await act(async () => document.querySelectorAll('.pgc-iconButton')[1].click());
