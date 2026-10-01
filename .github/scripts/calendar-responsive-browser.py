@@ -106,9 +106,23 @@ async def geometry(page, name, width):
       const smallInputs=[...root.querySelectorAll('input:not([type="checkbox"]),select')].filter(el=>el.getClientRects().length && (parseFloat(getComputedStyle(el).fontSize)<16 || el.getBoundingClientRect().height<44)).length;
       const smallButtons=[...root.querySelectorAll('button')].filter(el=>el.getClientRects().length && el.getBoundingClientRect().height<44).map(el=>el.textContent);
       const overflowingCellText=[...root.querySelectorAll('.pgc-dayRate,.pgc-dayStatus')].filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>el.textContent);
-      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,outside,clipping,smallInputs,smallButtons,overflowingCellText};
+      // Compare date controls to their own field, not just the wider viewport.
+      // Linux WebKit is not UIKit: require the native-theme opt-out explicitly.
+      const dateFields=[...root.querySelectorAll('.pgs-panel input.pgs-input[type="date"]')].map(el=>{
+        const b=el.getBoundingClientRect(), field=el.closest('label').getBoundingClientRect();
+        const s=getComputedStyle(el);
+        return {label:el.closest('label').textContent.trim(),type:el.type,value:el.value,
+          inputWidth:b.width,fieldWidth:field.width,appearance:s.appearance,boxSizing:s.boxSizing,minWidth:s.minWidth,
+          fitsField:b.left>=field.left-1 && b.right<=field.right+1 && Math.abs(b.width-field.width)<=1};
+      });
+      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,outside,clipping,smallInputs,smallButtons,overflowingCellText,dateFields};
     }''')
-    RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping'] and not metrics['overflowingCellText']})
+    date_fields_ok = len(metrics['dateFields']) == 2 and all(
+        field['fitsField'] and field['type'] == 'date' and field['appearance'] == 'none'
+        and field['boxSizing'] == 'border-box' and field['minWidth'] == '0px'
+        for field in metrics['dateFields']
+    )
+    RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping'] and not metrics['overflowingCellText'] and date_fields_ok})
     assert RESULTS[-1]['passed'],json.dumps(RESULTS[-1])
     if width <= 720:
         assert not metrics['smallInputs'] and not metrics['smallButtons'],metrics
@@ -128,6 +142,15 @@ async def exercise(page, browser_name):
         if width in (320,390,1440):
             await page.screenshot(path=str(OUT/f'{browser_name}-{width}-page.png'),full_page=True)
             await page.locator('.pgc-calendarGrid').screenshot(path=str(OUT/f'{browser_name}-{width}-calendar.png'))
+        for state, start, end in [('filled','2026-10-20','2026-10-21'),('cleared','','')]:
+            await page.get_by_label('Start Date',exact=True).fill(start)
+            await page.get_by_label('End Date',exact=True).fill(end)
+            await expect(page.get_by_label('Start Date',exact=True)).to_have_value(start)
+            await expect(page.get_by_label('End Date',exact=True)).to_have_value(end)
+            assert await page.get_by_label('End Date',exact=True).get_attribute('min') == (start or None)
+            await geometry(page,f'{browser_name} date fields {state} {width}x{height}',width)
+            if width == 390:
+                await page.locator('.pgs-panel').screenshot(path=str(OUT/f'{browser_name}-date-fields-{state}.png'))
     await page.set_viewport_size({'width':390,'height':844})
     await page.locator('[data-calendar-date="2026-10-20"]').click()
     await page.locator('[data-calendar-date="2026-10-21"]').click()
