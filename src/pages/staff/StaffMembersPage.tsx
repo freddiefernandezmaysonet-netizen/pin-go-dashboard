@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { fetchMe } from "../../api/auth";
+import type { StaffLanguage } from "../../api/staff";
 
 type StaffRow = {
   id: string;
   organizationId: string;
   fullName: string;
+  preferredLanguage?: StaffLanguage;
   phoneE164: string | null;
   companyName: string | null;
   photoUrl: string | null;
@@ -79,6 +81,7 @@ export function StaffMembersPage() {
   const [err, setErr] = useState<string | null>(null);
 
   const [fullName, setFullName] = useState("");
+  const [preferredLanguage, setPreferredLanguage] = useState<StaffLanguage>("en");
   const [phoneE164, setPhoneE164] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -161,6 +164,7 @@ export function StaffMembersPage() {
 
   function resetForm() {
     setFullName("");
+    setPreferredLanguage("en");
     setPhoneE164("");
     setCompanyName("");
     setPhotoUrl("");
@@ -192,6 +196,7 @@ export function StaffMembersPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fullName: fullName.trim(),
+            preferredLanguage,
             phoneE164: phoneE164.trim() || "",
             companyName: companyName.trim() || "",
             photoUrl: photoUrl.trim() || "",
@@ -211,6 +216,7 @@ export function StaffMembersPage() {
           body: JSON.stringify({
             organizationId,
             fullName: fullName.trim(),
+            preferredLanguage,
             phoneE164: phoneE164.trim() || undefined,
             companyName: companyName.trim() || undefined,
             photoUrl: photoUrl.trim() || undefined,
@@ -237,6 +243,7 @@ export function StaffMembersPage() {
   function handleEdit(item: StaffRow) {
     setEditingId(item.id);
     setFullName(item.fullName ?? "");
+    setPreferredLanguage(item.preferredLanguage === "es" ? "es" : "en");
     setPhoneE164(item.phoneE164 ?? "");
     setCompanyName(item.companyName ?? "");
     setPhotoUrl(item.photoUrl ?? "");
@@ -506,6 +513,27 @@ export function StaffMembersPage() {
             }}
           />
 
+          <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+            <label htmlFor="staff-preferred-language" style={{ fontSize: 14, fontWeight: 600 }}>
+              Preferred language / Idioma preferido
+            </label>
+            <select
+              id="staff-preferred-language"
+              value={preferredLanguage}
+              onChange={(e) => setPreferredLanguage(e.target.value === "es" ? "es" : "en")}
+              disabled={saving}
+              aria-describedby="staff-language-help"
+              style={{ width: "100%", minHeight: 44, borderRadius: 12, border: "1px solid #d1d5db", padding: "0 12px", fontSize: 16, background: "#fff" }}
+            >
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+            <small id="staff-language-help" style={{ color: "#6b7280", lineHeight: 1.4 }}>
+              Language for cleaning messages and the cleaner portal.
+              {" "}Idioma de los mensajes y del portal de limpieza.
+            </small>
+          </div>
+
           <input
             value={phoneE164}
             onChange={(e) => setPhoneE164(e.target.value)}
@@ -693,6 +721,7 @@ export function StaffMembersPage() {
                   }}
                 >
                   <Metric label="Phone" value={s.phoneE164 ?? "-"} />
+                  <Metric label="Language / Idioma" value={s.preferredLanguage === "es" ? "Español" : "English"} />
                   <Metric label="Company" value={s.companyName ?? "-"} />
                   <Metric label="NFC card" value={s.ttlockCardRef ? "ASSIGNED" : "-"} />
                   <Metric

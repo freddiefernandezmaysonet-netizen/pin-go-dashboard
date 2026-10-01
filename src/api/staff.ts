@@ -1,9 +1,12 @@
 import { api } from "./client";
 
+export type StaffLanguage = "en" | "es";
+
 export type StaffMember = {
   id: string;
   organizationId: string;
   fullName: string;
+  preferredLanguage?: StaffLanguage;
   phoneE164: string | null;
   companyName: string | null;
   photoUrl: string | null;
@@ -20,6 +23,7 @@ export function listStaff(organizationId: string) {
 export function createStaff(input: {
   organizationId: string;
   fullName: string;
+  preferredLanguage?: StaffLanguage;
   phoneE164?: string;
   companyName?: string;
   photoUrl?: string;
