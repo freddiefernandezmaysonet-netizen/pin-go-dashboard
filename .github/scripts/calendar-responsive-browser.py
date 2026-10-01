@@ -55,6 +55,9 @@ async def intercept(route):
         data = {'ok':True,'data':{'kind':'PIN_GO_STANDARD','displayName':'Pin&Go','logoUrl':None,'faviconUrl':None,'primaryColor':None,'onPrimaryColor':None,'organizationSlug':None,'version':None,'poweredByPinGo':True}}
     elif path == '/auth/me':
         data = {'user':{'id':'local-user','email':'local@example.invalid','orgId':'local-org','role':'ORG_ADMIN','organizationName':'LOCAL TEST ONLY'}}
+    elif path == '/auth/session/activity' and req.method == 'POST':
+        # Matches signalSessionActivity in src/api/auth.ts; no real session is touched.
+        data = {'ok':True,'active':True,'touched':True}
     elif path == '/api/org/branding/review':
         data = {'ok':True,'profile':None,'pendingRevisions':[]}
     elif path == '/api/dashboard/properties/local-property':
