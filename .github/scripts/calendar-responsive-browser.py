@@ -205,6 +205,7 @@ async def exercise(page, browser_name):
         STATE['mode']=mode
         await page.goto(URL+'#mission-control')
         await page.get_by_text('Mission Control live state is unavailable.' if mode=='unavailable' else 'Local legacy alert remains visible' if mode=='legacy' else 'Cleaning requires host attention',exact=True).first.wait_for()
+        await expect(page.locator('.pgc-subtitle')).not_to_contain_text('Loading')
         assert '/mission-control' in page.url
         assert await page.locator('.hc-scroll,.pgc-calendarGrid,.pgs-panel').count()==0
     STATE['mode']='live'
@@ -239,6 +240,7 @@ async def main():
             DIST=Path(os.environ['BASELINE_DIST'])
             await page.goto(URL+'?baseline=1')
             await page.get_by_role('heading',name='Property Calendar',exact=True).wait_for()
+            await expect(page.locator('.pgc-subtitle')).not_to_contain_text('Loading')
             baseline=await page.evaluate('({viewport:innerWidth,width:document.documentElement.scrollWidth})')
             RESULTS.append({'case':'baseline overflow reproduced at 390','passed':baseline['width']>390,**baseline})
             await page.screenshot(path=str(OUT/'baseline-390.png'),full_page=True)
