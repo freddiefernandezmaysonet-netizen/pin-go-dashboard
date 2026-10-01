@@ -60,6 +60,18 @@
 .pg-calendar-route :is(.pgc-inlineActionInput, .pgs-input) {
   max-width: 100%;
 }
+/* iOS date controls can force content-box sizing despite a 100% width.
+   Opt out of that native appearance only for these two already-styled fields.
+   Keep type=date, native date selection, padding, and existing touch heights.
+   WebKit report: https://bugs.webkit.org/show_bug.cgi?id=301648 */
+.pg-calendar-route .pgs-panel input.pgs-input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
 @container property-calendar (max-width: 1100px) {
   .pg-calendar-route .pgc-controlCenterCard {
     grid-template-columns: minmax(0, 1fr) !important;
