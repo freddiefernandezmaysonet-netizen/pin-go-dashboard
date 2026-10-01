@@ -174,7 +174,16 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
         </select></Field>
         <Field label="Tipo de propiedad / Property type"><select style={input} value={form.propertyType} onChange={(e) => set("propertyType", e.target.value as ListingDetailsForm["propertyType"])}>
           <option value="">No confirmado / Not confirmed</option>{propertyTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select></Field>
+        </select>
+          <span style={{ fontSize: 12, color: "#64748b" }}>
+            {!form.propertyType || form.propertyType === "OTHER"
+              ? "Selecciona un tipo específico antes de conectar un nuevo canal. ‘Otro’ requiere aclaración. / Select a specific type before connecting a new channel. ‘Other’ needs clarification."
+              : form.propertyType === "GUESTHOUSE"
+                ? "Categoría de facturación de Channex: hotel. / Channex billing category: hotel."
+                : "Categoría de facturación de Channex: alquiler vacacional. / Channex billing category: vacation rental."}
+            {" "}Aplica a nuevas conexiones; guarda esta selección antes de conectar. / Applies to new connections; save this selection before connecting.
+          </span>
+        </Field>
         {facts.map(([label, key, placeholder]) => <Field key={key} label={label}><input style={input} type="number" min={key === "minimumPrimaryBookingGuestAge" ? 18 : 0} max={key === "minimumPrimaryBookingGuestAge" ? 99 : 100} step="1" placeholder={placeholder} value={form[key]} onChange={(e) => set(key, e.target.value)} /></Field>)}
       </div></div>
       <div style={section}><b>Descubrimiento / Discovery</b>
