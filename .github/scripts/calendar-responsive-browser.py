@@ -125,7 +125,9 @@ async def geometry(page, name, width):
           inputWidth:b.width,fieldWidth:field.width,appearance:s.appearance,boxSizing:s.boxSizing,minWidth:s.minWidth,
           fitsField:b.left>=field.left-1 && b.right<=field.right+1 && Math.abs(b.width-field.width)<=1};
       });
-      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,outside,clipping,smallInputs,smallButtons,overflowingCellText,dateFields};
+      const mainRight=main.getBoundingClientRect().right;
+      const mainOverflow=[...main.querySelectorAll('*')].filter(el=>el.getBoundingClientRect().right>mainRight+1).map(el=>({tag:el.tagName,class:el.className,right:el.getBoundingClientRect().right,text:el.textContent.slice(0,80)}));
+      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,mainOverflow,outside,clipping,smallInputs,smallButtons,overflowingCellText,dateFields};
     }''')
     date_fields_ok = len(metrics['dateFields']) == 2 and all(
         field['fitsField'] and field['type'] == 'date' and field['appearance'] == 'none'
@@ -133,6 +135,8 @@ async def geometry(page, name, width):
         for field in metrics['dateFields']
     )
     RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping'] and not metrics['overflowingCellText'] and date_fields_ok})
+    if not RESULTS[-1]['passed']:
+        await page.screenshot(path=str(OUT/'geometry-failure.png'),full_page=True)
     assert RESULTS[-1]['passed'],json.dumps(RESULTS[-1])
     if width <= 720:
         assert not metrics['smallInputs'] and not metrics['smallButtons'],metrics
