@@ -34,7 +34,7 @@ const API_BASE =
   import.meta.env.VITE_API_BASE ||
   "https://api.pin-ngo.com";
 
-export function PropertyCalendarPage({ view = "combined" }: { view?: "combined" | "mission" | "actions" }) {
+export function PropertyCalendarPage({ view = "combined", propertyId }: { view?: "combined" | "mission" | "actions" | "single"; propertyId?: string }) {
   const [searchParams] = useSearchParams();
   const initialFrom = searchParams.get("from");
   const initialTo = searchParams.get("to");
@@ -42,7 +42,8 @@ export function PropertyCalendarPage({ view = "combined" }: { view?: "combined" 
   const initialDay = safeDate(initialFrom);
   const candidateEnd = safeDate(initialTo);
   const initialEnd = initialDay && candidateEnd && candidateEnd >= initialDay && candidateEnd.getTime() - initialDay.getTime() <= 30 * 86400000 ? candidateEnd : initialDay;
-  const { id } = useParams();
+  const { id: routeId } = useParams();
+  const id = propertyId || routeId;
   const navigate = useNavigate();
 
   const [month, setMonth] = useState(() => startOfMonth(initialDay || new Date()));
@@ -53,7 +54,7 @@ export function PropertyCalendarPage({ view = "combined" }: { view?: "combined" 
   const [missionControlSnapshot, setMissionControlSnapshot] =
     useState<any | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(initialDay);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(view === "single" ? null : initialDay);
   const [showCreateReservationForm, setShowCreateReservationForm] =
     useState(false);
   const [manualGuestName, setManualGuestName] = useState("");
@@ -73,7 +74,7 @@ export function PropertyCalendarPage({ view = "combined" }: { view?: "combined" 
   const [selectedRange, setSelectedRange] = useState<{
     start: Date | null;
     end: Date | null;
-  }>({ start: initialDay, end: initialEnd || initialDay });
+  }>({ start: view === "single" ? null : initialDay, end: view === "single" ? null : initialEnd || initialDay });
 
   const [rateInput, setRateInput] = useState("");
   const [showSetRateForm, setShowSetRateForm] = useState(false);
@@ -163,7 +164,7 @@ export function PropertyCalendarPage({ view = "combined" }: { view?: "combined" 
   }, [id, from, to]);
 
   useEffect(() => {
-    if (!id || view === "actions") return;
+    if (!id || view === "actions" || view === "single") return;
 
     let active = true;
     let requestSequence = 0;
@@ -1643,8 +1644,8 @@ paymentState: manualPaymentState,
     <div className="pgc-page" style={styles.page}>
       <div className="pgc-header" style={styles.header}>
         <div>
-          <h1 className="pgc-title" style={styles.title}>{view === "mission" ? "Mission Control" : view === "actions" ? "Gestionar fechas / Manage dates" : "Property Calendar"}</h1>
-          {view !== "combined" && <Link to={`/calendar?propertyId=${id}`}>← Calendario / Calendar</Link>}
+          <h1 className="pgc-title" style={styles.title}>{view === "mission" ? "Mission Control" : view === "actions" ? "Manage dates" : "Property Calendar"}</h1>
+          {view !== "combined" && view !== "single" && <Link to={`/calendar?propertyId=${id}`}>← Calendar</Link>}
           <p className="pgc-subtitle" style={styles.subtitle}>
             {loading
               ? "Loading calendar intelligence..."
@@ -1830,6 +1831,8 @@ paymentState: manualPaymentState,
         </div>
       </div>
 
+      </>}
+      {(view === "combined" || view === "single") && <>
       <div className="pgc-calendarToolbar" style={styles.calendarToolbar}>
         <button
           type="button"
@@ -2448,7 +2451,7 @@ paymentState: manualPaymentState,
       )}
 
       </>}
-      {view !== "actions" && <>
+      {(view === "combined" || view === "mission") && <>
        <div className="pgc-missionControlCard" style={styles.missionControlCard}>
   <div className="pgc-missionEnterpriseHeader" style={styles.missionEnterpriseHeader}>
     <div>

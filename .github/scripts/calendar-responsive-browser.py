@@ -125,7 +125,9 @@ async def geometry(page, name, width):
           inputWidth:b.width,fieldWidth:field.width,appearance:s.appearance,boxSizing:s.boxSizing,minWidth:s.minWidth,
           fitsField:b.left>=field.left-1 && b.right<=field.right+1 && Math.abs(b.width-field.width)<=1};
       });
-      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,outside,clipping,smallInputs,smallButtons,overflowingCellText,dateFields};
+      const mainRight=main.getBoundingClientRect().right;
+      const mainOverflow=[...main.querySelectorAll('*')].filter(el=>el.getBoundingClientRect().right>mainRight+1).map(el=>({tag:el.tagName,class:el.className,right:el.getBoundingClientRect().right,text:el.textContent.slice(0,80)}));
+      return {viewport:innerWidth,width:document.documentElement.scrollWidth,mainWidth:main.clientWidth,mainScroll:main.scrollWidth,mainOverflow,outside,clipping,smallInputs,smallButtons,overflowingCellText,dateFields};
     }''')
     date_fields_ok = len(metrics['dateFields']) == 2 and all(
         field['fitsField'] and field['type'] == 'date' and field['appearance'] == 'none'
@@ -133,6 +135,8 @@ async def geometry(page, name, width):
         for field in metrics['dateFields']
     )
     RESULTS.append({'case':name,**metrics,'passed':metrics['width']<=width+1 and metrics['mainScroll']<=metrics['mainWidth']+1 and not metrics['outside'] and not metrics['clipping'] and not metrics['overflowingCellText'] and date_fields_ok})
+    if not RESULTS[-1]['passed']:
+        await page.screenshot(path=str(OUT/'geometry-failure.png'),full_page=True)
     assert RESULTS[-1]['passed'],json.dumps(RESULTS[-1])
     if width <= 720:
         assert not metrics['smallInputs'] and not metrics['smallButtons'],metrics
@@ -144,8 +148,22 @@ async def exercise(page, browser_name):
     page.on('console', lambda m: STATE['console'].append(m.text) if m.type=='error' else None)
     await page.clock.set_fixed_time(datetime(2026,10,15,12,tzinfo=timezone.utc))
     await page.goto(URL)
-    await page.locator('.hc-scroll').wait_for()
+    await page.locator('.pgc-calendarGrid').wait_for()
     assert '/calendar?propertyId=local-property' in page.url
+    assert await page.locator('.hc-scroll,.pgc-missionControlCard').count() == 0
+    for width,height in [(320,780),(390,844),(1440,1000)]:
+        await page.set_viewport_size({'width':width,'height':height})
+        await geometry(page,f'{browser_name} Single monthly calendar {width}',width)
+        await page.locator('.pgc-calendarGrid').screenshot(path=str(OUT/f'{browser_name}-{width}-single-month.png'))
+    await page.locator('.pgc-iconButton').last.click()
+    await expect(page.locator('.pgc-monthTitle')).to_contain_text('November')
+    await page.locator('.pgc-iconButton').first.click()
+    await expect(page.locator('.pgc-monthTitle')).to_contain_text('October')
+    await page.locator('[data-calendar-date="2026-10-20"]').press('Enter')
+    await expect(page.locator('[data-calendar-date="2026-10-20"]')).to_have_attribute('aria-pressed','true')
+    await page.get_by_role('button',name='Multi',exact=True).click()
+    await page.locator('.hc-scroll').wait_for()
+    assert await page.locator('.pgc-calendarGrid').count() == 0
     assert await page.locator('.pgc-missionControlCard').count() == 0
     for width,height in [(320,780),(360,800),(390,844),(430,932),(720,900),(768,1024),(844,390),(1024,768),(1440,1000),(1920,1080)]:
         await page.set_viewport_size({'width':width,'height':height})
@@ -210,7 +228,8 @@ async def exercise(page, browser_name):
         assert await page.locator('.hc-scroll,.pgc-calendarGrid,.pgs-panel').count()==0
     STATE['mode']='live'
     await page.goto(URL)
-    await page.locator('.hc-scroll').wait_for()
+    await page.locator('.pgc-calendarGrid').wait_for()
+    await expect(page.locator('.pgc-subtitle')).not_to_contain_text('Loading')
     await page.get_by_role('button',name='Open navigation',exact=True).click()
     await page.get_by_role('dialog',name='Main navigation',exact=True).wait_for()
     await page.keyboard.press('Escape')

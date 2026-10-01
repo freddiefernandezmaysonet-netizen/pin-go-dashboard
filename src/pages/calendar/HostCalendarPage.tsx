@@ -1,3 +1,5 @@
+import { PropertyCalendarPage } from "../properties/PropertyCalendarPage";
+import { PropertyCalendarStayRestrictionsPanel } from "../../components/properties/PropertyCalendarStayRestrictionsPanel";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -14,7 +16,7 @@ const API =
   import.meta.env.VITE_API_BASE ||
   "https://api.pin-ngo.com";
 const label = (key: string) =>
-  new Date(key + "T12:00:00Z").toLocaleDateString(undefined, {
+  new Date(key + "T12:00:00Z").toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
@@ -64,13 +66,13 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
       .catch(() => {
         if (!abort.signal.aborted)
           setPropertiesError(
-            "No se pudo cargar la lista de propiedades. / Could not load properties.",
+            "Could not load properties.",
           );
       });
     return () => abort.abort();
   }, [version]);
   useEffect(() => {
-    if (mission) return;
+    if (mission || propertyId) return;
     const abort = new AbortController();
     const query = new URLSearchParams({
       from,
@@ -92,7 +94,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
       .catch(() => {
         if (!abort.signal.aborted)
           setError(
-            "Calendario no disponible. Intenta actualizar. / Calendar unavailable. Try refreshing.",
+            "Calendar unavailable. Try refreshing.",
           );
       });
     return () => abort.abort();
@@ -122,14 +124,14 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
       <header className="hc-heading">
         <div>
           <span className="hc-eyebrow">PIN&GO · HOST</span>
-          <h1>{mission ? "Mission Control" : "Calendario"}</h1>
+          <h1>{mission ? "Mission Control" : "Calendar"}</h1>
           <p>
             {mission
-              ? "Selecciona una propiedad para ver sus alertas y acciones."
-              : "Disponibilidad, reservas y precios por propiedad."}
+              ? "Select a property to view its alerts and actions."
+              : "Availability, reservations and nightly rates by property."}
           </p>
         </div>
-        <button onClick={() => setVersion((v) => v + 1)}>Actualizar</button>
+        <button onClick={() => setVersion((v) => v + 1)}>Refresh</button>
       </header>
       <div className="hc-controls">
         {!mission && (
@@ -150,18 +152,18 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 })
               }
             >
-              Individual
+              Single
             </button>
           </div>
         )}
         <label>
-          Propiedad
+          Property
           <select
             aria-label="Property"
             value={propertyId}
             onChange={(e) => change({ propertyId: e.target.value, page: "1" })}
           >
-            <option value="">Todas las propiedades</option>
+            <option value="">All properties</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -169,10 +171,10 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
             ))}
           </select>
         </label>
-        {!mission && (
+        {!mission && !propertyId && (
           <>
             <label>
-              Desde
+              From
               <input
                 aria-label="From date"
                 type="date"
@@ -191,7 +193,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 ‹
               </button>
               <button onClick={() => change({ from: localToday() })}>
-                Hoy
+                Today
               </button>
               <button
                 aria-label="Next 14 days"
@@ -203,9 +205,9 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
           </>
         )}
       </div>
-      {(error || propertiesError) && (
+      {((!propertyId && error) || propertiesError) && (
         <p role="alert" className="hc-error">
-          {error || propertiesError}
+          {(!propertyId && error) || propertiesError}
         </p>
       )}
       {mission ? (
@@ -218,18 +220,23 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
               </Link>
             ))}
         </div>
+      ) : propertyId ? (
+        <div key={`${propertyId}:${version}`} className="pg-calendar-route hc-single" style={{ display: "grid", gap: 20 }}>
+          <PropertyCalendarPage view="single" propertyId={propertyId} />
+          <PropertyCalendarStayRestrictionsPanel propertyId={propertyId} />
+          <Link to={`/properties/${propertyId}/mission-control`}>Mission Control →</Link>
+        </div>
       ) : (
         <>
           <p className="hc-hint">
-            Desliza las fechas ↔ · Toca dos noches para seleccionar un rango. /
-            Swipe dates · Tap two nights to select a range.
+            Swipe dates ↔ · Tap two nights to select a range.
           </p>
           {!data && !error && (
-            <p role="status">Cargando calendario… / Loading calendar…</p>
+            <p role="status">Loading calendar…</p>
           )}
           {data && data.items.length === 0 && (
             <p>
-              No hay propiedades en esta vista. / No properties in this view.
+              No properties in this view.
             </p>
           )}
           {data && data.items.length > 0 && (
@@ -241,8 +248,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
             >
               <table style={{ width: 128 + days.length * 88 }}>
                 <caption className="hc-sr">
-                  {label(from)} – {label(shiftDate(from, 13))}. Precios por
-                  noche en USD. / Nightly rates in USD.
+                  {label(from)} – {label(shiftDate(from, 13))}. Nightly rates in USD.
                 </caption>
                 <colgroup>
                   <col style={{ width: 128 }} />
@@ -252,12 +258,12 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                 </colgroup>
                 <thead>
                   <tr>
-                    <th className="hc-sticky">Propiedades</th>
+                    <th className="hc-sticky">Properties</th>
                     {days.map((d) => (
                       <th key={d} scope="col">
                         <span>
                           {new Date(d + "T12:00:00Z").toLocaleDateString(
-                            undefined,
+                            "en-US",
                             { weekday: "short", timeZone: "UTC" },
                           )}
                         </span>
@@ -306,7 +312,7 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                           >
                             {property.state === "UNAVAILABLE" ? (
                               <span className="hc-unavailable">
-                                Datos no disponibles / Data unavailable
+                                Data unavailable
                               </span>
                             ) : (
                               stays.map((stay) => (
@@ -352,17 +358,17 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                               >
                                 <small>
                                   {day?.status === "BOOKED"
-                                    ? "Reservado"
+                                    ? "Booked"
                                     : day?.status === "BLOCKED"
-                                      ? "Bloqueado"
+                                      ? "Blocked"
                                       : day
-                                        ? "Disponible"
+                                        ? "Available"
                                         : "—"}
                                 </small>
                                 <strong>
                                   {day?.rate == null
                                     ? "—"
-                                    : new Intl.NumberFormat(undefined, {
+                                    : new Intl.NumberFormat("en-US", {
                                         style: "currency",
                                         currency: "USD",
                                         maximumFractionDigits: 0,
@@ -370,8 +376,8 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
                                 </strong>
                                 <span>
                                   {day
-                                    ? `${day.minimumNights} noches mín.`
-                                    : "Sin datos"}
+                                    ? `${day.minimumNights} night${day.minimumNights === 1 ? "" : "s"} min.`
+                                    : "No data"}
                                 </span>
                               </button>
                             </td>
@@ -389,38 +395,37 @@ export function HostCalendarPage({ mission = false }: { mission?: boolean }) {
               <div>
                 <strong>{selection.name}</strong>
                 <p>
-                  {label(selection.from)} – {label(selection.to)} · noches
-                  seleccionadas / selected nights
+                  {label(selection.from)} – {label(selection.to)} · selected nights
                 </p>
               </div>
               <Link
                 className="hc-primary"
                 to={`/calendar/property/${selection.propertyId}?from=${selection.from}&to=${selection.to}`}
               >
-                Gestionar fechas
+                Manage dates
               </Link>
               <Link to={`/properties/${selection.propertyId}/mission-control`}>
                 Mission Control
               </Link>
-              <button onClick={() => setSelection(null)}>Cerrar</button>
+              <button onClick={() => setSelection(null)}>Close</button>
             </aside>
           )}
           {data && (
             <footer className="hc-footer">
               <span>
-                {data.total} propiedades · Página {data.page} · USD
+                {data.total} properties · Page {data.page} · USD
               </span>
               <button
                 disabled={page <= 1}
                 onClick={() => change({ page: String(page - 1) })}
               >
-                Anterior
+                Previous
               </button>
               <button
                 disabled={!data.hasMore}
                 onClick={() => change({ page: String(page + 1) })}
               >
-                Más propiedades
+                More properties
               </button>
               <Link to="/mission-control">Mission Control →</Link>
             </footer>
