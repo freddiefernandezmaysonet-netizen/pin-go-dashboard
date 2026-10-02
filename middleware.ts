@@ -390,6 +390,31 @@ async function handleCrawlerEndpoint(
     });
   }
 
+  if (url.hostname === "app.pin-ngo.com") {
+    const isHead = request.method === "HEAD";
+    if (url.pathname === "/robots.txt") {
+      return new Response(isHead ? null : "User-agent: *\nAllow: /\nSitemap: https://app.pin-ngo.com/sitemap.xml\n", {
+        headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=300" },
+      });
+    }
+    try {
+      const upstream = await fetch(`${PUBLIC_API_BASE}/api/public-booking/sitemap.xml`, {
+        headers: { Accept: "application/xml" }, signal: AbortSignal.timeout(METADATA_FETCH_TIMEOUT_MS),
+      });
+      if (!upstream.ok || !upstream.headers.get("content-type")?.includes("application/xml")) {
+        throw new Error("Sitemap source unavailable");
+      }
+      const xml = await upstream.text();
+      return new Response(isHead ? null : xml, {
+        headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=0, s-maxage=300", "x-content-type-options": "nosniff" },
+      });
+    } catch {
+      return new Response(isHead ? null : "Sitemap temporarily unavailable\n", {
+        status: 503, headers: { "cache-control": "no-store", "retry-after": "300" },
+      });
+    }
+  }
+
   const requestHostname = normalizeCrawlerHostname(url.hostname);
   const discovery = requestHostname
     ? await resolvePublicBookingDiscovery(requestHostname).catch(() => null)
