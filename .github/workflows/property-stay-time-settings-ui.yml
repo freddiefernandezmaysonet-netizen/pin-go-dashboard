@@ -6,6 +6,10 @@ on:
       - "src/components/properties/StayTimeSettingsCard.tsx"
       - "src/components/properties/stayTimeSettings*"
       - "src/api/stayTimeSettings.ts"
+      - "src/api/availabilityConflicts.ts"
+      - "src/components/properties/AvailabilityConflictReview.tsx"
+      - "src/components/properties/OperationalIntelligencePanel.tsx"
+      - "src/components/properties/availabilityConflicts.interaction.test.mjs"
       - "src/pages/properties/PropertyEditPage.tsx"
       - ".github/workflows/property-stay-time-settings-ui.yml"
 permissions:
@@ -24,6 +28,8 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node --test src/components/properties/stayTimeSettings.interaction.test.mjs
+      - run: node --test src/components/properties/availabilityConflicts.interaction.test.mjs
+      - run: npx eslint src/api/availabilityConflicts.ts src/components/properties/AvailabilityConflictReview.tsx src/components/properties/OperationalIntelligencePanel.tsx
       - run: npx eslint src/api/stayTimeSettings.ts src/components/properties/stayTimeSettingsForm.ts src/components/properties/StayTimeSettingsCard.tsx
       - run: npx tsc -p tsconfig.app.json --noEmit
       - run: npm run build
