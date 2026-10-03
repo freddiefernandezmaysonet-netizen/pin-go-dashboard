@@ -1,7 +1,7 @@
 export type StayTimeReviewItem = {
   id: string; updatedAt: string; state: string; detectedAt: string; organization: string; property: string;
   timezone: string | null; reservationNumber: string | null; operation: string; modificationStatus: string;
-  paymentEvidence: "PAID" | "REFUNDED" | "UNVERIFIED"; additionalChargeAmount: string; currency: string;
+  paymentEvidence: "PAID" | "REFUNDED" | "UNPAID" | "UNVERIFIED"; additionalChargeAmount: string; currency: string;
   attempts: number; nextAttemptAt: string | null; reconciliationCompleted: boolean; physicalAccessCertified: false;
 };
 export type StayTimeReviewDetail = { item: StayTimeReviewItem;

@@ -10,7 +10,7 @@ const copy = {
     note: "Nota interna de revisión", save: "Registrar revisión", saving: "Guardando…", saved: "Revisión registrada. El incidente conserva su estado.",
     meaning: "Registrar una revisión no cierra el incidente ni ejecuta cobros, devoluciones o cambios de acceso. El sistema lo cierra al confirmar la recuperación.",
     access: "El estado de este cambio no certifica el funcionamiento del acceso físico.", history: "Historial", recent: "Se muestran las últimas 50 entradas.",
-    early: "Entrada anticipada", late: "Salida tardía", schedule: "Cambio de horario", paid: "Cobro verificado", refunded: "Devolución confirmada", unverified: "Pago sin verificar",
+    early: "Entrada anticipada", late: "Salida tardía", schedule: "Cambio de horario", paid: "Cobro verificado", refunded: "Devolución confirmada", unpaid: "Sesión vencida sin intento de pago", unverified: "Pago sin verificar",
     payment: "Evidencia de pago", charge: "Cargo adicional", attempts: "Intentos de recuperación", next: "Próximo intento", reconciliation: "Conciliación completada", yes: "Sí", no: "Pendiente",
     state: "Estado del cambio", review: "Revisión del operador", event: "Estado de recuperación", time: "Zona horaria", resolved: "Resuelto", pending: "Requiere revisión" },
   en: { title: "Stay-time review · Pin AI", intro: "Early check-in and late checkout incidents requiring Pin&Go attention.",
@@ -20,7 +20,7 @@ const copy = {
     note: "Internal review note", save: "Record review", saving: "Saving…", saved: "Review recorded. The incident retains its state.",
     meaning: "Recording a review does not close the incident or execute payments, refunds or access changes. The system closes it after confirmed recovery.",
     access: "This change's status does not certify physical access operation.", history: "History", recent: "Showing the latest 50 entries.",
-    early: "Early check-in", late: "Late checkout", schedule: "Schedule change", paid: "Payment verified", refunded: "Refund confirmed", unverified: "Payment unverified",
+    early: "Early check-in", late: "Late checkout", schedule: "Schedule change", paid: "Payment verified", refunded: "Refund confirmed", unpaid: "Checkout expired without a payment attempt", unverified: "Payment unverified",
     payment: "Payment evidence", charge: "Additional charge", attempts: "Recovery attempts", next: "Next attempt", reconciliation: "Reconciliation completed", yes: "Yes", no: "Pending",
     state: "Change status", review: "Operator review", event: "Recovery state", time: "Timezone", resolved: "Resolved", pending: "Review required" },
 };
@@ -121,7 +121,7 @@ function ReviewDetail({ id, api, language }: { id: string; api: StayTimeReviewAp
       <p>{item.property} · {item.reservationNumber ?? "—"}</p>
       <dl className="grid grid-cols-2 gap-3 text-sm"><dt>{text.state}</dt><dd>{statuses[language][item.modificationStatus] ?? text.no}</dd>
         <dt>{text.charge}</dt><dd>{item.currency.toUpperCase()} {item.additionalChargeAmount}</dd>
-        <dt>{text.payment}</dt><dd>{item.paymentEvidence === "PAID" ? text.paid : item.paymentEvidence === "REFUNDED" ? text.refunded : text.unverified}</dd>
+        <dt>{text.payment}</dt><dd>{item.paymentEvidence === "PAID" ? text.paid : item.paymentEvidence === "REFUNDED" ? text.refunded : item.paymentEvidence === "UNPAID" ? text.unpaid : text.unverified}</dd>
         <dt>{text.reconciliation}</dt><dd>{item.reconciliationCompleted ? text.yes : text.no}</dd>
         <dt>{text.attempts}</dt><dd>{item.attempts}</dd><dt>{text.next}</dt><dd>{format(item.nextAttemptAt)}</dd><dt>{text.time}</dt><dd>{item.timezone ?? "UTC"}</dd></dl>
       <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-900">{text.access}</p>

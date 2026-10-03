@@ -97,3 +97,11 @@ test("API uses authenticated no-store requests and encoded paths; invalid respon
   t.mock.method(globalThis, "fetch", async () => ({ ok: false, status: 403, json: async () => ({}) }));
   await assert.rejects(api.read("id", controller.signal), e => e instanceof StayTimeReviewApiError && e.status === 403);
 });
+
+test("confirmed unpaid expiry is distinct from unverified payment and has no review form", async t => {
+  const expired = { ...item(), state: "RESOLVED", modificationStatus: "EXPIRED", paymentEvidence: "UNPAID" };
+  const app = await mount(t, { list: async () => ({ items: [expired], nextCursor: null }),
+    read: async () => ({ item: expired, history: [], historyHasMore: false }) });
+  await app.open(); assert.match(app.container.textContent, /Sesión vencida sin intento de pago/);
+  assert.doesNotMatch(app.container.textContent, /Pago sin verificar/); assert.equal(app.container.querySelector("textarea"), null);
+});
