@@ -16,6 +16,8 @@ export type PropertiesResp = {
 export type CreatePropertyInput = {
   name: string;
   address1?: string;
+  complexName?: string;
+  unitNumber?: string;
   city?: string;
   region?: string;
   country?: string;

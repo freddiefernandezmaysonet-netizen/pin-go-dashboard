@@ -109,6 +109,8 @@ export default function CreatePropertyPage() {
 
   const [name, setName] = useState("");
   const [address1, setAddress1] = useState("");
+  const [complexName, setComplexName] = useState("");
+  const [unitNumber, setUnitNumber] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [country, setCountry] = useState("");
@@ -394,6 +396,8 @@ export default function CreatePropertyPage() {
       await createProperty({
         name,
         address1,
+        complexName,
+        unitNumber,
         city,
         region,
         country,
@@ -598,6 +602,18 @@ export default function CreatePropertyPage() {
                 style={inputStyle}
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="new-property-complex" style={labelStyle}>Complejo / edificio (opcional)</label>
+            <input id="new-property-complex" value={complexName} maxLength={120}
+              onChange={(e) => setComplexName(e.target.value)} placeholder="Nombre del complejo" style={inputStyle} />
+          </div>
+          <div>
+            <label htmlFor="new-property-unit" style={labelStyle}>Apartamento / unidad (opcional)</label>
+            <input id="new-property-unit" value={unitNumber} maxLength={32}
+              onChange={(e) => setUnitNumber(e.target.value)} placeholder="Ej. 107B" style={inputStyle} />
+            <p>Se incluye en las instrucciones de llegada y acceso del huésped.</p>
           </div>
 
           <div>
