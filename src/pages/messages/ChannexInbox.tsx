@@ -4,7 +4,7 @@ import "./ChannexInbox.css";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 type Message = { id: string; text: string; sender: "guest" | "property"; insertedAt: string; attachments: string[] };
-type Thread = { id: string; title: string; provider: string; isClosed: boolean; bookingId: string | null; messageCount: number; needsHost?: boolean };
+type Thread = { id: string; title: string; provider: string; isClosed: boolean; bookingId: string | null; reservationNumber?: string | null; messageCount: number; needsHost?: boolean };
 type List<T> = { items: T[]; page: number; limit: number; total: number };
 type AIDraft = { text: string; requiresHumanReview: boolean; basedOnMessageId: string; sent: false };
 type Automation = { enabled: boolean; mode: "AUTO" | "HUMAN" | "OFF"; reason: string | null; sending: boolean };
@@ -125,7 +125,7 @@ function HostInbox({ actor }: { actor: string }) {
         {threads.data?.items.map(t => <button key={t.id} disabled={sending || generating} aria-pressed={selected?.id === t.id}
           style={{ display: "block", width: "100%", textAlign: "left", padding: 12, marginTop: 8 }}
           onClick={() => { setSelected(t); setMessagePage(1); }}>
-          <strong>{t.title}</strong><br />{t.provider} · {t.bookingId ? "Reserva" : "Consulta sin reserva"}{t.isClosed ? " · Cerrada" : ""}
+          <strong>{t.title}</strong><br />{t.provider} · {t.reservationNumber ? `Reserva ${t.reservationNumber}` : t.bookingId ? "Reserva pendiente de vincular" : "Consulta sin reserva"}{t.isClosed ? " · Cerrada" : ""}
           {t.needsHost && <strong style={{ display: "block", color: "#92400e" }}>Atención del host</strong>}
         </button>)}
         <nav aria-label="Páginas de conversaciones" style={{ marginTop: 12 }}>
@@ -138,6 +138,7 @@ function HostInbox({ actor }: { actor: string }) {
         {!selected && <p>Selecciona una conversación para ver sus mensajes.</p>}
         {selected && <>
           <h3>{current?.title}</h3>
+          <p>{current?.reservationNumber ? `Reserva ${current.reservationNumber}` : current?.bookingId ? "Reserva pendiente de vincular" : "Consulta sin reserva"}</p>
           {automation?.enabled && <aside style={{ ...box, marginBottom: 12 }} aria-label="Control de Pin AI">
             <strong>{automation.mode === "AUTO" ? "Pin AI · Respuestas automáticas" : "Pin AI · Atención del host"}</strong>
             <p>{automation.mode === "AUTO" ? "Pin AI responde las consultas que puede resolver. Si escribes, la conversación queda a tu cargo." : automation.reason === "HOST_TAKEOVER" ? "La conversación está a cargo del host." : "Esta conversación requiere tu revisión. Pin AI está pausado."}</p>

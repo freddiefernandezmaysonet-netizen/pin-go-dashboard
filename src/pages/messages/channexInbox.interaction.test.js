@@ -27,9 +27,9 @@ async function until(check) {
   }
   assert.fail("Inbox did not reach expected state");
 }
-async function mount(t, { unknown = false, closed = false, unavailable = false, aiEnabled = false, automatic = false } = {}) {
+async function mount(t, { unknown = false, closed = false, unavailable = false, aiEnabled = false, automatic = false, bookingId = null, reservationNumber = null } = {}) {
   sessionStorage.clear();
-  const posts = [], thread = { id: "thread-1", title: "Consulta de Ana", provider: "Airbnb", isClosed: closed, bookingId: null, messageCount: 1 };
+  const posts = [], thread = { id: "thread-1", title: "Consulta de Ana", provider: "Airbnb", isClosed: closed, bookingId, reservationNumber, messageCount: 1 };
   const history = [{ id: "msg-1", text: "¿Está disponible?", sender: "guest", insertedAt: "2026-10-03T01:00:00Z", attachments: [] }];
   const automation = { enabled: automatic, mode: automatic ? "AUTO" : "OFF", reason: null, sending: false };
   t.mock.method(globalThis, "fetch", async (raw, init) => {
@@ -79,6 +79,17 @@ test("host reads an inquiry and submits one text reply to the selected destinati
   assert.equal(h.posts.length, 1); assert.equal(h.posts[0].text, "Sí, está disponible.");
   assert.match(h.posts[0].path, /properties\/p1\/threads\/thread-1\/messages$/);
   assert.ok(h.posts[0].key); assert.equal(sessionStorage.length, 0);
+});
+test("linked reservation number appears in the list and conversation header", async t => {
+  const h = await mount(t, { bookingId: "booking-a", reservationNumber: "PG-2026-000060" }); await selectThread(h);
+  assert.match(h.container.querySelector("button[aria-pressed]").textContent, /Reserva PG-2026-000060/);
+  assert.match(h.container.querySelector("h3").nextElementSibling.textContent, /Reserva PG-2026-000060/);
+  assert.equal(h.posts.length, 0);
+});
+test("unmatched channel booking is identified without inventing a reservation number", async t => {
+  const h = await mount(t, { bookingId: "booking-a" }); await selectThread(h);
+  assert.match(h.container.textContent, /Reserva pendiente de vincular/);
+  assert.doesNotMatch(h.container.textContent, /PG-2026-/);
 });
 test("uncertain outcome retains its key and blocks automatic resend", async t => {
   const h = await mount(t, { unknown: true }); await selectThread(h); await compose(h, "Respuesta pendiente");
