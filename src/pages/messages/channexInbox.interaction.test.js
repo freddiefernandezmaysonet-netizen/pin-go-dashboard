@@ -27,7 +27,7 @@ async function until(check) {
   }
   assert.fail("Inbox did not reach expected state");
 }
-async function mount(t, { unknown = false, closed = false, unavailable = false } = {}) {
+async function mount(t, { unknown = false, closed = false, unavailable = false, aiEnabled = false } = {}) {
   sessionStorage.clear();
   const posts = [], thread = { id: "thread-1", title: "Consulta de Ana", provider: "Airbnb", isClosed: closed, bookingId: null, messageCount: 1 };
   const history = [{ id: "msg-1", text: "¿Está disponible?", sender: "guest", insertedAt: "2026-10-03T01:00:00Z", attachments: [] }];
@@ -38,11 +38,12 @@ async function mount(t, { unknown = false, closed = false, unavailable = false }
     if (unavailable) return new Response(JSON.stringify({ error: "HOST_INBOX_DISABLED" }), { status: 503 });
     if (init.method === "POST") {
       posts.push({ path: url.pathname, key: init.headers["idempotency-key"], ...JSON.parse(init.body) });
+      if (url.pathname.endsWith("/pin-ai-draft")) return new Response(JSON.stringify({ text: "Tenemos estacionamiento en la propiedad.", requiresHumanReview: false, basedOnMessageId: "msg-1", sent: false }));
       if (unknown) return new Response(JSON.stringify({ error: "HOST_INBOX_SEND_OUTCOME_UNKNOWN" }), { status: 409 });
       history.push({ ...history[0], id: "msg-2", sender: "property", text: JSON.parse(init.body).text });
       return new Response(JSON.stringify({ message: history[1], replayed: false }));
     }
-    if (url.pathname.endsWith("/properties")) return new Response(JSON.stringify({ items: [{ id: "p1", name: "Casa Uno" }, { id: "p2", name: "Casa Dos" }] }));
+    if (url.pathname.endsWith("/properties")) return new Response(JSON.stringify({ items: [{ id: "p1", name: "Casa Uno", pinAIDraftsEnabled: aiEnabled }, { id: "p2", name: "Casa Dos" }] }));
     if (url.pathname.endsWith("/messages")) return new Response(JSON.stringify({ thread, items: history, page: 1, limit: 25, total: history.length }));
     return new Response(JSON.stringify({ items: [thread], page: 1, limit: 25, total: 1 }));
   });
@@ -101,4 +102,21 @@ test("disabled runtime shows an actionable status instead of an empty inbox", as
   const h = await mount(t, { unavailable: true });
   await until(() => h.container.querySelector('[role="alert"]'));
   assert.match(h.container.textContent, /todavía no está activada/); assert.equal(h.posts.length, 0);
+});
+test("Pin AI suggestion is reviewed and edited before a separate manual send", async t => {
+  const h = await mount(t, { aiEnabled: true }); await selectThread(h);
+  await act(async () => [...h.container.querySelectorAll("button")].find(b => b.textContent === "Sugerir respuesta con Pin AI").click());
+  await until(() => h.container.textContent.includes("Aún no enviada"));
+  assert.equal(h.posts.length, 1); assert.ok(h.posts[0].path.endsWith("/pin-ai-draft"));
+  assert.equal(h.posts[0].messageId, "msg-1"); assert.equal(h.container.querySelector("textarea").value, "");
+  await act(async () => [...h.container.querySelectorAll("button")].find(b => b.textContent === "Usar y editar respuesta").click());
+  assert.equal(h.container.querySelector("textarea").value, "Tenemos estacionamiento en la propiedad.");
+  assert.equal(h.posts.length, 1);
+  await compose(h, "Tenemos un espacio de estacionamiento.");
+  await until(() => h.posts.length === 2);
+  assert.ok(h.posts[1].path.endsWith("/messages")); assert.equal(h.posts[1].text, "Tenemos un espacio de estacionamiento.");
+});
+test("Pin AI stays hidden for properties outside the enabled scope", async t => {
+  const h = await mount(t); await selectThread(h);
+  assert.ok(!h.container.textContent.includes("Sugerir respuesta con Pin AI"));
 });
