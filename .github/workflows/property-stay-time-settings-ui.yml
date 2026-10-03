@@ -6,6 +6,11 @@ on:
       - "src/components/properties/StayTimeSettingsCard.tsx"
       - "src/components/properties/stayTimeSettings*"
       - "src/api/stayTimeSettings.ts"
+      - "src/api/stayTimeReviews.ts"
+      - "src/pages/admin/AdminStayTimeReviewPage.tsx"
+      - "src/pages/admin/stayTimeReviews.interaction.test.mjs"
+      - "src/app/routes/router.tsx"
+      - "src/app/layout/AppShell.tsx"
       - "src/api/availabilityConflicts.ts"
       - "src/components/properties/AvailabilityConflictReview.tsx"
       - "src/components/properties/OperationalIntelligencePanel.tsx"
@@ -31,5 +36,7 @@ jobs:
       - run: node --test src/components/properties/availabilityConflicts.interaction.test.mjs
       - run: npx eslint src/api/availabilityConflicts.ts src/components/properties/AvailabilityConflictReview.tsx src/components/properties/OperationalIntelligencePanel.tsx
       - run: npx eslint src/api/stayTimeSettings.ts src/components/properties/stayTimeSettingsForm.ts src/components/properties/StayTimeSettingsCard.tsx
+      - run: node --test src/pages/admin/stayTimeReviews.interaction.test.mjs
+      - run: npx eslint src/api/stayTimeReviews.ts src/pages/admin/AdminStayTimeReviewPage.tsx
       - run: npx tsc -p tsconfig.app.json --noEmit
       - run: npm run build

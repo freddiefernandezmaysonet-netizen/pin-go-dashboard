@@ -52,6 +52,7 @@ import BillingPolicyPage from "../../pages/BillingPolicyPage";
 import OnboardingPage from "../../pages/OnboardingPage";
 import AdminSalesFollowupsPage from "../../pages/admin/AdminSalesFollowupsPage";
 import AdminDemoCenterPage from "../../pages/admin/AdminDemoCenterPage";
+import AdminStayTimeReviewPage from "../../pages/admin/AdminStayTimeReviewPage";
 import AdminBrandingPage from "../../pages/admin/AdminBrandingPage";
 import PublicBookingSitePage from "../../pages/public-booking/PublicBookingSitePage";
 import PublicPropertyDetailPage from "../../pages/public-booking/PublicPropertyDetailPage";
@@ -339,6 +340,7 @@ export const router = createBrowserRouter([
       { path: "/billing/success", element: <BillingSuccessPage /> },
       { path: "/billing/cancel", element: <BillingCancelPage /> },
 
+      { path: "/admin/stay-time-review", element: <PlatformAdminRoute><AdminStayTimeReviewPage /></PlatformAdminRoute> },
       {
         path: "/admin/branding",
         element: (

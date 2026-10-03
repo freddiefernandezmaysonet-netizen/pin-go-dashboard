@@ -76,6 +76,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/admin/sales-followups")) return "Sales Follow-ups";
   if (pathname.startsWith("/admin/financial")) return "Admin Financial";
   if (pathname.startsWith("/admin/demo-center")) return "Demo Center";
+  if (pathname.startsWith("/admin/stay-time-review")) return "Pin AI Recovery";
   if (pathname.startsWith("/admin/branding")) return "Enterprise Branding";
   if (pathname.startsWith("/admin/review-moderation")) return "Review Moderation";
  
@@ -211,6 +212,7 @@ const roleNav =
         { to: "/admin/financial", label: "Admin Financial" },
         { to: "/admin/sales-followups", label: "Sales Follow-ups" },
         { to: "/admin/demo-center", label: "Demo Center" },
+        { to: "/admin/stay-time-review", label: "Pin AI Recovery" },
         { to: "/admin/branding", label: "Enterprise Branding" },
         ...(reviewsE1Enabled
           ? [{ to: "/admin/review-moderation", label: "Review Moderation" }]
