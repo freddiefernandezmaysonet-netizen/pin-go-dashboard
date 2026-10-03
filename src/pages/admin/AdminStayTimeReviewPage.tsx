@@ -10,7 +10,7 @@ const copy = {
     note: "Nota interna de revisión", save: "Registrar revisión", saving: "Guardando…", saved: "Revisión registrada. El incidente conserva su estado.",
     meaning: "Registrar una revisión no cierra el incidente ni ejecuta cobros, devoluciones o cambios de acceso. El sistema lo cierra al confirmar la recuperación.",
     access: "El estado de este cambio no certifica el funcionamiento del acceso físico.", history: "Historial", recent: "Se muestran las últimas 50 entradas.",
-    early: "Entrada anticipada", late: "Salida tardía", schedule: "Cambio de horario", paid: "Cobro verificado", refunded: "Devolución confirmada", unpaid: "Sesión vencida sin intento de pago", unverified: "Pago sin verificar",
+    early: "Entrada anticipada", late: "Salida tardía", schedule: "Cambio de horario", paid: "Cobro verificado", refunded: "Devolución confirmada", unpaid: "Sesión vencida · ausencia de cobro confirmada", unverified: "Pago sin verificar",
     payment: "Evidencia de pago", charge: "Cargo adicional", attempts: "Intentos de recuperación", next: "Próximo intento", reconciliation: "Conciliación completada", yes: "Sí", no: "Pendiente",
     state: "Estado del cambio", review: "Revisión del operador", event: "Estado de recuperación", time: "Zona horaria", resolved: "Resuelto", pending: "Requiere revisión" },
   en: { title: "Stay-time review · Pin AI", intro: "Early check-in and late checkout incidents requiring Pin&Go attention.",
@@ -20,7 +20,7 @@ const copy = {
     note: "Internal review note", save: "Record review", saving: "Saving…", saved: "Review recorded. The incident retains its state.",
     meaning: "Recording a review does not close the incident or execute payments, refunds or access changes. The system closes it after confirmed recovery.",
     access: "This change's status does not certify physical access operation.", history: "History", recent: "Showing the latest 50 entries.",
-    early: "Early check-in", late: "Late checkout", schedule: "Schedule change", paid: "Payment verified", refunded: "Refund confirmed", unpaid: "Checkout expired without a payment attempt", unverified: "Payment unverified",
+    early: "Early check-in", late: "Late checkout", schedule: "Schedule change", paid: "Payment verified", refunded: "Refund confirmed", unpaid: "Checkout expired · verified no payment", unverified: "Payment unverified",
     payment: "Payment evidence", charge: "Additional charge", attempts: "Recovery attempts", next: "Next attempt", reconciliation: "Reconciliation completed", yes: "Yes", no: "Pending",
     state: "Change status", review: "Operator review", event: "Recovery state", time: "Timezone", resolved: "Resolved", pending: "Review required" },
 };

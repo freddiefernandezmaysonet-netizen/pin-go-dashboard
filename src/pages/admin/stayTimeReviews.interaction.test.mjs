@@ -102,6 +102,6 @@ test("confirmed unpaid expiry is distinct from unverified payment and has no rev
   const expired = { ...item(), state: "RESOLVED", modificationStatus: "EXPIRED", paymentEvidence: "UNPAID" };
   const app = await mount(t, { list: async () => ({ items: [expired], nextCursor: null }),
     read: async () => ({ item: expired, history: [], historyHasMore: false }) });
-  await app.open(); assert.match(app.container.textContent, /Sesión vencida sin intento de pago/);
+  await app.open(); assert.match(app.container.textContent, /Sesión vencida · ausencia de cobro confirmada/);
   assert.doesNotMatch(app.container.textContent, /Pago sin verificar/); assert.equal(app.container.querySelector("textarea"), null);
 });
