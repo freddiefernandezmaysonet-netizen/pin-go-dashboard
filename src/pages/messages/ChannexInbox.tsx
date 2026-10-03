@@ -4,9 +4,10 @@ import "./ChannexInbox.css";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 type Message = { id: string; text: string; sender: "guest" | "property"; insertedAt: string; attachments: string[] };
-type Thread = { id: string; title: string; provider: string; isClosed: boolean; bookingId: string | null; messageCount: number };
+type Thread = { id: string; title: string; provider: string; isClosed: boolean; bookingId: string | null; messageCount: number; needsHost?: boolean };
 type List<T> = { items: T[]; page: number; limit: number; total: number };
 type AIDraft = { text: string; requiresHumanReview: boolean; basedOnMessageId: string; sent: false };
+type Automation = { enabled: boolean; mode: "AUTO" | "HUMAN" | "OFF"; reason: string | null; sending: boolean };
 class InboxFailure extends Error {
   code: string;
   constructor(code: string) { super(code); this.code = code; }
@@ -23,6 +24,8 @@ async function request<T>(path: string, signal?: AbortSignal, init?: RequestInit
 }
 function errorText(error: unknown) {
   if (error instanceof InboxFailure) {
+    if (error.code === "PIN_AI_SEND_IN_PROGRESS") return "Pin AI ya estaba enviando una respuesta. La conversación quedó pausada; actualiza el historial antes de responder.";
+    if (error.code === "PIN_AI_CONVERSATION_BUSY") return "Pin AI está terminando el mensaje actual. Actualiza el historial y vuelve a intentarlo.";
     if (error.code === "PIN_AI_DRAFT_DISABLED" || error.code === "PIN_AI_DRAFT_NOT_CONFIGURED") return "Pin AI aún no está habilitado para esta propiedad.";
     if (error.code === "PIN_AI_DRAFT_NO_PENDING_MESSAGE" || error.code === "PIN_AI_DRAFT_CONVERSATION_CHANGED") return "La conversación cambió. Actualiza el historial antes de generar otra sugerencia.";
     if (error.code === "PIN_AI_DRAFT_ATTACHMENT_REVIEW") return "Revisa los adjuntos en el canal antes de responder. Pin AI todavía no los interpreta.";
@@ -55,9 +58,20 @@ function HostInbox({ actor }: { actor: string }) {
   const threads = useQuery({ queryKey: ["channex-inbox-threads", actor, property, threadPage], enabled: Boolean(property), retry: false,
     queryFn: ({ signal }) => request<List<Thread>>(`${path}?page=${threadPage}&limit=25`, signal) });
   const messages = useQuery({ queryKey: ["channex-inbox-messages", actor, property, selected?.id, messagePage], enabled: Boolean(property && selected), retry: false,
-    queryFn: ({ signal }) => request<List<Message> & { thread: Thread }>(`${path}/${selected!.id}/messages?page=${messagePage}&limit=25`, signal) });
+    queryFn: ({ signal }) => request<List<Message> & { thread: Thread; automation?: Automation }>(`${path}/${selected!.id}/messages?page=${messagePage}&limit=25`, signal) });
   useEffect(() => { setText(""); setNotice(""); setUncertain(false); setAIDraft(null); }, [property, selected?.id]);
   const current = messages.data?.thread ?? selected;
+  const automation = messages.data?.automation;
+  async function controlAI(mode: "AUTO" | "HUMAN") {
+    if (!selected || sending || generating) return;
+    setSending(true); setNotice("");
+    try {
+      await request(`${path}/${selected.id}/pin-ai-control`, undefined, { method: "POST", body: JSON.stringify({ mode }) });
+      await messages.refetch();
+      setNotice(mode === "AUTO" ? "Pin AI responderá a los mensajes nuevos que lleguen a partir de ahora." : "Conversación pausada para que el host la atienda.");
+    } catch (error) { setNotice(errorText(error)); }
+    finally { setSending(false); }
+  }
   const latest = [...(messages.data?.items ?? [])].sort((a, b) => Date.parse(b.insertedAt) - Date.parse(a.insertedAt) || b.id.localeCompare(a.id))[0];
   const aiEnabled = properties.data?.items.find(p => p.id === property)?.pinAIDraftsEnabled === true;
   async function suggest() {
@@ -84,7 +98,11 @@ function HostInbox({ actor }: { actor: string }) {
       await request(`${path}/${selected.id}/messages`, undefined, { method: "POST", headers: { "idempotency-key": pending.key }, body: JSON.stringify({ text: pending.text }) });
       sessionStorage.removeItem(storageKey); setText(""); setMessagePage(1); setNotice("Respuesta aceptada por Channex.");
       await Promise.all([client.invalidateQueries({ queryKey: ["channex-inbox-messages", actor, property, selected.id] }), client.invalidateQueries({ queryKey: ["channex-inbox-threads", actor, property] })]);
-    } catch (error) { setUncertain(true); setNotice(errorText(error)); }
+    } catch (error) {
+      const notSent = error instanceof InboxFailure && error.code === "PIN_AI_SEND_IN_PROGRESS";
+      if (notSent) sessionStorage.removeItem(storageKey);
+      setUncertain(!notSent); setNotice(errorText(error));
+    }
     finally { setSending(false); }
   }
   const box = { border: "1px solid #e5e7eb", borderRadius: 16, padding: 18, background: "#fff" };
@@ -108,6 +126,7 @@ function HostInbox({ actor }: { actor: string }) {
           style={{ display: "block", width: "100%", textAlign: "left", padding: 12, marginTop: 8 }}
           onClick={() => { setSelected(t); setMessagePage(1); }}>
           <strong>{t.title}</strong><br />{t.provider} · {t.bookingId ? "Reserva" : "Consulta sin reserva"}{t.isClosed ? " · Cerrada" : ""}
+          {t.needsHost && <strong style={{ display: "block", color: "#92400e" }}>Atención del host</strong>}
         </button>)}
         <nav aria-label="Páginas de conversaciones" style={{ marginTop: 12 }}>
           <button disabled={sending || threadPage === 1 || threads.isFetching} onClick={() => setThreadPage(p => p - 1)}>Anterior</button>
@@ -119,6 +138,12 @@ function HostInbox({ actor }: { actor: string }) {
         {!selected && <p>Selecciona una conversación para ver sus mensajes.</p>}
         {selected && <>
           <h3>{current?.title}</h3>
+          {automation?.enabled && <aside style={{ ...box, marginBottom: 12 }} aria-label="Control de Pin AI">
+            <strong>{automation.mode === "AUTO" ? "Pin AI · Respuestas automáticas" : "Pin AI · Atención del host"}</strong>
+            <p>{automation.mode === "AUTO" ? "Pin AI responde las consultas que puede resolver. Si escribes, la conversación queda a tu cargo." : automation.reason === "HOST_TAKEOVER" ? "La conversación está a cargo del host." : "Esta conversación requiere tu revisión. Pin AI está pausado."}</p>
+            {automation.sending && <p role="status">Hay una respuesta en proceso de envío.</p>}
+            <button disabled={sending || generating || automation.sending} onClick={() => void controlAI(automation.mode === "AUTO" ? "HUMAN" : "AUTO")}>{automation.mode === "AUTO" ? "Tomar conversación" : "Devolver a Pin AI"}</button>
+          </aside>}
           <button disabled={sending || messages.isFetching} onClick={() => void messages.refetch()}>Actualizar historial</button>
           {messages.isPending && <p role="status">Cargando mensajes…</p>}
           {messages.error && <p role="alert">{errorText(messages.error)}</p>}

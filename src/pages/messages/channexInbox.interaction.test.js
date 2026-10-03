@@ -27,10 +27,11 @@ async function until(check) {
   }
   assert.fail("Inbox did not reach expected state");
 }
-async function mount(t, { unknown = false, closed = false, unavailable = false, aiEnabled = false } = {}) {
+async function mount(t, { unknown = false, closed = false, unavailable = false, aiEnabled = false, automatic = false } = {}) {
   sessionStorage.clear();
   const posts = [], thread = { id: "thread-1", title: "Consulta de Ana", provider: "Airbnb", isClosed: closed, bookingId: null, messageCount: 1 };
   const history = [{ id: "msg-1", text: "¿Está disponible?", sender: "guest", insertedAt: "2026-10-03T01:00:00Z", attachments: [] }];
+  const automation = { enabled: automatic, mode: automatic ? "AUTO" : "OFF", reason: null, sending: false };
   t.mock.method(globalThis, "fetch", async (raw, init) => {
     const url = new URL(raw);
     assert.equal(url.origin, "https://api.example.test");
@@ -38,13 +39,14 @@ async function mount(t, { unknown = false, closed = false, unavailable = false, 
     if (unavailable) return new Response(JSON.stringify({ error: "HOST_INBOX_DISABLED" }), { status: 503 });
     if (init.method === "POST") {
       posts.push({ path: url.pathname, key: init.headers["idempotency-key"], ...JSON.parse(init.body) });
+      if (url.pathname.endsWith("/pin-ai-control")) { automation.mode = JSON.parse(init.body).mode; automation.reason = automation.mode === "HUMAN" ? "HOST_TAKEOVER" : null; return new Response(JSON.stringify(automation)); }
       if (url.pathname.endsWith("/pin-ai-draft")) return new Response(JSON.stringify({ text: "Tenemos estacionamiento en la propiedad.", requiresHumanReview: false, basedOnMessageId: "msg-1", sent: false }));
       if (unknown) return new Response(JSON.stringify({ error: "HOST_INBOX_SEND_OUTCOME_UNKNOWN" }), { status: 409 });
       history.push({ ...history[0], id: "msg-2", sender: "property", text: JSON.parse(init.body).text });
       return new Response(JSON.stringify({ message: history[1], replayed: false }));
     }
     if (url.pathname.endsWith("/properties")) return new Response(JSON.stringify({ items: [{ id: "p1", name: "Casa Uno", pinAIDraftsEnabled: aiEnabled }, { id: "p2", name: "Casa Dos" }] }));
-    if (url.pathname.endsWith("/messages")) return new Response(JSON.stringify({ thread, items: history, page: 1, limit: 25, total: history.length }));
+    if (url.pathname.endsWith("/messages")) return new Response(JSON.stringify({ thread, items: history, page: 1, limit: 25, total: history.length, automation }));
     return new Response(JSON.stringify({ items: [thread], page: 1, limit: 25, total: 1 }));
   });
   const container = document.createElement("div"); document.body.append(container);
@@ -119,4 +121,14 @@ test("Pin AI suggestion is reviewed and edited before a separate manual send", a
 test("Pin AI stays hidden for properties outside the enabled scope", async t => {
   const h = await mount(t); await selectThread(h);
   assert.ok(!h.container.textContent.includes("Sugerir respuesta con Pin AI"));
+});
+test("automatic mode needs no approval button and host can pause then resume future replies", async t => {
+  const h = await mount(t, { automatic: true }); await selectThread(h);
+  assert.match(h.container.textContent, /Respuestas automáticas/); assert.equal(h.posts.length, 0);
+  await act(async () => [...h.container.querySelectorAll("button")].find(b => b.textContent === "Tomar conversación").click());
+  await until(() => h.container.textContent.includes("Atención del host"));
+  assert.equal(h.posts[0].mode, "HUMAN");
+  await act(async () => [...h.container.querySelectorAll("button")].find(b => b.textContent === "Devolver a Pin AI").click());
+  await until(() => h.container.textContent.includes("a partir de ahora"));
+  assert.equal(h.posts[1].mode, "AUTO"); assert.ok(h.posts.every(p => p.path.endsWith("/pin-ai-control")));
 });
