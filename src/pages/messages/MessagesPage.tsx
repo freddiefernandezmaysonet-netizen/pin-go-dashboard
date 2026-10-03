@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import ChannexInbox from "./ChannexInbox";
+import { useAuth } from "../../auth/AuthProvider";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
@@ -173,6 +175,7 @@ function uniquePropertiesFromMessages(items: MessageRow[]): PropertyOption[] {
 }
 
 export default function MessagesPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
@@ -269,6 +272,7 @@ export default function MessagesPage() {
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
+      {user && <ChannexInbox actor={`${user.orgId}:${user.id}`} />}
       <div>
         <h1 style={{ fontSize: 30, fontWeight: 700, margin: 0 }}>Messages</h1>
         <p style={{ color: "#666", marginTop: 8 }}>

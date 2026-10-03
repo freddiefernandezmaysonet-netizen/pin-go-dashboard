@@ -1,0 +1,24 @@
+name: Channex Host Inbox V1
+on:
+  pull_request:
+    paths:
+      - 'src/pages/messages/**'
+      - 'tsconfig.channex-host-inbox.json'
+      - '.github/workflows/channex-host-inbox-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test src/pages/messages/channexInbox.interaction.test.js src/pages/messages/messagesDeliveryOutcome.contract.test.js
+      - run: npx tsc -p tsconfig.channex-host-inbox.json
+      - run: npx eslint src/pages/messages/ChannexInbox.tsx
+      - run: npm run build
