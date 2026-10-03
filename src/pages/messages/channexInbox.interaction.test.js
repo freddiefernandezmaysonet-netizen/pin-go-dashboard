@@ -15,7 +15,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { act, createElement } = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
-let output = ts.transpileModule(readFileSync(new URL("./ChannexInbox.tsx", import.meta.url), "utf8").replace("import.meta.env.VITE_API_BASE", '"https://api.example.test"'), {
+let output = ts.transpileModule(readFileSync(new URL("./ChannexInbox.tsx", import.meta.url), "utf8").replace('import "./ChannexInbox.css";', "").replace("import.meta.env.VITE_API_BASE", '"https://api.example.test"'), {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 for (const specifier of ["react", "react/jsx-runtime", "@tanstack/react-query"]) output = output.replaceAll(JSON.stringify(specifier), JSON.stringify(import.meta.resolve(specifier)));

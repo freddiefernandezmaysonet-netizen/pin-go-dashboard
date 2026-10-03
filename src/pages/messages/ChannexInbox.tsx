@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import "./ChannexInbox.css";
 
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 type Message = { id: string; text: string; sender: "guest" | "property"; insertedAt: string; attachments: string[] };
@@ -65,7 +66,7 @@ function HostInbox({ actor }: { actor: string }) {
     finally { setSending(false); }
   }
   const box = { border: "1px solid #e5e7eb", borderRadius: 16, padding: 18, background: "#fff" };
-  return <section style={box} aria-label="Conversaciones de canales">
+  return <section className="channex-host-inbox" style={box} aria-label="Conversaciones de canales">
     <h2 style={{ marginTop: 0 }}>Conversaciones con huéspedes</h2>
     <p>Lee y responde mensajes de Airbnb, Booking.com y Expedia.</p>
     {properties.isPending && <p role="status">Cargando propiedades…</p>}
@@ -100,7 +101,7 @@ function HostInbox({ actor }: { actor: string }) {
           {messages.isPending && <p role="status">Cargando mensajes…</p>}
           {messages.error && <p role="alert">{errorText(messages.error)}</p>}
           {messages.data?.items.length === 0 && <p>Esta conversación aún no tiene mensajes.</p>}
-          {[...(messages.data?.items ?? [])].reverse().map(m => <article key={m.id} style={{ ...box, marginTop: 10, background: m.sender === "property" ? "#f0fdf4" : "#f9fafb" }}>
+          {[...(messages.data?.items ?? [])].reverse().map(m => <article key={m.id} style={{ ...box, marginTop: 10, background: m.sender === "property" ? "#eff6ff" : "#f9fafb" }}>
             <strong>{m.sender === "property" ? "Propiedad" : "Huésped"}</strong> · <time dateTime={m.insertedAt}>{new Date(m.insertedAt).toLocaleString()}</time>
             <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{m.text}</p>
             {m.attachments.length > 0 && <p>{m.attachments.length} adjunto(s) en el canal.</p>}
