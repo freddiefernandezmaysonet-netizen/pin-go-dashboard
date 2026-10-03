@@ -61,6 +61,25 @@ async function input(el, value) { const input = el.querySelector("textarea"); aw
 async function select(el, value) { await act(async () => { const s = el.querySelector("select"); s.value = value; s.dispatchEvent(new dom.window.Event("change", { bubbles: true })); }); }
 function fakeApi() { let current = sample(); const commands = []; return { commands, api: { list: async () => ({ items: [current], nextCursor: null }), read: async () => structuredClone(current), command: async (ref, command) => { commands.push({ ref, command }); current = { ...current, version: current.version + 1, state: command.operation === "RESOLVE" ? "RESOLVED" : current.state, messages: [...current.messages, { id: command.requestId, sequence: current.version + 1, kind: command.operation, audience: command.operation === "PUBLISH" ? "GUEST" : "INTERNAL", createdAt: "2026-09-27T19:00:00Z", text: command.text }] }; return { eventId: command.requestId }; } } }; }
 
+test("channel publication confirms the channel destination and distinguishes queued from sent", async t => {
+  const { api, commands } = fakeApi(); const read = api.read; let deliveryStatus = "QUEUED";
+  api.read = async () => { const thread = await read(); return { ...thread, destination: "CHANNEL", messages: thread.messages.map(m => ({ ...m, deliveryStatus })) }; };
+  const { el } = await mount(t, HostIncidentWorkspace, { api, reference, onSelect() {} });
+  await until(() => el.querySelector("textarea")); await select(el, "PUBLISH");
+  assert.match(el.textContent, /se enviará al canal de la reserva/); assert.doesNotMatch(el.textContent, /visible en el portal/);
+  await input(el, "A technician will visit at 5."); await click(el, "Revisar acción");
+  assert.match(el.textContent, /Confirma el envío de este texto exacto al canal/); assert.equal(commands.length, 0);
+  await click(el, "Confirmar acción"); await until(() => el.textContent.includes("Pendiente de envío al canal"));
+  assert.doesNotMatch(el.textContent, /Actualización publicada en el portal|Enviado al canal de la reserva;/);
+  deliveryStatus = "SENT"; await click(el, "Actualizar caso"); await until(() => el.textContent.includes("Enviado al canal de la reserva; lectura no confirmada"));
+});
+test("historical channel publications without a send receipt are not labeled guest-visible", async t => {
+  const { api } = fakeApi(); api.read = async () => ({ ...sample(), destination: "CHANNEL", messages: [{ id: "old", kind: "PUBLISH", audience: "GUEST", sequence: 1, createdAt: "2026-09-27T19:00:00Z", text: "Previously saved" }] });
+  const { el } = await mount(t, HostIncidentWorkspace, { api, reference, onSelect() {} });
+  await until(() => el.textContent.includes("Previously saved"));
+  assert.match(el.textContent, /Guardado; no enviado al canal/); assert.doesNotMatch(el.textContent, /Visible en el portal|Enviado al canal de la reserva;/);
+});
+
 test("API uses session auth, scopes reference and paginates a consistent history", async t => {
   const calls = []; t.mock.method(globalThis, "fetch", async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200, json: async () => ({ ok: true, ...sample(), messages: [{ id: String(calls.length) }], nextAfter: calls.length === 1 ? 100 : null }) }; });
   const api = createIncidentApi("https://api.synthetic.test"); const result = await api.read(reference);

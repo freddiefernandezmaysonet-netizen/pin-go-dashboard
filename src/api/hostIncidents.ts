@@ -1,8 +1,8 @@
 export type HostOperation = "NOTE" | "ACKNOWLEDGE" | "PUBLISH" | "RESOLVE";
 export type HostCommand = { requestId: string; expectedVersion: number; operation: HostOperation; text: string };
 export type HostIncident = { reference: string; state: string; propertyName: string; reservationNumber: string | null };
-export type HostEvent = { id: string; sequence: number; kind: HostOperation; audience: "INTERNAL" | "GUEST"; createdAt: string; text: string };
-export type HostThread = HostIncident & { version: number; reportedFacts: string; acknowledgedAt: string | null; messages: HostEvent[]; nextAfter: number | null };
+export type HostEvent = { id: string; sequence: number; kind: HostOperation; audience: "INTERNAL" | "GUEST"; createdAt: string; text: string; deliveryStatus?: string };
+export type HostThread = HostIncident & { destination?: "PORTAL" | "CHANNEL"; version: number; reportedFacts: string; acknowledgedAt: string | null; messages: HostEvent[]; nextAfter: number | null };
 export class IncidentApiError extends Error {
   status: number;
   constructor(status: number, code: string) { super(code); this.status = status; }
