@@ -189,6 +189,8 @@ type PropertyItem = {
   id: string;
   name: string;
   address1?: string | null;
+  complexName?: string | null;
+  unitNumber?: string | null;
   city?: string | null;
   region?: string | null;
   country?: string | null;
@@ -338,6 +340,8 @@ export function PropertyEditPage() {
  const [form, setForm] = useState({
     name: "",
     address1: "",
+    complexName: "",
+    unitNumber: "",
     city: "",
     region: "",
     country: "",
@@ -618,6 +622,8 @@ fetch(`${API_BASE}/api/dashboard/properties/${id}/holiday-pricing`, {
         setForm({
           name: p.name ?? "",
           address1: p.address1 ?? "",
+          complexName: p.complexName ?? "",
+          unitNumber: p.unitNumber ?? "",
           city: p.city ?? "",
           region: p.region ?? "",
           country: p.country ?? "",
@@ -780,6 +786,8 @@ cleaningFee:
         body: JSON.stringify({
           name: form.name,
           address1: form.address1,
+          complexName: form.complexName,
+          unitNumber: form.unitNumber,
           city: form.city,
           region: form.region,
           country: form.country,
@@ -1660,6 +1668,20 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
             />
           </div>
 
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <label htmlFor="property-complex-name" style={labelStyle}>Complejo / edificio (opcional)</label>
+            <input id="property-complex-name" value={form.complexName} maxLength={120}
+              onChange={(e) => setForm((s) => ({ ...s, complexName: e.target.value }))}
+              placeholder="Nombre del complejo" style={inputStyle} />
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <label htmlFor="property-unit-number" style={labelStyle}>Apartamento / unidad (opcional)</label>
+            <input id="property-unit-number" value={form.unitNumber} maxLength={32}
+              onChange={(e) => setForm((s) => ({ ...s, unitNumber: e.target.value }))}
+              placeholder="Ej. 107B" style={inputStyle} />
+            <div style={helperTextStyle}>Se incluye en las instrucciones de llegada y acceso del huésped.</div>
+          </div>
 
           <div style={{ display: "grid", gap: 8 }}>
             <div style={labelStyle}>Address</div>
