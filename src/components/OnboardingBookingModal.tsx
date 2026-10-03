@@ -5,6 +5,8 @@ type Props = {
   onClose: () => void;
   lang?: "es" | "en";
   bookingType?: "onboarding" | "demo";
+  initialTopic?: string;
+  previewOnly?: boolean;
 };
 
 type Slot = {
@@ -17,6 +19,8 @@ export default function OnboardingBookingModal({
   onClose,
   lang = "es",
   bookingType = "onboarding",
+  initialTopic = "",
+  previewOnly = false,
 }: Props) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const API_BASE = import.meta.env.VITE_API_BASE ?? "";
@@ -25,7 +29,7 @@ export default function OnboardingBookingModal({
     name: "",
     email: "",
     phone: "",
-    topic: "",
+    topic: initialTopic,
     remoteAssistanceRequested: false,
   });
 
@@ -35,12 +39,13 @@ useEffect(() => {
       ...prev,
       topic:
         prev.topic ||
+        initialTopic ||
         (lang === "es"
           ? "Llamada informativa sobre Pin&Go"
           : "Informational call about Pin&Go"),
     }));
   }
-}, [bookingType, lang]);
+}, [bookingType, initialTopic, lang]);
 
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -76,6 +81,8 @@ const t =
         loadingSlots: "Buscando horarios...",
         selectDate: "Selecciona una fecha para ver horarios disponibles.",
         noSlots: "No hay horarios disponibles para esta fecha.",
+        previewNotice:
+          "Vista previa visual: el formulario está desactivado y no enviará datos.",
         successTitle: isDemo
           ? "Llamada agendada"
           : "Cita agendada",
@@ -101,6 +108,7 @@ const t =
   loadingSlots: "Loading availability...",
   selectDate: "Select a date to view available times.",
   noSlots: "No available times for this date.",
+  previewNotice: "Visual preview: this form is disabled and will not send data.",
   successTitle: isDemo
     ? "Info call scheduled"
     : "Appointment scheduled",
@@ -115,6 +123,8 @@ const t =
       return;
     }
 
+    const controller = new AbortController();
+
     async function loadAvailability() {
       setLoadingSlots(true);
       setSelectedTime("");
@@ -124,8 +134,11 @@ const t =
           `${API_BASE}/api/onboarding/appointments/availability?date=${encodeURIComponent(
             selectedDate
           )}&timezone=${encodeURIComponent(timezone)}`
+          , { signal: controller.signal }
         );
         const data = await res.json();
+
+        if (controller.signal.aborted) return;
 
         if (data.ok) {
           setSlots(data.slots ?? []);
@@ -133,20 +146,25 @@ const t =
           setSlots([]);
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error(err);
         setSlots([]);
       } finally {
-        setLoadingSlots(false);
+        if (!controller.signal.aborted) setLoadingSlots(false);
       }
     }
 
     loadAvailability();
+
+    return () => controller.abort();
   }, [API_BASE, isOpen, selectedDate, timezone]);
 
   if (!isOpen) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (previewOnly) return;
 
     if (!selectedDate || !selectedTime) {
       alert(lang === "es" ? "Selecciona fecha y hora." : "Select date and time.");
@@ -185,9 +203,17 @@ const t =
     }
   }
 
+  const submitDisabled =
+    previewOnly || loading || !selectedDate || !selectedTime;
+
   return (
     <div style={styles.overlay}>
-      <div style={styles.modal}>
+      <div
+        style={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.title}
+      >
         {!success ? (
           <>
             <div style={styles.header}>
@@ -196,12 +222,23 @@ const t =
                 <p style={styles.subtitle}>{t.subtitle}</p>
               </div>
 
-              <button type="button" onClick={onClose} style={styles.closeIcon}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={styles.closeIcon}
+                aria-label={t.close}
+              >
                 ×
               </button>
             </div>
 
             <form onSubmit={handleSubmit} style={styles.form}>
+              {previewOnly && (
+                <p role="status" aria-live="polite" style={styles.previewNotice}>
+                  {t.previewNotice}
+                </p>
+              )}
+
               <input
                 placeholder={t.name}
                 value={form.name}
@@ -289,14 +326,11 @@ const t =
 
               <button
                 type="submit"
-                disabled={loading || !selectedDate || !selectedTime}
+                disabled={submitDisabled}
                 style={{
                   ...styles.primaryButton,
-                  opacity: loading || !selectedDate || !selectedTime ? 0.7 : 1,
-                  cursor:
-                    loading || !selectedDate || !selectedTime
-                      ? "not-allowed"
-                      : "pointer",
+                  opacity: submitDisabled ? 0.7 : 1,
+                  cursor: submitDisabled ? "not-allowed" : "pointer",
                 }}
               >
                 {loading ? t.loading : t.submit}
@@ -397,6 +431,17 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "4px 0",
     color: "#64748b",
     fontSize: 13,
+  },
+  previewNotice: {
+    margin: 0,
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e3a5f",
+    fontSize: 13,
+    fontWeight: 600,
+    lineHeight: 1.5,
   },
   slotGrid: {
     display: "grid",
