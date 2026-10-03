@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import "./ChannexInbox.css";
 
@@ -6,6 +6,7 @@ const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 type Message = { id: string; text: string; sender: "guest" | "property"; insertedAt: string; attachments: string[] };
 type Thread = { id: string; title: string; provider: string; isClosed: boolean; bookingId: string | null; messageCount: number };
 type List<T> = { items: T[]; page: number; limit: number; total: number };
+type AIDraft = { text: string; requiresHumanReview: boolean; basedOnMessageId: string; sent: false };
 class InboxFailure extends Error {
   code: string;
   constructor(code: string) { super(code); this.code = code; }
@@ -22,6 +23,11 @@ async function request<T>(path: string, signal?: AbortSignal, init?: RequestInit
 }
 function errorText(error: unknown) {
   if (error instanceof InboxFailure) {
+    if (error.code === "PIN_AI_DRAFT_DISABLED" || error.code === "PIN_AI_DRAFT_NOT_CONFIGURED") return "Pin AI aún no está habilitado para esta propiedad.";
+    if (error.code === "PIN_AI_DRAFT_NO_PENDING_MESSAGE" || error.code === "PIN_AI_DRAFT_CONVERSATION_CHANGED") return "La conversación cambió. Actualiza el historial antes de generar otra sugerencia.";
+    if (error.code === "PIN_AI_DRAFT_ATTACHMENT_REVIEW") return "Revisa los adjuntos en el canal antes de responder. Pin AI todavía no los interpreta.";
+    if (error.code === "PIN_AI_DRAFT_RESERVATION_NOT_LINKED") return "La reserva aún no está vinculada en Pin&Go. Responde manualmente mientras se completa la sincronización.";
+    if (error.code === "PIN_AI_DRAFT_BUSY") return "Pin AI está preparando otra respuesta. Intenta de nuevo en un momento.";
     if (error.code === "HOST_INBOX_DISABLED") return "La bandeja de canales todavía no está activada.";
     if (error.code === "HOST_INBOX_FORBIDDEN") return "Esta bandeja está disponible para administradores de la propiedad.";
     if (error.code === "HOST_INBOX_APPLICATION_UNAVAILABLE") return "Messages aún no está disponible para esta propiedad en Channex.";
@@ -41,16 +47,32 @@ function HostInbox({ actor }: { actor: string }) {
   const [threadPage, setThreadPage] = useState(1), [messagePage, setMessagePage] = useState(1);
   const [text, setText] = useState(""), [sending, setSending] = useState(false), [notice, setNotice] = useState("");
   const [uncertain, setUncertain] = useState(false);
-  const properties = useQuery({ queryKey: ["channex-inbox-properties", actor], queryFn: ({ signal }) => request<{ items: { id: string; name: string }[] }>("/properties", signal), retry: false });
+  const [generating, setGenerating] = useState(false), [aiDraft, setAIDraft] = useState<AIDraft | null>(null);
+  const draftRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => draftRequest.current?.abort(), []);
+  const properties = useQuery({ queryKey: ["channex-inbox-properties", actor], queryFn: ({ signal }) => request<{ items: { id: string; name: string; pinAIDraftsEnabled?: boolean }[] }>("/properties", signal), retry: false });
   const path = `/properties/${encodeURIComponent(property)}/threads`;
   const threads = useQuery({ queryKey: ["channex-inbox-threads", actor, property, threadPage], enabled: Boolean(property), retry: false,
     queryFn: ({ signal }) => request<List<Thread>>(`${path}?page=${threadPage}&limit=25`, signal) });
   const messages = useQuery({ queryKey: ["channex-inbox-messages", actor, property, selected?.id, messagePage], enabled: Boolean(property && selected), retry: false,
     queryFn: ({ signal }) => request<List<Message> & { thread: Thread }>(`${path}/${selected!.id}/messages?page=${messagePage}&limit=25`, signal) });
-  useEffect(() => { setText(""); setNotice(""); setUncertain(false); }, [property, selected?.id]);
+  useEffect(() => { setText(""); setNotice(""); setUncertain(false); setAIDraft(null); }, [property, selected?.id]);
   const current = messages.data?.thread ?? selected;
+  const latest = [...(messages.data?.items ?? [])].sort((a, b) => Date.parse(b.insertedAt) - Date.parse(a.insertedAt) || b.id.localeCompare(a.id))[0];
+  const aiEnabled = properties.data?.items.find(p => p.id === property)?.pinAIDraftsEnabled === true;
+  async function suggest() {
+    if (!selected || !latest || generating || sending || uncertain || text.trim()) return;
+    const controller = new AbortController(); draftRequest.current = controller;
+    setGenerating(true); setNotice(""); setAIDraft(null);
+    try {
+      const result = await request<AIDraft>(`${path}/${selected.id}/pin-ai-draft`, controller.signal,
+        { method: "POST", body: JSON.stringify({ messageId: latest.id }) });
+      if (!controller.signal.aborted) setAIDraft(result);
+    } catch (error) { if (!controller.signal.aborted) setNotice(errorText(error)); }
+    finally { if (!controller.signal.aborted) setGenerating(false); }
+  }
   async function send() {
-    if (!selected || sending || uncertain || !text.trim()) return;
+    if (!selected || sending || generating || uncertain || !text.trim()) return;
     setSending(true); setNotice("");
     // Retain the same key and text after any failure, including browser/network failures.
     const storageKey = `channex-reply:v1:${actor}:${property}:${selected.id}`;
@@ -71,7 +93,7 @@ function HostInbox({ actor }: { actor: string }) {
     <p>Lee y responde mensajes de Airbnb, Booking.com y Expedia.</p>
     {properties.isPending && <p role="status">Cargando propiedades…</p>}
     {properties.error && <p role="alert">{errorText(properties.error)}</p>}
-    {properties.data && <label>Propiedad <select disabled={sending} value={property} onChange={e => { setProperty(e.target.value); setSelected(null); setThreadPage(1); setMessagePage(1); }}>
+    {properties.data && <label>Propiedad <select disabled={sending || generating} value={property} onChange={e => { setProperty(e.target.value); setSelected(null); setThreadPage(1); setMessagePage(1); }}>
       <option value="">Selecciona una propiedad</option>
       {properties.data.items.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
     </select></label>}
@@ -82,7 +104,7 @@ function HostInbox({ actor }: { actor: string }) {
         {threads.isPending && <p role="status">Cargando conversaciones…</p>}
         {threads.error && <p role="alert">{errorText(threads.error)}</p>}
         {threads.data?.items.length === 0 && <p>No hay conversaciones en esta página.</p>}
-        {threads.data?.items.map(t => <button key={t.id} disabled={sending} aria-pressed={selected?.id === t.id}
+        {threads.data?.items.map(t => <button key={t.id} disabled={sending || generating} aria-pressed={selected?.id === t.id}
           style={{ display: "block", width: "100%", textAlign: "left", padding: 12, marginTop: 8 }}
           onClick={() => { setSelected(t); setMessagePage(1); }}>
           <strong>{t.title}</strong><br />{t.provider} · {t.bookingId ? "Reserva" : "Consulta sin reserva"}{t.isClosed ? " · Cerrada" : ""}
@@ -112,9 +134,17 @@ function HostInbox({ actor }: { actor: string }) {
             <button disabled={sending || !messages.data || messagePage * 25 >= messages.data.total || messages.isFetching} onClick={() => setMessagePage(p => p + 1)}>Más antiguos</button>
           </nav>
           {current?.isClosed ? <p>Conversación cerrada.</p> : <form onSubmit={e => { e.preventDefault(); void send(); }}>
+            {aiEnabled && <button type="button" disabled={generating || sending || uncertain || Boolean(text.trim()) || messagePage !== 1 || latest?.sender !== "guest" || !messages.data || Boolean(messages.error)} onClick={() => void suggest()}>{generating ? "Pin AI está redactando…" : "Sugerir respuesta con Pin AI"}</button>}
+            {aiDraft && <aside aria-label="Sugerencia de Pin AI" style={{ ...box, background: "#f5f3ff", margin: "12px 0" }}>
+              <strong>Sugerencia de Pin AI · Aún no enviada</strong>
+              <p style={{ whiteSpace: "pre-wrap" }}>{aiDraft.text}</p>
+              <p>{aiDraft.requiresHumanReview ? "Esta consulta necesita tu revisión o decisión." : "Revisa los datos y el tono antes de enviar."}</p>
+              <button type="button" disabled={Boolean(text.trim()) || messagePage !== 1 || latest?.id !== aiDraft.basedOnMessageId || latest?.sender !== "guest"} onClick={() => { setText(aiDraft.text); setAIDraft(null); }}>Usar y editar respuesta</button>
+              <button type="button" onClick={() => setAIDraft(null)}>Descartar</button>
+            </aside>}
             <label htmlFor="channel-reply">Tu respuesta</label>
-            <textarea id="channel-reply" value={text} maxLength={5000} disabled={sending || uncertain} onChange={e => setText(e.target.value)} style={{ display: "block", width: "100%", minHeight: 100 }} />
-            <button disabled={sending || uncertain || !text.trim() || !messages.data || Boolean(messages.error)}>{sending ? "Enviando…" : "Enviar respuesta"}</button>
+            <textarea id="channel-reply" value={text} maxLength={5000} disabled={sending || generating || uncertain} onChange={e => setText(e.target.value)} style={{ display: "block", width: "100%", minHeight: 100 }} />
+            <button disabled={sending || generating || uncertain || !text.trim() || !messages.data || Boolean(messages.error)}>{sending ? "Enviando…" : "Enviar respuesta"}</button>
           </form>}
           {notice && <p role="status">{notice}</p>}
         </>}
