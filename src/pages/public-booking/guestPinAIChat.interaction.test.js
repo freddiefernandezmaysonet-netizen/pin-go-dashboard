@@ -55,7 +55,11 @@ function proposal(expiresAt = deadline) {
       financialAction: "ADDITIONAL_PAYMENT_REQUIRED" } };
 }
 
+let fixtureSequence = 0;
 async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAITING_FOR_PAYMENT", stayTime } = {}) {
+  // A prior unmounted fixture can still finish encryption. Separate scopes keep
+  // its pending writes from repopulating this fixture's cleared session.
+  const guestToken = `synthetic-guest-token-${++fixtureSequence}`;
   window.sessionStorage.clear();
   Object.defineProperty(dom.window.navigator, "language", { value: language, configurable: true });
   let now = deadline - 60_000;
@@ -96,7 +100,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   let root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); container.remove(); });
   await act(async () => root.render(createElement(GuestPinAIChat, {
-    apiBase: "https://api.example.test", guestToken: "synthetic-guest-token",
+    apiBase: "https://api.example.test", guestToken,
   })));
   await until(() => !container.querySelector("textarea").disabled);
   const input = container.querySelector("textarea");
@@ -107,13 +111,13 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   await act(async () => container.querySelector("form").dispatchEvent(
     new dom.window.Event("submit", { bubbles: true, cancelable: true }),
   ));
-  const cache = await createGuestChatSession("https://api.example.test", "synthetic-guest-token");
+  const cache = await createGuestChatSession("https://api.example.test", guestToken);
   await until(async () => (await cache.load()).length === 2);
   return { container, calls, setNow: value => { now = value; },
     historyCalls, setHistory: value => { serverHistory = value; },
     statusCalls, setReceipt: value => { receipt = value instanceof Error ? value : { ...receipt, ...value }; },
-    cache,
-    async remount(token = "synthetic-guest-token") {
+    cache, guestToken,
+    async remount(token = guestToken) {
       await act(async () => root.unmount());
       root = createRoot(container);
       await act(async () => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken: token })));
@@ -390,7 +394,7 @@ test("saved dialogue expires after 24 hours even if the tab remains available", 
 test("cache scope includes API origin and encrypted data cannot be moved to another scope", async t => {
   const h = await mount(t);
   const original = window.sessionStorage.getItem(window.sessionStorage.key(0));
-  const other = await createGuestChatSession("https://other-api.example.test", "synthetic-guest-token");
+  const other = await createGuestChatSession("https://other-api.example.test", h.guestToken);
   await other.save([]);
   const otherKey = window.sessionStorage.key(1);
   window.sessionStorage.setItem(otherKey, original);
