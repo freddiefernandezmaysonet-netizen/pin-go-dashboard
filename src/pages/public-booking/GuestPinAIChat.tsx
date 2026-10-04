@@ -21,6 +21,15 @@ type ReservationActionQuote = Readonly<{
   amountDifferenceCents: number;
   currency: string;
   financialAction: string;
+  stayTime?: Readonly<{
+    operation: "EARLY_CHECKIN" | "LATE_CHECKOUT";
+    requestedLocalTime: string;
+    currentCheckIn: string;
+    currentCheckOut: string;
+    proposedCheckIn: string;
+    proposedCheckOut: string;
+    consentText: string;
+  }>;
 }>;
 
 type ReservationActionProposal = Readonly<{
@@ -233,6 +242,8 @@ function ReservationActionCard({
     };
   }, [result]);
   const expired = isPinAIProposalExpired(proposal, now);
+  const stayTime = proposal.quote.stayTime;
+  const early = stayTime?.operation === "EARLY_CHECKIN";
   const copy =
     language === "es"
       ? {
@@ -290,7 +301,16 @@ function ReservationActionCard({
 
   return (
     <div style={styles.actionCard}>
-      <div style={styles.actionTitle}>{copy.title}</div>
+      <div style={styles.actionTitle}>{stayTime
+        ? language === "es" ? early ? "Entrada anticipada" : "Salida tardía" : early ? "Early check-in" : "Late checkout"
+        : copy.title}</div>
+      {stayTime && <div style={styles.actionExpiry}>
+        <div><strong>{language === "es" ? "Horario actual" : "Current time"}:</strong>{" "}
+          {formatQuoteExpiry(early ? stayTime.currentCheckIn : stayTime.currentCheckOut, proposal.quote.propertyTimezone, language)}</div>
+        <div><strong>{language === "es" ? "Nuevo horario" : "New time"}:</strong>{" "}
+          {formatQuoteExpiry(early ? stayTime.proposedCheckIn : stayTime.proposedCheckOut, proposal.quote.propertyTimezone, language)}</div>
+        <div>{proposal.quote.propertyTimezone}</div>
+      </div>}
       <div style={styles.actionGrid}>
         <div>
           <span style={styles.actionLabel}>{copy.current}</span>
@@ -313,7 +333,9 @@ function ReservationActionCard({
           </strong>
         </div>
         <div>
-          <span style={styles.actionLabel}>{copy.difference}</span>
+          <span style={styles.actionLabel}>{stayTime
+            ? language === "es" ? "Cargo adicional (impuestos incluidos)" : "Additional charge (tax included)"
+            : copy.difference}</span>
           <strong>
             {formatCurrency(
               proposal.quote.amountDifference,
@@ -334,9 +356,17 @@ function ReservationActionCard({
         ({proposal.quote.propertyTimezone})
       </div>}
 
-      {!result && <div style={styles.actionAvailability}>{copy.availability}</div>}
+      {!result && <div style={styles.actionAvailability}>{stayTime
+        ? language === "es" ? "El horario no está reservado. Se verificará nuevamente al confirmar."
+          : "The time is not held. It will be checked again when you confirm."
+        : copy.availability}</div>}
+      {!result && stayTime && <div style={styles.actionExpiry}>{stayTime.consentText}</div>}
 
       {outcomeText ? <div style={styles.actionOutcome}>{outcomeText}</div> : null}
+      {stayTime && result?.outcome === "EXECUTED" && <div style={styles.actionExpiry}>
+        {language === "es" ? "El horario de tu reserva fue actualizado. Consulta Acceso para verificar la disponibilidad de tus credenciales."
+          : "Your reservation time was updated. Check Access for your credentials’ availability."}
+      </div>}
 
       {!result && expired ? <div role="status" style={styles.actionOutcome}>{copy.expired}</div> : null}
 

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CancellationPolicyCard } from "../../components/properties/CancellationPolicyCard";
 import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
 import { PropertyListingDetailsCard } from "../../components/properties/PropertyListingDetailsCard";
+import { StayTimeSettingsCard } from "../../components/properties/StayTimeSettingsCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -2648,6 +2649,8 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 {id ? <CancellationPolicyCard propertyId={id} /> : null}
 
 {id ? <GuestAccessSettingsCard propertyId={id} /> : null}
+
+{id ? <StayTimeSettingsCard propertyId={id} /> : null}
 
 <div
   style={{

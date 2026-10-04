@@ -56,7 +56,9 @@ jobs:
             exit 0
           fi
 
-          git fetch origin main --depth=1
+          # Preserve the complete graph needed by every three-dot scope check.
+          # main may advance after the PR merge candidate was created.
+          git fetch origin main
 
           if [ "$branch" = "agent/connection-center-certified-full-sync-restore" ]; then
             git diff --name-only origin/main...HEAD | sort > "$RUNNER_TEMP/actual.txt"
@@ -123,6 +125,28 @@ jobs:
             baseline,
             "vercel.json may differ from main only by the exact calendar branch deployment guard",
           );
+          JS
+          elif [ "$branch" = "agent/property-stay-time-settings-v1" ]; then
+            # Draft #177 already blocks deployment. Permit only that exact guard;
+            # retain the frozen OTA checks above and Full Sync checks below.
+            test "$GITHUB_EVENT_NAME" = "pull_request"
+            test "$GITHUB_REPOSITORY" = "freddiefernandezmaysonet-netizen/pin-go-dashboard"
+            node --input-type=module - <<'JS'
+          import assert from "node:assert/strict";
+          import fs from "node:fs";
+          import { execFileSync } from "node:child_process";
+          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+          assert.equal(event.pull_request.number, 177);
+          assert.equal(event.pull_request.head.repo.full_name, process.env.GITHUB_REPOSITORY);
+          assert.equal(event.pull_request.base.repo.full_name, process.env.GITHUB_REPOSITORY);
+          assert.equal(event.pull_request.base.ref, "main");
+          const guard = "agent/property-stay-time-settings-v1";
+          const current = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
+          const base = execFileSync("git", ["merge-base", "origin/main", "HEAD"], { encoding: "utf8" }).trim();
+          const baseline = JSON.parse(execFileSync("git", ["show", `${base}:vercel.json`], { encoding: "utf8" }));
+          assert.equal(current.git.deploymentEnabled[guard], false);
+          baseline.git.deploymentEnabled[guard] = false;
+          assert.deepEqual(current, baseline, "Only Draft #177's deployment block may differ");
           JS
           else
             git diff --exit-code origin/main...HEAD -- vercel.json

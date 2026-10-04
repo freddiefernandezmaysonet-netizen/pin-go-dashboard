@@ -55,7 +55,11 @@ function proposal(expiresAt = deadline) {
       financialAction: "ADDITIONAL_PAYMENT_REQUIRED" } };
 }
 
-async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAITING_FOR_PAYMENT" } = {}) {
+let fixtureSequence = 0;
+async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAITING_FOR_PAYMENT", stayTime } = {}) {
+  // A prior unmounted fixture can still finish encryption. Separate scopes keep
+  // its pending writes from repopulating this fixture's cleared session.
+  const guestToken = `synthetic-guest-token-${++fixtureSequence}`;
   window.sessionStorage.clear();
   Object.defineProperty(dom.window.navigator, "language", { value: language, configurable: true });
   let now = deadline - 60_000;
@@ -85,7 +89,8 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
     }
     calls.push({ url, body: JSON.parse(init.body) });
     return { ok: true, status: 200, async json() { return url.endsWith("/messages")
-      ? { ok: true, reply: "Cotización preparada.", requiresHumanReview: false, actionProposal: proposal(expiry) }
+      ? { ok: true, reply: "Cotización preparada.", requiresHumanReview: false,
+          actionProposal: { ...proposal(expiry), quote: { ...proposal(expiry).quote, ...(stayTime ? { stayTime } : {}) } } }
       : { ok: true, action: { actionType: "RESERVATION_MODIFICATION", proposalId: "synthetic-proposal",
           outcome, actionExecuted: outcome === "EXECUTED", checkoutUrl: "https://checkout.example.test/synthetic",
           modificationId: "synthetic-modification", modificationStatus: "AWAITING_PAYMENT", paymentExpiresAt: new Date(deadline + 3_600_000).toISOString() } }; } };
@@ -95,7 +100,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   let root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); container.remove(); });
   await act(async () => root.render(createElement(GuestPinAIChat, {
-    apiBase: "https://api.example.test", guestToken: "synthetic-guest-token",
+    apiBase: "https://api.example.test", guestToken,
   })));
   await until(() => !container.querySelector("textarea").disabled);
   const input = container.querySelector("textarea");
@@ -106,19 +111,43 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   await act(async () => container.querySelector("form").dispatchEvent(
     new dom.window.Event("submit", { bubbles: true, cancelable: true }),
   ));
-  const cache = await createGuestChatSession("https://api.example.test", "synthetic-guest-token");
+  const cache = await createGuestChatSession("https://api.example.test", guestToken);
   await until(async () => (await cache.load()).length === 2);
   return { container, calls, setNow: value => { now = value; },
     historyCalls, setHistory: value => { serverHistory = value; },
     statusCalls, setReceipt: value => { receipt = value instanceof Error ? value : { ...receipt, ...value }; },
-    cache,
-    async remount(token = "synthetic-guest-token") {
+    cache, guestToken,
+    async remount(token = guestToken) {
       await act(async () => root.unmount());
       root = createRoot(container);
       await act(async () => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken: token })));
       await until(() => !container.textContent.includes("Recuperando conversación") && !container.textContent.includes("Restoring conversation"));
     },
     confirm: () => [...container.querySelectorAll("button")].find(b => /Confirmar cambio|Confirm change/.test(b.textContent)) };
+}
+
+for (const operation of ["EARLY_CHECKIN", "LATE_CHECKOUT"]) {
+  for (const language of ["es-PR", "en-US"]) test(`stay-time offer shows exact schedule and consent: ${operation} ${language}`, async t => {
+    const stayTime = { operation, requestedLocalTime: operation === "EARLY_CHECKIN" ? "14:00" : "12:00",
+      currentCheckIn: "2026-09-27T20:00:00Z", proposedCheckIn: "2026-09-27T18:00:00Z",
+      currentCheckOut: "2026-09-28T15:00:00Z", proposedCheckOut: "2026-09-28T16:00:00Z",
+      consentText: language === "es-PR" ? "Confirmo el horario por USD 1.12, impuestos incluidos." : "I confirm the time for USD 1.12, including taxes." };
+    const h = await mount(t, { language, stayTime, outcome: "EXECUTED" });
+    const text = h.container.textContent;
+    assert.match(text, operation === "EARLY_CHECKIN" ? /Entrada anticipada|Early check-in/ : /Salida tardía|Late checkout/);
+    assert.match(text, /Horario actual|Current time/); assert.match(text, /Nuevo horario|New time/);
+    assert.match(text, /impuestos incluidos|tax included/);
+    assert.ok(text.includes(stayTime.consentText));
+    assert.match(text, /America\/Puerto_Rico/);
+    assert.doesNotMatch(h.container.innerHTML, /private-synthetic-confirmation/);
+    await h.remount();
+    assert.ok(h.container.textContent.includes(stayTime.consentText), "Restored offer retains exact consent");
+    await act(async () => h.confirm().click());
+    assert.deepEqual(h.calls[1].body, { confirmationToken: "private-synthetic-confirmation" });
+    assert.match(h.container.textContent, /Cambio aplicado|Change applied/);
+    assert.match(h.container.textContent, /Consulta Acceso|Check Access/);
+    assert.equal(h.confirm(), undefined);
+  });
 }
 
 test("actual card renders canonical quote fields, PR timezone, and keeps its credential private", async t => {
@@ -365,7 +394,7 @@ test("saved dialogue expires after 24 hours even if the tab remains available", 
 test("cache scope includes API origin and encrypted data cannot be moved to another scope", async t => {
   const h = await mount(t);
   const original = window.sessionStorage.getItem(window.sessionStorage.key(0));
-  const other = await createGuestChatSession("https://other-api.example.test", "synthetic-guest-token");
+  const other = await createGuestChatSession("https://other-api.example.test", h.guestToken);
   await other.save([]);
   const otherKey = window.sessionStorage.key(1);
   window.sessionStorage.setItem(otherKey, original);
