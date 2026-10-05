@@ -8,10 +8,15 @@ type DemoResult = {
   checkIn?: string;
   checkOut?: string;
   paymentState?: string;
+  paymentSimulated?: boolean;
   delivery?: {
     email?: {
       enabled?: boolean;
       to?: string | null;
+      attempted?: boolean;
+      ok?: boolean;
+      status?: string | null;
+      error?: string | null;
     };
     sms?: {
       enabled?: boolean;
@@ -197,9 +202,9 @@ export default function AdminDemoCenterPage() {
             color: "#dbeafe",
           }}
         >
-          Simulates a real Lodgify booking entering Pin&Go through the ingest
-          pipeline. This should create the reservation, access, NFC assignment,
-          payment state, and automation exactly like production.
+          Runs a controlled Direct Booking-equivalent demo through Pin&Go.
+          Payment is simulated, while reservation communications, guest journey,
+          access, cleaning, and operational automation use the production flows.
         </p>
 
         <div
@@ -312,7 +317,9 @@ export default function AdminDemoCenterPage() {
             >
               Payment
             </div>
-            <div style={{ fontSize: 16, fontWeight: 900 }}>PAID</div>
+            <div style={{ fontSize: 16, fontWeight: 900 }}>
+              PAID · SIMULATED
+            </div>
           </div>
         </div>
 
@@ -351,9 +358,10 @@ export default function AdminDemoCenterPage() {
             lineHeight: 1.5,
           }}
         >
-          Email will be sent through the production delivery flow when the
-          access is created. SMS follows the same flow only when the confirmation
-          above is selected.
+          The reservation confirmation email is attempted immediately through
+          the production Direct Booking delivery flow. The access email is sent
+          later by the normal access automation when the access is created.
+          SMS follows the access flow only when the confirmation above is selected.
         </p>
 
         <button
@@ -386,8 +394,8 @@ export default function AdminDemoCenterPage() {
         >
           <h2 style={{ marginTop: 0 }}>Processing demo booking...</h2>
           <p style={{ color: "#6b7280", marginBottom: 0 }}>
-            Pin&Go is creating a Lodgify-style ingest event and running the real
-            PMS pipeline.
+            Pin&Go is creating the controlled demo reservation and running the
+            Direct Booking-equivalent production workflows.
           </p>
         </section>
       )}
@@ -463,15 +471,26 @@ export default function AdminDemoCenterPage() {
             }}
           >
             <InfoCard label="Event Status" value={result.eventStatus ?? "—"} />
-            <InfoCard label="Payment State" value={result.paymentState ?? "PAID"} />
+            <InfoCard
+              label="Payment State"
+              value={
+                result.paymentSimulated
+                  ? `${result.paymentState ?? "PAID"} · SIMULATED / NO CHARGE`
+                  : result.paymentState ?? "—"
+              }
+            />
             <InfoCard label="Reservation ID" value={reservation?.id ?? "—"} />
             <InfoCard label="Guest" value={reservation?.guestName ?? "—"} />
             <InfoCard
               label="Email delivery"
               value={
-                result.delivery?.email?.enabled
-                  ? `Scheduled via production flow → ${result.delivery.email.to ?? "—"}`
-                  : "—"
+                !result.delivery?.email?.enabled
+                  ? "Disabled"
+                  : result.delivery.email.ok
+                  ? `Accepted for delivery → ${result.delivery.email.to ?? "—"}`
+                  : result.delivery.email.attempted
+                  ? `Attempt failed (${result.delivery.email.status ?? "UNKNOWN"}) → ${result.delivery.email.to ?? "—"}`
+                  : `Not attempted → ${result.delivery.email.to ?? "—"}`
               }
             />
             <InfoCard
