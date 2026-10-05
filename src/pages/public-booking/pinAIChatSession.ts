@@ -29,6 +29,14 @@ function validMessage(v: unknown): v is ChatMessage {
       "priceGuaranteedUntil", "propertyTimezone", "availabilityCheckedAt", "currency", "financialAction"]
       .every(k => string(q[k])) || !["currentTotalAmount", "proposedTotalAmount", "amountDifference", "amountDifferenceCents"]
       .every(k => typeof q[k] === "number" && Number.isFinite(q[k]))) return false;
+    if (q.stayTime !== undefined) {
+      const s = q.stayTime;
+      if (!record(s) || !["EARLY_CHECKIN", "LATE_CHECKOUT"].includes(String(s.operation)) ||
+          typeof s.requestedLocalTime !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s.requestedLocalTime) ||
+          !string(s.consentText) || !s.consentText ||
+          !["currentCheckIn", "currentCheckOut", "proposedCheckIn", "proposedCheckOut"]
+            .every(k => typeof s[k] === "string" && Number.isFinite(Date.parse(s[k] as string)))) return false;
+    }
   }
   if (v.actionResult !== undefined) {
     const r = v.actionResult;

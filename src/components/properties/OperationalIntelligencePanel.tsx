@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { useState } from "react";
+import { AvailabilityConflictReview } from "./AvailabilityConflictReview";
 import { sanitizeWhiteLabelText } from "../../lib/whiteLabel";
 
 export type OperationalWorkflowState =
@@ -192,6 +194,8 @@ function OperationalTimelineItem({
   const presentation = statePresentation[item.workflowState];
   const reservationNumber = String(item.reservationNumber ?? "").trim();
   const canOpenReservation = Boolean(item.reservationId && onOpenReservation);
+  const [reviewing, setReviewing] = useState(false);
+  const canReviewConflict = item.issueCode === "CHANNEX_AVAILABILITY_CONFLICT" && Boolean(item.reservationId);
 
   return (
     <div className="pgo-timelineRow" style={styles.timelineRow}>
@@ -278,7 +282,13 @@ function OperationalTimelineItem({
               Open Reservation
             </button>
           ) : null}
+          {canReviewConflict ? <button type="button" aria-expanded={reviewing} onClick={() => setReviewing(value => !value)}
+            className="pgo-openButton" style={styles.openButton}>
+            {reviewing ? "Hide conflict review" : "Review conflict"}
+          </button> : null}
         </div>
+        {reviewing && item.reservationId ? <AvailabilityConflictReview key={item.reservationId}
+          reservationId={item.reservationId} onOpenReservation={onOpenReservation} /> : null}
       </article>
     </div>
   );
@@ -292,9 +302,9 @@ export function OperationalIntelligencePanel({
     ? items.filter(
         (item) =>
           item.visibility === "HOST" &&
-          item.workflowState === "ACTION_REQUIRED" &&
-          item.actionRequired === true &&
-          item.responsibleActor === "HOST"
+          ((item.workflowState === "ACTION_REQUIRED" &&
+            item.actionRequired === true && item.responsibleActor === "HOST") ||
+            (item.issueCode === "CHANNEX_AVAILABILITY_CONFLICT" && item.workflowState === "RESOLVED"))
       )
     : [];
 
@@ -361,10 +371,10 @@ export function OperationalIntelligencePanel({
         }}
       >
         <strong>
-          {needsAttention} issue{needsAttention === 1 ? "" : "s"} require host attention.
+          {needsAttention ? `${needsAttention} issue${needsAttention === 1 ? "" : "s"} require host attention.` : "No availability conflicts require host attention."}
         </strong>
         <span>
-          Pin&Go identified the exact operational impact and required next step below.
+          {needsAttention ? "Pin&Go identified the exact operational impact and required next step below." : "Recently closed conflicts retain the host outcome and review history below."}
         </span>
       </div>
             <div className="pgo-timeline" style={styles.timeline}>
