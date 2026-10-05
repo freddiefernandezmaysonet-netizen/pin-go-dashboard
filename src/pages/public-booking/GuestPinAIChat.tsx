@@ -29,6 +29,7 @@ type ReservationActionQuote = Readonly<{
     proposedCheckIn: string;
     proposedCheckOut: string;
     consentText: string;
+    language?: "en" | "es";
   }>;
 }>;
 
@@ -775,7 +776,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
                 ) : null}
                 {message.role === "assistant" && message.actionProposal ? (
                   <ReservationActionCard
-                    language={language}
+                    language={message.actionProposal.quote.stayTime?.language ?? language}
                     proposal={message.actionProposal}
                     result={message.actionResult}
                     confirming={confirmingProposalId === message.actionProposal.proposalId}

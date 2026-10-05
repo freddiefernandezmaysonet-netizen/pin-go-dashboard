@@ -126,6 +126,19 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
     confirm: () => [...container.querySelectorAll("button")].find(b => /Confirmar cambio|Confirm change/.test(b.textContent)) };
 }
 
+for (const cardLanguage of ["es", "en"]) test(`offer language survives reload and overrides browser: ${cardLanguage}`, async t => {
+  const h = await mount(t, { language: cardLanguage === "es" ? "en-US" : "es-PR", stayTime: {
+    operation: "LATE_CHECKOUT", requestedLocalTime: "12:00", language: cardLanguage,
+    currentCheckIn: "2026-09-27T20:00:00Z", proposedCheckIn: "2026-09-27T20:00:00Z",
+    currentCheckOut: "2026-09-28T15:00:00Z", proposedCheckOut: "2026-09-28T16:00:00Z",
+    consentText: cardLanguage === "es" ? "Confirmo la salida tardía." : "I confirm late checkout.",
+  } });
+  const expected = cardLanguage === "es" ? "Confirmar cambio" : "Confirm change";
+  assert.equal(h.confirm().textContent, expected);
+  await h.remount();
+  assert.equal(h.confirm().textContent, expected);
+});
+
 for (const operation of ["EARLY_CHECKIN", "LATE_CHECKOUT"]) {
   for (const language of ["es-PR", "en-US"]) test(`stay-time offer shows exact schedule and consent: ${operation} ${language}`, async t => {
     const stayTime = { operation, requestedLocalTime: operation === "EARLY_CHECKIN" ? "14:00" : "12:00",
