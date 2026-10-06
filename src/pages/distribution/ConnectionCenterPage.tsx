@@ -628,6 +628,16 @@ export function ConnectionCenterPage() {
         </div>
       </section>
 
+      <section aria-labelledby="calendar-review-title" style={{ ...CARD_STYLE, borderColor: "#fde68a", background: "#fffbeb", color: "#92400e" }}>
+        <h2 id="calendar-review-title" style={{ margin: 0, fontSize: 16, lineHeight: 1.4 }}>Revisa tu calendario antes de conectar / Review your calendar before connecting</h2>
+        <p lang="es" style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
+          Antes de conectar o activar un canal, verifica que todas tus reservas futuras y fechas bloqueadas estén registradas en Pin&Go. La sincronización automática utiliza el calendario de Pin&Go y podría abrir fechas bloqueadas anteriormente en la plataforma si esos bloqueos no están registrados aquí.
+        </p>
+        <p lang="en" style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
+          Before connecting or activating a channel, verify that all future reservations and blocked dates are recorded in Pin&Go. Automatic synchronization uses the Pin&Go calendar and could reopen dates previously blocked on the booking platform if those blocks are not recorded here.
+        </p>
+      </section>
+
       {simulated && <div role="status" style={{ ...CARD_STYLE, padding: 14, borderColor: "#bfdbfe", background: "#eff6ff", color: "#1d4ed8" }}>Simulation mode is active. No external calls or data changes will be made.</div>}
       {notice && <div role="status" style={{ ...CARD_STYLE, padding: 14, borderColor: "#a7f3d0", background: "#ecfdf5", color: "#065f46" }}>{notice}</div>}
       {error && <div role="alert" style={{ ...CARD_STYLE, padding: 14, borderColor: "#fecaca", background: "#fef2f2", color: "#991b1b" }}>{error}{error === PROPERTY_TYPE_REQUIRED_MESSAGE ? <p><Link to={`/properties/${id}`}>Editar información del alojamiento / Edit accommodation details</Link></p> : null}</div>}
