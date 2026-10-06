@@ -47,9 +47,10 @@ test("Manage Reservation explicitly states collection status without financial c
 
 
 test("approved Damage Case is rendered independently of cancellation management phase", () => {
-  const protectionIndex = source.indexOf("propertyProtectionCase?.available");
-  const phaseIndex = source.indexOf('managementPhase === "IN_STAY"');
-  const preStayReservationIndex = source.indexOf(
+  const rendered = source.slice(source.indexOf("<div style={styles.page}>"));
+  const protectionIndex = rendered.indexOf("propertyProtectionCase?.available");
+  const phaseIndex = rendered.indexOf('managementPhase === "IN_STAY"');
+  const preStayReservationIndex = rendered.indexOf(
     "preview?.reservation && preview?.policy && preview?.evaluation"
   );
 
@@ -109,4 +110,3 @@ test("guest response keeps the explicit non-charging boundary", () => {
   assert.doesNotMatch(source, /createPaymentIntent/);
   assert.doesNotMatch(source, /captureDamage/);
 });
-
