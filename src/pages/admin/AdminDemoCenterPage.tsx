@@ -35,6 +35,24 @@ function errorText(code: string) {
 const names: Record<string,string> = { DIRECT_BOOKING_GUEST_CONFIRMATION: "Confirmación del huésped", DIRECT_BOOKING_HOST_NOTIFICATION: "Aviso al administrador",
   CLEANING_CONFIRMATION: "Invitación al cleaner", GUEST_ACCESS_PASSCODE: "Acceso del huésped", PIN_AI_GUEST_INCIDENT_HOST_NOTICE: "Aviso de incidente", CHECKOUT: "Checkout" };
 const states: Record<string,string> = { DELIVERED: "Entregado", ACCEPTED: "Aceptado; entrega pendiente", ATTENTION_REQUIRED: "Requiere revisión", QUEUED: "En cola", FAILED: "Falló", SENT: "Aceptado", PENDING: "Pendiente", ACTIVE: "Activo", REVOKED: "Revocado", EXPIRED: "Expirado", CONFIRMED: "Confirmado" };
+function preparationText(code: string) {
+  const reasons: Record<string, string> = {
+    PRIMARY_ADMIN_MISSING: "Falta identificar el administrador que recibirá los avisos de esta demo.",
+    CLEANER_MISSING: "Falta un cleaner activo con teléfono asignado a la propiedad Demo.",
+    CLEANER_COMPLETION_FLOW_NOT_CONFIGURED: "Falta configurar el tiempo de limpieza del cleaner Demo.",
+    CLEANER_CARD_MISSING: "Falta la tarjeta NFC del cleaner en la propiedad Demo.",
+    GUEST_CARDS_UNAVAILABLE: "Se necesitan dos tarjetas NFC Guest disponibles en la propiedad Demo.",
+    TTLOCK_CONNECTION_MISSING: "Falta conectar TTLock para esta organización.",
+    CLEANING_NFC_DISABLED: "El acceso NFC de limpieza está desactivado en la propiedad Demo.",
+    AGREEMENT_MISSING: "Falta un acuerdo de huésped activo en la propiedad Demo.",
+    DEMO_LOCK_BINDING_REQUIRED: "La propiedad Demo debe tener únicamente su cerradura de demostración asignada.",
+    GUEST_SMS_DISABLED: "Los SMS al huésped están desactivados.",
+  };
+  if (reasons[code]) return reasons[code];
+  if (code.startsWith("PIN_AI_") && code.endsWith("_DISABLED")) return "Una función necesaria de Pin AI está desactivada. Requiere revisión de configuración.";
+  if (code.endsWith("_MISSING")) return "Falta configurar una conexión necesaria para la demostración.";
+  return "Hay un requisito pendiente de revisión antes de iniciar.";
+}
 
 export default function AdminDemoCenterPage() {
   const [request, setRequest] = useState<Request | null>(stored);
@@ -119,7 +137,12 @@ export default function AdminDemoCenterPage() {
           <div><strong>Administrador principal</strong><p>{prep.primaryAdmin?.email ?? "Pendiente"}</p></div>
           <div><strong>Cleaner de demostración</strong><p>{prep.cleaner?.name ?? "Pendiente"} · {prep.cleaner?.phone}</p></div></div>
         <p>Acceso de limpieza: checkout + {prep.property.cleaningStartOffsetMinutes} minutos; hasta {prep.property.cleaningAccessMinutes} minutos, limitado por la próxima ocupación.</p>
-        {!prep.ready ? <p role="status">Preparación incompleta: {prep.blockers.length} comprobaciones pendientes de configuración o disponibilidad. La demo todavía no puede iniciarse.</p> : <p style={{color:"#166534"}}>Configuración comprobada. La operación física se verifica durante la presentación.</p>}
+        {!prep.ready ? <div role="status">
+          <p>Preparación incompleta: {prep.blockers.length} comprobaciones pendientes. La demo todavía no puede iniciarse.</p>
+          <ul>{prep.blockers.map(code => <li key={code} style={{marginBottom:10}}>{preparationText(code)}
+            <details><summary>Referencia para soporte</summary><code style={{overflowWrap:"anywhere"}}>{code}</code></details>
+          </li>)}</ul>
+        </div> : <p style={{color:"#166534"}}>Configuración comprobada. La operación física se verifica durante la presentación.</p>}
       </> : <p>Cargando preparación…</p>}
       <button type="button" onClick={() => void prepare()} style={{...button,background:"#e2e8f0",color:"#0f172a"}}>Actualizar preparación</button>
     </section>

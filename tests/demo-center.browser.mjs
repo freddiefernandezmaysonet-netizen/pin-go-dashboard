@@ -66,8 +66,19 @@ try {
     unexpected.push(`${request.method()} ${url.pathname}`); return route.abort();
   });
   const address = `http://127.0.0.1:4178/${fixture.split('/').at(-1)}/index.html`;
+  prep.ready = false;
+  prep.blockers = ["PRIMARY_ADMIN_MISSING", "PIN_AI_INCIDENT_NOTIFICATIONS_ENABLED_DISABLED", "GUEST_CARDS_UNAVAILABLE"];
   await page.goto(address);
   await page.getByText("principal@example.invalid", { exact: true }).waitFor();
+  await page.getByText("Se necesitan dos tarjetas NFC Guest disponibles en la propiedad Demo.", { exact: false }).waitFor();
+  assert.equal(await page.getByRole("status").getByRole("listitem").count(), 3);
+  await page.getByRole("status").getByText("Referencia para soporte", { exact: true }).nth(1).click();
+  assert.equal(await page.getByText("PIN_AI_INCIDENT_NOTIFICATIONS_ENABLED_DISABLED", { exact: true }).isVisible(), true);
+  assert.equal(await page.getByRole("button", { name: "Crear reserva Demo" }).isEnabled(), false);
+  await page.screenshot({ path: resolve(output, "preparation-blockers.png"), fullPage: true });
+  prep.ready = true; prep.blockers = [];
+  await page.getByRole("button", { name: "Actualizar preparación", exact: true }).click();
+  await page.getByText("Configuración comprobada.", { exact: false }).waitFor();
   assert.equal(await page.getByRole("button", { name: "Crear reserva Demo" }).isEnabled(), false);
   await page.getByLabel("Email del huésped", { exact: true }).fill("guest@example.invalid");
   await page.getByLabel("Teléfono del huésped", { exact: true }).fill("+12025550125");
@@ -119,7 +130,7 @@ try {
   assert.equal(await page.getByLabel("Email del huésped", { exact: true }).count(), 1, "definitive pre-creation rejection unlocks the form");
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   await writeFile(resolve(output, "result.json"), JSON.stringify({ passed: true, scope: "React components with synthetic API responses",
-    checks: ["preparation and consent", "same request after reload and resume", "six journey steps", "mobile overflow", "ENDED NFC permits next demo after cleaning", "same reservation in guest portal", "no commercial guest controls", "pre/post stay Pin AI visibility", "pre-creation rejection recovery"], errors, unexpected }, null, 2));
+    checks: ["readable preparation blockers and support references", "preparation and consent", "same request after reload and resume", "six journey steps", "mobile overflow", "ENDED NFC permits next demo after cleaning", "same reservation in guest portal", "no commercial guest controls", "pre/post stay Pin AI visibility", "pre-creation rejection recovery"], errors, unexpected }, null, 2));
   console.log("Demo Center browser checks passed; screenshots are in test-artifacts/demo-center.");
 } catch (error) {
   await page?.screenshot({ path: resolve(output, "failure.png"), fullPage: true });
