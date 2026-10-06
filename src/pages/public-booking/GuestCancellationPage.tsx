@@ -20,6 +20,7 @@ type CancellationRefundRule = {
 };
 
 type CancellationPreviewResponse = {
+  demo?: { paymentSimulated: boolean; identitySimulated: boolean; timezone: string };
   ok?: boolean;
   managementPhase?: "PRE_STAY" | "IN_STAY" | "POST_STAY" | "CANCELLED";
   cancellationAllowed?: boolean;
@@ -898,10 +899,13 @@ export default function GuestCancellationPage() {
   }, [loadPreview]);
 
   useEffect(() => {
+    if (loading || preview?.demo) { setPropertyProtectionCaseLoading(false); return; }
     loadPropertyProtectionCase();
-  }, [loadPropertyProtectionCase]);
+  }, [loadPropertyProtectionCase, loading, preview?.demo]);
 
   useEffect(() => {
+    if (loading) return;
+    if (preview?.demo) { setModificationLoading(false); return; }
     loadModificationOptions();
 
     const searchParams = new URLSearchParams(window.location.search);
@@ -922,7 +926,7 @@ export default function GuestCancellationPage() {
           : null
       );
     }
-  }, [loadModificationOptions]);
+  }, [loadModificationOptions, loading, preview?.demo]);
 
   const currency = preview?.reservation?.currency || "usd";
   const managementPhase = getManagementPhase(preview);
@@ -1418,7 +1422,7 @@ export default function GuestCancellationPage() {
 
         <section style={styles.contentSection}>
           <div style={styles.container}>
-            {!propertyProtectionCaseLoading &&
+            {!preview?.demo && !propertyProtectionCaseLoading &&
             propertyProtectionCase?.available &&
             propertyProtectionCase.propertyProtection &&
             propertyProtectionCase.damageCase ? (
@@ -1751,6 +1755,16 @@ export default function GuestCancellationPage() {
                 <button type="button" style={styles.secondaryButton} onClick={loadPreview}>
                   Try again
                 </button>
+              </div>
+            ) : preview?.demo && preview.reservation ? (
+              <div style={styles.card}>
+                <div style={styles.sectionEyebrow}>Pin&Go · Demo</div>
+                <h2 style={styles.cardTitle}>Reservation #{preview.reservation.reservationNumber}</h2>
+                <p>{preview.reservation.propertyName} · {preview.reservation.guestName}</p>
+                <p>Check-in: {new Date(preview.reservation.checkIn).toLocaleString(undefined, { timeZone: preview.demo.timezone })}</p>
+                <p>Check-out: {new Date(preview.reservation.checkOut).toLocaleString(undefined, { timeZone: preview.demo.timezone })} · {preview.demo.timezone}</p>
+                <p>Pago e identidad simulados / Simulated payment and identity.</p>
+                <p>Esta demostración permite consultar la estancia, conversar con Pin AI y recibir actualizaciones del anfitrión. Los pagos y cambios comerciales no están disponibles.</p>
               </div>
             ) : managementPhase === "IN_STAY" ? (
               <div style={styles.card}>
