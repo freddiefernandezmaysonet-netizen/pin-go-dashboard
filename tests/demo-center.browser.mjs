@@ -61,7 +61,7 @@ try {
     if (url.pathname.endsWith("/cancellation-preview")) return reply({ ok: true, managementPhase: phase,
       cancellationAllowed: false, demo: { paymentSimulated: true, identitySimulated: true, timezone: prep.property.timezone },
       reservation: { ...run.reservation, propertyName: prep.property.name, currency: "usd", totalAmount: 0 } });
-    if (url.pathname.endsWith("/pin-ai/history")) return reply({ ok: true, messages: [], receipts: [] });
+    if (url.pathname.endsWith("/pin-ai/history")) return reply({ ok: true, version: 1, messages: [] });
     if (url.pathname.endsWith("/pin-ai/incident-updates")) return reply({ ok: true, incidents: [], updates: [], nextAfter: null });
     unexpected.push(`${request.method()} ${url.pathname}`); return route.abort();
   });
@@ -100,6 +100,7 @@ try {
   await page.goto(`${address}?guest=1`);
   await page.getByRole("heading", { name: "Reservation #PG-2026-000999", exact: true }).waitFor();
   assert.equal(await page.locator("textarea").count(), 1, "Pin AI is visible for the same pre-stay reservation");
+  await page.waitForFunction(() => { const input = document.querySelector("textarea"); return input && !input.disabled; });
   assert.equal(await page.getByRole("button", { name: /Cancel reservation|Confirm cancellation/i }).count(), 0);
   await page.screenshot({ path: resolve(output, "mobile-manage-reservation.png"), fullPage: true });
   phase = "POST_STAY"; await page.reload();
