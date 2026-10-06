@@ -1,0 +1,33 @@
+name: Pin AI Property Activation Dashboard
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/api/pinAIActivation.ts"
+      - "src/components/properties/PinAI*.tsx"
+      - "src/components/properties/pinAISettings.interaction.test.mjs"
+      - "src/pages/admin/AdminPinAIActivationPage.tsx"
+      - "src/pages/properties/PropertyEditPage.tsx"
+      - "src/pages/dashboard/BillingPage.tsx"
+      - "src/app/routes/router.tsx"
+      - "src/app/layout/AppShell.tsx"
+      - ".github/workflows/pin-ai-property-activation-dashboard.yml"
+permissions:
+  contents: read
+jobs:
+  activation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test src/components/properties/pinAISettings.interaction.test.mjs
+      - run: npx eslint src/api/pinAIActivation.ts src/components/properties/PinAISettingsCard.tsx src/components/properties/PinAIBillingCard.tsx src/pages/admin/AdminPinAIActivationPage.tsx
+      - run: npx tsc -p tsconfig.app.json --noEmit
+      - run: npm run build

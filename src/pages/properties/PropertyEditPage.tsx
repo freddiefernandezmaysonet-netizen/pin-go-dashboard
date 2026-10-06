@@ -5,6 +5,7 @@ import { CancellationPolicyCard } from "../../components/properties/Cancellation
 import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
 import { PropertyListingDetailsCard } from "../../components/properties/PropertyListingDetailsCard";
 import { StayTimeSettingsCard } from "../../components/properties/StayTimeSettingsCard";
+import { PinAISettingsCard } from "../../components/properties/PinAISettingsCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -2651,6 +2652,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 {id ? <GuestAccessSettingsCard propertyId={id} /> : null}
 
 {id ? <StayTimeSettingsCard propertyId={id} /> : null}
+{id ? <PinAISettingsCard propertyId={id} /> : null}
 
 <div
   style={{
