@@ -92,22 +92,23 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: resolve(output, "mobile-journey.png"), fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, "no horizontal overflow");
-  run.reservation.checkOut = new Date(Date.now() - 60000).toISOString();
-  run.reservation.accessGrants[0].status = "REVOKED"; run.reservation.NfcAssignment[0].status = "ENDED";
-  run.cleaningWork = [{ startConfirmedAt: new Date().toISOString(), completionConfirmedAt: new Date().toISOString() }];
-  await page.getByRole("button", { name: "Actualizar estado", exact: true }).click();
-  await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent === 'Preparar siguiente demo' && !b.disabled));
   await page.goto(`${address}?guest=1`);
   await page.getByRole("heading", { name: "Reservation #PG-2026-000999", exact: true }).waitFor();
   assert.equal(await page.locator("textarea").count(), 1, "Pin AI is visible for the same pre-stay reservation");
   await page.waitForFunction(() => { const input = document.querySelector("textarea"); return input && !input.disabled; });
   assert.equal(await page.getByRole("button", { name: /Cancel reservation|Confirm cancellation/i }).count(), 0);
   await page.screenshot({ path: resolve(output, "mobile-manage-reservation.png"), fullPage: true });
+  // Advance the browser clock beyond the original checkout without editing the stay.
+  await page.clock.install({ time: new Date(Date.parse(run.reservation.checkOut) + 60000) });
+  run.reservation.accessGrants[0].status = "REVOKED"; run.reservation.NfcAssignment[0].status = "ENDED";
+  run.cleaningWork = [{ startConfirmedAt: run.reservation.checkOut, completionConfirmedAt: run.reservation.checkOut }];
   phase = "POST_STAY"; await page.reload();
   await page.getByRole("heading", { name: "Reservation #PG-2026-000999", exact: true }).waitFor();
   assert.equal(await page.locator("textarea").count(), 0, "existing post-stay Pin AI policy is preserved");
   await page.goto(address);
   await page.getByRole("heading", { name: "Reserva PG-2026-000999", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Actualizar estado", exact: true }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('button')].some(b => b.textContent === 'Preparar siguiente demo' && !b.disabled));
   await page.getByRole("button", { name: "Preparar siguiente demo" }).click();
   await page.getByLabel("Email del huésped", { exact: true }).fill("invalid@example.invalid");
   await page.getByLabel("Teléfono del huésped", { exact: true }).fill("+12025550125");

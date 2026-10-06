@@ -1414,8 +1414,9 @@ export default function GuestCancellationPage() {
             <div style={styles.badge}>Guest Reservation Portal</div>
             <h1 style={styles.title}>Manage your reservation</h1>
             <p style={styles.subtitle}>
-              Review your stay, request eligible changes, complete secure
-              pre-check-in, or evaluate cancellation options in one place.
+              {preview?.demo
+                ? "Review your stay, chat with Pin AI, and follow updates from your host."
+                : "Review your stay, request eligible changes, complete secure pre-check-in, or evaluate cancellation options in one place."}
             </p>
           </div>
         </section>
