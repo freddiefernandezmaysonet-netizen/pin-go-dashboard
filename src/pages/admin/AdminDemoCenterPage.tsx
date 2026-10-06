@@ -137,7 +137,7 @@ export default function AdminDemoCenterPage() {
           <div><strong>Administrador principal</strong><p>{prep.primaryAdmin?.email ?? "Pendiente"}</p></div>
           <div><strong>Cleaner de demostración</strong><p>{prep.cleaner?.name ?? "Pendiente"} · {prep.cleaner?.phone}</p></div></div>
         <p>Acceso de limpieza: checkout + {prep.property.cleaningStartOffsetMinutes} minutos; hasta {prep.property.cleaningAccessMinutes} minutos, limitado por la próxima ocupación.</p>
-        {!prep.ready ? <div role="status">
+        {run ? <p>La preparación se volverá a comprobar antes de la siguiente demo. Las tarjetas Guest de esta reserva permanecen asignadas hasta el checkout.</p> : !prep.ready ? <div role="status">
           <p>Preparación incompleta: {prep.blockers.length} comprobaciones pendientes. La demo todavía no puede iniciarse.</p>
           <ul>{prep.blockers.map(code => <li key={code} style={{marginBottom:10}}>{preparationText(code)}
             <details><summary>Referencia para soporte</summary><code style={{overflowWrap:"anywhere"}}>{code}</code></details>

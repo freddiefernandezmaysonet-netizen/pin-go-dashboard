@@ -135,10 +135,10 @@ test("guest reservation portal keeps Pin AI visible before and during the stay",
 
 test("guest reservation portal does not extend Pin AI visibility to cancelled or post-stay phases", () => {
   const mountStart = portal.indexOf(
-    "{guestToken &&\n            preview &&",
+    "const guestAssistant = guestToken && preview &&",
   );
   const mountEnd = portal.indexOf(
-    ": null}",
+    ": null;",
     mountStart,
   );
   const mountBlock = portal.slice(
