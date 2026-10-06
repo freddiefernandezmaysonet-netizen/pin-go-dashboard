@@ -140,8 +140,16 @@ function applyDocumentBrand(brand: BrandContext) {
       ? brand.faviconUrl
       : "/pinngo-favicon.png";
 
+  const path = window.location.pathname;
+  const isStandardLanding =
+    brand.kind === "PIN_GO_STANDARD" &&
+    (path === "/home" ||
+      path === "/home/" ||
+      path === "/stays" ||
+      path === "/stays/");
   const managesDocumentTitle =
-    !window.location.pathname.startsWith("/book/");
+    !path.startsWith("/book/") &&
+    (brand.kind === "CUSTOM_BRAND" || !isStandardLanding);
 
   if (managesDocumentTitle) {
     document.title = brand.displayName;
