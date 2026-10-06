@@ -1399,10 +1399,10 @@ export default function GuestCancellationPage() {
   }
 
   const guestAssistant = guestToken && preview &&
-    (managementPhase === "PRE_STAY" || managementPhase === "IN_STAY") ? (
+    (managementPhase === "PRE_STAY" || managementPhase === "IN_STAY" || managementPhase === "POST_STAY") ? (
       <>
         <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
-        <GuestIncidentUpdates key={guestToken} apiBase={API_BASE} guestToken={guestToken} />
+        {managementPhase !== "POST_STAY" ? <GuestIncidentUpdates key={guestToken} apiBase={API_BASE} guestToken={guestToken} /> : null}
       </>
     ) : null;
 

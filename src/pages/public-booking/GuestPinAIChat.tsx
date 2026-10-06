@@ -119,6 +119,11 @@ function requestErrorMessage(
   status: number,
   payload: PinAIResponse | null,
 ) {
+  if (payload?.error === "PIN_AI_OUTSIDE_AVAILABILITY_WINDOW") {
+    return language === "es"
+      ? "Pin AI está disponible desde 24 horas antes de la entrada hasta 24 horas después de la salida."
+      : "Pin AI is available from 24 hours before check-in until 24 hours after checkout.";
+  }
   if (status === 409 || payload?.error === "PIN_AI_BUSY") {
     return language === "es"
       ? "Pin AI está atendiendo tu mensaje anterior. Intenta nuevamente en unos segundos."
@@ -147,6 +152,9 @@ function actionErrorMessage(
   status: number,
   payload: PinAIActionConfirmationResponse | null,
 ) {
+  if (payload?.error === "PIN_AI_OUTSIDE_AVAILABILITY_WINDOW") {
+    return requestErrorMessage(language, status, { ok: false, error: payload.error });
+  }
   if (status === 403 || payload?.error === "INVALID_CONFIRMATION") {
     return language === "es"
       ? "Esta confirmación ya no es válida. Pídele a Pin AI una nueva cotización."
@@ -426,7 +434,67 @@ function ChatMessageContent({ message }: Readonly<{ message: ChatMessage }>) {
 }
 
 export function GuestPinAIChat({ apiBase, guestToken }: GuestPinAIChatProps) {
-  return <GuestPinAIChatSession key={JSON.stringify([apiBase, guestToken])} apiBase={apiBase} guestToken={guestToken} />;
+  return <GuestPinAIAvailabilityGate key={JSON.stringify([apiBase, guestToken])} apiBase={apiBase} guestToken={guestToken} />;
+}
+
+function GuestPinAIAvailabilityGate({ apiBase, guestToken }: GuestPinAIChatProps) {
+  const [available, setAvailable] = useState(false);
+  useEffect(() => {
+    let disposed = false;
+    let controller: AbortController | undefined;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    let closeTimer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = async () => {
+      if (disposed) return;
+      controller?.abort();
+      clearTimeout(refreshTimer);
+      const request = new AbortController();
+      controller = request;
+      const started = performance.now();
+      const timeout = setTimeout(() => request.abort(), 10_000);
+      let nextRefresh = 60_000;
+      try {
+        const response = await fetch(`${apiBase}/api/public-booking/manage/${encodeURIComponent(guestToken)}/pin-ai/availability`, {
+          method: "GET", cache: "no-store", signal: request.signal,
+        });
+        const data = await response.json();
+        if (disposed || controller !== request || request.signal.aborted) return;
+        // Use the server clock, accounting conservatively for request latency.
+        // A wrong phone clock must never open the chat early or keep it open late.
+        const serverNow = Date.parse(data.checkedAt) + performance.now() - started;
+        const opensAt = Date.parse(data.opensAt);
+        const closesAt = Date.parse(data.closesAt);
+        const allowed = response.ok && data.ok === true && data.available === true &&
+          Number.isFinite(serverNow) && serverNow >= opensAt && serverNow < closesAt;
+        setAvailable(allowed);
+        clearTimeout(closeTimer);
+        if (allowed) {
+          closeTimer = setTimeout(() => { setAvailable(false); void refresh(); }, Math.min(closesAt - serverNow, 2_147_483_647));
+        } else if (opensAt > serverNow) {
+          nextRefresh = Math.min(nextRefresh, opensAt - serverNow + 50);
+        }
+      } catch {
+        if (!disposed && controller === request) setAvailable(false);
+      } finally {
+        clearTimeout(timeout);
+        if (!disposed && controller === request) refreshTimer = setTimeout(() => { void refresh(); }, nextRefresh);
+      }
+    };
+    const onFocus = () => { void refresh(); };
+    const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
+    void refresh();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      disposed = true;
+      controller?.abort();
+      clearTimeout(refreshTimer);
+      clearTimeout(closeTimer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [apiBase, guestToken]);
+  return available ? <GuestPinAIChatSession apiBase={apiBase} guestToken={guestToken} /> : null;
 }
 
 function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {

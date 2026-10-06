@@ -133,7 +133,7 @@ test("guest reservation portal keeps Pin AI visible before and during the stay",
   );
 });
 
-test("guest reservation portal does not extend Pin AI visibility to cancelled or post-stay phases", () => {
+test("guest reservation portal lets the server window gate post-stay chat and excludes cancelled reservations", () => {
   const mountStart = portal.indexOf(
     "const guestAssistant = guestToken && preview &&",
   );
@@ -149,7 +149,7 @@ test("guest reservation portal does not extend Pin AI visibility to cancelled or
   assert.ok(mountStart >= 0);
   assert.match(mountBlock, /PRE_STAY/);
   assert.match(mountBlock, /IN_STAY/);
-  assert.doesNotMatch(mountBlock, /POST_STAY/);
+  assert.match(mountBlock, /POST_STAY/);
   assert.doesNotMatch(mountBlock, /CANCELLED/);
 });
 
