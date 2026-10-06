@@ -17,17 +17,18 @@ import {createRoot} from 'react-dom/client';
 import {MemoryRouter, Routes, Route} from 'react-router-dom';
 import AdminDemoCenterPage from '../src/pages/admin/AdminDemoCenterPage';
 import GuestCancellationPage from '../src/pages/public-booking/GuestCancellationPage';
+import {BrandProvider} from '../src/branding/BrandProvider';
 const guest = new URLSearchParams(location.search).has('guest');
-createRoot(document.getElementById('root')!).render(guest ? <MemoryRouter initialEntries={['/booking/manage/synthetic-token']}><Routes><Route path='/booking/manage/:guestToken' element={<GuestCancellationPage/>}/></Routes></MemoryRouter> : <AdminDemoCenterPage/>);
+createRoot(document.getElementById('root')!).render(guest ? <BrandProvider><MemoryRouter initialEntries={['/booking/manage/synthetic-token']}><Routes><Route path='/booking/manage/:guestToken' element={<GuestCancellationPage/>}/></Routes></MemoryRouter></BrandProvider> : <AdminDemoCenterPage/>);
 `);
 const server = await createServer({ root, server: { host: "127.0.0.1", port: 4178, strictPort: true },
   define: { "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://demo-api.example.invalid") } });
-let browser;
+let browser, page;
+const errors = [], unexpected = [], commands = [];
 try {
   await server.listen();
   browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, timezoneId: "America/Puerto_Rico" });
-  const errors = [], unexpected = [], commands = [];
+  page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, timezoneId: "America/Puerto_Rico" });
   page.on("pageerror", error => errors.push(error.message));
   const prep = { ready: true, blockers: [], property: { name: "Pin&Go Demo Property", timezone: "America/Puerto_Rico",
     cleaningStartOffsetMinutes: 15, cleaningAccessMinutes: 30 }, primaryAdmin: { email: "principal@example.invalid", fullName: "Demo host" },
@@ -37,6 +38,9 @@ try {
     const request = route.request(), url = new URL(request.url());
     if (url.hostname === "127.0.0.1") return route.continue();
     const reply = (value, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
+    if (url.pathname.endsWith("/api/public/brand-context")) return reply({ ok: true, data: {
+      kind: "PIN_GO_STANDARD", displayName: "Pin&Go", logoUrl: null, faviconUrl: null, primaryColor: null,
+      onPrimaryColor: null, organizationSlug: null, version: null, poweredByPinGo: true } });
     if (url.pathname.endsWith("/demo/preparation")) return reply({ ok: true, data: prep });
     if (url.pathname.endsWith("/demo/run")) {
       const input = request.postDataJSON(); commands.push(input);
@@ -115,6 +119,12 @@ try {
   await writeFile(resolve(output, "result.json"), JSON.stringify({ passed: true, scope: "React components with synthetic API responses",
     checks: ["preparation and consent", "same request after reload and resume", "six journey steps", "mobile overflow", "ENDED NFC permits next demo after cleaning", "same reservation in guest portal", "no commercial guest controls", "pre/post stay Pin AI visibility", "pre-creation rejection recovery"], errors, unexpected }, null, 2));
   console.log("Demo Center browser checks passed; screenshots are in test-artifacts/demo-center.");
+} catch (error) {
+  await page?.screenshot({ path: resolve(output, "failure.png"), fullPage: true });
+  await writeFile(resolve(output, "failure.json"), JSON.stringify({ error: String(error), errors, unexpected,
+    pageText: await page?.locator("body").innerText() }, null, 2));
+  console.error({ errors, unexpected });
+  throw error;
 } finally {
   await browser?.close(); await server.close(); await rm(fixture, { recursive: true, force: true });
 }

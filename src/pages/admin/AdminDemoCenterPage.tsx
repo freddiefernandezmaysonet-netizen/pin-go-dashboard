@@ -51,6 +51,7 @@ export default function AdminDemoCenterPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const submitting = useRef(false);
+  const polling = useRef<AbortController | null>(null);
   const prepare = useCallback(async () => {
     try { const res = await fetch(`${API}/api/internal/admin/demo/preparation`, { credentials: "include", cache: "no-store" });
       const data = await res.json(); if (!res.ok || !data.ok) throw new Error(); setPrep(data.data);
@@ -59,17 +60,22 @@ export default function AdminDemoCenterPage() {
   useEffect(() => { void prepare(); }, [prepare]);
   const refresh = useCallback(async () => {
     if (!request) return;
-    const res = await fetch(`${API}/api/internal/admin/demo/runs/${request.requestId}`, { credentials: "include", cache: "no-store" });
-    const data = await res.json();
-    if (res.ok && data.ok) setRun(data.data);
-    else if (res.status !== 404) throw new Error();
+    polling.current?.abort();
+    const controller = new AbortController(); polling.current = controller;
+    try {
+      const res = await fetch(`${API}/api/internal/admin/demo/runs/${request.requestId}`, { credentials: "include", cache: "no-store", signal: controller.signal });
+      const data = await res.json();
+      if (controller.signal.aborted) return;
+      if (res.ok && data.ok) setRun(data.data);
+      else if (res.status !== 404) throw new Error();
+    } catch (error) { if (!controller.signal.aborted) throw error; }
   }, [request]);
   useEffect(() => {
     if (!request) return;
     let active = true;
     const update = () => { if (active && !document.hidden) void refresh().catch(() => setError("La actualización se interrumpió. La reserva conserva su estado.")); };
     update(); const timer = window.setInterval(update, 10000);
-    return () => { active = false; window.clearInterval(timer); };
+    return () => { active = false; window.clearInterval(timer); polling.current?.abort(); };
   }, [refresh, request]);
   const start = async () => {
     if (submitting.current) return;
@@ -138,7 +144,7 @@ export default function AdminDemoCenterPage() {
         <button disabled={busy} onClick={()=>void start()} style={button}>{busy ? "Procesando…" : "Continuar la misma ejecución"}</button>
         <button onClick={()=>void refresh().catch(()=>setError("No se pudo actualizar."))} style={{...button,background:"#475569"}}>Actualizar estado</button>
         {run?.manageReservationUrl ? <a href={run.manageReservationUrl} target="_blank" rel="noreferrer" style={button}>Abrir Manage Reservation</a> : null}
-        <button disabled={!canPrepareNext || busy} onClick={()=>{sessionStorage.removeItem(KEY);setRequest(null);setRun(null);setError("");setConsent(false);setCheckIn(localDate(new Date(Date.now()+5*60000)));setCheckOut(localDate(new Date(Date.now()+25*60000)));void prepare();}} style={{...button,background:"#475569",opacity:canPrepareNext ? 1 : .5}}>Preparar siguiente demo</button>
+        <button disabled={!canPrepareNext || busy} onClick={()=>{polling.current?.abort();sessionStorage.removeItem(KEY);setRequest(null);setRun(null);setError("");setConsent(false);setCheckIn(localDate(new Date(Date.now()+5*60000)));setCheckOut(localDate(new Date(Date.now()+25*60000)));void prepare();}} style={{...button,background:"#475569",opacity:canPrepareNext ? 1 : .5}}>Preparar siguiente demo</button>
       </div>
       <p>La siguiente presentación se habilita al terminar la limpieza y quedar cerrados los accesos registrados.</p>
     </section>}
