@@ -43,6 +43,93 @@ async function until(check) {
 }
 
 const deadline = Date.parse("2026-09-27T15:00:00Z");
+
+test("availability uses server time, refreshes after rescheduling and fails closed", async t => {
+  let response = { ok: true, available: false, opensAt: "2026-10-25T19:00:00Z",
+    closesAt: "2026-10-29T15:00:00Z", checkedAt: "2026-10-06T14:00:00Z" };
+  let failing = false;
+  let historyReads = 0;
+  // A device set far in the future cannot enable the assistant.
+  t.mock.method(Date, "now", () => Date.parse("2030-01-01T00:00:00Z"));
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    if (url.endsWith("/availability")) {
+      assert.equal(init.method, "GET");
+      assert.equal(init.cache, "no-store");
+      if (failing) throw new Error("offline");
+      return { ok: true, json: async () => response };
+    }
+    assert.ok(url.endsWith("/history"));
+    historyReads++;
+    return { ok: true, json: async () => ({ ok: true, version: 1, messages: [] }) };
+  });
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); container.remove(); });
+  await act(async () => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken: "window-test-token" })));
+  assert.equal(container.querySelector("textarea"), null);
+  assert.equal(historyReads, 0);
+  // Server reaches the opening boundary. The local clock still says 2030.
+  response = { ...response, available: true, checkedAt: response.opensAt };
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  await until(() => container.querySelector("textarea"));
+  assert.equal(historyReads, 1);
+  // A changed reservation moves the opening back into the future.
+  response = { ...response, available: false, opensAt: "2026-10-26T19:00:00Z" };
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  assert.equal(container.querySelector("textarea"), null);
+  response = { ...response, available: true, checkedAt: "2026-10-28T15:00:00Z" };
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  await until(() => container.querySelector("textarea"));
+  failing = true;
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  assert.equal(container.querySelector("textarea"), null);
+});
+
+test("open chat disappears automatically at checkout plus 24 hours", async t => {
+  const serverNow = Date.parse("2026-10-29T14:59:59.850Z");
+  let first = true;
+  t.mock.method(globalThis, "fetch", async url => {
+    if (url.endsWith("/availability")) {
+      const available = first;
+      first = false;
+      return { ok: true, json: async () => ({ ok: true, available,
+        opensAt: "2026-10-25T19:00:00Z", closesAt: "2026-10-29T15:00:00Z",
+        checkedAt: new Date(available ? serverNow : serverNow + 150).toISOString() }) };
+    }
+    return { ok: true, json: async () => ({ ok: true, version: 1, messages: [] }) };
+  });
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); });
+  await act(async () => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken: "closing-window-token" })));
+  assert.ok(container.querySelector("textarea"));
+  await until(() => !container.querySelector("textarea"));
+});
+
+test("late availability response cannot open a different reservation", async t => {
+  let resolveOld;
+  let oldSignal;
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    assert.ok(url.endsWith("/availability"));
+    if (url.includes("first-reservation-token")) {
+      oldSignal = init.signal;
+      return new Promise(resolve => { resolveOld = resolve; });
+    }
+    return { ok: true, json: async () => ({ ok: true, available: false }) };
+  });
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); });
+  const render = guestToken => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken }));
+  await act(async () => render("first-reservation-token"));
+  await act(async () => render("second-reservation-token"));
+  assert.equal(oldSignal.aborted, true);
+  await act(async () => resolveOld({ ok: true, json: async () => ({ ok: true, available: true,
+    opensAt: "2026-10-25T19:00:00Z", closesAt: "2026-10-29T15:00:00Z", checkedAt: "2026-10-26T19:00:00Z" }) }));
+  assert.equal(container.querySelector("textarea"), null);
+});
+
 function proposal(expiresAt = deadline) {
   const expiry = new Date(expiresAt).toISOString();
   return { actionType: "RESERVATION_MODIFICATION", proposalId: "synthetic-proposal",
@@ -73,6 +160,11 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
     appliedAt: null, checkedAt: new Date(now).toISOString() };
   t.mock.method(globalThis, "fetch", async (url, init) => {
     assert.ok(url.startsWith("https://api.example.test/"), "Network must stay synthetic");
+    if (url.endsWith("/availability")) {
+      return { ok: true, async json() { return { ok: true, available: true,
+        checkedAt: new Date(now).toISOString(), opensAt: new Date(deadline - 86_400_000).toISOString(),
+        closesAt: new Date(deadline + 7 * 86_400_000).toISOString() }; } };
+    }
     if (url.endsWith("/history")) {
       historyCalls.push({ url, init });
       assert.equal(init.method, "GET");
@@ -102,7 +194,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
   await act(async () => root.render(createElement(GuestPinAIChat, {
     apiBase: "https://api.example.test", guestToken,
   })));
-  await until(() => !container.querySelector("textarea").disabled);
+  await until(() => container.querySelector("textarea") && !container.querySelector("textarea").disabled);
   const input = container.querySelector("textarea");
   await act(async () => {
     Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, "value").set.call(input, "Extender solo mi salida.");
@@ -121,7 +213,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
       await act(async () => root.unmount());
       root = createRoot(container);
       await act(async () => root.render(createElement(GuestPinAIChat, { apiBase: "https://api.example.test", guestToken: token })));
-      await until(() => !container.textContent.includes("Recuperando conversación") && !container.textContent.includes("Restoring conversation"));
+      await until(() => container.querySelector("textarea") && !container.textContent.includes("Recuperando conversación") && !container.textContent.includes("Restoring conversation"));
     },
     confirm: () => [...container.querySelectorAll("button")].find(b => /Confirmar cambio|Confirm change/.test(b.textContent)) };
 }
@@ -309,7 +401,9 @@ test("a late receipt is aborted and ignored when switching to another reservatio
   await act(async () => h.confirm().click());
   let resolveReceipt;
   let signal;
+  const priorFetch = globalThis.fetch;
   t.mock.method(globalThis, "fetch", async (url, init) => {
+    if (!url.endsWith("/status")) return priorFetch(url, init);
     assert.match(url, /\/status$/);
     signal = init.signal;
     return new Promise(resolve => { resolveReceipt = resolve; });
