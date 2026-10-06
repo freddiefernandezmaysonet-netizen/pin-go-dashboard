@@ -935,7 +935,13 @@ export default function GuestCancellationPage() {
     managementPhase === "CANCELLED" ||
     Boolean(preview?.reservation?.cancelledAt);
 
-  const actionCopy = useMemo(() => getActionCopy(preview), [preview]);
+  const actionCopy = useMemo(() => preview?.demo ? {
+    title: "Cancellation preview · Demo",
+    text: "Review the same cancellation policy used for Direct Booking. This demonstration cannot cancel the reservation or issue a refund.",
+  } : getActionCopy(preview), [preview]);
+  const formatStayDate = (value: string) => preview?.demo
+    ? new Date(value).toLocaleString(undefined, { timeZone: preview.demo.timezone })
+    : formatDate(value);
 
   const displayedRefundAmount = getDisplayedRefundAmount(preview);
   const refundAmountLabel = getRefundAmountLabel(preview);
@@ -943,6 +949,7 @@ export default function GuestCancellationPage() {
 
   const canSubmit = Boolean(
     preview &&
+      !preview.demo &&
       managementPhase === "PRE_STAY" &&
       preview.cancellationAllowed !== false &&
       !isCancelled &&
@@ -1004,6 +1011,7 @@ export default function GuestCancellationPage() {
   }
 
   async function handlePreviewModification() {
+    if (preview?.demo) return;
     try {
       setModificationSubmitting(true);
       setModificationError(null);
@@ -1050,6 +1058,7 @@ export default function GuestCancellationPage() {
   }
 
   async function handleConfirmModification() {
+    if (preview?.demo) return;
     try {
       setModificationSubmitting(true);
       setModificationError(null);
@@ -1159,6 +1168,7 @@ export default function GuestCancellationPage() {
   }
 
   async function handleResumeModificationCheckout() {
+    if (preview?.demo) return;
     try {
       setModificationSubmitting(true);
       setModificationError(null);
@@ -1205,6 +1215,7 @@ export default function GuestCancellationPage() {
   }
 
   async function handleSubmitCancellation() {
+    if (preview?.demo) return;
     try {
       setSubmitting(true);
       setPageError(null);
@@ -1387,6 +1398,14 @@ export default function GuestCancellationPage() {
     }
   }
 
+  const guestAssistant = guestToken && preview &&
+    (managementPhase === "PRE_STAY" || managementPhase === "IN_STAY") ? (
+      <>
+        <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
+        <GuestIncidentUpdates key={guestToken} apiBase={API_BASE} guestToken={guestToken} />
+      </>
+    ) : null;
+
   return (
     <div style={styles.page}>
       <header style={styles.header}>
@@ -1415,7 +1434,7 @@ export default function GuestCancellationPage() {
             <h1 style={styles.title}>Manage your reservation</h1>
             <p style={styles.subtitle}>
               {preview?.demo
-                ? "Review your stay, chat with Pin AI, and follow updates from your host."
+                ? "Review your reservation, secure pre-check-in and cancellation policy, chat with Pin AI, and follow updates from your host."
                 : "Review your stay, request eligible changes, complete secure pre-check-in, or evaluate cancellation options in one place."}
             </p>
           </div>
@@ -1732,15 +1751,12 @@ export default function GuestCancellationPage() {
               </div>
             ) : null}
 
-            {guestToken &&
-            preview &&
-            (managementPhase === "PRE_STAY" ||
-              managementPhase === "IN_STAY") ? (
-              <>
-              <GuestPinAIChat apiBase={API_BASE} guestToken={guestToken} />
-                <GuestIncidentUpdates key={guestToken} apiBase={API_BASE} guestToken={guestToken} />
-              </>
-            ) : null}
+            {!preview?.demo ? guestAssistant : null}
+            {preview?.demo ? <div style={{...styles.securePreCheckinCard, marginBottom: 22}}>
+              <strong>Pin&Go · Demo — Pago e identidad simulados / Simulated payment and identity</strong>
+              <p>No se realizó ningún cobro. Puedes revisar los detalles y políticas de la reserva; pagos, cambios y reembolsos están deshabilitados.</p>
+              <p>No charge was made. Reservation details and policies are available; payments, changes and refunds are disabled.</p>
+            </div> : null}
 
             {loading ? (
               <div style={styles.card}>
@@ -1757,17 +1773,7 @@ export default function GuestCancellationPage() {
                   Try again
                 </button>
               </div>
-            ) : preview?.demo && preview.reservation ? (
-              <div style={styles.card}>
-                <div style={styles.sectionEyebrow}>Pin&Go · Demo</div>
-                <h2 style={styles.cardTitle}>Reservation #{preview.reservation.reservationNumber}</h2>
-                <p>{preview.reservation.propertyName} · {preview.reservation.guestName}</p>
-                <p>Check-in: {new Date(preview.reservation.checkIn).toLocaleString(undefined, { timeZone: preview.demo.timezone })}</p>
-                <p>Check-out: {new Date(preview.reservation.checkOut).toLocaleString(undefined, { timeZone: preview.demo.timezone })} · {preview.demo.timezone}</p>
-                <p>Pago e identidad simulados / Simulated payment and identity.</p>
-                <p>Esta demostración permite consultar la estancia, conversar con Pin AI y recibir actualizaciones del anfitrión. Los pagos y cambios comerciales no están disponibles.</p>
-              </div>
-            ) : managementPhase === "IN_STAY" ? (
+            ) : !preview?.demo && managementPhase === "IN_STAY" ? (
               <div style={styles.card}>
                 <div style={styles.sectionEyebrow}>Reservation management</div>
                 <h2 style={styles.cardTitle}>Your stay has already started.</h2>
@@ -1775,7 +1781,7 @@ export default function GuestCancellationPage() {
                   If you need to leave earlier, please contact the property.
                 </p>
               </div>
-            ) : managementPhase === "POST_STAY" ? (
+            ) : !preview?.demo && managementPhase === "POST_STAY" ? (
               <div style={styles.card}>
                 <div style={styles.sectionEyebrow}>Reservation management</div>
                 <h2 style={styles.cardTitle}>
@@ -1786,7 +1792,7 @@ export default function GuestCancellationPage() {
                 </p>
               </div>
             ) : preview?.reservation && preview?.policy && preview?.evaluation ? (
-              <div style={styles.grid}>
+              <div style={preview.demo ? {...styles.grid, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", overflowWrap: "anywhere"} : styles.grid}>
                 <div style={styles.leftColumn}>
                   <div style={styles.card}>
                    <div style={styles.sectionEyebrow}>Reservation</div>
@@ -1837,16 +1843,16 @@ export default function GuestCancellationPage() {
 
                       <div style={styles.infoItem}>
                         <span>Check-in</span>
-                        <strong>{formatDate(preview.reservation.checkIn)}</strong>
+                        <strong>{formatStayDate(preview.reservation.checkIn)}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
                         <span>Check-out</span>
-                        <strong>{formatDate(preview.reservation.checkOut)}</strong>
+                        <strong>{formatStayDate(preview.reservation.checkOut)}</strong>
                       </div>
 
                       <div style={styles.infoItem}>
-                        <span>Total paid</span>
+                        <span>{preview.demo ? "Simulated amount · no charge" : "Total paid"}</span>
                         <strong>
                           {formatMoney(preview.reservation.totalAmount, currency)}
                         </strong>
@@ -1854,9 +1860,11 @@ export default function GuestCancellationPage() {
 
                       <div style={styles.infoItem}>
                         <span>Payment</span>
-                        <strong>{preview.reservation.paymentState}</strong>
+                        <strong>{preview.demo ? "Simulated · no charge" : preview.reservation.paymentState}</strong>
                       </div>
                     </div>
+
+                    {preview.demo ? <p style={styles.mutedText}>Time zone: {preview.demo.timezone} · {managementPhase === "POST_STAY" ? "This stay has already been completed." : managementPhase === "IN_STAY" ? "Your stay has already started." : "Before arrival"}</p> : null}
 
                     {isCancelled ? (
                       <div style={styles.successBox}>
@@ -1884,7 +1892,11 @@ export default function GuestCancellationPage() {
                         you confirm anything.
                       </p>
 
-                      {modificationLoading ? (
+                      {preview.demo ? (
+                        <div style={styles.modificationStatusBox}>
+                          Demo: reservation changes and payments are disabled. This reservation keeps its original dates and amount.
+                        </div>
+                      ) : modificationLoading ? (
                         <div style={styles.modificationStatusBox}>
                           Checking available reservation changes...
                         </div>
@@ -2269,24 +2281,24 @@ export default function GuestCancellationPage() {
     </div>
 
     <h2 style={styles.cardTitle}>
-      {preview.securePreCheckin.completed
+      {preview.demo ? "Secure Pre-check-in · Demo" : preview.securePreCheckin.completed
         ? "Secure Pre-check-in completed"
         : "Secure Pre-check-in required"}
     </h2>
 
     <p style={styles.securePreCheckinText}>
-      {preview.securePreCheckin.completed
+      {preview.demo ? "Demo registration is prepared. Identity and payment are simulated; no identity documents or payment are requested." : preview.securePreCheckin.completed
         ? "Your required pre-arrival steps are complete."
         : "Complete the required pre-arrival process before access credentials can be released."}
     </p>
 
     <p style={styles.securePreCheckinText}>
-      {preview.securePreCheckin.completed
+      {preview.demo ? "El registro de demostración está preparado. Identidad y pago simulados; no se solicitan documentos ni cobros." : preview.securePreCheckin.completed
         ? "Sus pasos requeridos antes de la llegada están completados."
         : "Complete el proceso requerido antes de la llegada para que se puedan liberar las credenciales de acceso."}
     </p>
 
-    {!preview.securePreCheckin.completed &&
+    {!preview.demo && !preview.securePreCheckin.completed &&
     preview.securePreCheckin.url ? (
       <a
         href={preview.securePreCheckin.url}
@@ -2375,7 +2387,7 @@ export default function GuestCancellationPage() {
                       </div>
                     ) : null}
 
-                    {preview.policy.cancellationTermsAcceptance?.accepted ? (
+                    {!preview.demo && preview.policy.cancellationTermsAcceptance?.accepted ? (
                       <div style={styles.acceptanceBox}>
                         <strong>Terms accepted at booking</strong>
                         <span>
@@ -2401,7 +2413,7 @@ export default function GuestCancellationPage() {
                   <p style={styles.summaryText}>{actionCopy.text}</p>
 
                   <div style={styles.refundAmountBox}>
-                    <span>{refundAmountLabel}</span>
+                    <span>{preview.demo ? "Simulated refund · no refund issued" : refundAmountLabel}</span>
                     <strong>
                       {formatMoney(displayedRefundAmount, currency)}
                     </strong>
@@ -2424,7 +2436,7 @@ export default function GuestCancellationPage() {
                     </div>
 
                     <div style={styles.breakdownRow}>
-                      <span>Total paid</span>
+                      <span>{preview.demo ? "Simulated amount · no charge" : "Total paid"}</span>
                       <strong>
                         {formatMoney(
                           preview.evaluation.breakdown?.totalAmount,
@@ -2456,7 +2468,7 @@ export default function GuestCancellationPage() {
                     </div>
                   </div>
 
-                  {preview.refund ? (
+                  {!preview.demo && preview.refund ? (
                     <div style={styles.refundProcessedBox}>
                       <strong>
                         {preview.refund.isFullRefund
@@ -2491,7 +2503,7 @@ export default function GuestCancellationPage() {
                   ) : null}
 
                   <div style={styles.refundNotice}>
-                    {getRefundExecutionCopy(preview, currency)}
+                    {preview.demo ? "Demonstration only. No payment was collected and no refund can be issued." : getRefundExecutionCopy(preview, currency)}
                   </div>
 
                   {submitMessage ? (
@@ -2502,7 +2514,7 @@ export default function GuestCancellationPage() {
                     <div style={styles.inlineError}>{pageError}</div>
                   ) : null}
 
-                  {!isCancelled && preview.cancellationAllowed !== false ? (
+                  {!preview.demo && !isCancelled && preview.cancellationAllowed !== false ? (
                     <>
                       <label style={styles.reasonField}>
                         <span>Cancellation reason optional</span>
@@ -2558,6 +2570,7 @@ export default function GuestCancellationPage() {
                 <p>Pin&Go could not load this reservation.</p>
               </div>
             )}
+            {preview?.demo ? <div style={{marginTop: 24}}>{guestAssistant}</div> : null}
           </div>
         </section>
       </main>

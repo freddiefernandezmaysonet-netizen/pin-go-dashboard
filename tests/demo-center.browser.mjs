@@ -33,7 +33,7 @@ try {
   const prep = { ready: true, blockers: [], property: { name: "Pin&Go Demo Property", timezone: "America/Puerto_Rico",
     cleaningStartOffsetMinutes: 15, cleaningAccessMinutes: 30 }, primaryAdmin: { email: "principal@example.invalid", fullName: "Demo host" },
     cleaner: { id: "synthetic-cleaner", name: "Demo Cleaner", phone: "+12025550123", language: "es" }, lock: { name: "Demo" } };
-  let run = null, phase = "PRE_STAY";
+  let run = null, phase = "PRE_STAY", demo = true;
   await page.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.hostname === "127.0.0.1") return route.continue();
@@ -59,8 +59,16 @@ try {
     }
     if (url.pathname.includes("/demo/runs/")) return reply(run ? { ok: true, data: run } : { ok: false }, run ? 200 : 404);
     if (url.pathname.endsWith("/cancellation-preview")) return reply({ ok: true, managementPhase: phase,
-      cancellationAllowed: false, demo: { paymentSimulated: true, identitySimulated: true, timezone: prep.property.timezone },
-      reservation: { ...run.reservation, propertyName: prep.property.name, currency: "usd", totalAmount: 0 } });
+      cancellationAllowed: !demo, ...(demo ? {demo: { paymentSimulated: true, identitySimulated: true, timezone: prep.property.timezone }} : {}),
+      reservation: { ...run.reservation, propertyName: prep.property.name, status: "ACTIVE", paymentState: "PAID", currency: "usd", totalAmount: demo ? 0 : 250 },
+      securePreCheckin: { completed: true, url: "https://demo-api.example.invalid/secure-precheckin/synthetic-token" },
+      policy: { name: "Flexible policy", type: "FLEXIBLE", refundBasis: "TOTAL_AMOUNT", guestFacingSummary: "Full refund at least seven days before arrival.",
+        refundRules: [{ label: "Full refund", minHoursBeforeCheckIn: 168, refundPercent: 100 }], nonRefundableScenarios: [] },
+      evaluation: { requestedAt: new Date().toISOString(), checkIn: run.reservation.checkIn, freeCancellationDeadline: run.reservation.checkIn,
+        refundPercent: 0, refundAmount: 0, refundAmountCents: 0, eligibleForGuestSelfCancellation: !demo, requiresHostApproval: false,
+        breakdown: { totalAmount: demo ? 0 : 250, nightlySubtotal: 0, cleaningFee: 0, taxesTotal: 0, amenitiesTotal: 0, refundableBase: 0 } } });
+    if (!demo && url.pathname.endsWith("/property-protection-case")) return reply({ ok: true, available: false });
+    if (!demo && url.pathname.endsWith("/modification-options")) return reply({ ok: true, modificationAllowed: false });
     if (url.pathname.endsWith("/pin-ai/history")) return reply({ ok: true, version: 1, messages: [] });
     if (url.pathname.endsWith("/pin-ai/incident-updates")) return reply({ ok: true, incidents: [], updates: [], nextAfter: null });
     unexpected.push(`${request.method()} ${url.pathname}`); return route.abort();
@@ -89,8 +97,12 @@ try {
   await page.getByRole("heading", { name: "Reserva PG-2026-000999", exact: true }).waitFor();
   assert.equal(commands.length, 1);
   const requestId = commands[0].requestId;
+  prep.ready = false; prep.blockers = ["GUEST_CARDS_UNAVAILABLE"];
   await page.reload();
   await page.getByRole("heading", { name: "Reserva PG-2026-000999", exact: true }).waitFor();
+  await page.getByText("La preparación se volverá a comprobar", { exact: false }).waitFor();
+  assert.equal(await page.getByText("La demo todavía no puede iniciarse.", { exact: false }).count(), 0);
+  prep.ready = true; prep.blockers = [];
   await page.getByRole("button", { name: "Continuar la misma ejecución", exact: true }).click();
   await page.getByRole("button", { name: "Continuar la misma ejecución", exact: true }).waitFor();
   assert.equal(commands.length, 2); assert.equal(commands[1].requestId, requestId);
@@ -104,18 +116,43 @@ try {
   await page.screenshot({ path: resolve(output, "mobile-journey.png"), fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, "no horizontal overflow");
   await page.goto(`${address}?guest=1`);
-  await page.getByRole("heading", { name: "Reservation #PG-2026-000999", exact: true }).waitFor();
+  await page.getByText("Reservation #PG-2026-000999", { exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
+  assert.equal(await page.getByRole("heading", { name: "Secure Pre-check-in · Demo", exact: true }).count(), 1);
+  assert.equal(await page.getByText("Simulated · no charge", { exact: true }).count(), 1);
+  assert.equal(await page.evaluate(() => {
+    const reservation = [...document.querySelectorAll('h2')].find(h => h.textContent === 'Pin&Go Demo Property');
+    const chat = document.getElementById('pin-ai-chat-title');
+    return Boolean(reservation && chat && (reservation.compareDocumentPosition(chat) & Node.DOCUMENT_POSITION_FOLLOWING));
+  }), true, "reservation details appear before the chat");
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, "full guest portal fits mobile");
   assert.equal(await page.locator("textarea").count(), 1, "Pin AI is visible for the same pre-stay reservation");
   await page.waitForFunction(() => { const input = document.querySelector("textarea"); return input && !input.disabled; });
   assert.equal(await page.getByRole("button", { name: /Cancel reservation|Confirm cancellation/i }).count(), 0);
+  assert.equal(await page.getByRole("button", { name: /Try again|Preview changes|Resume secure payment/ }).count(), 0);
+  assert.equal(await page.getByRole("link", { name: /Continue Secure Pre-check-in/ }).count(), 0);
   await page.screenshot({ path: resolve(output, "mobile-manage-reservation.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.screenshot({ path: resolve(output, "desktop-manage-reservation.png"), fullPage: true });
+  phase = "IN_STAY"; await page.reload();
+  await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
+  assert.equal(await page.locator("textarea").count(), 1, "in-stay Demo retains full details and Pin AI");
   // Advance the browser clock beyond the original checkout without editing the stay.
   await page.clock.install({ time: new Date(Date.parse(run.reservation.checkOut) + 60000) });
   run.reservation.accessGrants[0].status = "REVOKED"; run.reservation.NfcAssignment[0].status = "ENDED";
   run.cleaningWork = [{ startConfirmedAt: run.reservation.checkOut, completionConfirmedAt: run.reservation.checkOut }];
   phase = "POST_STAY"; await page.reload();
-  await page.getByRole("heading", { name: "Reservation #PG-2026-000999", exact: true }).waitFor();
+  await page.getByText("Reservation #PG-2026-000999", { exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
   assert.equal(await page.locator("textarea").count(), 0, "existing post-stay Pin AI policy is preserved");
+  demo = false; phase = "PRE_STAY"; await page.reload();
+  await page.getByRole("button", { name: "Cancel reservation", exact: true }).waitFor();
+  assert.equal(await page.getByRole("heading", { name: "Secure Pre-check-in completed", exact: true }).count(), 1);
+  assert.equal(await page.getByText("Simulated · no charge", { exact: true }).count(), 0, "commercial view is unchanged");
+  phase = "IN_STAY"; await page.reload();
+  await page.getByRole("heading", { name: "Your stay has already started.", exact: true }).waitFor();
+  assert.equal(await page.getByRole("heading", { name: "Flexible policy", exact: true }).count(), 0);
+  demo = true;
   await page.goto(address);
   await page.getByRole("heading", { name: "Reserva PG-2026-000999", exact: true }).waitFor();
   await page.getByRole("button", { name: "Actualizar estado", exact: true }).click();
@@ -130,7 +167,7 @@ try {
   assert.equal(await page.getByLabel("Email del huésped", { exact: true }).count(), 1, "definitive pre-creation rejection unlocks the form");
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);
   await writeFile(resolve(output, "result.json"), JSON.stringify({ passed: true, scope: "React components with synthetic API responses",
-    checks: ["readable preparation blockers and support references", "preparation and consent", "same request after reload and resume", "six journey steps", "mobile overflow", "ENDED NFC permits next demo after cleaning", "same reservation in guest portal", "no commercial guest controls", "pre/post stay Pin AI visibility", "pre-creation rejection recovery"], errors, unexpected }, null, 2));
+    checks: ["readable preparation blockers and support references", "preparation and consent", "same request after reload and resume", "active Guest cards do not block ongoing demo", "six journey steps", "mobile overflow", "ENDED NFC permits next demo after cleaning", "full Direct Booking details before chat", "policy and simulated precheckin across all Demo phases", "no commercial guest controls", "commercial view unchanged", "pre/in/post stay Pin AI visibility", "pre-creation rejection recovery"], errors, unexpected }, null, 2));
   console.log("Demo Center browser checks passed; screenshots are in test-artifacts/demo-center.");
 } catch (error) {
   await page?.screenshot({ path: resolve(output, "failure.png"), fullPage: true });
