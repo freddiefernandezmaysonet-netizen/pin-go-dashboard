@@ -41,10 +41,15 @@ export type GuestAccessSettings = {
   guestAccessMode: GuestAccessMode;
   cleaningNfcEnabled: boolean;
   configured: boolean;
+  identityBilling: { version: string; amountCents: number; currency: "USD";
+    collectionMethod: "DIRECT_BOOKING_APPLICATION_FEE"; reservationScope: "DIRECT_BOOKING";
+    accepted: boolean; acceptedAt: string | null };
   activeAgreement: PropertyGuestAgreement | null;
 };
 
 export type SaveGuestAccessSettingsInput = {
+  expectedAgreementVersion: string | null;
+  acceptedIdentityBillingTermsVersion?: string;
   guestAccessMode: GuestAccessMode;
   cleaningNfcEnabled: boolean;
   requiresIdentityVerification: boolean;
@@ -185,6 +190,7 @@ export async function getGuestAccessSettings(
     )}/guest-access-settings`,
     {
       credentials: "include",
+      cache: "no-store",
     }
   );
 
@@ -219,6 +225,7 @@ export async function saveGuestAccessSettings(
     {
       method: "PUT",
       credentials: "include",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
       },
