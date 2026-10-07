@@ -2,7 +2,7 @@ import { loginPathForSessionError } from "../auth/sessionExpiry";
 const base = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 export type PinAIPropertySettings = { propertyId: string; name: string; enabled: boolean; revision: number;
   billing: { version: string; amountCents: number; currency: string; acceptedVersion: string | null;
-    acceptedAt: string | null; collectionReady: boolean };
+    acceptedAt: string | null; collectionReady: boolean; exempt?: boolean };
   organization: { enabled: boolean; revision: number };
   state: "EXISTING_SCOPE" | "DISABLED" | "ENABLED" | "PENDING_ACTIVATION" };
 export type PinAIOrganization = { id: string; name: string; pinAIEnabled: boolean; pinAIRevision: number };
