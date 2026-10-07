@@ -21,6 +21,17 @@ function module(file, replacements = {}) {
 }
 const api = module("../../api/pinAIActivation.ts", { "../auth/sessionExpiry": module("../../auth/sessionExpiry.ts") });
 const { PinAISettingsCard } = await import(module("./PinAISettingsCard.tsx", { "../../api/pinAIActivation": api }));
+test("new Pin AI host and administrator surfaces use English without browser language detection", () => {
+  for (const file of ["./PinAISettingsCard.tsx", "./PinAIBillingCard.tsx", "../../pages/admin/AdminPinAIActivationPage.tsx"]) {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /[áéíóúñ¿¡]/i);
+    assert.doesNotMatch(source, /navigator\.language|useTranslation|setLocale/);
+  }
+  const admin = readFileSync(new URL("../../pages/admin/AdminPinAIActivationPage.tsx", import.meta.url), "utf8");
+  assert.match(admin, /Pin AI · Organization enablement/);
+  assert.match(admin, /Confirm change/);
+  assert.match(admin, /USD \$1\.00 fee per reservation from any source/);
+});
 async function settle(check) {
   for (let n = 0; n < 100; n++) { if (check()) return; await act(async () => { await new Promise(r => setTimeout(r, 5)); }); }
   assert.fail("UI did not settle");
@@ -51,40 +62,43 @@ async function mount(t, { organizationEnabled = true, saveFails = false, saveErr
 }
 test("host cannot enable a property before the organization is granted", async t => {
   const h = await mount(t, { organizationEnabled: false });
-  assert.equal(h.toggle().disabled, true); assert.equal(h.button("Guardar").disabled, true);
-  assert.match(h.container.textContent, /habilitar el servicio para tu organización/);
+  assert.equal(h.toggle().disabled, true); assert.equal(h.button("Save").disabled, true);
+  assert.match(h.container.textContent, /enable the service for your organization/);
   assert.equal(h.writes.length, 0);
 });
 test("saving passes both revisions and distinguishes configured from active", async t => {
   const h = await mount(t);
   await act(async () => h.toggle().click());
   await act(async () => h.container.querySelectorAll('input[type="checkbox"]')[1].click());
-  await act(async () => h.button("Guardar").click());
-  await settle(() => h.container.textContent.includes("Configuración guardada."));
+  await act(async () => h.button("Save").click());
+  await settle(() => h.container.textContent.includes("Settings saved."));
   assert.deepEqual(h.writes, [{ enabled: true, expectedRevision: 0, organizationRevision: 1, acceptedTermsVersion: "pin-ai-connect-usd-1-reservation-v1" }]);
-  assert.match(h.container.textContent, /activación pendiente/);
-  assert.match(h.container.textContent, /propia habilitación/);
+  assert.match(h.container.textContent, /activation pending/);
+  assert.match(h.container.textContent, /separate enablement/);
 });
 test("a conflicting or uncertain save blocks replay until a fresh read", async t => {
   const h = await mount(t, { saveFails: true });
   await act(async () => h.toggle().click());
   await act(async () => h.container.querySelectorAll('input[type="checkbox"]')[1].click());
-  await act(async () => h.button("Guardar").click());
+  await act(async () => h.button("Save").click());
   await settle(() => h.container.querySelector('[role="alert"]'));
-  assert.equal(h.button("Guardar").disabled, true);
+  assert.equal(h.button("Save").disabled, true);
   assert.equal(h.toggle().disabled, true);
-  await act(async () => h.button("Actualizar").click());
+  await act(async () => h.button("Refresh").click());
   await settle(() => !h.toggle().disabled);
   assert.equal(h.toggle().checked, false); assert.equal(h.writes.length, 1);
 });
 
 test("price is disclosed and saving activation requires explicit consent", async t => {
   const h = await mount(t);
-  assert.match(h.container.textContent, /USD \$1\.00 por reservación/);
+  assert.match(h.container.textContent, /Pin AI · Guest assistance/);
+  assert.match(h.container.textContent, /Host fee:/);
+  assert.match(h.container.textContent, /USD \$1\.00 per reservation/);
   await act(async () => h.toggle().click());
-  assert.equal(h.button("Guardar").disabled, true);
+  assert.match(h.container.textContent, /I authorize Pin&Go to debit USD \$1\.00/);
+  assert.equal(h.button("Save").disabled, true);
   assert.equal(h.container.querySelectorAll('input[type="checkbox"]')[1].checked, false);
-  await act(async () => h.button("Guardar").click());
+  await act(async () => h.button("Save").click());
   assert.equal(h.writes.length, 0);
 });
 
@@ -106,36 +120,36 @@ async function mountBilling(t, fails = false, status = "PENDING_BALANCE") {
   await settle(() => container.querySelector(fails ? '[role="alert"]' : "tbody tr"));
   return container;
 }
-for (const [status, label] of Object.entries({ PENDING_CONNECT: "Pendiente de descuento Connect",
-  PENDING_BALANCE: "Pendiente de saldo disponible", PAID: "Cobrado", NEEDS_REVIEW: "Requiere revisión",
-  PENDING_INVOICE: "Registro anterior · requiere revisión" })) {
+for (const [status, label] of Object.entries({ PENDING_CONNECT: "Pending Connect debit",
+  PENDING_BALANCE: "Pending available balance", PAID: "Paid", NEEDS_REVIEW: "Review required",
+  PENDING_INVOICE: "Legacy record · review required" })) {
   test(`billing presents ${status} without treating pending charges as paid`, async t => {
     const container = await mountBilling(t, false, status);
     assert.equal(container.querySelector("tbody tr td:last-child").textContent, label);
     assert.match(container.querySelector("tbody tr").textContent, /PG-TEST.*USD 1\.00/);
-    assert.match(container.textContent, /Hay 2 reservas cuyo cargo requiere revisión/);
+    assert.match(container.textContent, /Charges for 2 reservations require review/);
   });
 }
 test("billing read failures show a controlled error and a refresh action", async t => {
   const container = await mountBilling(t, true);
-  assert.match(container.querySelector('[role="alert"]').textContent, /No se pudieron cargar/);
+  assert.match(container.querySelector('[role="alert"]').textContent, /could not be loaded/);
   assert.equal(container.querySelector("table"), null);
-  assert.match(container.querySelector("button").textContent, /Actualizar cargos/);
+  assert.match(container.querySelector("button").textContent, /Refresh charges/);
 });
 
 for (const [code, message] of Object.entries({
-  PIN_AI_CONNECT_ACCOUNT_REQUIRED: /Conecta tu cuenta de Stripe/,
-  PIN_AI_CONNECT_ACCOUNT_INCOMPATIBLE: /todavía no es compatible/,
-  PIN_AI_CONNECT_VERIFICATION_UNAVAILABLE: /No pudimos verificar tu cuenta Stripe/,
+  PIN_AI_CONNECT_ACCOUNT_REQUIRED: /Connect your Stripe account/,
+  PIN_AI_CONNECT_ACCOUNT_INCOMPATIBLE: /not yet compatible/,
+  PIN_AI_CONNECT_VERIFICATION_UNAVAILABLE: /We could not verify your Stripe account/,
 })) {
   test(`activation explains ${code} and requires a fresh read before retry`, async t => {
     const h = await mount(t, { saveFails: true, saveError: code });
     await act(async () => h.toggle().click());
     await act(async () => h.container.querySelectorAll('input[type="checkbox"]')[1].click());
-    await act(async () => h.button("Guardar").click());
+    await act(async () => h.button("Save").click());
     await settle(() => h.container.querySelector('[role="alert"]'));
     assert.match(h.container.querySelector('[role="alert"]').textContent, message);
-    assert.equal(h.button("Guardar").disabled, true);
+    assert.equal(h.button("Save").disabled, true);
     assert.equal(h.writes.length, 1);
   });
 }
