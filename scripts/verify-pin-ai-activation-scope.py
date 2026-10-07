@@ -11,7 +11,7 @@ assert os.environ.get("GITHUB_EVENT_NAME") == "pull_request"
 assert os.environ.get("GITHUB_REPOSITORY") == repo
 assert pr["number"] == 193 and pr["head"]["repo"]["full_name"] == repo
 assert pr["head"]["ref"] == "agent/pin-ai-property-activation-v1" and pr["base"]["ref"] == "main"
-base = "666dddd895f2fa8d10709126e26cd2f4fd637c21"
+base = "a20b407ee8b03dd66b18f8fa50a6724879a1b995"
 assert git("merge-base", "origin/main", "HEAD").strip() == base
 expected = {'src/api/auth.ts', 'src/components/properties/PinAIBillingCard.tsx', 'src/api/pinAIActivation.ts', 'src/pages/dashboard/BillingPage.tsx', '.github/workflows/pin-ai-property-activation-dashboard.yml', 'src/components/properties/PinAISettingsCard.tsx', 'src/pages/properties/PropertyEditPage.tsx', 'src/app/layout/AppShell.tsx', '.github/workflows/enterprise-auth-e8b-session-enforcement-ui.yml', 'scripts/verify-pin-ai-activation-scope.py', 'src/pages/admin/AdminPinAIActivationPage.tsx', 'src/components/properties/pinAISettings.interaction.test.mjs', 'src/app/routes/router.tsx', '.github/workflows/enterprise-auth-e6-canary-ui.yml'}
 assert set(git("diff", "--name-only", base, "HEAD").splitlines()) == expected
