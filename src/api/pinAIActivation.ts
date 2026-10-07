@@ -35,7 +35,7 @@ export const setPinAIProperty = (view: PinAIPropertySettings, enabled: boolean) 
       ? { acceptedTermsVersion: view.billing.version } : {}) }),
 });
 export const listPinAIOrganizations = (query: string, signal?: AbortSignal) =>
-  request<{ items: PinAIOrganization[]; rolloutActive: boolean }>(`/api/internal/pin-ai/organizations?q=${encodeURIComponent(query)}`, { signal });
+  request<{ items: PinAIOrganization[]; rolloutActive: boolean; allOrganizationsAvailable?: boolean }>(`/api/internal/pin-ai/organizations?q=${encodeURIComponent(query)}`, { signal });
 export const setPinAIOrganization = (row: PinAIOrganization) => request(`/api/internal/pin-ai/organizations/${encodeURIComponent(row.id)}`, {
   method: "PUT", body: JSON.stringify({ enabled: !row.pinAIEnabled, expectedRevision: row.pinAIRevision }),
 });

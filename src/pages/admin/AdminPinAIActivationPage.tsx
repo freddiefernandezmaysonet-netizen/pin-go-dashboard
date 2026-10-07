@@ -21,6 +21,7 @@ export default function AdminPinAIActivationPage() {
   return <main className="max-w-3xl space-y-5">
     <h1 className="text-2xl font-semibold">Pin AI · Organization enablement</h1>
     <p>Enable assistance for an organization. Its administrators choose the properties and accept the USD $1.00 fee per reservation from any source (Direct Booking, OTA or manual) when enabling them. Enabling the organization does not create an immediate charge or enable reservation changes or OTA messaging.</p>
+    {query.data?.allOrganizationsAvailable ? <p role="status">Pin AI is available to all current and future organizations. Hosts enable each property and accept its billing authorization. Explicit organization restrictions remain in effect.</p> : null}
     {query.data && !query.data.rolloutActive ? <p role="status">Enforcement of these controls is pending. You can save the settings; the portal retains its previous availability until rollout.</p> : null}
     <form className="flex flex-wrap gap-3" onSubmit={e => { e.preventDefault(); setSelected(null); setSearch(input.trim()); }}>
       <label>Organization <input value={input} maxLength={80} disabled={saving} onChange={e => setInput(e.target.value)}
@@ -34,7 +35,7 @@ export default function AdminPinAIActivationPage() {
     {notice ? <p role="status">{notice}</p> : null}
     {!query.isError ? query.data?.items.map(row => <section key={row.id} className="rounded-xl border border-slate-200 bg-white p-4">
       <h2 className="font-semibold">{row.name}</h2>
-      <p>{row.pinAIRevision === 0 ? "Current settings preserved" : row.pinAIEnabled ? "Organization enabled" : "Organization disabled"}</p>
+      <p>{row.pinAIRevision === 0 ? query.data?.allOrganizationsAvailable ? "Available · property authorization required" : "Current settings preserved" : row.pinAIEnabled ? "Organization enabled" : "Organization disabled"}</p>
       <button disabled={saving || query.isFetching} onClick={() => { setSelected(row); setNotice(""); }} className="mt-2 rounded-lg border border-blue-700 px-4 py-2 text-blue-800">
         {row.pinAIEnabled ? "Disable organization" : "Enable organization"}</button>
     </section>) : null}
