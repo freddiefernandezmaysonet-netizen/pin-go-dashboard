@@ -52,11 +52,15 @@ async function mount(t, { accepted = false, saveFails = false } = {}) {
   await act(async () => root.render(createElement(GuestAccessSettingsCard, { propertyId: "property-a" })));
   await settle(() => container.textContent.includes("USD $2.50"));
   const button = text => [...container.querySelectorAll("button")].find(b => b.textContent.includes(text));
-  const consent = () => [...container.querySelectorAll("label")].find(l => l.textContent.includes("Autorizo a Pin&Go"))?.querySelector("input");
+  const consent = () => [...container.querySelectorAll("label")].find(l => l.textContent.includes("I authorize Pin&Go"))?.querySelector("input");
   return { container, writes, button, consent };
 }
 test("legacy enabled Identity Check has no inferred host consent", async t => {
   const h = await mount(t);
+  assert.match(h.container.textContent, /Identity Check applies to Direct Booking\. Host fee: USD \$2\.50/);
+  assert.match(h.container.textContent, /deducted from the reservation payment/);
+  assert.match(h.container.textContent, /I authorize Pin&Go to deduct USD \$2\.50/);
+  assert.ok(h.button("Refresh status"));
   assert.equal(h.consent().checked, false);
   assert.equal(h.button("Save Secure").disabled, true);
   await act(async () => h.button("Save Secure").click());
@@ -66,7 +70,7 @@ test("explicit host acceptance sends exact server terms and agreement revision",
   const h = await mount(t);
   await act(async () => h.consent().click());
   await act(async () => h.button("Save Secure").click());
-  await settle(() => h.container.textContent.includes("Autorización de cobro registrada"));
+  await settle(() => h.container.textContent.includes("Billing authorization recorded"));
   assert.equal(h.writes.length, 1);
   assert.equal(h.writes[0].acceptedIdentityBillingTermsVersion, "identity-check-direct-booking-usd-250-v1");
   assert.equal(h.writes[0].expectedAgreementVersion, "v-current");
@@ -84,9 +88,9 @@ test("uncertain save cannot replay until a fresh read and new explicit consent",
   const h = await mount(t, { saveFails: true });
   await act(async () => h.consent().click());
   await act(async () => h.button("Save Secure").click());
-  await settle(() => h.container.textContent.includes("No se pudo confirmar el cambio"));
+  await settle(() => h.container.textContent.includes("The change could not be confirmed"));
   assert.equal(h.button("Save Secure").disabled, true);
-  await act(async () => h.button("Actualizar estado").click());
+  await act(async () => h.button("Refresh status").click());
   await settle(() => !h.consent().disabled);
   assert.equal(h.consent().checked, false);
   assert.equal(h.writes.length, 1);

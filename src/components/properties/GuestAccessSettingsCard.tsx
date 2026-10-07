@@ -409,7 +409,7 @@ function removeRule(
     } catch {
       setLoadState("error");
       setNeedsReload(true);
-      setError("No se pudo confirmar el cambio. Actualiza el estado antes de intentar guardarlo nuevamente.");
+      setError("The change could not be confirmed. Refresh the status before trying to save again.");
     } finally { savingRef.current = false; }
   }
 
@@ -568,14 +568,14 @@ function removeRule(
     </div>
   </label>
   {settings?.identityBilling ? <div>
-    <p>Identity Check se aplica a Direct Booking. Tarifa para el anfitrión: USD ${(settings.identityBilling.amountCents / 100).toFixed(2)} por reservación con verificación de identidad habilitada, descontada del pago de la reserva antes de transferirlo a tu cuenta Stripe Connect.</p>
-    {settings.identityBilling.accepted ? <p role="status">Autorización de cobro registrada para esta propiedad.</p> : form.requiresIdentityVerification ? <label style={modeOptionStyle}>
+    <p>Identity Check applies to Direct Booking. Host fee: USD ${(settings.identityBilling.amountCents / 100).toFixed(2)} per reservation with identity verification enabled, deducted from the reservation payment before it is transferred to your Stripe Connect account.</p>
+    {settings.identityBilling.accepted ? <p role="status">Billing authorization recorded for this property.</p> : form.requiresIdentityVerification ? <label style={modeOptionStyle}>
       <input type="checkbox" checked={acceptedIdentityPrice} disabled={isBusy || needsReload}
         onChange={event => setAcceptedIdentityPrice(event.target.checked)} />
-      Autorizo a Pin&Go a descontar USD ${(settings.identityBilling.amountCents / 100).toFixed(2)} del pago de cada reservación de Direct Booking con Identity Check habilitado en esta propiedad.
+      I authorize Pin&Go to deduct USD ${(settings.identityBilling.amountCents / 100).toFixed(2)} from the payment for each Direct Booking reservation with Identity Check enabled at this property.
     </label> : null}
-  </div> : <p>La tarifa de Identity Check no está disponible. Actualiza el estado antes de activarlo.</p>}
-  <button type="button" disabled={isBusy} onClick={() => void loadSettings()} style={secondaryButtonStyle}>Actualizar estado</button>
+  </div> : <p>The Identity Check fee is unavailable. Refresh the status before enabling it.</p>}
+  <button type="button" disabled={isBusy} onClick={() => void loadSettings()} style={secondaryButtonStyle}>Refresh status</button>
 </div>
 
       <div style={sectionStyle}>
