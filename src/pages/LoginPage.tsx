@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   login,
+  type AuthenticatedUser,
   resendLoginMfa,
   verifyLoginMfa,
   type LoginMfaRequired,
@@ -74,8 +75,12 @@ export default function LoginPage() {
     return () => window.clearInterval(timer);
   }, [mfa]);
 
-  async function finishSignIn() {
+  async function finishSignIn(authenticated: AuthenticatedUser) {
     await refresh();
+    if (authenticated?.role === "CLEANER") {
+      navigate("/my-cleanings", { replace: true });
+      return;
+    }
     const destination = incidentReturnFromSearch(location.search);
     if (destination) {
       navigate(destination, { replace: true });
@@ -106,7 +111,8 @@ export default function LoginPage() {
         return;
       }
 
-      await finishSignIn();
+      if (!("user" in result)) throw new Error("LOGIN_USER_MISSING");
+      await finishSignIn(result.user);
     } catch {
       setError("Invalid email or password / Correo o contraseña incorrectos");
     } finally {
@@ -128,12 +134,12 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      await verifyLoginMfa({
+      const result = await verifyLoginMfa({
         challengeToken: mfa.challengeToken,
         code: normalizedCode,
         trustDevice,
       });
-      await finishSignIn();
+      await finishSignIn(result.user);
     } catch (err) {
       const message = err instanceof Error ? err.message : "MFA_VERIFY_FAILED";
       if (message === "MFA_INVALID_CODE") {

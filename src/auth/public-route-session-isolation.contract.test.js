@@ -27,7 +27,7 @@ test("guest manage reservation remains a public router surface", () => {
   );
 
   const publicManageIndex = router.indexOf('path: "/booking/manage/:guestToken"');
-  const protectedBoundaryIndex = router.indexOf("<RequireAuth>\n        <AppShell />");
+  const protectedBoundaryIndex = router.indexOf("<RequireHost>\n        <AppShell />");
 
   assert.ok(publicManageIndex >= 0);
   assert.ok(protectedBoundaryIndex >= 0);
@@ -38,7 +38,7 @@ test("guest manage reservation remains a public router surface", () => {
 });
 
 test("direct-booking public routes remain outside the protected AppShell boundary", () => {
-  const protectedBoundaryIndex = router.indexOf("<RequireAuth>\n        <AppShell />");
+  const protectedBoundaryIndex = router.indexOf("<RequireHost>\n        <AppShell />");
   assert.ok(protectedBoundaryIndex >= 0);
 
   for (const route of [

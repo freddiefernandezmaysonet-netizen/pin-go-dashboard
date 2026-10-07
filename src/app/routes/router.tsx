@@ -27,7 +27,8 @@ import LoginPage from "../../pages/LoginPage";
 import SignupPage from "../../pages/auth/SignupPage";
 import SignupSuccessPage from "../../pages/auth/SignupSuccessPage";
 import OrganizationInvitationPage from "../../pages/auth/OrganizationInvitationPage";
-import { RequireAuth } from "../../auth/RequireAuth";
+import { RequireCleaner, RequireHost } from "../../auth/RequireCleaner";
+import MyCleaningsPage from "../../pages/cleaner/MyCleaningsPage";
 import CreatePropertyPage from "../../pages/onboarding/CreatePropertyPage";
 import TtlockConnectPage from "../../pages/integrations/TtlockConnectPage";
 import NfcSyncPage from "../../pages/dashboard/locks/NfcSyncPage";
@@ -83,8 +84,11 @@ function ReviewRouteBoundary({ children }: { children: ReactNode }) {
 }
 
 function RootRedirect() {
+  const { user, loading } = useAuth();
   const host = window.location.hostname;
   const { isCustomBrand } = useBrand();
+  if (loading) return <p role="status">Cargando / Loading…</p>;
+  if (user?.role === "CLEANER") return <Navigate to="/my-cleanings" replace />;
 
   if (
     isCustomBrand ||
@@ -197,6 +201,7 @@ function ReservationDetailRoute() {
 }
 
 export const router = createBrowserRouter([
+  { path: "/my-cleanings", element: <RequireCleaner><MyCleaningsPage /></RequireCleaner> },
  
   {
   path: "/home",
@@ -296,9 +301,9 @@ export const router = createBrowserRouter([
 
   {
     element: (
-      <RequireAuth>
+      <RequireHost>
         <AppShell />
-      </RequireAuth>
+      </RequireHost>
     ),
     children: [
       { path: "/", element: <Navigate to="/overview" replace /> },
@@ -388,33 +393,33 @@ export const router = createBrowserRouter([
 {
   path: "/admin/sales-followups",
   element: (
-    <RequireAuth>
+    <RequireHost>
       <PlatformAdminRoute>
         <AdminSalesFollowupsPage />
       </PlatformAdminRoute>
-    </RequireAuth>
+    </RequireHost>
   ),
 },
 
  {
   path: "/admin/demo-center",
   element: (
-    <RequireAuth>
+    <RequireHost>
       <PlatformAdminRoute>
         <AdminDemoCenterPage />
       </PlatformAdminRoute>
-    </RequireAuth>
+    </RequireHost>
   ),
 },
 
 {
     path: "/admin/financial",
     element: (
-      <RequireAuth>
+      <RequireHost>
         <PlatformAdminRoute>
           <AdminFinancialPage />
         </PlatformAdminRoute>
-      </RequireAuth>
+      </RequireHost>
     ),
   },
 ]);
