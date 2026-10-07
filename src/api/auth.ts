@@ -6,7 +6,7 @@ if (!API_BASE) {
   throw new Error("Missing VITE_API_BASE");
 }
 
-function brandHostnameHeader() {
+function brandHostnameHeader(): Record<string, string> {
   const hostname = window.location.hostname.trim().toLowerCase();
   return hostname
     ? { "X-Pin-Go-Brand-Hostname": hostname }

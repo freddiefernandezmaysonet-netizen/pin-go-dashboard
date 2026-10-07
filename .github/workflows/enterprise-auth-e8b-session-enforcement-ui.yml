@@ -77,6 +77,16 @@ jobs:
                 "${GITHUB_BASE_REF:-}" == "main" ]]; then
             allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|\.github/workflows/mission-control-observational-certification\.yml|src/api/distribution\.ts|src/auth/AuthProvider\.tsx|src/components/reviews/PublicReviewsSection\.tsx|src/dashboard-typescript-baseline\.contract\.test\.mjs|src/pages/properties/PropertyCalendarMissionControl\.contract\.test\.mjs|src/pages/properties/PropertyCalendarPage\.tsx|src/pages/staff/StaffMembersPage\.tsx|vercel\.json)$'
           fi
+          # Exact paired Pin AI PR: preserve authentication runtime and all functional checks.
+          if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" &&
+                "${GITHUB_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
+                "${SCOPE_PR_NUMBER:-}" == "193" &&
+                "${SCOPE_HEAD_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
+                "${GITHUB_HEAD_REF:-}" == "agent/pin-ai-property-activation-v1" &&
+                "${GITHUB_BASE_REF:-}" == "main" ]]; then
+            python3 scripts/verify-pin-ai-activation-scope.py
+            allowed='^(\.github/workflows/pin\-ai\-property\-activation\-dashboard\.yml|src/api/auth\.ts|src/api/pinAIActivation\.ts|src/app/layout/AppShell\.tsx|src/app/routes/router\.tsx|src/components/properties/PinAIBillingCard\.tsx|src/components/properties/PinAISettingsCard\.tsx|src/components/properties/pinAISettings\.interaction\.test\.mjs|src/pages/admin/AdminPinAIActivationPage\.tsx|src/pages/dashboard/BillingPage\.tsx|src/pages/properties/PropertyEditPage\.tsx|scripts/verify\-pin\-ai\-activation\-scope\.py|\.github/workflows/enterprise\-auth\-e6\-canary\-ui\.yml|\.github/workflows/enterprise\-auth\-e8b\-session\-enforcement\-ui\.yml)$'
+          fi
           unexpected="$(git diff --name-only origin/main...HEAD | grep -Ev "$allowed" || true)"
           test -z "$unexpected"
 

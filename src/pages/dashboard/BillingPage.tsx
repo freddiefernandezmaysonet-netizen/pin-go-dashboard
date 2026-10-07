@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { PinAIBillingCard } from "../../components/properties/PinAIBillingCard";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
@@ -593,6 +594,8 @@ export function BillingPage() {
           <b>Error:</b> {err}
         </div>
       ) : null}
+
+      <PinAIBillingCard />
 
       {loading ? (
         <div style={{ color: "#666" }}>Loading billing...</div>
