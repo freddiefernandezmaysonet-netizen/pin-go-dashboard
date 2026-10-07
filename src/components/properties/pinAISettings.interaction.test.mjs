@@ -37,9 +37,9 @@ async function settle(check) {
   assert.fail("UI did not settle");
 }
 async function mount(t, { organizationEnabled = true, saveFails = false, saveError = "PIN_AI_ACTIVATION_CONFLICT",
-  acceptedVersion = null, acceptedAt = null } = {}) {
+  acceptedVersion = null, acceptedAt = null, exempt } = {}) {
   let data = { ok: true, propertyId: "property-a", name: "Synthetic", enabled: false, revision: 0,
-    billing: { version: "pin-ai-connect-usd-1-reservation-v1", amountCents: 100, currency: "USD", acceptedVersion, acceptedAt, collectionReady: false },
+    billing: { version: "pin-ai-connect-usd-1-reservation-v1", amountCents: 100, currency: "USD", acceptedVersion, acceptedAt, collectionReady: false, ...(exempt === undefined ? {} : { exempt }) },
     organization: { enabled: organizationEnabled, revision: 1 }, state: "DISABLED" };
   const writes = [];
   t.mock.method(globalThis, "fetch", async (url, init) => {
@@ -101,6 +101,30 @@ test("price is disclosed and saving activation requires explicit consent", async
   assert.equal(h.container.querySelectorAll('input[type="checkbox"]')[1].checked, false);
   await act(async () => h.button("Save").click());
   assert.equal(h.writes.length, 0);
+});
+
+test("exempt properties retain explicit terms consent without a debit authorization", async t => {
+  const h = await mount(t, { exempt: true });
+  assert.match(h.container.textContent, /Host fee: Exempt/);
+  assert.match(h.container.textContent, /Direct Booking and OTA reservations/);
+  assert.match(h.container.textContent, /early check-in and late checkout remain separate/);
+  await act(async () => h.toggle().click());
+  assert.match(h.container.textContent, /I accept the Pin AI terms/);
+  assert.doesNotMatch(h.container.textContent, /I authorize Pin&Go to debit/);
+  assert.equal(h.button("Save").disabled, true);
+  await act(async () => h.button("Save").click());
+  assert.equal(h.writes.length, 0);
+  await act(async () => h.container.querySelectorAll('input[type="checkbox"]')[1].click());
+  await act(async () => h.button("Save").click());
+  await settle(() => h.container.textContent.includes("Settings saved."));
+  assert.deepEqual(h.writes, [{ enabled: true, expectedRevision: 0, organizationRevision: 1, acceptedTermsVersion: "pin-ai-connect-usd-1-reservation-v1" }]);
+});
+
+test("a false exemption flag keeps the standard debit consent", async t => {
+  const h = await mount(t, { exempt: false });
+  await act(async () => h.toggle().click());
+  assert.match(h.container.textContent, /I authorize Pin&Go to debit USD \$1\.00/);
+  assert.doesNotMatch(h.container.textContent, /Host fee: Exempt/);
 });
 
 test("reactivation with current acceptance does not ask for or submit renewed consent", async t => {
