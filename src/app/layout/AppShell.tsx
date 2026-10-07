@@ -74,6 +74,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/automation/history")) return "Device Automation History";
   if (pathname.startsWith("/messages")) return "Messages";
   if (pathname.startsWith("/pin-ai/incidents")) return "Pin AI · Guest incidents";
+  if (pathname.startsWith("/admin/pin-ai")) return "Pin AI · Organizaciones";
   if (pathname.startsWith("/reputation")) return "Reputation";
 
   // ✅ NUEVO
@@ -217,6 +218,7 @@ const roleNav =
         { to: "/admin/sales-followups", label: "Sales Follow-ups" },
         { to: "/admin/demo-center", label: "Demo Center" },
         { to: "/admin/stay-time-review", label: "Pin AI Recovery" },
+        { to: "/admin/pin-ai", label: "Pin AI · Organizaciones" },
         { to: "/admin/branding", label: "Enterprise Branding" },
         ...(reviewsE1Enabled
           ? [{ to: "/admin/review-moderation", label: "Review Moderation" }]

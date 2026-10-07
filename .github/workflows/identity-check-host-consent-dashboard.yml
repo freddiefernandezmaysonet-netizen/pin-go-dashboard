@@ -1,0 +1,28 @@
+name: Identity Check Host Consent Dashboard
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/api/guestAccessSettings.ts'
+      - 'src/components/properties/GuestAccessSettingsCard.tsx'
+      - 'src/components/properties/identityCheckConsent.interaction.test.mjs'
+      - '.github/workflows/identity-check-host-consent-dashboard.yml'
+permissions:
+  contents: read
+jobs:
+  consent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test src/components/properties/identityCheckConsent.interaction.test.mjs
+      - run: npx eslint src/api/guestAccessSettings.ts src/components/properties/GuestAccessSettingsCard.tsx
+      - run: npx tsc -p tsconfig.app.json --noEmit
+      - run: npm run build

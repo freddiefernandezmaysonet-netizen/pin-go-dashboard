@@ -70,6 +70,7 @@ import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 
 const HostIncidentsPage = lazy(() => import("../../pages/pin-ai/HostIncidentsPage"));
+const AdminPinAIActivationPage = lazy(() => import("../../pages/admin/AdminPinAIActivationPage"));
 
 const GuestReviewPage = lazy(() => import("../../pages/public-booking/GuestReviewPage"));
 const ReputationPage = lazy(() => import("../../pages/reputation/ReputationPage"));
@@ -356,6 +357,10 @@ export const router = createBrowserRouter([
       { path: "/billing/cancel", element: <BillingCancelPage /> },
 
       { path: "/admin/stay-time-review", element: <PlatformAdminRoute><AdminStayTimeReviewPage /></PlatformAdminRoute> },
+      {
+        path: "/admin/pin-ai",
+        element: <PlatformAdminRoute><Suspense fallback={<p role="status">Cargando…</p>}><AdminPinAIActivationPage /></Suspense></PlatformAdminRoute>,
+      },
       {
         path: "/admin/branding",
         element: (

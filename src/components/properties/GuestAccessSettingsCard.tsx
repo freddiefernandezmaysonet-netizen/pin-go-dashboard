@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
   GuestAccessApiError,
@@ -212,9 +212,13 @@ function getErrorMessage(error: unknown) {
   return "Unable to process Secure Guest Access settings.";
 }
 
-export function GuestAccessSettingsCard({
-  propertyId,
-}: GuestAccessSettingsCardProps) {
+export function GuestAccessSettingsCard({ propertyId }: GuestAccessSettingsCardProps) {
+  return <GuestAccessPropertySettings key={propertyId} propertyId={propertyId} />;
+}
+function GuestAccessPropertySettings({ propertyId }: GuestAccessSettingsCardProps) {
+  const [acceptedIdentityPrice, setAcceptedIdentityPrice] = useState(false);
+  const [needsReload, setNeedsReload] = useState(false);
+  const savingRef = useRef(false);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [settings, setSettings] =
     useState<GuestAccessSettings | null>(null);
@@ -254,11 +258,13 @@ const normalizedRulesEs = useMemo(
 
   const canSave =
     Boolean(propertyId) &&
-    !isBusy &&
+    !isBusy && loadState === "ready" &&
     maxGuestsConfigured &&
-    formComplete;
+    formComplete && !needsReload &&
+    (!form.requiresIdentityVerification || (!!settings?.identityBilling &&
+      (settings.identityBilling.accepted || acceptedIdentityPrice)));
 
-  async function loadSettings() {
+  const loadSettings = useCallback(async () => {
     if (!propertyId) return;
 
     try {
@@ -270,16 +276,18 @@ const normalizedRulesEs = useMemo(
 
       setSettings(response.settings);
       setForm(settingsToForm(response.settings));
+      setAcceptedIdentityPrice(false);
+      setNeedsReload(false);
       setLoadState("ready");
     } catch (loadError) {
       setLoadState("error");
       setError(getErrorMessage(loadError));
     }
-  }
+  }, [propertyId]);
 
   useEffect(() => {
     void loadSettings();
-  }, [propertyId]);
+  }, [loadSettings]);
 
   function updateRule(
   language: "en" | "es",
@@ -338,9 +346,13 @@ function removeRule(
 }
 
   async function handleSave() {
-    if (!canSave) return;
+    if (!canSave || savingRef.current) return;
+    savingRef.current = true;
 
     const payload: SaveGuestAccessSettingsInput = {
+  expectedAgreementVersion: settings?.activeAgreement?.version ?? null,
+  ...(form.requiresIdentityVerification && acceptedIdentityPrice && settings?.identityBilling
+    ? { acceptedIdentityBillingTermsVersion: settings.identityBilling.version } : {}),
   guestAccessMode: form.guestAccessMode,
   cleaningNfcEnabled:
     form.cleaningNfcEnabled,
@@ -384,6 +396,8 @@ function removeRule(
 
       setSettings(response.settings);
       setForm(settingsToForm(response.settings));
+      setAcceptedIdentityPrice(false);
+      setNeedsReload(false);
 
       setSaveNotice(
         response.newVersionCreated
@@ -392,10 +406,11 @@ function removeRule(
       );
 
       setLoadState("ready");
-    } catch (saveError) {
+    } catch {
       setLoadState("error");
-      setError(getErrorMessage(saveError));
-    }
+      setNeedsReload(true);
+      setError("The change could not be confirmed. Refresh the status before trying to save again.");
+    } finally { savingRef.current = false; }
   }
 
   return (
@@ -531,14 +546,11 @@ function removeRule(
     <input
       type="checkbox"
       checked={form.requiresIdentityVerification}
-      disabled={isBusy}
-      onChange={(event) =>
-        setForm((current) => ({
-          ...current,
-          requiresIdentityVerification:
-            event.target.checked,
-        }))
-      }
+      disabled={isBusy || needsReload}
+      onChange={(event) => {
+        setAcceptedIdentityPrice(false);
+        setForm((current) => ({ ...current, requiresIdentityVerification: event.target.checked }));
+      }}
     />
 
     <div>
@@ -555,6 +567,15 @@ function removeRule(
       </p>
     </div>
   </label>
+  {settings?.identityBilling ? <div>
+    <p>Identity Check applies to Direct Booking. Host fee: USD ${(settings.identityBilling.amountCents / 100).toFixed(2)} per reservation with identity verification enabled, deducted from the reservation payment before it is transferred to your Stripe Connect account.</p>
+    {settings.identityBilling.accepted ? <p role="status">Billing authorization recorded for this property.</p> : form.requiresIdentityVerification ? <label style={modeOptionStyle}>
+      <input type="checkbox" checked={acceptedIdentityPrice} disabled={isBusy || needsReload}
+        onChange={event => setAcceptedIdentityPrice(event.target.checked)} />
+      I authorize Pin&Go to deduct USD ${(settings.identityBilling.amountCents / 100).toFixed(2)} from the payment for each Direct Booking reservation with Identity Check enabled at this property.
+    </label> : null}
+  </div> : <p>The Identity Check fee is unavailable. Refresh the status before enabling it.</p>}
+  <button type="button" disabled={isBusy} onClick={() => void loadSettings()} style={secondaryButtonStyle}>Refresh status</button>
 </div>
 
       <div style={sectionStyle}>
