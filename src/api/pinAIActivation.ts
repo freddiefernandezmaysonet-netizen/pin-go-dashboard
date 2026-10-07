@@ -31,7 +31,8 @@ export const getPinAIFeeOverview = (signal?: AbortSignal) => request<PinAIFeeOve
 export const getPinAIProperty = (id: string, signal?: AbortSignal) => request<PinAIPropertySettings>(propertyPath(id), { signal });
 export const setPinAIProperty = (view: PinAIPropertySettings, enabled: boolean) => request<PinAIPropertySettings>(propertyPath(view.propertyId), {
   method: "PUT", body: JSON.stringify({ enabled, expectedRevision: view.revision, organizationRevision: view.organization.revision,
-    ...(enabled ? { acceptedTermsVersion: view.billing.version } : {}) }),
+    ...(enabled && (view.billing.acceptedVersion !== view.billing.version || !view.billing.acceptedAt)
+      ? { acceptedTermsVersion: view.billing.version } : {}) }),
 });
 export const listPinAIOrganizations = (query: string, signal?: AbortSignal) =>
   request<{ items: PinAIOrganization[]; rolloutActive: boolean }>(`/api/internal/pin-ai/organizations?q=${encodeURIComponent(query)}`, { signal });

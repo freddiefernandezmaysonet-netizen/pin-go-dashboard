@@ -14,14 +14,14 @@ function PropertySettings({ propertyId }: { propertyId: string }) {
   const [acceptedPrice, setAcceptedPrice] = useState(false);
   const busy = useRef(false);
   const view = query.data;
-  const needsAcceptance = !!view && view.billing.acceptedVersion !== view.billing.version;
+  const needsAcceptance = !!view && (view.billing.acceptedVersion !== view.billing.version || !view.billing.acceptedAt);
   async function reload() {
     if (busy.current) return;
     const result = await query.refetch();
     if (result.isSuccess) { setDraft(undefined); setAcceptedPrice(false); setNeedsReload(false); setNotice(""); }
   }
   async function save() {
-    if (!view || busy.current || needsReload || draft === undefined || (draft && !acceptedPrice)) return;
+    if (!view || busy.current || needsReload || draft === undefined || (draft && needsAcceptance && !acceptedPrice)) return;
     busy.current = true; setSaving(true); setNotice("");
     try {
       await setPinAIProperty(view, draft);
@@ -58,11 +58,11 @@ function PropertySettings({ propertyId }: { propertyId: string }) {
       {view.enabled && needsAcceptance ? <button type="button" disabled={saving || needsReload || query.isFetching}
         onClick={() => { setDraft(true); setAcceptedPrice(false); }}>Review and renew billing authorization</button> : null}
       <p className="text-sm text-slate-600">Host fee: USD $1.00 per reservation with Pin AI enabled, regardless of its source, debited from your Stripe Connect account. One charge per reservation, starting 24 hours before check-in; reservations canceled before that window are excluded. {view.billing.collectionReady ? "Eligible charges are collected from your Connect balance." : "Charge collection is pending enablement."}</p>
-      {draft === true ? <label className="flex items-start gap-3"><input type="checkbox" checked={acceptedPrice}
+      {draft === true && needsAcceptance ? <label className="flex items-start gap-3"><input type="checkbox" checked={acceptedPrice}
         disabled={saving || needsReload || query.isFetching} onChange={event => setAcceptedPrice(event.target.checked)} />
         I authorize Pin&Go to debit USD $1.00 from the available balance of my Stripe Connect account for each reservation with Pin AI enabled at this property, regardless of its source, starting 24 hours before check-in. If the balance is insufficient, I authorize retrying the pending charge when funds become available.</label> : null}
       <p className="text-sm text-slate-600">Reservation changes and OTA channel replies require separate enablement. Disabling this assistance preserves existing incidents so you can address them.</p>
-      <button type="button" onClick={() => void save()} disabled={saving || query.isFetching || needsReload || draft === undefined || (draft === view.enabled && !needsAcceptance) || !view.organization.enabled || (draft === true && !acceptedPrice)}
+      <button type="button" onClick={() => void save()} disabled={saving || query.isFetching || needsReload || draft === undefined || (draft === view.enabled && !needsAcceptance) || !view.organization.enabled || (draft === true && needsAcceptance && !acceptedPrice)}
         className="rounded-lg bg-blue-700 px-4 py-2 text-white disabled:opacity-50">{saving ? "Saving…" : "Save settings"}</button>
     </> : null}
     {notice ? <p role={needsReload ? "alert" : "status"}>{notice}</p> : null}
