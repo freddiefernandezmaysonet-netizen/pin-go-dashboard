@@ -105,9 +105,10 @@ test("actual login and MFA preserve incident destination, and failures never nav
       await submit();
       if(mfa){
         assert.equal(state.navigation.length,0);
+        assert.equal(state.refreshes,0, "MFA challenge must not refresh the authenticated session");
         const code=el.querySelector('input[autocomplete="one-time-code"]');assert.ok(code);
         await act(async()=>{Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value').set.call(code,'123456');code.dispatchEvent(new dom.window.Event('input',{bubbles:true}));});
-        state.fail=true;await submit();assert.equal(state.navigation.length,0);state.fail=false;await submit();
+        state.fail=true;await submit();assert.equal(state.navigation.length,0);assert.equal(state.refreshes,0, "invalid OTP must not refresh the session");state.fail=false;await submit();
       }
       assert.deepEqual(state.navigation,[[destination,{replace:true}]]);assert.equal(state.refreshes,1);assert.equal(state.propertyReads,0);
     } finally {await act(async()=>root.unmount());el.remove();}

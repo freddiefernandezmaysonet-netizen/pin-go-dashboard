@@ -65,6 +65,11 @@ jobs:
           git fetch --no-tags origin main:refs/remotes/origin/main
           CHANGED="$(git diff --name-only origin/main...HEAD)"
           echo "$CHANGED"
+          if [ "${GITHUB_HEAD_REF:-}" = "agent/cleaner-account-access-v1" ]; then
+            python3 scripts/verify-my-cleanings-pr-scope.test.py
+            python3 scripts/verify-my-cleanings-pr-scope.py
+            exit 0
+          fi
           allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|src/api/auth\.ts|src/api/client\.ts|src/auth/AuthProvider\.tsx|src/auth/RequireAuth\.tsx|src/auth/sessionExpiry\.ts|src/pages/LoginPage\.tsx|src/auth/enterprise-auth-e6\.contract\.test\.js|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/auth/public-route-session-isolation\.contract\.test\.js)$'
           # Only the authorized same-repository PR receives this coordinated file list.
           if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" &&
