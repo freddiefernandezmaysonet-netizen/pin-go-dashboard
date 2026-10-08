@@ -50,7 +50,7 @@ export default function MyCleaningsPage() {
         <h3>{t("Trabajo", "Work")}</h3><dl><dt>{t("Inicio programado", "Scheduled start")}</dt><dd>{format(task.scheduledStartAt, task.property.timezone)}</dd><dt>{t("Finalización comprometida", "Committed completion")}</dt><dd>{format(completion, task.property.timezone)}</dd>{task.completedAt ? <><dt>{t("Finalización registrada", "Recorded completion")}</dt><dd>{format(task.completedAt, task.property.timezone)}</dd></> : null}</dl>
         <h3>{t("Acceso", "Access")}</h3>{task.access ? <p>{format(task.access.startsAt, task.property.timezone)} — {format(task.access.endsAt, task.property.timezone)}</p> : <p>{t("Sin ventana de acceso registrada", "No access window recorded")}</p>}
         {["PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(task.status) ? <TaskChecklist taskId={task.id} language={es ? "es" : "en"} /> : null}
-        {["CONFIRMED", "IN_PROGRESS"].includes(task.status) ? <TaskIssueReport task={task} language={es ? "es" : "en"} /> : null}
+        {["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "REASSIGNED"].includes(task.status) ? <TaskIssueReport task={task} language={es ? "es" : "en"} /> : null}
         {task.status === "CONFIRMED" && !task.startedAt &&
           Boolean(task.access?.startsAt ?? task.scheduledStartAt) &&
           clock < new Date(task.access?.startsAt ?? task.scheduledStartAt!).getTime() ? <div>

@@ -28,5 +28,5 @@ export type CleaningIssueKind = "DELAY" | "MORE_TIME" | "INCOMPLETE";
 export type CleaningIssueReport = { id: string; kind: CleaningIssueKind; reason: string; estimatedAt: string | null; reportedAt: string };
 export type CleaningIssueInput = { requestId: string; kind: CleaningIssueKind; reason: string; estimatedAt: string | null };
 export type CleaningIssueAssessment = { decision: string; reason: string; estimatedFinishAt: string | null; proposedAccessEnd: string | null; actionsExecuted: boolean; accessChanged: boolean };
-export const fetchCleaningIssues = (id: string) => cleanerRequest<{ reports: CleaningIssueReport[]; assessment: CleaningIssueAssessment | null }>(`/api/cleaner/cleanings/${encodeURIComponent(id)}/issues`);
+export const fetchCleaningIssues = (id: string) => cleanerRequest<{ reports: CleaningIssueReport[]; assessment: CleaningIssueAssessment | null; canReport: boolean; recoveryOutcome: { state: string } | null }>(`/api/cleaner/cleanings/${encodeURIComponent(id)}/issues`);
 export const reportCleaningIssue = (id: string, input: CleaningIssueInput) => cleanerRequest<{ report: CleaningIssueReport; recoveryStatus: "RECORDED" }>(`/api/cleaner/cleanings/${encodeURIComponent(id)}/issues`, { method: "POST", body: JSON.stringify(input) });
