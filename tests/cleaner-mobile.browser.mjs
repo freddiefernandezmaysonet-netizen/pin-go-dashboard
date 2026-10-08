@@ -40,6 +40,7 @@ try {
     if (url.hostname === "127.0.0.1") return route.continue();
     if (url.hostname !== "cleaner-api.example.invalid") { unexpected.push(req.url()); return route.abort(); }
     if (url.pathname === "/auth/me") return reply({ user: { id: "user", orgId: "org", role: "CLEANER", email: "synthetic@example.invalid" } });
+    if (url.pathname === "/auth/session/activity" && req.method() === "POST") return reply({ ok: true });
     if (url.pathname === "/api/cleaner/me/language" && req.method() === "PATCH") { language = req.postDataJSON().language; return reply({}); }
     if (url.pathname === "/api/cleaner/me") return reply({ id: "staff", fullName: "Cleaner de prueba", preferredLanguage: language });
     if (url.pathname === "/api/cleaner/cleanings") {
