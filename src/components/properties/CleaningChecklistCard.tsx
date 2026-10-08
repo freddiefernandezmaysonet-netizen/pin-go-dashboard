@@ -27,7 +27,7 @@ export function CleaningChecklistCard({ propertyId }: { propertyId: string }) {
   }
   return <details onToggle={event => setOpened(event.currentTarget.open)} style={{ padding: 18, border: "1px solid #dbeafe", borderRadius: 14 }}>
     <summary style={{ cursor: "pointer", fontWeight: 800 }}>Cleaning checklist / Checklist de limpieza</summary>
-    <p>Changes apply to new cleaning tasks. Assigned tasks keep their list and progress.</p>
+    <p>La lista también se aplica a limpiezas asignadas vacías que aún no hayan comenzado. Las que ya tengan tareas o hayan comenzado conservan su lista y progreso. / The list also applies to empty assigned cleanings that have not started. Populated or started checklists keep their list and progress.</p>
     {query.isPending && opened ? <p role="status">Loading…</p> : null}
     {query.isError || error ? <p role="alert">{error || "Could not load this property's checklist."}</p> : null}
     {template ? <fieldset disabled={busy} style={{ border: 0, padding: 0 }}><legend>Property checklist</legend>
