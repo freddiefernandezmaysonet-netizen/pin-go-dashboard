@@ -1,0 +1,11 @@
+.pg-cleaner{max-width:720px;margin:auto;padding:20px 16px 40px;font-size:18px;color:#172033}
+.pg-cleaner header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pg-cleaner h1{font-size:28px}.pg-cleaner h2{font-size:23px}.pg-cleaner h3{font-size:19px}
+.pg-cleaner button,.pg-cleaner select{font:inherit;min-height:48px;padding:10px 16px;border:1px solid #cbd5e1;border-radius:10px;background:white;color:#172033;cursor:pointer}
+.pg-cleaner button:disabled{opacity:.6;cursor:wait}.pg-cleaner button:focus-visible,.pg-cleaner select:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.pg-cleaner nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 16px}.pg-cleaner nav button[aria-pressed=true],.pg-cleaner .pg-cleaner-primary{background:#2563eb;color:white}
+.pg-cleaner article{padding:20px;margin:18px 0;border:1px solid #dbe3ee;border-radius:16px;background:white}
+.pg-cleaner dl{display:grid;gap:8px}.pg-cleaner dt{font-weight:600}.pg-cleaner dd{margin:0}.pg-cleaner .pg-cleaner-status{font-weight:700;color:#1d4ed8}
+.pg-cleaner form{display:grid;gap:12px;margin:16px 0}.pg-cleaner form label{display:grid;gap:6px}
+.pg-cleaner form input,.pg-cleaner form textarea,.pg-cleaner form select{box-sizing:border-box;width:100%;max-width:100%;font:inherit;padding:10px;border:1px solid #cbd5e1;border-radius:10px}
+.pg-cleaner form textarea{resize:vertical}.pg-cleaner form input:focus-visible,.pg-cleaner form textarea:focus-visible{outline:3px solid #2563eb;outline-offset:3px}

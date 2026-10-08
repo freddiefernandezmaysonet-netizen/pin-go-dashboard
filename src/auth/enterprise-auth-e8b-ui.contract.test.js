@@ -85,10 +85,10 @@ test("only exact incident destinations survive login; duplicate and external tar
   assert.equal(helper.incidentReturnFromSearch(`?returnTo=${destination}&returnTo=${destination}`), null);
   assert.equal(helper.incidentLoginPath("/login", "/overview"), "/login");
 });
-const bridgeUrl = data(`export const state = { search: '', mfa: false, fail: false, navigation: [], refreshes: 0, propertyReads: 0 };`);
+const bridgeUrl = data(`export const state = { search: '', mfa: false, fail: false, navigation: [], refreshes: 0, propertyReads: 0, role: 'ORG_ADMIN' };`);
 const { state } = await import(bridgeUrl);
 const router = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export const useNavigate=()=> (...args)=>state.navigation.push(args); export const useLocation=()=>({search:state.search}); export const Link=()=>null;`);
-const api = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export async function login(){ if(state.fail) throw Error('bad'); return state.mfa ? {mfaRequired:true,challengeToken:'synthetic',destination:'test',expiresAt:new Date(Date.now()+300000).toISOString(),resendAfterSeconds:30} : {ok:true}; } export async function verifyLoginMfa(){if(state.fail)throw Error('MFA_INVALID_CODE');return {ok:true};} export async function resendLoginMfa(){throw Error('unused');}`);
+const api = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export async function login(){ if(state.fail) throw Error('bad'); return state.mfa ? {mfaRequired:true,challengeToken:'synthetic',destination:'test',expiresAt:new Date(Date.now()+300000).toISOString(),resendAfterSeconds:30} : {ok:true,user:{id:"user",orgId:"org",email:"a@example.com",role:state.role}}; } export async function verifyLoginMfa(){if(state.fail)throw Error('MFA_INVALID_CODE');return {ok:true,user:{id:"user",orgId:"org",email:"a@example.com",role:state.role}};} export async function resendLoginMfa(){throw Error('unused');}`);
 const auth = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export const useAuth=()=>({refresh:async()=>{state.refreshes++;}});`);
 const properties = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export async function fetchProperties(){state.propertyReads++;return {items:[{}]};}`);
 const brand = data(`export const useBrand=()=>({brand:{kind:'PIN_GO',displayName:'Pin&Go'},isCustomBrand:false});`);
@@ -96,7 +96,7 @@ const { default: Login } = await import(compile("../pages/LoginPage.tsx", { "rea
   "../auth/AuthProvider":auth, "../auth/sessionExpiry":compile("./sessionExpiry.ts"), "../branding/BrandProvider":brand }));
 test("actual login and MFA preserve incident destination, and failures never navigate", async () => {
   for (const mfa of [false, true]) {
-    Object.assign(state, { search:`?returnTo=${encodeURIComponent(destination)}`,mfa,fail:false,navigation:[],refreshes:0,propertyReads:0 });
+    Object.assign(state, { role:"ORG_ADMIN", search:`?returnTo=${encodeURIComponent(destination)}`,mfa,fail:false,navigation:[],refreshes:0,propertyReads:0 });
     const el=document.createElement('div');document.body.append(el);const root=createRoot(el);
     try {
       await act(async()=>root.render(createElement(Login)));
@@ -105,13 +105,25 @@ test("actual login and MFA preserve incident destination, and failures never nav
       await submit();
       if(mfa){
         assert.equal(state.navigation.length,0);
+        assert.equal(state.refreshes,0, "MFA challenge must not refresh the authenticated session");
         const code=el.querySelector('input[autocomplete="one-time-code"]');assert.ok(code);
         await act(async()=>{Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value').set.call(code,'123456');code.dispatchEvent(new dom.window.Event('input',{bubbles:true}));});
-        state.fail=true;await submit();assert.equal(state.navigation.length,0);state.fail=false;await submit();
+        state.fail=true;await submit();assert.equal(state.navigation.length,0);assert.equal(state.refreshes,0, "invalid OTP must not refresh the session");state.fail=false;await submit();
       }
       assert.deepEqual(state.navigation,[[destination,{replace:true}]]);assert.equal(state.refreshes,1);assert.equal(state.propertyReads,0);
     } finally {await act(async()=>root.unmount());el.remove();}
   }
+});
+
+test("cleaner login ignores host incident destination and never fetches properties", async () => {
+  Object.assign(state,{role:"CLEANER",search:`?returnTo=${encodeURIComponent(destination)}`,mfa:false,fail:false,navigation:[],refreshes:0,propertyReads:0});
+  const el=document.createElement('div');document.body.append(el);const root=createRoot(el);
+  try {
+    await act(async()=>root.render(createElement(Login)));
+    await act(async()=>el.querySelector('form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true})));
+    assert.deepEqual(state.navigation,[["/my-cleanings",{replace:true}]]);
+    assert.equal(state.propertyReads,0);
+  } finally {await act(async()=>root.unmount());el.remove();}
 });
 
 }

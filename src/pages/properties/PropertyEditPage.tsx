@@ -5,6 +5,8 @@ import { CancellationPolicyCard } from "../../components/properties/Cancellation
 import { GuestAccessSettingsCard } from "../../components/properties/GuestAccessSettingsCard";
 import { PropertyListingDetailsCard } from "../../components/properties/PropertyListingDetailsCard";
 import { StayTimeSettingsCard } from "../../components/properties/StayTimeSettingsCard";
+import { CleaningChecklistCard } from "../../components/properties/CleaningChecklistCard";
+import { CleaningRecoveryPolicyCard } from "../../components/properties/CleaningRecoveryPolicyCard";
 import { PinAISettingsCard } from "../../components/properties/PinAISettingsCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
@@ -1910,6 +1912,9 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               />
             </div>
           </div>
+
+          {id ? <CleaningChecklistCard key={id} propertyId={id} /> : null}
+          {id ? <CleaningRecoveryPolicyCard key={`recovery-${id}`} propertyId={id} /> : null}
 
           <div
             style={{

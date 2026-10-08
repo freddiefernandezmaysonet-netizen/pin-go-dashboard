@@ -1,3 +1,4 @@
+import { CleanerAccountSetup } from "./CleanerAccountSetup";
 import { useEffect, useState } from "react";
 import { fetchMe } from "../../api/auth";
 import type { StaffLanguage } from "../../api/staff";
@@ -5,6 +6,8 @@ import type { StaffLanguage } from "../../api/staff";
 type StaffRow = {
   id: string;
   organizationId: string;
+  dashboardUserId?: string | null;
+  cleanerAccountEmail?: string | null;
   fullName: string;
   preferredLanguage?: StaffLanguage;
   phoneE164: string | null;
@@ -720,6 +723,7 @@ export function StaffMembersPage() {
                     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                   }}
                 >
+                  <CleanerAccountSetup staffId={s.id} linked={Boolean(s.dashboardUserId)} currentEmail={s.cleanerAccountEmail ?? null} disabled={!s.isActive} onSaved={() => loadStaff(organizationId)} />
                   <Metric label="Phone" value={s.phoneE164 ?? "-"} />
                   <Metric label="Language / Idioma" value={s.preferredLanguage === "es" ? "Español" : "English"} />
                   <Metric label="Company" value={s.companyName ?? "-"} />

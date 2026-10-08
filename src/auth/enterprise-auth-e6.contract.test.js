@@ -22,7 +22,7 @@ test("dashboard exposes verify and resend APIs with credentials", () => {
 
 test("login page does not refresh session before MFA completes", () => {
   const mfaBranch = loginPage.indexOf('if ("mfaRequired" in result && result.mfaRequired)');
-  const finishSignIn = loginPage.indexOf("await finishSignIn();", mfaBranch);
+  const finishSignIn = loginPage.indexOf("await finishSignIn(", mfaBranch);
   assert.ok(mfaBranch >= 0);
   assert.ok(finishSignIn > mfaBranch);
   assert.match(loginPage, /setMfa\(result\)/);

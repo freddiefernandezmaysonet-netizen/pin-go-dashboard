@@ -1,0 +1,38 @@
+name: Cleaner Mobile Browser
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/pages/cleaner/**"
+      - "src/auth/RequireCleaner.tsx"
+      - "src/api/cleaner.ts"
+      - "tests/cleaner-mobile.browser.mjs"
+      - ".github/workflows/cleaner-mobile-browser.yml"
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm install --prefix "$RUNNER_TEMP/cleaner-browser-tools" --no-save --ignore-scripts --no-audit --no-fund playwright@1.62.1
+      - name: Review real components at mobile widths with synthetic requests
+        run: |
+          export CHROMIUM_EXECUTABLE_PATH="$(command -v google-chrome)"
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/cleaner-browser-tools/node_modules/playwright/index.mjs"
+          test -n "$CHROMIUM_EXECUTABLE_PATH"
+          node tests/cleaner-mobile.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cleaner-mobile-review
+          path: test-artifacts/cleaner-mobile
+          retention-days: 7
