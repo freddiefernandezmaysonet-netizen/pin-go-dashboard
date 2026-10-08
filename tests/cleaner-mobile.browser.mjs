@@ -73,8 +73,9 @@ try {
   await page.getByRole("button", { name: "History", exact: true }).click(); await page.getByText("Completed", { exact: true }).waitFor(); await capture("en-320-history");
   started = true; await page.reload(); await page.getByText("In progress", { exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: "Cancel cleaning", exact: true }).count(), 0);
-  await page.getByText("Cleaning checklist", { exact: true }).click(); await page.getByRole("checkbox").check();
+  await page.getByText("Cleaning checklist", { exact: true }).click(); await page.getByRole("checkbox").click();
   await page.getByText("1/1 items completed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("checkbox").isChecked(), true, "checkbox reflects the acknowledged save");
   await page.getByRole("button", { name: "Report an issue", exact: true }).click();
   await page.getByLabel("Situation", { exact: true }).selectOption("INCOMPLETE"); await capture("en-320-incomplete");
   await page.setViewportSize({ width: 390, height: 844 }); await page.getByLabel("Language", { exact: true }).selectOption("es");
