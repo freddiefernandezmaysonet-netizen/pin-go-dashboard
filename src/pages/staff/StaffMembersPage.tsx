@@ -435,8 +435,14 @@ export function StaffMembersPage() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className="staff-members-page" style={{ display: "grid", gap: 20, fontFamily: "Arial, sans-serif" }}>
       <style>{`
+        .staff-form-fields { align-items: start; }
+        .staff-form-field { display: grid; gap: 8px; min-width: 0; }
+        .staff-form-field > span { font-size: 13px; font-weight: 600; color: #374151; }
+        .staff-form-field input { width: 100%; min-width: 0; box-sizing: border-box; font-family: inherit; }
+        .staff-form-fields input:focus-visible, .staff-form-fields select:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
         @media (max-width: 900px) {
           .staff-assignment-header { display: none !important; }
           .staff-assignment-row { grid-template-columns: minmax(0, 1fr) minmax(120px, .7fr) 80px !important; }
@@ -496,28 +502,31 @@ export function StaffMembersPage() {
           {editingId ? "Edit Staff Member" : "Add Staff Member"}
         </div>
 
-        <div
+        <div className="staff-form-fields"
           style={{
             display: "grid",
             gap: 12,
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
           }}
         >
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Full name"
-            style={{
-              height: 44,
-              borderRadius: 12,
-              border: "1px solid #d1d5db",
-              padding: "0 12px",
-              fontSize: 14,
-            }}
-          />
+          <label className="staff-form-field">
+            <span>Full name</span>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full name"
+              style={{
+                height: 44,
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+                padding: "0 12px",
+                fontSize: 14,
+              }}
+            />
+          </label>
 
-          <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
-            <label htmlFor="staff-preferred-language" style={{ fontSize: 14, fontWeight: 600 }}>
+          <div className="staff-form-field">
+            <label htmlFor="staff-preferred-language" style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
               Preferred language / Idioma preferido
             </label>
             <select
@@ -531,64 +540,76 @@ export function StaffMembersPage() {
               <option value="en">English</option>
               <option value="es">Español</option>
             </select>
-            <small id="staff-language-help" style={{ color: "#6b7280", lineHeight: 1.4 }}>
-              Language for cleaning messages and the cleaner portal.
-              {" "}Idioma de los mensajes y del portal de limpieza.
-            </small>
           </div>
 
-          <input
-            value={phoneE164}
-            onChange={(e) => setPhoneE164(e.target.value)}
-            placeholder="Phone E.164"
-            style={{
-              height: 44,
-              borderRadius: 12,
-              border: "1px solid #d1d5db",
-              padding: "0 12px",
-              fontSize: 14,
-            }}
-          />
+          <label className="staff-form-field">
+            <span>Phone (international format)</span>
+            <input
+              value={phoneE164}
+              onChange={(e) => setPhoneE164(e.target.value)}
+              placeholder="Phone E.164"
+              style={{
+                height: 44,
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+                padding: "0 12px",
+                fontSize: 14,
+              }}
+            />
+          </label>
 
-          <input
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="Company name"
-            style={{
-              height: 44,
-              borderRadius: 12,
-              border: "1px solid #d1d5db",
-              padding: "0 12px",
-              fontSize: 14,
-            }}
-          />
+          <label className="staff-form-field">
+            <span>Company name</span>
+            <input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Company name"
+              style={{
+                height: 44,
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+                padding: "0 12px",
+                fontSize: 14,
+              }}
+            />
+          </label>
 
-          <input
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="Photo URL"
-            style={{
-              height: 44,
-              borderRadius: 12,
-              border: "1px solid #d1d5db",
-              padding: "0 12px",
-              fontSize: 14,
-            }}
-          />
+          <label className="staff-form-field">
+            <span>Photo URL (optional)</span>
+            <input
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="Photo URL"
+              style={{
+                height: 44,
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+                padding: "0 12px",
+                fontSize: 14,
+              }}
+            />
+          </label>
 
-          <input
-            value={ttlockCardRef}
-            onChange={(e) => setTtlockCardRef(e.target.value)}
-            placeholder="TTLock card ref"
-            style={{
-              height: 44,
-              borderRadius: 12,
-              border: "1px solid #d1d5db",
-              padding: "0 12px",
-              fontSize: 14,
-            }}
-          />
+          <label className="staff-form-field">
+            <span>NFC card reference</span>
+            <input
+              value={ttlockCardRef}
+              onChange={(e) => setTtlockCardRef(e.target.value)}
+              placeholder="TTLock card ref"
+              style={{
+                height: 44,
+                borderRadius: 12,
+                border: "1px solid #d1d5db",
+                padding: "0 12px",
+                fontSize: 14,
+              }}
+            />
+          </label>
         </div>
+
+        <small id="staff-language-help" style={{ color: "#6b7280", fontSize: 13, lineHeight: 1.5 }}>
+          Preferred language applies to cleaning messages and the cleaner portal. / El idioma elegido aplica a mensajes y portal de limpieza.
+        </small>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
