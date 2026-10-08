@@ -50,7 +50,7 @@ test('property tabs preserve drafts, keyboard navigation and first invalid field
     await act(async () => tab('taxes').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
     assert.equal(document.activeElement, tab('general'));
     // A single native validation pass reports failures in multiple hidden tabs.
-    await act(async () => document.querySelector('form').checkValidity());
+    await act(async () => { document.querySelector('form').checkValidity(); await new Promise(resolve => setTimeout(resolve, 0)); });
     assert.equal(tab('booking').getAttribute('aria-selected'), 'true');
     assert.equal(document.activeElement.id, 'field-booking');
     assert.equal(submitted, 0);

@@ -28,13 +28,15 @@ export function PropertyEditTabs({ panels }: { panels: Record<PropertyEditTabId,
     if (!panel) return;
     validationPending.current = true;
     flushSync(() => setActive(panel.dataset.propertyTab as PropertyEditTabId));
-    queueMicrotask(() => {
+    // Browsers can run microtasks between invalid events in the same validation
+    // pass. Hold the guard until the next task so later panels cannot replace it.
+    setTimeout(() => {
       field.focus();
       showingValidation.current = true;
       if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) field.reportValidity();
       showingValidation.current = false;
       validationPending.current = false;
-    });
+    }, 0);
   }}>
     <div className="property-edit-tablist" role="tablist" aria-label="Configuración de la propiedad">
       {PROPERTY_EDIT_TABS.map((tab, index) => <button key={tab.id} ref={element => { buttons.current[index] = element; }}
