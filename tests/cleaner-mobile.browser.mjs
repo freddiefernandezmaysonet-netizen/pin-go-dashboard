@@ -11,6 +11,7 @@ await mkdir(output, { recursive: true });
 await writeFile(resolve(fixture, "index.html"), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;font-family:Arial,sans-serif"><div id="root"></div><script type="module" src="./main.tsx"></script></body></html>');
 await writeFile(resolve(fixture, "main.tsx"), `
 import React from 'react'; import {createRoot} from 'react-dom/client';
+import '../src/index.css';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {AuthProvider} from '../src/auth/AuthProvider';
@@ -29,7 +30,8 @@ const errors = [], unexpected = [], checks = [];
 try {
   await server.listen(); browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.CHROMIUM_EXECUTABLE_PATH } : {}) });
   page = await browser.newPage({ viewport: { width: 390, height: 844 }, timezoneId: "America/Puerto_Rico" });
-  await page.clock.install({ time: new Date(now) });
+  await page.clock.setFixedTime(new Date(now));
+  page.setDefaultTimeout(15000);
   page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*", async route => {
     const req = route.request(), url = new URL(req.url());
