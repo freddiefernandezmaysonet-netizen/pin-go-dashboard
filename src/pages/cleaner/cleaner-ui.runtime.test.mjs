@@ -33,6 +33,7 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
       let data;
       if (endpoint === "/api/public/brand-context") data = { ok: true, data: { kind: "PIN_GO_STANDARD", displayName: "Pin&Go", logoUrl: null, faviconUrl: null, primaryColor: null, onPrimaryColor: null, organizationSlug: null, version: null, poweredByPinGo: true } };
       else if (endpoint === "/auth/me") data = { user: { id: "user", orgId: "org", role: "CLEANER", email: "maria@example.com" } };
+      else if (endpoint === "/api/cleaner/cleaning-properties") data = { items: [{ id: "p", name: "Casa Collores" }] };
       else if (endpoint === "/api/cleaner/me") data = { id: "staff", fullName: "Maria", preferredLanguage: "es" };
       else if (endpoint === "/api/cleaner/cleanings") data = { items: [{ id: "task", property: { id: "p", name: "Casa Collores", timezone: "America/Puerto_Rico" }, status: cancelled ? "CANCELLED" : "CONFIRMED", departureAt: new Date().toISOString(), scheduledStartAt: new Date(Date.now() + 60000).toISOString(), durationCommitmentMinutes: 60, startedAt: null, completedAt: null, access: { startsAt: new Date(Date.now() + 60000).toISOString(), endsAt: new Date(Date.now() + 7200000).toISOString(), status: "COMPLETED" } }], nextCursor: null };
       else if (endpoint === "/api/cleaner/cleanings/task/cancel" && init?.method === "POST") { cancellations++; cancelled = true; data = {}; }
@@ -52,12 +53,13 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     for (let i = 0; i < 20 && !document.body.textContent.includes("Casa Collores"); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
     assert.match(document.body.textContent, /Mis limpiezas/);
     assert.match(document.body.textContent, /Casa Collores/);
+    assert.ok(document.querySelector('select[aria-label="Propiedad"] option[value="p"]'));
     assert.match(document.body.textContent, /Confirmada/);
     assert.match(document.body.textContent, /Trabajo/);
     assert.match(document.body.textContent, /Acceso/);
     assert.equal(document.body.textContent.includes("Host secrets"), false);
     assert.equal(document.querySelector("article").textContent.includes("Completada"), false);
-    assert.equal(requests.some(endpoint => endpoint.includes("properties") || endpoint.includes("overview")), false);
+    assert.equal(requests.some(endpoint => endpoint === "/api/properties" || endpoint.includes("overview")), false);
     assert.equal(requests.some(endpoint => endpoint.endsWith("/checklist")), false);
     const details = document.querySelector("details");
     await act(async () => { details.open = true; details.dispatchEvent(new dom.window.Event("toggle")); });
@@ -124,9 +126,9 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     }));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
     assert.match(document.body.textContent, /Un respaldo aceptó la limpieza/);
-    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }], {
-      ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]), pages: [{ items: [{
-        ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "REASSIGNED",
+    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { propertyId: "", status: "", from: "", to: "" }], {
+      ...cache.getQueryData(["cleaner-tasks", "user", "today", { propertyId: "", status: "", from: "", to: "" }]), pages: [{ items: [{
+        ...cache.getQueryData(["cleaner-tasks", "user", "today", { propertyId: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "REASSIGNED",
       }], nextCursor: null }],
     }));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
@@ -134,9 +136,9 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     assert.ok(button("Reportes y seguimiento"));
     assert.match(document.body.textContent, /Un respaldo aceptó la limpieza/);
     assert.equal(button("Abrir limpieza"), undefined);
-    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }], {
-      ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]), pages: [{ items: [{
-        ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "COMPLETED", completedAt: new Date().toISOString(),
+    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { propertyId: "", status: "", from: "", to: "" }], {
+      ...cache.getQueryData(["cleaner-tasks", "user", "today", { propertyId: "", status: "", from: "", to: "" }]), pages: [{ items: [{
+        ...cache.getQueryData(["cleaner-tasks", "user", "today", { propertyId: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "COMPLETED", completedAt: new Date().toISOString(),
       }], nextCursor: null }],
     }));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
