@@ -19,10 +19,10 @@ const server = await createServer({ root, server: { host: '127.0.0.1', port: 418
   'import.meta.env.VITE_API_BASE': JSON.stringify('https://property-api.example.invalid'),
   'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://property-api.example.invalid'),
   'import.meta.env.VITE_GOOGLE_MAPS_API_KEY': JSON.stringify('') } });
-let browser; const errors = [], writes = [], unknown = [];
+let browser, page; const errors = [], writes = [], unknown = [];
 try {
   await server.listen(); browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname;
@@ -53,7 +53,7 @@ try {
   assert.equal(await general.locator('input').first().inputValue(), 'Nombre editado');
   await general.locator('input').first().fill('');
   await page.getByRole('tab', { name: 'Reservas', exact: true }).click();
-  await booking.getByText('Enable damage responsibility protection', { exact: true }).click();
+  await booking.getByRole('checkbox', { name: /^Enable damage responsibility protection/ }).click();
   await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
   assert.equal(await page.getByRole('tab', { name: 'General', exact: true }).getAttribute('aria-selected'), 'true');
   assert.equal(await general.locator('input').first().evaluate(n => n === document.activeElement), true);
@@ -61,7 +61,7 @@ try {
   await general.locator('input').first().fill('Nombre editado');
   await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
   assert.equal(await page.getByRole('tab', { name: 'Reservas', exact: true }).getAttribute('aria-selected'), 'true');
-  await booking.getByText('Enable damage responsibility protection', { exact: true }).click();
+  await booking.getByRole('checkbox', { name: /^Enable damage responsibility protection/ }).click();
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     for (const id of ['general', 'cleaning', 'booking', 'access', 'ai', 'pricing', 'taxes']) {
@@ -76,4 +76,4 @@ try {
   assert.equal(writes.length, 1); assert.equal(writes[0].name, 'Nombre editado'); assert.equal(writes[0].publicDescription, 'Descripción pendiente');
   assert.deepEqual(errors, []); assert.deepEqual(unknown, []);
   console.log('PASS: seven tabs at desktop/390/320, retained drafts, hidden-field validation and original PATCH payload');
-} catch (error) { console.error(JSON.stringify({ errors, unknown })); throw error; } finally { await browser?.close(); await server.close(); await rm(fixture, { recursive: true, force: true }); }
+} catch (error) { if (page) await page.screenshot({ path: resolve(output, 'failure.png'), fullPage: true }); console.error(JSON.stringify({ errors, unknown })); throw error; } finally { await browser?.close(); await server.close(); await rm(fixture, { recursive: true, force: true }); }
