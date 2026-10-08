@@ -52,7 +52,7 @@ export default function MyCleaningsPage() {
       setFilterError(false); setCancelTarget(null); setFilters({ ...draftFilters, q: draftFilters.q.trim() });
     }}>
       <label className="pg-cleaner-search">{t("Buscar propiedad", "Search property")}<input type="search" maxLength={100} value={draftFilters.q} onChange={event => setDraftFilters({ ...draftFilters, q: event.target.value })} /></label>
-      <label>{t("Estado", "Status")}<select value={draftFilters.status} onChange={event => setDraftFilters({ ...draftFilters, status: event.target.value })}><option value="">{t("Todos los estados", "All statuses")}</option>{Object.entries(STATUS).map(([key, labels]) => <option key={key} value={key}>{labels[es ? 0 : 1]}</option>)}</select></label>
+      <label>{t("Estado", "Status")}<select aria-label={t("Estado", "Status")} value={draftFilters.status} onChange={event => setDraftFilters({ ...draftFilters, status: event.target.value })}><option value="">{t("Todos los estados", "All statuses")}</option>{Object.entries(STATUS).map(([key, labels]) => <option key={key} value={key}>{labels[es ? 0 : 1]}</option>)}</select></label>
       <label>{t("Desde", "From")}<input type="date" min="0001-01-01" max="9999-12-31" value={draftFilters.from} onChange={event => setDraftFilters({ ...draftFilters, from: event.target.value })} /></label>
       <label>{t("Hasta", "To")}<input type="date" min="0001-01-01" max="9999-12-31" value={draftFilters.to} onChange={event => setDraftFilters({ ...draftFilters, to: event.target.value })} /></label>
       <p className="pg-cleaner-filter-note">{t("Filtra la vista seleccionada. Fechas según la zona horaria de cada propiedad.", "Filters the selected view. Dates use each property's time zone.")}</p>
