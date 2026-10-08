@@ -12,7 +12,7 @@ import React from 'react'; import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Routes,Route} from 'react-router-dom';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {AuthProvider} from '../src/auth/AuthProvider';
-import Page from '../src/pages/properties/PropertyEditPage';
+import {PropertyEditPage as Page} from '../src/pages/properties/PropertyEditPage';
 createRoot(document.getElementById('root')!).render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><AuthProvider><MemoryRouter initialEntries={['/properties/property/edit']}><Routes><Route path='/properties/:id/edit' element={<Page/>}/><Route path='/properties' element={<div>Saved property</div>}/></Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
 `);
 const server = await createServer({ root, server: { host: '127.0.0.1', port: 4181, strictPort: true }, define: {
@@ -76,4 +76,4 @@ try {
   assert.equal(writes.length, 1); assert.equal(writes[0].name, 'Nombre editado'); assert.equal(writes[0].publicDescription, 'Descripción pendiente');
   assert.deepEqual(errors, []); assert.deepEqual(unknown, []);
   console.log('PASS: seven tabs at desktop/390/320, retained drafts, hidden-field validation and original PATCH payload');
-} finally { await browser?.close(); await server.close(); await rm(fixture, { recursive: true, force: true }); }
+} catch (error) { console.error(JSON.stringify({ errors, unknown })); throw error; } finally { await browser?.close(); await server.close(); await rm(fixture, { recursive: true, force: true }); }
