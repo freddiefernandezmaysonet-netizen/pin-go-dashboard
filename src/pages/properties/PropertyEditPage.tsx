@@ -1,3 +1,5 @@
+import { PropertyEditTabs } from "../../components/properties/PropertyEditTabs";
+import "./PropertyEditPage.css";
 import { useEffect, useRef, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { useNavigate, useParams } from "react-router-dom";
@@ -1604,7 +1606,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 }
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className="property-edit-page" style={{ display: "grid", gap: 20 }}>
       <div
         style={{
           display: "flex",
@@ -1661,7 +1663,9 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
             gap: 18,
           }}
         >
-          <div style={{ display: "grid", gap: 6 }}>
+          <PropertyEditTabs panels={{
+general: <>
+<div className="property-edit-card"><div style={{ display: "grid", gap: 6 }}>
             <div style={labelStyle}>Property Name</div>
             <input
               value={form.name}
@@ -1671,23 +1675,20 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               required
             />
           </div>
-
-
-          <div style={{ display: "grid", gap: 6 }}>
+<div style={{ display: "grid", gap: 6 }}>
             <label htmlFor="property-complex-name" style={labelStyle}>Complejo / edificio (opcional)</label>
             <input id="property-complex-name" value={form.complexName} maxLength={120}
               onChange={(e) => setForm((s) => ({ ...s, complexName: e.target.value }))}
               placeholder="Nombre del complejo" style={inputStyle} />
           </div>
-          <div style={{ display: "grid", gap: 6 }}>
+<div style={{ display: "grid", gap: 6 }}>
             <label htmlFor="property-unit-number" style={labelStyle}>Apartamento / unidad (opcional)</label>
             <input id="property-unit-number" value={form.unitNumber} maxLength={32}
               onChange={(e) => setForm((s) => ({ ...s, unitNumber: e.target.value }))}
               placeholder="Ej. 107B" style={inputStyle} />
             <div style={helperTextStyle}>Se incluye en las instrucciones de llegada y acceso del huésped.</div>
           </div>
-
-          <div style={{ display: "grid", gap: 8 }}>
+<div style={{ display: "grid", gap: 8 }}>
             <div style={labelStyle}>Address</div>
             <input
               value={form.address1}
@@ -1705,8 +1706,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               <div style={helperTextStyle}>{timezoneLookupMessage}</div>
             ) : null}
           </div>
-
-          {locationDirty ? (
+{locationDirty ? (
             <div
               style={{
                 display: "grid",
@@ -1763,8 +1763,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               )}
             </div>
           ) : null}
-
-          <div style={responsiveGridStyle}>
+<div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>City</div>
               <input
@@ -1789,8 +1788,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               />
             </div>
           </div>
-
-          <div style={{ display: "grid", gap: 6 }}>
+<div style={{ display: "grid", gap: 6 }}>
             <div style={labelStyle}>ZIP / Postal Code</div>
             <input
               value={form.postalCode}
@@ -1802,8 +1800,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               style={inputStyle}
             />
           </div>
-
-          <div style={responsiveGridStyle}>
+<div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Country</div>
               <input
@@ -1828,8 +1825,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               />
             </div>
           </div>
-
-          <div style={responsiveGridStyle}>
+<div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Latitude</div>
               <input
@@ -1857,9 +1853,10 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                 style={inputStyle}
               />
             </div>
-          </div>
-
-          <div style={responsiveGridStyle}>
+          </div></div>
+</>,
+cleaning: <>
+<div className="property-edit-card"><div style={responsiveGridStyle}>
             <div style={{ display: "grid", gap: 6 }}>
               <div style={labelStyle}>Cleaning Duration (minutes)</div>
               <select
@@ -1911,23 +1908,13 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                 style={inputStyle}
               />
             </div>
-          </div>
-
-          {id ? <CleaningChecklistCard key={id} propertyId={id} /> : null}
-          {id ? <CleaningRecoveryPolicyCard key={`recovery-${id}`} propertyId={id} /> : null}
-
-          <div
-            style={{
-              border: "1px solid #dbeafe",
-              borderRadius: 18,
-              padding: 18,
-              background: "#eff6ff",
-              display: "grid",
-              gap: 16,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+          </div></div>
+{id ? <CleaningChecklistCard key={id} propertyId={id} /> : null}
+{id ? <CleaningRecoveryPolicyCard key={`recovery-${id}`} propertyId={id} /> : null}
+</>,
+booking: <>
+<div className="property-edit-card"><div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
                 Direct Booking Settings
               </div>
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
@@ -1935,8 +1922,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
                 public booking page.
               </div>
             </div>
-
-            <label
+<label
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -2024,7 +2010,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     </div>
   )}
 </div>
-
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Property URL Slug</div>
 
@@ -2108,8 +2093,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     </div>
   ) : null}
 </div>
-
-
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Title</div>
 
@@ -2125,7 +2108,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     style={inputStyle}
   />
 </div>
-
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Description (English)</div>
 
@@ -2146,7 +2128,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     }}
   />
 </div>
-
 <div style={{ display: "grid", gap: 6 }}>
   <div style={labelStyle}>Public Description (Spanish)</div>
 
@@ -2167,7 +2148,6 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     }}
   />
 </div>
-          
 <div style={{ display: "grid", gap: 8 }}>
   <div style={labelStyle}>Property Photos</div>
 
@@ -2193,8 +2173,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     Uploading photos...
   </div>
 ) : null}
-
-          <div
+<div
   style={{
     display: "flex",
     gap: 12,
@@ -2264,9 +2243,8 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
     </div>
   ))}
 
-</div>   
-
-       <div
+</div>
+<div
   style={{
     border: "1px solid #dbeafe",
     borderRadius: 16,
@@ -2277,7 +2255,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
   }}
 >
   <div>
-    <div style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>
+    <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
       Things to Do
     </div>
     <div style={helperTextStyle}>
@@ -2537,9 +2515,66 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
       })}
     </div>
   )}
-</div>
+</div><div style={responsiveGridStyle}>
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Max Guests</div>
+    <input
+      type="number"
+      min="1"
+      value={form.maxGuests}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, maxGuests: e.target.value }))
+      }
+      placeholder="4"
+      style={inputStyle}
+    />
+  </div>
 
-<div style={responsiveGridStyle}>
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Minimum Nights</div>
+    <input
+      type="number"
+      min="1"
+      value={form.minimumNights}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, minimumNights: e.target.value }))
+      }
+      placeholder="1"
+      style={inputStyle}
+    />
+  </div>
+
+  <div style={{ display: "grid", gap: 6 }}>
+    <div style={labelStyle}>Maximum Nights</div>
+    <input
+      type="number"
+      min="1"
+      value={form.maximumNights}
+      onChange={(e) =>
+        setForm((s) => ({ ...s, maximumNights: e.target.value }))
+      }
+      placeholder="Optional"
+      style={inputStyle}
+    />
+  </div>
+</div></div>
+{id ? (
+  <PropertyListingDetailsCard
+    propertyId={id}
+    maxGuests={form.maxGuests.trim() === "" ? null : Number(form.maxGuests)}
+  />
+) : null}
+{id ? <CancellationPolicyCard propertyId={id} /> : null}
+</>,
+access: <>
+{id ? <GuestAccessSettingsCard propertyId={id} /> : null}
+{id ? <StayTimeSettingsCard propertyId={id} /> : null}
+</>,
+ai: <>
+{id ? <PinAISettingsCard propertyId={id} /> : null}
+</>,
+pricing: <>
+<div className="property-edit-card"><div style={responsiveGridStyle}>
   <div style={{ display: "grid", gap: 6 }}>
     <div style={labelStyle}>Nightly Rate</div>
     <input
@@ -2599,66 +2634,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
       style={inputStyle}
     />
   </div>
-</div>
-
-<div style={responsiveGridStyle}>
-  <div style={{ display: "grid", gap: 6 }}>
-    <div style={labelStyle}>Max Guests</div>
-    <input
-      type="number"
-      min="1"
-      value={form.maxGuests}
-      onChange={(e) =>
-        setForm((s) => ({ ...s, maxGuests: e.target.value }))
-      }
-      placeholder="4"
-      style={inputStyle}
-    />
-  </div>
-
-  <div style={{ display: "grid", gap: 6 }}>
-    <div style={labelStyle}>Minimum Nights</div>
-    <input
-      type="number"
-      min="1"
-      value={form.minimumNights}
-      onChange={(e) =>
-        setForm((s) => ({ ...s, minimumNights: e.target.value }))
-      }
-      placeholder="1"
-      style={inputStyle}
-    />
-  </div>
-
-  <div style={{ display: "grid", gap: 6 }}>
-    <div style={labelStyle}>Maximum Nights</div>
-    <input
-      type="number"
-      min="1"
-      value={form.maximumNights}
-      onChange={(e) =>
-        setForm((s) => ({ ...s, maximumNights: e.target.value }))
-      }
-      placeholder="Optional"
-      style={inputStyle}
-    />
-  </div>
-</div>
-
-{id ? (
-  <PropertyListingDetailsCard
-    propertyId={id}
-    maxGuests={form.maxGuests.trim() === "" ? null : Number(form.maxGuests)}
-  />
-) : null}
-
-{id ? <CancellationPolicyCard propertyId={id} /> : null}
-
-{id ? <GuestAccessSettingsCard propertyId={id} /> : null}
-
-{id ? <StayTimeSettingsCard propertyId={id} /> : null}
-{id ? <PinAISettingsCard propertyId={id} /> : null}
-
+</div></div>
 <div
   style={{
     border: "1px solid #bfdbfe",
@@ -2670,7 +2646,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
   }}
 >
   <div>
-    <div style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>
+    <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
       Dynamic Pricing
     </div>
     <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
@@ -3702,7 +3678,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 </div>
 
 </div>
-          <div
+<div
             style={{
               borderTop: "1px solid #bfdbfe",
               paddingTop: 16,
@@ -3711,7 +3687,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
             }}
           >
             <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
                 Amenities & Fees
               </div>
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
@@ -4032,8 +4008,9 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
               </button>
             </div>
           </div>
-
-          <div
+</>,
+taxes: <>
+<div
             style={{
               borderTop: "1px solid #bfdbfe",
               paddingTop: 16,
@@ -4042,7 +4019,7 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
             }}
           >
             <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#111827" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
                 Property Taxes
               </div>
               <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
@@ -4251,9 +4228,10 @@ function getSeasonTypeStyle(type?: PropertySeasonType): React.CSSProperties {
 
 
           </div>
+</>
+}} />
 
-          </div>
-<div
+<div className="property-edit-actions"
   style={{
     display: "flex",
     justifyContent: "flex-end",

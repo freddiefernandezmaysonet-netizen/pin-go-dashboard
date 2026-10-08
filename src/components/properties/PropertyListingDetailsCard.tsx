@@ -154,7 +154,7 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
   ] as const;
 
   return <div style={{ border: "1px solid #bfdbfe", borderRadius: 18, padding: 18, background: "#fff", display: "grid", gap: 18 }}>
-    <div><div style={{ fontSize: 17, fontWeight: 900 }}>Información del alojamiento y requisitos / Accommodation & guest requirements</div>
+    <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Información del alojamiento y requisitos / Accommodation & guest requirements</h3>
       <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Confirma los datos reales del alojamiento una sola vez. Los datos no confirmados permanecen como desconocidos y no se presentan al huésped. / Confirm factual listing information once. Unconfirmed answers remain unknown and are not presented to guests.</div>
       <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Capacidad / Capacity: {maxGuests ?? "not configured"} huéspedes / guests · {version ? `Listing details V${version}` : "Aún no configurado / Not configured yet"}</div>
       <p style={{ fontSize: 12, color: "#64748b" }}>Usa “Guardar información del alojamiento” para esta sección. Las demás configuraciones se guardan por separado. / Use “Guardar información del alojamiento / Save accommodation details” for this section. Other property settings are saved separately.</p>
