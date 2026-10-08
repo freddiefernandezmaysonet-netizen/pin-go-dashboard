@@ -56,7 +56,7 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     assert.match(document.body.textContent, /Trabajo/);
     assert.match(document.body.textContent, /Acceso/);
     assert.equal(document.body.textContent.includes("Host secrets"), false);
-    assert.equal(document.body.textContent.includes("Completada"), false);
+    assert.equal(document.querySelector("article").textContent.includes("Completada"), false);
     assert.equal(requests.some(endpoint => endpoint.includes("properties") || endpoint.includes("overview")), false);
     assert.equal(requests.some(endpoint => endpoint.endsWith("/checklist")), false);
     const details = document.querySelector("details");
@@ -124,9 +124,9 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     }));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
     assert.match(document.body.textContent, /Un respaldo aceptó la limpieza/);
-    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today"], {
-      ...cache.getQueryData(["cleaner-tasks", "user", "today"]), pages: [{ items: [{
-        ...cache.getQueryData(["cleaner-tasks", "user", "today"]).pages[0].items[0], status: "REASSIGNED",
+    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }], {
+      ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]), pages: [{ items: [{
+        ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "REASSIGNED",
       }], nextCursor: null }],
     }));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
@@ -134,9 +134,9 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     assert.ok(button("Reportes y seguimiento"));
     assert.match(document.body.textContent, /Un respaldo aceptó la limpieza/);
     assert.equal(button("Abrir limpieza"), undefined);
-    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today"], {
-      ...cache.getQueryData(["cleaner-tasks", "user", "today"]), pages: [{ items: [{
-        ...cache.getQueryData(["cleaner-tasks", "user", "today"]).pages[0].items[0], status: "COMPLETED", completedAt: new Date().toISOString(),
+    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }], {
+      ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]), pages: [{ items: [{
+        ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "COMPLETED", completedAt: new Date().toISOString(),
       }], nextCursor: null }],
     }));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });

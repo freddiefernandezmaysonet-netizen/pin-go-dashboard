@@ -13,7 +13,13 @@ export async function cleanerRequest<T>(path: string, init?: RequestInit): Promi
   return data as T;
 }
 export const fetchCleanerProfile = () => cleanerRequest<CleanerProfile>("/api/cleaner/me");
-export const fetchCleanerTasks = (cursor?: string | null, view: "today" | "upcoming" | "history" = "today") => cleanerRequest<{ items: CleanerTask[]; nextCursor: string | null }>(`/api/cleaner/cleanings?view=${view}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`);
+export type CleanerTaskFilters = { q: string; status: string; from: string; to: string };
+export const fetchCleanerTasks = (cursor?: string | null, view: "today" | "upcoming" | "history" = "today", filters?: CleanerTaskFilters) => {
+  const params = new URLSearchParams({ view });
+  if (cursor) params.set("cursor", cursor);
+  for (const [key, value] of Object.entries(filters ?? {})) if (value) params.set(key, value);
+  return cleanerRequest<{ items: CleanerTask[]; nextCursor: string | null }>(`/api/cleaner/cleanings?${params}`);
+};
 export const updateCleanerLanguage = (language: "es" | "en") => cleanerRequest<CleanerProfile>("/api/cleaner/me/language", { method: "PATCH", body: JSON.stringify({ language }) });
 export async function openCleanerTask(id: string) {
   const detail = await cleanerRequest<{ portalPath: string }>(`/api/cleaner/cleanings/${encodeURIComponent(id)}`);

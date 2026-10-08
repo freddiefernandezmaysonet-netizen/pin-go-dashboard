@@ -26,7 +26,7 @@ const server = await createServer({ root, server: { host: "127.0.0.1", port: 417
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://cleaner-api.example.invalid") } });
 const now = Date.parse("2026-10-07T14:00:00Z"), iso = minutes => new Date(now + minutes * 60000).toISOString();
 let browser, page, language = "es", started = false, checked = false;
-const errors = [], unexpected = [], checks = [];
+const errors = [], unexpected = [], checks = [], taskQueries = [];
 try {
   await server.listen(); browser = await chromium.launch({ headless: true, ...(process.env.CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.CHROMIUM_EXECUTABLE_PATH } : {}) });
   page = await browser.newPage({ viewport: { width: 390, height: 844 }, timezoneId: "America/Puerto_Rico" });
@@ -44,6 +44,8 @@ try {
     if (url.pathname === "/api/cleaner/me/language" && req.method() === "PATCH") { language = req.postDataJSON().language; return reply({}); }
     if (url.pathname === "/api/cleaner/me") return reply({ id: "staff", fullName: "Cleaner de prueba", preferredLanguage: language });
     if (url.pathname === "/api/cleaner/cleanings") {
+      taskQueries.push(Object.fromEntries(url.searchParams));
+      if (url.searchParams.get("q") === "Sin coincidencias") return reply({ items: [], nextCursor: null });
       const view = url.searchParams.get("view"), minutes = view === "upcoming" ? 1440 : view === "history" ? -1440 : started ? -10 : 60;
       return reply({ items: [{ id: "task", property: { id: "p", name: "Casa Collores · apartamento familiar con terraza y vista al mar", timezone: "America/Puerto_Rico" }, status: view === "history" ? "COMPLETED" : started ? "IN_PROGRESS" : "CONFIRMED", departureAt: iso(minutes), scheduledStartAt: iso(minutes), durationCommitmentMinutes: 60, startedAt: started ? iso(-5) : null, completedAt: view === "history" ? iso(-1380) : null, access: { startsAt: iso(minutes), endsAt: iso(minutes + 180), status: "ENDED" } }], nextCursor: null });
     }
@@ -55,13 +57,30 @@ try {
   const address = `http://127.0.0.1:4179/${basename(fixture)}/index.html`;
   async function capture(name) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${name}: no horizontal overflow`);
-    const small = await page.locator(".pg-cleaner button, .pg-cleaner select").evaluateAll(nodes => nodes.filter(n => n.getBoundingClientRect().height < 44).map(n => n.textContent));
+    const small = await page.locator(".pg-cleaner button, .pg-cleaner select, .pg-cleaner-filters input").evaluateAll(nodes => nodes.filter(n => n.getBoundingClientRect().height < 44).map(n => n.textContent));
     assert.deepEqual(small, [], `${name}: touch targets at least 44px`);
     await page.screenshot({ path: resolve(output, `${name}.png`), fullPage: true }); checks.push(name);
   }
   await page.goto(address); await page.getByRole("heading", { name: "Mis limpiezas", exact: true }).waitFor();
-  await page.getByText("Confirmada", { exact: true }).waitFor();
-  assert.equal(await page.getByText("Completada", { exact: true }).count(), 0, "expired access does not imply completion");
+  await page.locator("article").getByText("Confirmada", { exact: true }).waitFor();
+  assert.equal(await page.locator("article").getByText("Completada", { exact: true }).count(), 0, "expired access does not imply completion");
+  await page.getByLabel("Buscar propiedad", { exact: true }).fill("Sin coincidencias");
+  await page.getByLabel("Estado", { exact: true }).selectOption("CONFIRMED");
+  await page.getByLabel("Desde", { exact: true }).fill("2026-10-07");
+  await page.getByLabel("Hasta", { exact: true }).fill("2026-10-07");
+  await page.getByRole("button", { name: "Aplicar filtros", exact: true }).click();
+  await page.getByText("No hay limpiezas que coincidan con estos filtros.", { exact: true }).waitFor();
+  assert.deepEqual(taskQueries.at(-1), { view: "today", q: "Sin coincidencias", status: "CONFIRMED", from: "2026-10-07", to: "2026-10-07" });
+  await page.setViewportSize({ width: 320, height: 740 }); await capture("es-320-filter-empty");
+  await page.getByLabel("Hasta", { exact: true }).fill("2026-10-06");
+  const beforeInvalid = taskQueries.length;
+  await page.getByRole("button", { name: "Aplicar filtros", exact: true }).click();
+  await page.getByRole("alert").getByText("La fecha Desde debe ser anterior o igual a Hasta.").waitFor();
+  assert.equal(taskQueries.length, beforeInvalid);
+  await page.getByRole("button", { name: "Limpiar filtros", exact: true }).click();
+  await page.locator("article").getByText("Confirmada", { exact: true }).waitFor();
+  assert.equal(await page.getByLabel("Buscar propiedad", { exact: true }).inputValue(), "");
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.getByText("Checklist de limpieza", { exact: true }).click();
   await page.getByText(/Limpiar y desinfectar/).waitFor();
   await page.getByRole("button", { name: "Reportar un problema", exact: true }).click();
@@ -72,15 +91,15 @@ try {
   await page.setViewportSize({ width: 320, height: 740 }); await capture("es-320-cancel-prompt");
   await page.getByLabel("Idioma", { exact: true }).selectOption("en");
   await page.getByRole("heading", { name: "My cleanings", exact: true }).waitFor(); await capture("en-320-confirmed");
-  await page.getByRole("button", { name: "Upcoming", exact: true }).click(); await page.getByText("Confirmed", { exact: true }).waitFor(); await capture("en-320-upcoming");
-  await page.getByRole("button", { name: "History", exact: true }).click(); await page.getByText("Completed", { exact: true }).waitFor(); await capture("en-320-history");
-  started = true; await page.reload(); await page.getByText("In progress", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Upcoming", exact: true }).click(); await page.locator("article").getByText("Confirmed", { exact: true }).waitFor(); await capture("en-320-upcoming");
+  await page.getByRole("button", { name: "History", exact: true }).click(); await page.locator("article").getByText("Completed", { exact: true }).waitFor(); await capture("en-320-history");
+  started = true; await page.reload(); await page.locator("article").getByText("In progress", { exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: "Cancel cleaning", exact: true }).count(), 0);
   await page.getByText("Cleaning checklist", { exact: true }).click(); await page.getByRole("checkbox").click();
   await page.getByText("1/1 items completed", { exact: true }).waitFor();
   assert.equal(await page.getByRole("checkbox").isChecked(), true, "checkbox reflects the acknowledged save");
   await page.getByRole("button", { name: "Report an issue", exact: true }).click();
-  await page.locator(".pg-cleaner form select").selectOption("INCOMPLETE"); await capture("en-320-incomplete");
+  await page.locator(".pg-cleaner article form select").selectOption("INCOMPLETE"); await capture("en-320-incomplete");
   await page.setViewportSize({ width: 390, height: 844 }); await page.getByLabel("Language", { exact: true }).selectOption("es");
   await page.getByRole("heading", { name: "Mis limpiezas", exact: true }).waitFor(); await capture("es-390-incomplete");
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);

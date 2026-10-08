@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { logout } from "../../api/auth";
-import { cancelCleanerTask, fetchCleanerProfile, fetchCleanerTasks, openCleanerTask, updateCleanerLanguage } from "../../api/cleaner";
+import { cancelCleanerTask, fetchCleanerProfile, fetchCleanerTasks, openCleanerTask, updateCleanerLanguage, type CleanerTaskFilters } from "../../api/cleaner";
 import { useAuth } from "../../auth/AuthProvider";
 import "./cleaner.css";
 import { TaskChecklist } from "./TaskChecklist";
@@ -10,12 +10,18 @@ import { belongsToCleanerView, CLOSED_CLEANER_TASKS as CLOSED } from "./cleaner-
 
 const STATUS: Record<string, [string, string]> = { PENDING: ["Pendiente de confirmar", "Awaiting confirmation"], CONFIRMED: ["Confirmada", "Confirmed"], IN_PROGRESS: ["En curso", "In progress"], COMPLETED: ["Completada", "Completed"], CANCELLED: ["Cancelada", "Cancelled"], REASSIGNED: ["Reasignada", "Reassigned"], EXPIRED: ["Oferta vencida", "Offer expired"], DECLINED: ["Rechazada", "Declined"] };
 
+const EMPTY_FILTERS: CleanerTaskFilters = { q: "", status: "", from: "", to: "" };
+
 export default function MyCleaningsPage() {
   const { user, refresh } = useAuth();
   const cache = useQueryClient();
   const profile = useQuery({ queryKey: ["cleaner-profile", user?.id], queryFn: fetchCleanerProfile });
   const [view, setView] = useState<"today" | "upcoming" | "history">("today");
-  const tasks = useInfiniteQuery({ queryKey: ["cleaner-tasks", user?.id, view], queryFn: ({ pageParam }) => fetchCleanerTasks(pageParam, view), initialPageParam: null as string | null, getNextPageParam: page => page.nextCursor ?? undefined, refetchInterval: 30_000 });
+  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filterError, setFilterError] = useState(false);
+  const hasFilters = Object.values(filters).some(Boolean);
+  const tasks = useInfiniteQuery({ queryKey: ["cleaner-tasks", user?.id, view, filters], queryFn: ({ pageParam }) => fetchCleanerTasks(pageParam, view, filters), initialPageParam: null as string | null, getNextPageParam: page => page.nextCursor ?? undefined, refetchInterval: 30_000 });
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -40,10 +46,23 @@ export default function MyCleaningsPage() {
     <header><div><h1>{t("Mis limpiezas", "My cleanings")}</h1><p>{profile.data?.fullName}</p></div><button disabled={busy} onClick={() => void act(async () => { await logout(); cache.clear(); await refresh(); })}>{t("Cerrar sesión", "Sign out")}</button></header>
     <label>{t("Idioma", "Language")} <select aria-label={t("Idioma", "Language")} value={profile.data?.preferredLanguage ?? "en"} disabled={busy || !profile.data} onChange={event => { const language = event.target.value as "es" | "en"; void act(async () => { await updateCleanerLanguage(language); await cache.invalidateQueries({ queryKey: ["cleaner-profile", user?.id] }); }); }}><option value="es">Español</option><option value="en">English</option></select></label>
     <nav aria-label={t("Vistas de limpieza", "Cleaning views")}>{(["today", "upcoming", "history"] as const).map((key, i) => <button key={key} aria-pressed={view === key} onClick={() => setView(key)}>{[t("Hoy", "Today"), t("Próximas", "Upcoming"), t("Historial", "History")][i]}</button>)}</nav>
+    <form role="search" aria-label={t("Filtrar limpiezas", "Filter cleanings")} className="pg-cleaner-filters" onSubmit={event => {
+      event.preventDefault();
+      if (draftFilters.from && draftFilters.to && draftFilters.from > draftFilters.to) { setFilterError(true); return; }
+      setFilterError(false); setCancelTarget(null); setFilters({ ...draftFilters, q: draftFilters.q.trim() });
+    }}>
+      <label className="pg-cleaner-search">{t("Buscar propiedad", "Search property")}<input type="search" maxLength={100} value={draftFilters.q} onChange={event => setDraftFilters({ ...draftFilters, q: event.target.value })} /></label>
+      <label>{t("Estado", "Status")}<select value={draftFilters.status} onChange={event => setDraftFilters({ ...draftFilters, status: event.target.value })}><option value="">{t("Todos los estados", "All statuses")}</option>{Object.entries(STATUS).map(([key, labels]) => <option key={key} value={key}>{labels[es ? 0 : 1]}</option>)}</select></label>
+      <label>{t("Desde", "From")}<input type="date" min="0001-01-01" max="9999-12-31" value={draftFilters.from} onChange={event => setDraftFilters({ ...draftFilters, from: event.target.value })} /></label>
+      <label>{t("Hasta", "To")}<input type="date" min="0001-01-01" max="9999-12-31" value={draftFilters.to} onChange={event => setDraftFilters({ ...draftFilters, to: event.target.value })} /></label>
+      <p className="pg-cleaner-filter-note">{t("Filtra la vista seleccionada. Fechas según la zona horaria de cada propiedad.", "Filters the selected view. Dates use each property's time zone.")}</p>
+      {filterError ? <p role="alert" className="pg-cleaner-filter-note">{t("La fecha Desde debe ser anterior o igual a Hasta.", "From must be on or before To.")}</p> : null}
+      <div className="pg-cleaner-filter-actions"><button type="submit" className="pg-cleaner-primary">{t("Aplicar filtros", "Apply filters")}</button><button type="button" onClick={() => { setDraftFilters(EMPTY_FILTERS); setFilters(EMPTY_FILTERS); setFilterError(false); setCancelTarget(null); }}>{t("Limpiar filtros", "Clear filters")}</button></div>
+    </form>
     <button disabled={tasks.isFetching || profile.isFetching} onClick={() => { void tasks.refetch(); void profile.refetch(); }}>{t("Actualizar", "Refresh")}</button>
     {(tasks.isPending || profile.isPending) ? <p role="status">{t("Cargando…", "Loading…")}</p> : null}
     {(tasks.isError || profile.isError || actionError) ? <p role="alert">{actionError ?? t("No se pudieron actualizar tus tareas.", "Could not refresh your tasks.")}</p> : null}
-    {!tasks.isPending && !tasks.isError && visible.length === 0 ? <p>{t("No hay tareas en esta vista entre los resultados cargados.", "No tasks in this view among the loaded results.")}</p> : null}
+    {!tasks.isPending && !tasks.isError && visible.length === 0 ? <p>{hasFilters ? t("No hay limpiezas que coincidan con estos filtros.", "No cleanings match these filters.") : t("No hay limpiezas en esta vista.", "No cleanings in this view.")}</p> : null}
     <section aria-label={t("Tareas", "Tasks")}>{visible.map(task => {
       const completion = task.scheduledStartAt && task.durationCommitmentMinutes !== null ? new Date(new Date(task.scheduledStartAt).getTime() + task.durationCommitmentMinutes * 60000).toISOString() : null;
       return <article key={task.id}><h2>{task.property.name}</h2><p className="pg-cleaner-status">{STATUS[task.status]?.[es ? 0 : 1] ?? t("Estado pendiente de revisión", "Status awaiting review")}</p><p>{task.property.timezone}</p>
