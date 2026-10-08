@@ -9,3 +9,9 @@
 .pg-cleaner form{display:grid;gap:12px;margin:16px 0}.pg-cleaner form label{display:grid;gap:6px}
 .pg-cleaner form input,.pg-cleaner form textarea,.pg-cleaner form select{box-sizing:border-box;width:100%;max-width:100%;font:inherit;padding:10px;border:1px solid #cbd5e1;border-radius:10px}
 .pg-cleaner form textarea{resize:vertical}.pg-cleaner form input:focus-visible,.pg-cleaner form textarea:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+
+.pg-cleaner .pg-cleaner-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;border:1px solid #dbe3ee;border-radius:16px;background:#f8fafc}
+.pg-cleaner-filters label,.pg-cleaner-filters input,.pg-cleaner-filters select{min-width:0;min-height:48px}
+.pg-cleaner-filters .pg-cleaner-search,.pg-cleaner-filters .pg-cleaner-filter-note,.pg-cleaner-filters .pg-cleaner-filter-actions{grid-column:1/-1}
+.pg-cleaner-filter-note{font-size:15px;margin:0}.pg-cleaner-filter-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:480px){.pg-cleaner .pg-cleaner-filters{grid-template-columns:minmax(0,1fr)}}

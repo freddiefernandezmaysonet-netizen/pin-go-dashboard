@@ -56,7 +56,7 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     assert.match(document.body.textContent, /Trabajo/);
     assert.match(document.body.textContent, /Acceso/);
     assert.equal(document.body.textContent.includes("Host secrets"), false);
-    assert.equal(document.body.textContent.includes("Completada"), false);
+    assert.equal(document.querySelector("article").textContent.includes("Completada"), false);
     assert.equal(requests.some(endpoint => endpoint.includes("properties") || endpoint.includes("overview")), false);
     assert.equal(requests.some(endpoint => endpoint.endsWith("/checklist")), false);
     const details = document.querySelector("details");
@@ -108,6 +108,42 @@ test("cleaner visiting a host route sees only own cleaning page in preferred lan
     assert.match(document.body.textContent, /Cancelada/);
     assert.equal(button("Cancelar limpieza"), undefined);
     assert.equal(button("Reportar un problema"), undefined);
+    assert.ok(button("Reportes y seguimiento"));
+    await act(async () => cache.setQueryData(["cleaner-issues", "task"], {
+      reports: [{ id: "own-report", kind: "INCOMPLETE", reportedAt: new Date().toISOString(), estimatedAt: null }],
+      assessment: { decision: "REPORT_SUPERSEDED", actionsExecuted: false, accessChanged: false },
+      canReport: false, recoveryOutcome: { state: "BACKUP_OFFER_PENDING" },
+    }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    assert.match(document.body.textContent, /Último reporte/);
+    assert.match(document.body.textContent, /falta su aceptación/);
+    assert.equal(button("Registrar reporte"), undefined);
+    assert.equal(document.querySelector("textarea"), null);
+    await act(async () => cache.setQueryData(["cleaner-issues", "task"], {
+      ...cache.getQueryData(["cleaner-issues", "task"]), recoveryOutcome: { state: "BACKUP_ACCEPTED" },
+    }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    assert.match(document.body.textContent, /Un respaldo aceptó la limpieza/);
+    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }], {
+      ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]), pages: [{ items: [{
+        ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "REASSIGNED",
+      }], nextCursor: null }],
+    }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    assert.match(document.body.textContent, /Reasignada/);
+    assert.ok(button("Reportes y seguimiento"));
+    assert.match(document.body.textContent, /Un respaldo aceptó la limpieza/);
+    assert.equal(button("Abrir limpieza"), undefined);
+    await act(async () => cache.setQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }], {
+      ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]), pages: [{ items: [{
+        ...cache.getQueryData(["cleaner-tasks", "user", "today", { q: "", status: "", from: "", to: "" }]).pages[0].items[0], status: "COMPLETED", completedAt: new Date().toISOString(),
+      }], nextCursor: null }],
+    }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    assert.match(document.body.textContent, /Completada/);
+    assert.ok(button("Reportes y seguimiento"));
+    assert.equal(button("Registrar reporte"), undefined);
+    assert.equal(document.body.textContent.includes("Pin AI revisará el caso"), false);
   } finally {
     if (root) await act(async () => root.unmount());
     cache.clear(); globalThis.fetch = originalFetch; Date.now = originalNow;
