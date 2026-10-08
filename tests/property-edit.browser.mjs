@@ -67,7 +67,8 @@ try {
     for (const id of ['general', 'cleaning', 'booking', 'access', 'ai', 'pricing', 'taxes']) {
       await page.locator(`#property-tab-${id}`).click();
       assert.equal(await page.locator('[role="tabpanel"]:visible').count(), 1);
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${width}/${id}: no horizontal overflow`);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth ? [...document.querySelectorAll('[role=tabpanel]:not([hidden]) *')].filter(n => n.getBoundingClientRect().right > innerWidth + 1).map(n => ({ tag: n.tagName, text: n.textContent?.slice(0, 70), style: n.getAttribute('style'), width: n.getBoundingClientRect().width })).slice(-12) : []);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${width}/${id}: no horizontal overflow: ${JSON.stringify(overflow)}`);
       await page.screenshot({ path: resolve(output, `${width}-${id}.png`), fullPage: true });
     }
   }

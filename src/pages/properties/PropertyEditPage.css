@@ -1,6 +1,6 @@
 .property-edit-page { font-family: inherit; font-size: 14px; line-height: 1.5; min-width: 0; }
 .property-edit-page *, .property-edit-page *::before, .property-edit-page *::after { box-sizing: border-box; }
-.property-edit-page input, .property-edit-page select, .property-edit-page textarea, .property-edit-page button { font-family: inherit; font-size: 14px !important; max-width: 100%; }
+.property-edit-page input, .property-edit-page select, .property-edit-page textarea, .property-edit-page button { font-family: inherit; font-size: 14px !important; max-width: 100%; min-width: 0; }
 .property-edit-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .property-edit-page select, .property-edit-page textarea { border-radius: 10px !important; }
 .property-edit-page button:not([class*="rdp-"]) { min-height: 44px; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 10px; background: #fff; color: #374151; font-weight: 600; line-height: 1.4; cursor: pointer; }
 .property-edit-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .property-edit-page select { min-height: 44px; padding: 10px 12px; border: 1px solid #d1d5db; background: #fff; color: #111827; }
@@ -24,5 +24,7 @@
   .property-edit-page > form { padding: 12px !important; }
   .property-edit-panel > section, .property-edit-panel > details, .property-edit-panel > div:not(.property-edit-panel-heading) { padding: 14px !important; }
   .property-edit-tablist button { padding: 10px 12px; }
+  .property-edit-panel .property-listing-tag-entry { flex-direction: column; align-items: stretch; }
+  .property-edit-panel [style*="grid-template-columns"] > * { min-width: 0; }
   .property-edit-panel [style*="grid-template-columns"] { grid-template-columns: minmax(0, 1fr) !important; }
 }
