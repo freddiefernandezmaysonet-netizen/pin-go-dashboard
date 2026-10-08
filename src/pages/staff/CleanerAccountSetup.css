@@ -1,0 +1,63 @@
+.cleaner-account-setup {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+  color: #111827;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.cleaner-account-setup label { font-weight: 700; }
+.cleaner-account-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cleaner-account-controls input {
+  flex: 1 1 240px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+}
+.cleaner-account-controls button {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cleaner-account-controls button:disabled { opacity: .55; cursor: not-allowed; }
+.cleaner-account-controls :focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.cleaner-account-setup p { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
+.cleaner-account-help { color: #6b7280; font-size: 13px; }
+.cleaner-account-status {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+}
+.cleaner-account-status--active { background: #ecfdf5; color: #065f46; }
+.cleaner-account-error { color: #991b1b; }
+@media (max-width: 620px) {
+  .cleaner-account-controls { flex-direction: column; }
+  .cleaner-account-controls input { flex: auto; }
+  .cleaner-account-controls button { width: 100%; }
+}
