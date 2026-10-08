@@ -79,7 +79,7 @@ try {
   await page.getByText("1/1 items completed", { exact: true }).waitFor();
   assert.equal(await page.getByRole("checkbox").isChecked(), true, "checkbox reflects the acknowledged save");
   await page.getByRole("button", { name: "Report an issue", exact: true }).click();
-  await page.getByLabel("Situation", { exact: true }).selectOption("INCOMPLETE"); await capture("en-320-incomplete");
+  await page.locator(".pg-cleaner form select").selectOption("INCOMPLETE"); await capture("en-320-incomplete");
   await page.setViewportSize({ width: 390, height: 844 }); await page.getByLabel("Language", { exact: true }).selectOption("es");
   await page.getByRole("heading", { name: "Mis limpiezas", exact: true }).waitFor(); await capture("es-390-incomplete");
   assert.deepEqual(errors, []); assert.deepEqual(unexpected, []);

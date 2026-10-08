@@ -23,10 +23,11 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1
+      - run: npm install --prefix "$RUNNER_TEMP/cleaner-browser-tools" --no-save --ignore-scripts --no-audit --no-fund playwright@1.62.1
       - name: Review real components at mobile widths with synthetic requests
         run: |
           export CHROMIUM_EXECUTABLE_PATH="$(command -v google-chrome)"
+          export PLAYWRIGHT_MODULE="$RUNNER_TEMP/cleaner-browser-tools/node_modules/playwright/index.mjs"
           test -n "$CHROMIUM_EXECUTABLE_PATH"
           node tests/cleaner-mobile.browser.mjs
       - uses: actions/upload-artifact@v4
