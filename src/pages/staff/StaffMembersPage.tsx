@@ -723,7 +723,6 @@ export function StaffMembersPage() {
                     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                   }}
                 >
-                  <CleanerAccountSetup staffId={s.id} linked={Boolean(s.dashboardUserId)} currentEmail={s.cleanerAccountEmail ?? null} disabled={!s.isActive} onSaved={() => loadStaff(organizationId)} />
                   <Metric label="Phone" value={s.phoneE164 ?? "-"} />
                   <Metric label="Language / Idioma" value={s.preferredLanguage === "es" ? "Español" : "English"} />
                   <Metric label="Company" value={s.companyName ?? "-"} />
@@ -733,6 +732,8 @@ export function StaffMembersPage() {
                     value={staffAssignments.filter((p) => Boolean(p.assignment?.role)).length}
                   />
                 </div>
+
+                <CleanerAccountSetup staffId={s.id} linked={Boolean(s.dashboardUserId)} currentEmail={s.cleanerAccountEmail ?? null} disabled={!s.isActive} onSaved={() => loadStaff(organizationId)} />
 
                 <div
                   style={{
