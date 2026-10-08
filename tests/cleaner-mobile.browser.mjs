@@ -43,11 +43,13 @@ try {
     if (url.pathname === "/auth/session/activity" && req.method() === "POST") return reply({ ok: true });
     if (url.pathname === "/api/cleaner/me/language" && req.method() === "PATCH") { language = req.postDataJSON().language; return reply({}); }
     if (url.pathname === "/api/cleaner/me") return reply({ id: "staff", fullName: "Cleaner de prueba", preferredLanguage: language });
+    if (url.pathname === "/api/cleaner/cleaning-properties") return reply({ items: [{ id: "p", name: "Casa Collores · apartamento familiar con terraza y vista al mar" }, { id: "past-property", name: "Propiedad de tarea anterior" }] });
     if (url.pathname === "/api/cleaner/cleanings") {
       taskQueries.push(Object.fromEntries(url.searchParams));
-      if (url.searchParams.get("q") === "Sin coincidencias") return reply({ items: [], nextCursor: null });
-      const view = url.searchParams.get("view"), minutes = view === "upcoming" ? 1440 : view === "history" ? -1440 : started ? -10 : 60;
-      return reply({ items: [{ id: "task", property: { id: "p", name: "Casa Collores · apartamento familiar con terraza y vista al mar", timezone: "America/Puerto_Rico" }, status: view === "history" ? "COMPLETED" : started ? "IN_PROGRESS" : "CONFIRMED", departureAt: iso(minutes), scheduledStartAt: iso(minutes), durationCommitmentMinutes: 60, startedAt: started ? iso(-5) : null, completedAt: view === "history" ? iso(-1380) : null, access: { startsAt: iso(minutes), endsAt: iso(minutes + 180), status: "ENDED" } }], nextCursor: null });
+      if (url.searchParams.get("status") === "DECLINED") return reply({ items: [], nextCursor: null });
+      const oldProperty = url.searchParams.get("propertyId") === "past-property";
+      const view = url.searchParams.get("view"), minutes = oldProperty ? -1440 : view === "upcoming" ? 1440 : view === "history" || view === "overdue" ? -1440 : started ? -10 : 60;
+      return reply({ items: [{ id: "task", property: { id: oldProperty ? "past-property" : "p", name: oldProperty ? "Propiedad de tarea anterior" : "Casa Collores · apartamento familiar con terraza y vista al mar", timezone: "America/Puerto_Rico" }, status: view === "history" ? "COMPLETED" : started ? "IN_PROGRESS" : "CONFIRMED", departureAt: iso(minutes), scheduledStartAt: iso(minutes), durationCommitmentMinutes: 60, startedAt: started ? iso(-5) : null, completedAt: view === "history" ? iso(-1380) : null, access: { startsAt: iso(minutes), endsAt: iso(minutes + 180), status: "ENDED" } }], nextCursor: null });
     }
     if (url.pathname === "/api/cleaner/cleanings/task/checklist") return reply({ id: "checklist", editable: started, legacy: false, items: [{ id: "item", labelEs: "Limpiar y desinfectar los baños, revisar las toallas y reponer todos los suministros", labelEn: "Clean and disinfect bathrooms, inspect towels and replenish all supplies", required: true, checked, version: checked ? 1 : 0 }] });
     if (url.pathname === "/api/cleaner/cleanings/task/checklist/item" && req.method() === "PATCH") { checked = req.postDataJSON().checked; return reply({}); }
@@ -64,13 +66,14 @@ try {
   await page.goto(address); await page.getByRole("heading", { name: "Mis limpiezas", exact: true }).waitFor();
   await page.locator("article").getByText("Confirmada", { exact: true }).waitFor();
   assert.equal(await page.locator("article").getByText("Completada", { exact: true }).count(), 0, "expired access does not imply completion");
-  await page.getByLabel("Buscar propiedad", { exact: true }).fill("Sin coincidencias");
-  await page.getByLabel("Estado", { exact: true }).selectOption("CONFIRMED");
+  await page.getByLabel("Propiedad", { exact: true }).selectOption("p");
+  await page.getByLabel("Estado", { exact: true }).selectOption("DECLINED");
   await page.getByLabel("Desde", { exact: true }).fill("2026-10-07");
   await page.getByLabel("Hasta", { exact: true }).fill("2026-10-07");
   await page.getByRole("button", { name: "Aplicar filtros", exact: true }).click();
   await page.getByText("No hay limpiezas que coincidan con estos filtros.", { exact: true }).waitFor();
-  assert.deepEqual(taskQueries.at(-1), { view: "today", q: "Sin coincidencias", status: "CONFIRMED", from: "2026-10-07", to: "2026-10-07" });
+  assert.deepEqual(taskQueries.at(-1), { view: "all", propertyId: "p", status: "DECLINED", from: "2026-10-07", to: "2026-10-07" });
+  assert.equal(await page.getByRole("button", { name: "Todas", exact: true }).getAttribute("aria-pressed"), "true");
   await page.setViewportSize({ width: 320, height: 740 }); await capture("es-320-filter-empty");
   await page.getByLabel("Hasta", { exact: true }).fill("2026-10-06");
   const beforeInvalid = taskQueries.length;
@@ -79,7 +82,21 @@ try {
   assert.equal(taskQueries.length, beforeInvalid);
   await page.getByRole("button", { name: "Limpiar filtros", exact: true }).click();
   await page.locator("article").getByText("Confirmada", { exact: true }).waitFor();
-  assert.equal(await page.getByLabel("Buscar propiedad", { exact: true }).inputValue(), "");
+  assert.equal(await page.getByLabel("Propiedad", { exact: true }).inputValue(), "");
+  assert.equal(await page.getByRole("button", { name: "Hoy", exact: true }).getAttribute("aria-pressed"), "true");
+  await page.getByRole("button", { name: "Pendientes anteriores", exact: true }).click();
+  await page.locator("article").getByText("Confirmada", { exact: true }).waitFor();
+  await capture("es-320-earlier-unfinished");
+  await page.getByLabel("Propiedad", { exact: true }).selectOption("past-property");
+  await Promise.all([page.waitForResponse(response => new URL(response.url()).searchParams.get("propertyId") === "past-property"), page.getByRole("button", { name: "Aplicar filtros", exact: true }).click()]);
+  assert.equal(await page.getByRole("button", { name: "Todas", exact: true }).getAttribute("aria-pressed"), "true");
+  assert.equal(taskQueries.at(-1).view, "all");
+  assert.equal(taskQueries.at(-1).propertyId, "past-property");
+  await page.getByRole("heading", { name: "Propiedad de tarea anterior", exact: true }).waitFor();
+  await capture("es-320-global-past-property");
+  await page.getByRole("button", { name: "Hoy", exact: true }).click();
+  assert.equal(await page.getByLabel("Propiedad", { exact: true }).inputValue(), "");
+  await page.locator("article").getByText("Confirmada", { exact: true }).waitFor();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByText("Checklist de limpieza", { exact: true }).click();
   await page.getByText(/Limpiar y desinfectar/).waitFor();

@@ -13,8 +13,10 @@ export async function cleanerRequest<T>(path: string, init?: RequestInit): Promi
   return data as T;
 }
 export const fetchCleanerProfile = () => cleanerRequest<CleanerProfile>("/api/cleaner/me");
-export type CleanerTaskFilters = { q: string; status: string; from: string; to: string };
-export const fetchCleanerTasks = (cursor?: string | null, view: "today" | "upcoming" | "history" = "today", filters?: CleanerTaskFilters) => {
+export type CleanerTaskView = "today" | "upcoming" | "history" | "overdue" | "all";
+export const fetchCleanerTaskProperties = () => cleanerRequest<{ items: { id: string; name: string }[] }>("/api/cleaner/cleaning-properties");
+export type CleanerTaskFilters = { propertyId: string; status: string; from: string; to: string };
+export const fetchCleanerTasks = (cursor?: string | null, view: CleanerTaskView = "today", filters?: CleanerTaskFilters) => {
   const params = new URLSearchParams({ view });
   if (cursor) params.set("cursor", cursor);
   for (const [key, value] of Object.entries(filters ?? {})) if (value) params.set(key, value);
