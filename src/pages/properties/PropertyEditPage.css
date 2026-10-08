@@ -2,7 +2,9 @@
 .property-edit-page *, .property-edit-page *::before, .property-edit-page *::after { box-sizing: border-box; }
 .property-edit-page input, .property-edit-page select, .property-edit-page textarea, .property-edit-page button { font-family: inherit; font-size: 14px !important; max-width: 100%; }
 .property-edit-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .property-edit-page select, .property-edit-page textarea { border-radius: 10px !important; }
-.property-edit-page button { line-height: 1.4; }
+.property-edit-page button:not([class*="rdp-"]) { min-height: 44px; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 10px; background: #fff; color: #374151; font-weight: 600; line-height: 1.4; cursor: pointer; }
+.property-edit-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .property-edit-page select { min-height: 44px; padding: 10px 12px; border: 1px solid #d1d5db; background: #fff; color: #111827; }
+.property-edit-page textarea { min-height: 96px; padding: 10px 12px; border: 1px solid #d1d5db; background: #fff; color: #111827; }
 .property-edit-page h2, .property-edit-page h3 { font-size: 18px !important; font-weight: 700 !important; line-height: 1.4; }
 .property-edit-tabs { display: grid; gap: 16px; min-width: 0; }
 .property-edit-tablist { display: flex; gap: 6px; overflow-x: auto; padding: 6px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; }
