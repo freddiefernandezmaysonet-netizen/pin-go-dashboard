@@ -12,7 +12,7 @@ export default function BillingPolicyPage() {
 
       <p>
         This Billing Policy explains how Pin&amp;Go manages subscriptions,
-        monthly memberships, 24-month service contracts, payment grace periods,
+        monthly memberships, 12-month and 24-month service contracts, payment grace periods,
         suspension, cancellations, and renewals.
       </p>
 
@@ -23,17 +23,23 @@ export default function BillingPolicyPage() {
         configuration.
       </p>
 
-      <h3>24-Month Service Contracts</h3>
+      <h3>12-Month and 24-Month Service Contracts</h3>
       <p>
-        Eligible 24-month contracts may include hardware, membership services,
+        Eligible 12-month and 24-month contracts may include hardware, membership services,
         smart automation according to the selected plan, installation, technical
         support, battery replacement, and limited warranty coverage during the
         active contract term.
       </p>
+      <p>
+        The selected contract term is 12 or 24 months. Payments are billed monthly
+        at the rate for the selected plan and term. The monthly Hardware-as-a-Service
+        payment includes the Pin&amp;Go membership and hardware rental. Applicable
+        taxes are charged separately from the advertised price.
+      </p>
 
       <h3>Hardware Included Plans</h3>
       <p>
-        For eligible 24-month plans, no upfront hardware purchase is required.
+        For eligible 12-month and 24-month plans, no upfront hardware purchase is required.
         Hardware remains the property of Pin&amp;Go LLC unless otherwise agreed
         in writing.
       </p>
@@ -61,7 +67,7 @@ export default function BillingPolicyPage() {
 
       <h3>Early Cancellation</h3>
       <p>
-        For 24-month contracts, early cancellation may require payment of the
+        For 12-month and 24-month contracts, early cancellation may require payment of the
         remaining balance for the unused contract term. Pin&amp;Go may also
         require return of installed hardware.
       </p>
