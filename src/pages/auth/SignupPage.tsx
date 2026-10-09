@@ -12,15 +12,17 @@ export default function SignupPage() {
   const validSelection = !haas || (Object.hasOwn(prices,model) && [12,24].includes(term) && !['one','two','1','2'].includes(params.get('smartDevices')??''));
   const [fields,setFields]=useState({organizationName:'',fullName:'',email:'',phone:'',password:''});
   const [locks,setLocks]=useState(1),[submitting,setSubmitting]=useState(false),[error,setError]=useState('');
+  const [billingInterval,setBillingInterval]=useState<'monthly'|'yearly'>(params.get('billingInterval')==='yearly'?'yearly':'monthly');
+  const yearly=!haas && billingInterval==='yearly';
   const [mobile,setMobile]=useState(false);const busy=useRef(false);
   useEffect(()=>{const check=()=>setMobile(innerWidth<900);check();window.addEventListener('resize',check);return()=>window.removeEventListener('resize',check);},[]);
-  const amount = haas && validSelection ? prices[model][term] : 39.99;
+  const amount = haas && validSelection ? prices[model][term] : yearly ? 399.90 : 39.99;
   async function submit(e:React.FormEvent){
     e.preventDefault();if(busy.current || !validSelection)return;busy.current=true;setSubmitting(true);setError('');
     try {
       const response=await fetch(`${API_BASE}/api/public/signup-checkout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         ...fields,email:fields.email.trim().toLowerCase(),organizationName:fields.organizationName.trim(),fullName:fields.fullName.trim(),phone:fields.phone.trim(),
-        lang:es?'es':'en',plan:haas?'haas':'platform',locks:haas?1:locks,billingInterval:'monthly',contractOption:haas?(term===12?'contract_12_lock':'contract_24_lock'):'standard',
+        lang:es?'es':'en',plan:haas?'haas':'platform',locks:haas?1:locks,billingInterval:haas?'monthly':billingInterval,contractOption:haas?(term===12?'contract_12_lock':'contract_24_lock'):'standard',
         haasSelection:haas?{plan:'haas',lock:model,termMonths:term,smartDevices:'none'}:null,
       })});
       const data=await response.json();
@@ -44,8 +46,8 @@ export default function SignupPage() {
         <ul style={{paddingLeft:20,color:'#dbeafe',lineHeight:2}}>{[t('Reservas, calendario y pagos conectados','Connected reservations, calendar and payments'),t('Acceso automático por reservación','Automatic access by reservation'),t('Coordinación y seguimiento de limpieza','Cleaning coordination and tracking')].map(text=><li key={text}>{text}</li>)}</ul>
         <div style={{marginTop:28,padding:20,border:'1px solid #475569',borderRadius:16}}>
           <h2 style={{fontSize:20,marginTop:0}}>{haas?`${model.charAt(0).toUpperCase()+model.slice(1)} Lock`:t('Membresía Pin&Go','Pin&Go membership')}</h2>
-          {validSelection && <><strong style={{fontSize:30}}>${amount.toFixed(2)}</strong><span>{t(' / mes + impuestos',' / month + taxes')}</span></>}
-          <p>{haas?t(`Contrato de ${term} meses · una cerradura.`,`A ${term}-month agreement · one lock.`):t('Por cerradura · pago mensual.','Per lock · monthly payment.')}</p>
+          {validSelection && <><strong style={{fontSize:30}}>${amount.toFixed(2)}</strong><span>{yearly?t(' / año + impuestos',' / year + taxes'):t(' / mes + impuestos',' / month + taxes')}</span></>}
+          <p>{haas?t(`Contrato de ${term} meses · una cerradura.`,`A ${term}-month agreement · one lock.`):yearly?t('Por cerradura · pago anual.','Per lock · annual payment.'):t('Por cerradura · pago mensual.','Per lock · monthly payment.')}</p>
           {haas && <p>{t('Incluye Pin&Go y el alquiler del hardware. Coordinaremos contigo la instalación.','Includes Pin&Go and hardware rental. We will coordinate installation with you.')}</p>}
           <p style={{fontSize:13,color:'#cbd5e1'}}>{t('Pin AI opcional: $1.00 por reservación. Verificación de identidad con selfie: $2.50 por verificación utilizada.','Optional Pin AI: $1.00 per reservation. Identity Check with selfie: $2.50 per verification used.')}</p>
         </div>
@@ -60,7 +62,8 @@ export default function SignupPage() {
             {key:'phone',label:t('Teléfono','Phone'),type:'tel',auto:'tel'},
             {key:'password',label:t('Contraseña','Password'),type:'password',auto:'new-password'}] as const).map(field=><label key={field.key} style={{display:'grid',gap:6,fontSize:14,fontWeight:600}}>{field.label}<input required type={field.type} autoComplete={field.auto} minLength={field.key==='password'?12:undefined} maxLength={field.key==='password'?128:200} value={fields[field.key]} onChange={e=>setFields({...fields,[field.key]:e.target.value})} style={input}/></label>)}
           <p style={{fontSize:13,color:'#475569',background:'#f8fafc',padding:14,borderRadius:14,margin:0}}>{t('Contraseña: mínimo 12 caracteres, una mayúscula, una minúscula, un número y un símbolo. Sin espacios al inicio o al final ni tu correo, nombre u organización.','Password: at least 12 characters, one uppercase letter, one lowercase letter, one number and one symbol. No leading/trailing spaces or your email, name or organization.')}</p>
-          {!haas && <label style={{display:'grid',gap:6,fontSize:14,fontWeight:600}}>{t('Cantidad de cerraduras','Number of locks')}<input type="number" min={1} step={1} required value={locks} onChange={e=>setLocks(Number(e.target.value))} style={input}/><span style={{fontWeight:400,color:'#475569'}}>{t('Total mensual antes de descuentos e impuestos:','Monthly total before discounts and taxes:')} ${(amount*locks).toFixed(2)}</span></label>}
+          {!haas && <label style={{display:'grid',gap:6,fontSize:14,fontWeight:600}}>{t('Frecuencia de pago','Billing frequency')}<select aria-label={t('Frecuencia de pago','Billing frequency')} value={billingInterval} onChange={e=>setBillingInterval(e.target.value as 'monthly'|'yearly')} style={input}><option value="monthly">{t('Mensual — $39.99 + impuestos','Monthly — $39.99 + taxes')}</option><option value="yearly">{t('Anual — $399.90 + impuestos','Annual — $399.90 + taxes')}</option></select></label>}
+          {!haas && <label style={{display:'grid',gap:6,fontSize:14,fontWeight:600}}>{t('Cantidad de cerraduras','Number of locks')}<input type="number" min={1} step={1} required value={locks} onChange={e=>setLocks(Number(e.target.value))} style={input}/><span style={{fontWeight:400,color:'#475569'}}>{yearly?t('Total anual antes de descuentos e impuestos:','Annual total before discounts and taxes:'):t('Total mensual antes de descuentos e impuestos:','Monthly total before discounts and taxes:')} ${(amount*locks).toFixed(2)}</span></label>}
           {error && <p role="alert" style={{color:'#b91c1c',background:'#fef2f2',padding:14,borderRadius:14}}>{error}</p>}
           <button type="submit" disabled={submitting || !validSelection} style={{height:48,borderRadius:14,border:0,background:submitting?'#93c5fd':'#2563eb',color:'#fff',fontSize:14,fontWeight:800,cursor:'pointer'}}>{submitting?t('Abriendo pago seguro…','Opening secure checkout…'):t('Continuar al pago seguro','Continue to secure checkout')}</button>
         </form>

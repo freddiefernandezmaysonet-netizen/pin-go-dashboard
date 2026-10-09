@@ -70,6 +70,9 @@ assert((await page.locator('#hardware').getByRole('link',{name:'Activate and pay
   assert.equal(checkoutBody.haasSelection.lock,model);assert.equal(checkoutBody.haasSelection.termMonths,term);assert.equal(checkoutBody.locks,1);assert.equal(checkoutBody.billingInterval,'monthly');assert.equal(checkoutBody.contractOption,`contract_${term}_lock`);
  }
  await page.goto(url+'?signupFixture&plan=platform&lang=en');await page.getByRole('heading',{name:'Create your account',exact:true}).waitFor();assert((await page.locator('main').innerText()).includes('$39.99'));
+ await page.getByLabel('Billing frequency',{exact:true}).selectOption('yearly');assert((await page.locator('main').innerText()).includes('$399.90'));
+ for(const [label,value] of [['Organization name','Rental Demo'],['Full name','Demo Host'],['Email','fixture@example.invalid'],['Phone','0000000000'],['Password','Jade!Clouds7Fence']])await page.getByLabel(label,{exact:true}).fill(value);
+ await page.getByRole('button',{name:'Continue to secure checkout',exact:true}).click();await page.getByRole('heading',{name:'Fixture checkout',exact:true}).waitFor();assert.equal(checkoutBody.billingInterval,'yearly');assert.equal(checkoutBody.plan,'platform');assert.equal(checkoutBody.haasSelection,null);
  await page.goto(url+'?signupFixture&plan=haas&lock=pro&termMonths=6');assert(await page.getByRole('button',{name:'Continuar al pago seguro',exact:true}).isDisabled());
  assert.deepEqual(errors,[]);
  console.log('PASS: original hardware totals/signup, 27 pending combinations, images, mobile widths, language and both booking flows.');
