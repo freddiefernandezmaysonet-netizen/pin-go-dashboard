@@ -133,8 +133,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
 
           <p style={styles.subtitle}>
            {lang === "es"
-              ? "Escoge tu cerradura, añade automatización inteligente y opera tu propiedad con hardware, software, instalación y soporte incluidos."
-              : "Choose your smart lock, add intelligent automation, and operate your property with hardware, software, installation, and support included."}
+              ? (pendingPlans ? "Escoge el término de tu contrato y tu cerradura. Opera tu propiedad con hardware, software, instalación y soporte incluidos." : "Escoge tu cerradura, añade automatización inteligente y opera tu propiedad con hardware, software, instalación y soporte incluidos.")
+              : (pendingPlans ? "Choose your contract term and smart lock. Operate your property with hardware, software, installation, and support included." : "Choose your smart lock, add intelligent automation, and operate your property with hardware, software, installation, and support included.")}
           </p>
         </div>
   <p style={styles.hardwareDisclaimer}>
@@ -212,6 +212,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
               })}
             </div>
 
+            {/* Smart device add-ons are paused on the new landing. Keep the existing configurator for later reactivation. */}
+            {!pendingPlans && <>
             <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>
               {lang === "es"
                 ? `${pendingPlans ? 3 : 2}. Añade automatización inteligente`
@@ -266,6 +268,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                 );
               })}
             </div>
+            </>}
 
           </div>
 
@@ -289,6 +292,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
               <strong>{`$${basePrice.toFixed(2)}`}</strong>
             </div>
 
+            {!pendingPlans && <>
             <div style={styles.summaryRow}>
               <span>
                 {lang === "es"
@@ -297,6 +301,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
               </span>
               <strong>{pendingPlans && selectedAutomation.price !== 0 ? pendingPrice : `$${selectedAutomation.price.toFixed(2)}`}</strong>
             </div>
+            </>}
 
             <div style={styles.divider} />
 

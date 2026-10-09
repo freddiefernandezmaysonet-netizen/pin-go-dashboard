@@ -28,7 +28,7 @@ try {
  await page.goto(url);await page.getByRole('heading',{name:'Pin&Go administra. Tú ganas libertad.'}).waitFor();
  await page.frameLocator('iframe').first().getByText('Reservas activas',{exact:true}).waitFor();
  assert.deepEqual(await page.locator('.loop-number').allTextContents(),['01 — RESERVA','02 — PROTECCIÓN','03 — OPERACIÓN','04 — CIERRE']);
- assert.deepEqual(await page.locator('#hardware h3').allTextContents(),['1. Escoge el término del contrato','2. Escoge tu cerradura','3. Añade automatización inteligente','Pro Lock']);
+ assert.deepEqual(await page.locator('#hardware h3').allTextContents(),['1. Escoge el término del contrato','2. Escoge tu cerradura','Pro Lock']);
  await page.frameLocator('iframe').nth(1).getByText('Asistente de tu estadía',{exact:true}).waitFor();
  for(const width of [1280,390,320]){
   await page.setViewportSize({width,height:900});await page.evaluate(()=>scrollTo(0,0));
@@ -44,19 +44,16 @@ try {
  assert.equal(await page.locator('#hardware button[aria-pressed]').count(),2);
  for(const [name,prices] of [['Essential Lock',[54.99,44.99]],['Pro Lock',[74.99,64.99]],['Elite Lock',[84.99,74.99]]]){
   await page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})}).click();
-  for(const auto of ['Sin Automatización','1 Dispositivo','2 Dispositivos']){
-   await page.locator('#hardware').getByRole('button').filter({hasText:auto}).click();
-   for(const [index,term] of ['12 meses','24 meses'].entries()){
-    const b=page.locator('#hardware button[aria-pressed]').filter({hasText:term});await b.click();assert.equal(await b.getAttribute('aria-pressed'),'true');
-    assert((await page.locator('#hardware aside').innerText()).includes(term));
-    const summary=await page.locator('#hardware aside').innerText();
-    assert(summary.includes('$'+prices[index].toFixed(2)));
-    assert.equal(summary.includes('Por definir'),auto!=='Sin Automatización');
-    const card=page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})});
-    assert((await card.innerText()).includes('$'+prices[index].toFixed(2)));
-   }
+  for(const [index,term] of ['12 meses','24 meses'].entries()){
+   const b=page.locator('#hardware button[aria-pressed]').filter({hasText:term});await b.click();assert.equal(await b.getAttribute('aria-pressed'),'true');
+   const summary=await page.locator('#hardware aside').innerText();
+   assert(summary.includes(term));assert(summary.includes('$'+prices[index].toFixed(2)));assert(!summary.includes('Por definir'));
+   const card=page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})});assert((await card.innerText()).includes('$'+prices[index].toFixed(2)));
   }
  }
+ assert.equal(await page.locator('#hardware').getByRole('button').filter({hasText:/Dispositivo|Automatización/}).count(),0);
+ assert(!(await page.locator('#hardware aside').innerText()).includes('Sin Automatización'));
+ assert.equal(await page.locator('#options').getByRole('link',{name:'Activar',exact:true}).getAttribute('href'),'https://app.pin-ngo.com/signup');
  await page.getByRole('button',{name:'EN',exact:true}).click();
  assert((await page.locator('h1').innerText()).includes('You gain freedom.'));
  await page.frameLocator('iframe').first().getByText('Active reservations',{exact:true}).waitFor();
@@ -64,6 +61,8 @@ try {
  assert.equal(await page.locator('#hardware h3').first().innerText(),'1. Choose the contract term');
  await page.frameLocator('iframe').nth(1).getByText('Your stay assistant',{exact:true}).waitFor();
  assert((await page.locator('#options').innerText()).includes('$39.99 / month'));
+ assert.equal(await page.locator('#options').getByRole('link',{name:'Activate',exact:true}).getAttribute('href'),'https://app.pin-ngo.com/signup');
+ assert.equal(await page.locator('#hardware').getByRole('button').filter({hasText:/Smart Device|Automation/}).count(),0);
  assert.equal(await page.locator('iframe[sandbox=""]').count(),2);
  for(const name of ['Book onboarding','Book a call']){
   await page.getByRole('button',{name,exact:true}).click();
@@ -72,5 +71,5 @@ try {
  await page.locator('#hardware').getByRole('button',{name:'Discuss this package',exact:true}).click();
  await page.getByRole('button',{name:'×',exact:true}).click();
  assert.deepEqual(errors,[]);
- console.log('PASS: original hardware totals/signup, 18 rental combinations with approved monthly prices, images, mobile widths, language and both booking flows.');
+ console.log('PASS: original hardware totals/signup, 6 rental combinations with approved monthly prices and paused smart devices, images, mobile widths, language and both booking flows.');
 } finally {await browser?.close();await server.close();await rm(fixture,{recursive:true,force:true});}
