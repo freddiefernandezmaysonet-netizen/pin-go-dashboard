@@ -62,7 +62,7 @@ export default function AdminHaasPage() {
       <div className="pg-haas-section-heading"><h2>Contrataciones</h2><p>Busca por organización, nombre o correo del cliente.</p></div>
       <form onSubmit={e => { e.preventDefault();setSelected(null);setCursor(null);setQuery(search.trim()); }}>
         <label className="pg-haas-field">Cliente<div className="pg-haas-search"><Search size={18} aria-hidden="true" /><input placeholder="Buscar cliente u organización" value={search} maxLength={100} onChange={e=>setSearch(e.target.value)} /></div></label>
-        <label className="pg-haas-field">Batería<select value={batteryFilter} disabled={saving} onChange={e=>{setSelected(null);setCursor(null);setBatteryFilter(e.target.value);}}><option value="all">Todas</option><option value="low">30 % o menos</option></select></label>
+        <label className="pg-haas-field">Batería<select aria-label="Batería" value={batteryFilter} disabled={saving} onChange={e=>{setSelected(null);setCursor(null);setBatteryFilter(e.target.value);}}><option value="all">Todas</option><option value="low">30 % o menos</option></select></label>
         <button disabled={loading || saving} className="pg-haas-button pg-haas-primary">Buscar</button>
       </form>
     </section>
