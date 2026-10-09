@@ -6,7 +6,7 @@ type Choice = { id: string; displayName: string | null; ttlockLockName: string |
 type Row = { id: string; organizationName: string; fullName: string | null; email: string; phone: string | null;
   updatedAt: string; completedAt: string | null; selection: { model: string; termMonths: number | null } | null;
   payment: { status?: string; amountPaidCents?: number | null; currency?: string | null; recordedAt?: string };
-  installation: { status: string; lockId: string | null; scheduledAt: string | null; notes: string };
+  installation: { status: string; lockId: string | null; scheduledAt: string | null; notes: string; installationAddress?: string; serialNumber?: string };
   lock: (Choice & { isActive: boolean; deviceHealth: { battery: number | null; batteryLastSuccessfulAt: string | null;
     batteryProviderResponseAt: string | null; gatewayConnected: boolean | null; isOnline: boolean | null } | null }) | null };
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -24,6 +24,7 @@ export default function AdminHaasPage() {
   const [loading, setLoading] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const [selected, setSelected] = useState<Row | null>(null), [choices, setChoices] = useState<Choice[]>([]);
   const [status, setStatus] = useState('PENDING'), [lockId, setLockId] = useState(''), [scheduled, setScheduled] = useState(''), [notes, setNotes] = useState('');
+  const [installationAddress, setInstallationAddress] = useState(''), [serialNumber, setSerialNumber] = useState('');
   const [saving, setSaving] = useState(false), [choosing, setChoosing] = useState(false);
   const busy = useRef(false);
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -40,13 +41,13 @@ export default function AdminHaasPage() {
       setChoices(result.items);setStatus(row.installation.status);setLockId(row.installation.lockId ?? '');
       const d = row.installation.scheduledAt ? new Date(row.installation.scheduledAt) : null;
       setScheduled(d ? new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16) : '');
-      setNotes(row.installation.notes);setSelected(row);
+      setNotes(row.installation.notes);setInstallationAddress(row.installation.installationAddress ?? "");setSerialNumber(row.installation.serialNumber ?? "");setSelected(row);
     } catch { setError('No se pudieron cargar las cerraduras del cliente.'); } finally { setChoosing(false); }
   }
   async function save() {
     if (!selected || busy.current) return; busy.current = true;setSaving(true);setError('');
     try {
-      await request(`/${encodeURIComponent(selected.id)}/installation`, { method: 'PATCH', body: JSON.stringify({ expectedUpdatedAt: selected.updatedAt, status, lockId: lockId || null, scheduledAt: scheduled ? new Date(scheduled).toISOString() : null, notes }) });
+      await request(`/${encodeURIComponent(selected.id)}/installation`, { method: 'PATCH', body: JSON.stringify({ expectedUpdatedAt: selected.updatedAt, status, lockId: lockId || null, scheduledAt: scheduled ? new Date(scheduled).toISOString() : null, notes, installationAddress, serialNumber }) });
       setSelected(null);setNotice('Instalación guardada.');await load();
     } catch (e) { setError(e instanceof Error && e.message === 'HAAS_CONCURRENT_UPDATE' ? 'La contratación cambió. Cierra el formulario y actualiza antes de guardar.' : 'No se pudo guardar. Comprueba la fecha y la cerradura seleccionada.'); }
     finally { busy.current = false;setSaving(false); }
@@ -75,6 +76,8 @@ export default function AdminHaasPage() {
       <div className="pg-haas-form-grid">
         <label className="pg-haas-field">Estado<select aria-label="Estado" value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(states).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
         <label className="pg-haas-field">Fecha y hora local<input type="datetime-local" value={scheduled} onChange={e=>setScheduled(e.target.value)} /></label>
+        <label className="pg-haas-field pg-haas-full">Dirección de instalación<textarea className="pg-haas-address" maxLength={1000} value={installationAddress} onChange={e=>setInstallationAddress(e.target.value)} placeholder="Calle, número, unidad, ciudad y código postal" /></label>
+        <label className="pg-haas-field pg-haas-full">Número de serie de la cerradura<input maxLength={120} value={serialNumber} onChange={e=>setSerialNumber(e.target.value)} placeholder="Número de serie impreso en el equipo" /><span className="pg-haas-muted">Número físico del equipo; distinto del identificador de TTLock.</span></label>
         <label className="pg-haas-field pg-haas-full">Cerradura alquilada<select aria-label="Cerradura alquilada" value={lockId} onChange={e=>setLockId(e.target.value)}><option value="">Pendiente de vincular</option>{choices.map(lock=><option key={lock.id} value={lock.id}>{lock.property.name} · {lock.displayName ?? lock.ttlockLockName ?? lock.id}</option>)}</select></label>
         {choices.length===0 && <p className="pg-haas-muted pg-haas-full">El cliente todavía no tiene cerraduras activas importadas.</p>}
         <label className="pg-haas-field pg-haas-full">Notas<textarea maxLength={2000} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Detalles de coordinación o instalación" /></label>
@@ -91,6 +94,7 @@ export default function AdminHaasPage() {
           <div><dt>Pago inicial</dt><dd>{row.payment.amountPaidCents != null && row.payment.currency ? new Intl.NumberFormat('es-PR', {style:'currency',currency:row.payment.currency.toUpperCase()}).format(row.payment.amountPaidCents/100) : 'Sin importe registrado'}</dd></div>
         </dl>
         <div className="pg-haas-payment"><span className={`pg-haas-badge ${row.payment.status === 'paid' ? 'pg-haas-badge-green' : 'pg-haas-badge-amber'}`}>{row.payment.status === 'paid' ? 'Confirmado por Stripe' : 'Verificación pendiente'}</span><p>{date(row.payment.recordedAt ?? row.completedAt)}</p></div>
+        <dl className="pg-haas-installation-details"><div><dt>Dirección de instalación</dt><dd>{row.installation.installationAddress || "Pendiente de documentar"}</dd></div><div><dt>Número de serie</dt><dd>{row.installation.serialNumber || "Pendiente de documentar"}</dd></div></dl>
         {row.installation.scheduledAt && <p className="pg-haas-schedule"><CalendarClock size={16} aria-hidden="true" />Instalación: {date(row.installation.scheduledAt)}</p>}
         {row.lock ? <section className="pg-haas-device" aria-label="Estado de la cerradura">
           <div className="pg-haas-device-heading"><LockKeyhole size={18} aria-hidden="true" /><div><h3>{row.lock.displayName ?? row.lock.ttlockLockName ?? row.lock.id}</h3><p>{row.lock.property.name}{!row.lock.isActive ? ' · Inactiva' : ''}</p></div></div>

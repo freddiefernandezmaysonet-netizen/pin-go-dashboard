@@ -33,8 +33,11 @@ try{
  await page.setViewportSize({width:1280,height:900});
  await page.getByLabel('Cerradura alquilada',{exact:true}).selectOption('lock');
  await page.getByLabel('Notas',{exact:true}).fill('Installation complete');
+ await page.getByLabel('Dirección de instalación',{exact:true}).fill('Demo address · Suite 2');
+ await page.getByLabel('Número de serie de la cerradura',{exact:false}).fill('SERIAL-DEMO');
  await page.getByRole('button',{name:'Guardar',exact:true}).click();
- await page.getByText('85%',{exact:true}).waitFor();assert.equal(saved.expectedUpdatedAt,'2026-10-09T12:00:00Z');assert.equal(saved.lockId,'lock');
+ await page.getByText('85%',{exact:true}).waitFor();assert.equal(saved.expectedUpdatedAt,'2026-10-09T12:00:00Z');assert.equal(saved.lockId,'lock');assert.equal(saved.installationAddress,'Demo address · Suite 2');assert.equal(saved.serialNumber,'SERIAL-DEMO');
+ await page.getByText('Demo address · Suite 2',{exact:true}).waitFor();await page.getByText('SERIAL-DEMO',{exact:true}).waitFor();
  for(const width of [1280,390,320]){
   await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Page fits '+width);
  }
