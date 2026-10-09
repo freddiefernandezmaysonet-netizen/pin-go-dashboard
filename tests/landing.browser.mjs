@@ -51,10 +51,10 @@ try {
  assert.equal(await page.locator('iframe[sandbox=""]').count(),2);
  for(const name of ['Book onboarding','Book a call']){
   await page.getByRole('button',{name,exact:true}).click();
-  await page.getByRole('button',{name:'Close',exact:true}).click();
+  await page.getByRole('button',{name:'×',exact:true}).click();
  }
  await page.locator('#hardware').getByRole('button',{name:'Discuss this package',exact:true}).click();
- await page.getByRole('button',{name:'Close',exact:true}).click();
+ await page.getByRole('button',{name:'×',exact:true}).click();
  assert.deepEqual(errors,[]);
  console.log('PASS: original hardware totals/signup, 27 pending combinations, images, mobile widths, language and both booking flows.');
 } finally {await browser?.close();await server.close();await rm(fixture,{recursive:true,force:true});}
