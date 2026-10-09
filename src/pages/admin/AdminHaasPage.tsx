@@ -21,6 +21,7 @@ const states: Record<string, string> = { PENDING: 'Pendiente', SCHEDULED: 'Coord
 export default function AdminHaasPage() {
   const [items, setItems] = useState<Row[]>([]), [search, setSearch] = useState(''), [query, setQuery] = useState('');
   const [cursor, setCursor] = useState<string | null>(null), [next, setNext] = useState<string | null>(null);
+  const [batteryFilter, setBatteryFilter] = useState('all');
   const [loading, setLoading] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const [selected, setSelected] = useState<Row | null>(null), [choices, setChoices] = useState<Choice[]>([]);
   const [status, setStatus] = useState('PENDING'), [lockId, setLockId] = useState(''), [scheduled, setScheduled] = useState(''), [notes, setNotes] = useState('');
@@ -29,10 +30,10 @@ export default function AdminHaasPage() {
   const busy = useRef(false);
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true); setError('');
-    try { const result = await request<{ items: Row[]; nextCursor: string | null }>(`?q=${encodeURIComponent(query)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { signal }); setItems(result.items); setNext(result.nextCursor); }
+    try { const result = await request<{ items: Row[]; nextCursor: string | null }>(`?q=${encodeURIComponent(query)}&battery=${batteryFilter}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`, { signal }); setItems(result.items); setNext(result.nextCursor); }
     catch (e) { if (!signal?.aborted) setError(e instanceof Error ? e.message : 'No se pudo cargar'); }
     finally { if (!signal?.aborted) setLoading(false); }
-  }, [query, cursor]);
+  }, [query, cursor, batteryFilter]);
   useEffect(() => { const controller = new AbortController(); void load(controller.signal); return () => controller.abort(); }, [load]);
   async function edit(row: Row) {
     setChoosing(true); setError(''); setNotice(''); setChoices([]);
@@ -61,6 +62,7 @@ export default function AdminHaasPage() {
       <div className="pg-haas-section-heading"><h2>Contrataciones</h2><p>Busca por organización, nombre o correo del cliente.</p></div>
       <form onSubmit={e => { e.preventDefault();setSelected(null);setCursor(null);setQuery(search.trim()); }}>
         <label className="pg-haas-field">Cliente<div className="pg-haas-search"><Search size={18} aria-hidden="true" /><input placeholder="Buscar cliente u organización" value={search} maxLength={100} onChange={e=>setSearch(e.target.value)} /></div></label>
+        <label className="pg-haas-field">Batería<select value={batteryFilter} disabled={saving} onChange={e=>{setSelected(null);setCursor(null);setBatteryFilter(e.target.value);}}><option value="all">Todas</option><option value="low">30 % o menos</option></select></label>
         <button disabled={loading || saving} className="pg-haas-button pg-haas-primary">Buscar</button>
       </form>
     </section>
@@ -68,8 +70,8 @@ export default function AdminHaasPage() {
     {notice && <p role="status" className="pg-haas-message pg-haas-success">{notice}</p>}
     {loading ? <section className="pg-haas-empty" role="status"><RefreshCw size={24} aria-hidden="true" /><h2>Cargando contrataciones…</h2></section> : !error && items.length === 0 ? <section className="pg-haas-empty">
       <span className="pg-haas-empty-icon"><Package size={30} aria-hidden="true" /></span>
-      <h2>{query ? 'No se encontraron contrataciones' : 'Tus contrataciones aparecerán aquí'}</h2>
-      <p>{query ? 'Prueba con otro nombre, organización o correo electrónico.' : 'Cuando Stripe confirme una compra de hardware, podrás consultar al cliente, coordinar su instalación y vincular la cerradura.'}</p>
+      <h2>{batteryFilter === 'low' ? 'No hay baterías de 30 % o menos con estos filtros' : query ? 'No se encontraron contrataciones' : 'Tus contrataciones aparecerán aquí'}</h2>
+      <p>{batteryFilter === 'low' ? 'Se usan las lecturas guardadas. Las cerraduras sin lectura no aparecen en este filtro. Puedes elegir Todas o cambiar la búsqueda del cliente.' : query ? 'Prueba con otro nombre, organización o correo electrónico.' : 'Cuando Stripe confirme una compra de hardware, podrás consultar al cliente, coordinar su instalación y vincular la cerradura.'}</p>
     </section> : null}
     {selected && <section aria-label="Gestionar instalación" className="pg-haas-editor">
       <div className="pg-haas-section-heading"><h2>Gestionar instalación</h2><p>{selected.organizationName} · {selected.selection?.model.toUpperCase()}</p></div>
