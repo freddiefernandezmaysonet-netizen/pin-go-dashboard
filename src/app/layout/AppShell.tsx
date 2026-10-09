@@ -79,6 +79,7 @@ function getPageTitle(pathname: string) {
 
   // ✅ NUEVO
   if (pathname.startsWith("/admin/sales-followups")) return "Sales Follow-ups";
+  if (pathname.startsWith("/admin/haas")) return "Hardware as a Service";
   if (pathname.startsWith("/admin/financial")) return "Admin Financial";
   if (pathname.startsWith("/admin/demo-center")) return "Demo Center";
   if (pathname.startsWith("/admin/stay-time-review")) return "Pin AI Recovery";
@@ -215,6 +216,7 @@ const roleNav =
     ? [
         ...baseNav,
         { to: "/admin/financial", label: "Admin Financial" },
+        { to: "/admin/haas", label: "Hardware as a Service" },
         { to: "/admin/sales-followups", label: "Sales Follow-ups" },
         { to: "/admin/demo-center", label: "Demo Center" },
         { to: "/admin/stay-time-review", label: "Pin AI Recovery" },
