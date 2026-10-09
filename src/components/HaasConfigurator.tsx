@@ -4,6 +4,7 @@ type Lang = "es" | "en";
 
 type Props = {
   lang: Lang;
+  pendingPlans?: boolean;
   onScheduleCall?: () => void;
 };
 
@@ -76,9 +77,12 @@ const automationOptions = [
   },
 ];
 
-export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
+export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = false }: Props) {
   const [selectedLockId, setSelectedLockId] = useState("pro");
   const [selectedAutomationId, setSelectedAutomationId] = useState("one");
+  const [selectedTerm, setSelectedTerm] = useState(24);
+  const pendingPrice = lang === "es" ? "Por definir" : "Pending";
+  const termLabel = lang === "es" ? (selectedTerm === 6 ? "6 meses" : selectedTerm === 12 ? "1 año" : "2 años") : (selectedTerm === 6 ? "6 months" : selectedTerm === 12 ? "1 year" : "2 years");
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -109,7 +113,7 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
       <div style={styles.container}>
         <div style={styles.header}>
           <div style={styles.badge}>
-            {lang === "es"
+            {pendingPlans ? (lang === "es" ? "HARDWARE COMO SERVICIO • 6, 12 O 24 MESES" : "HARDWARE AS A SERVICE • 6, 12 OR 24 MONTHS") : lang === "es"
               ? "HARDWARE COMO SERVICIO • CONTRATO 24 MESES"
               : "HARDWARE AS A SERVICE • 24-MONTH AGREEMENT"}
           </div>
@@ -182,9 +186,9 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
                     </p>
 
                     <div style={styles.lockPrice}>
-                      ${lock.price.toFixed(2)}
+                      {pendingPlans ? pendingPrice : `$${lock.price.toFixed(2)}`}
                       <span style={styles.period}>
-                        {lang === "es" ? " / mes" : " / mo"}
+                        {pendingPlans ? "" : lang === "es" ? " / mes" : " / mo"}
                       </span>
                     </div>
                   </button>
@@ -223,13 +227,13 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
                     </p>
 
                     <div style={styles.automationPrice}>
-                      {option.price === 0
+                      {pendingPlans && option.price !== 0 ? pendingPrice : option.price === 0
                         ? lang === "es"
                           ? "Incluido"
                           : "Included"
                         : `+$${option.price.toFixed(2)}`}
                       <span style={styles.period}>
-                        {option.price === 0
+                        {pendingPlans || option.price === 0
                           ? ""
                           : lang === "es"
                           ? " / mes"
@@ -246,6 +250,15 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
                 );
               })}
             </div>
+            {pendingPlans && <>
+              <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>{lang === "es" ? "3. Escoge el plazo" : "3. Choose the term"}</h3>
+              <div style={styles.automationGrid}>
+                {[6, 12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
+                  <div style={styles.automationLabel}>{lang === "es" ? (term === 6 ? "6 meses" : term === 12 ? "1 año" : "2 años") : (term === 6 ? "6 months" : term === 12 ? "1 year" : "2 years")}</div>
+                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual · precio por definir" : "Monthly payment · price pending"}</p>
+                </button>)}
+              </div>
+            </>}
           </div>
 
           <aside
@@ -265,7 +278,7 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
 
             <div style={styles.summaryRow}>
               <span>{lang === "es" ? "Cerradura" : "Lock"}</span>
-              <strong>${selectedLock.price.toFixed(2)}</strong>
+              <strong>{pendingPlans ? pendingPrice : `$${selectedLock.price.toFixed(2)}`}</strong>
             </div>
 
             <div style={styles.summaryRow}>
@@ -274,21 +287,22 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
                   ? selectedAutomation.labelEs
                   : selectedAutomation.labelEn}
               </span>
-              <strong>${selectedAutomation.price.toFixed(2)}</strong>
+              <strong>{pendingPlans && selectedAutomation.price !== 0 ? pendingPrice : `$${selectedAutomation.price.toFixed(2)}`}</strong>
             </div>
 
             <div style={styles.divider} />
 
             <div style={styles.totalRow}>
               <span>Total</span>
-              <strong>${total.toFixed(2)}</strong>
+              <strong>{pendingPlans ? pendingPrice : `$${total.toFixed(2)}`}</strong>
             </div>
 
             <div style={styles.totalPeriod}>
-              {lang === "es"
+              {pendingPlans ? (lang === "es" ? `Pago mensual • ${termLabel}` : `Monthly payment • ${termLabel}`) : lang === "es"
                 ? "/ mes • contrato 24 meses"
                 : "/ month • 24-month agreement"}
             </div>
+            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Identity Check con selfie: $2.50 por verificación utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Identity Check with selfie: $2.50 per verification used."}</p>}
             <div style={styles.savingsBox}>
   {lang === "es"
     ? "Evita grandes costos iniciales de hardware e instalación."
@@ -366,10 +380,10 @@ export default function HaasConfigurator({ lang, onScheduleCall }: Props) {
 
   </div>
 
-              <a href={signupUrl} style={styles.cta}>
+              {pendingPlans ? <button type="button" onClick={onScheduleCall} style={{ ...styles.cta, width: "100%", border: 0, cursor: "pointer" }}>{lang === "es" ? "Consultar este paquete" : "Discuss this package"}</button> : <a href={signupUrl} style={styles.cta}>
               {lang === "es" ? "Solicitar este plan" 
                              : "Request this plan"}
-            </a>
+            </a>}
           </aside>
         </div>
       </div>
