@@ -44,6 +44,12 @@ const locks = [
   },
 ];
 
+const rentalPrices: Record<string, Record<number, number>> = {
+  essential: { 12: 54.99, 24: 44.99 },
+  pro: { 12: 74.99, 24: 64.99 },
+  elite: { 12: 84.99, 24: 74.99 },
+};
+
 const automationOptions = [
   {
     id: "none",
@@ -79,10 +85,10 @@ const automationOptions = [
 
 export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = false }: Props) {
   const [selectedLockId, setSelectedLockId] = useState("pro");
-  const [selectedAutomationId, setSelectedAutomationId] = useState("one");
+  const [selectedAutomationId, setSelectedAutomationId] = useState(pendingPlans ? "none" : "one");
   const [selectedTerm, setSelectedTerm] = useState(24);
   const pendingPrice = lang === "es" ? "Por definir" : "Pending";
-  const termLabel = lang === "es" ? (selectedTerm === 6 ? "6 meses" : selectedTerm === 12 ? "1 año" : "2 años") : (selectedTerm === 6 ? "6 months" : selectedTerm === 12 ? "1 year" : "2 years");
+  const termLabel = `${selectedTerm} ${lang === "es" ? "meses" : "months"}`;
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -105,7 +111,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
     [selectedAutomationId]
   );
 
-  const total = selectedLock.price + selectedAutomation.price;
+  const basePrice = pendingPlans ? rentalPrices[selectedLock.id][selectedTerm] : selectedLock.price;
+  const total = basePrice + selectedAutomation.price;
   const signupUrl = `/signup?plan=haas&lock=${selectedLock.id}&smartDevices=${selectedAutomation.id}`;
   
   return (
@@ -113,7 +120,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
       <div style={styles.container}>
         <div style={styles.header}>
           <div style={styles.badge}>
-            {pendingPlans ? (lang === "es" ? "HARDWARE COMO SERVICIO • 6, 12 O 24 MESES" : "HARDWARE AS A SERVICE • 6, 12 OR 24 MONTHS") : lang === "es"
+            {pendingPlans ? (lang === "es" ? "HARDWARE COMO SERVICIO • 12 O 24 MESES" : "HARDWARE AS A SERVICE • 12 OR 24 MONTHS") : lang === "es"
               ? "HARDWARE COMO SERVICIO • CONTRATO 24 MESES"
               : "HARDWARE AS A SERVICE • 24-MONTH AGREEMENT"}
           </div>
@@ -186,9 +193,9 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                     </p>
 
                     <div style={styles.lockPrice}>
-                      {pendingPlans ? pendingPrice : `$${lock.price.toFixed(2)}`}
+                      {`$${(pendingPlans ? rentalPrices[lock.id][selectedTerm] : lock.price).toFixed(2)}`}
                       <span style={styles.period}>
-                        {pendingPlans ? "" : lang === "es" ? " / mes" : " / mo"}
+                        {lang === "es" ? " / mes" : " / mo"}
                       </span>
                     </div>
                   </button>
@@ -253,9 +260,9 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
             {pendingPlans && <>
               <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>{lang === "es" ? "3. Escoge el plazo" : "3. Choose the term"}</h3>
               <div style={styles.automationGrid}>
-                {[6, 12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
-                  <div style={styles.automationLabel}>{lang === "es" ? (term === 6 ? "6 meses" : term === 12 ? "1 año" : "2 años") : (term === 6 ? "6 months" : term === 12 ? "1 year" : "2 years")}</div>
-                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual · precio por definir" : "Monthly payment · price pending"}</p>
+                {[12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
+                  <div style={styles.automationLabel}>{`${term} ${lang === "es" ? "meses" : "months"}`}</div>
+                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual" : "Monthly payment"}</p>
                 </button>)}
               </div>
             </>}
@@ -277,8 +284,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
             </h3>
 
             <div style={styles.summaryRow}>
-              <span>{lang === "es" ? "Cerradura" : "Lock"}</span>
-              <strong>{pendingPlans ? pendingPrice : `$${selectedLock.price.toFixed(2)}`}</strong>
+              <span>{pendingPlans ? (lang === "es" ? "Pin&Go + cerradura" : "Pin&Go + lock") : (lang === "es" ? "Cerradura" : "Lock")}</span>
+              <strong>{`$${basePrice.toFixed(2)}`}</strong>
             </div>
 
             <div style={styles.summaryRow}>
@@ -294,7 +301,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
 
             <div style={styles.totalRow}>
               <span>Total</span>
-              <strong>{pendingPlans ? pendingPrice : `$${total.toFixed(2)}`}</strong>
+              <strong>{pendingPlans && selectedAutomation.price !== 0 ? pendingPrice : `$${total.toFixed(2)}`}</strong>
             </div>
 
             <div style={styles.totalPeriod}>

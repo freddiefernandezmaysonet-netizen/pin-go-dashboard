@@ -38,14 +38,19 @@ try {
   await page.locator('#hardware').scrollIntoViewIfNeeded();await page.screenshot({path:resolve(output,`${width}-hardware.png`),fullPage:false});
  }
  await page.setViewportSize({width:1280,height:900});
- for(const name of ['Essential Lock','Pro Lock','Elite Lock']){
+ assert.equal(await page.locator('#hardware button[aria-pressed]').count(),2);
+ for(const [name,prices] of [['Essential Lock',[54.99,44.99]],['Pro Lock',[74.99,64.99]],['Elite Lock',[84.99,74.99]]]){
   await page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})}).click();
   for(const auto of ['Sin Automatización','1 Dispositivo','2 Dispositivos']){
    await page.locator('#hardware').getByRole('button').filter({hasText:auto}).click();
-   for(const term of ['6 meses','1 año','2 años']){
+   for(const [index,term] of ['12 meses','24 meses'].entries()){
     const b=page.locator('#hardware button[aria-pressed]').filter({hasText:term});await b.click();assert.equal(await b.getAttribute('aria-pressed'),'true');
     assert((await page.locator('#hardware aside').innerText()).includes(term));
-    assert((await page.locator('#hardware aside').innerText()).includes('Por definir'));
+    const summary=await page.locator('#hardware aside').innerText();
+    assert(summary.includes('$'+prices[index].toFixed(2)));
+    assert.equal(summary.includes('Por definir'),auto!=='Sin Automatización');
+    const card=page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})});
+    assert((await card.innerText()).includes('$'+prices[index].toFixed(2)));
    }
   }
  }
@@ -61,5 +66,5 @@ try {
  await page.locator('#hardware').getByRole('button',{name:'Discuss this package',exact:true}).click();
  await page.getByRole('button',{name:'×',exact:true}).click();
  assert.deepEqual(errors,[]);
- console.log('PASS: original hardware totals/signup, 27 pending combinations, images, mobile widths, language and both booking flows.');
+ console.log('PASS: original hardware totals/signup, 18 rental combinations with approved monthly prices, images, mobile widths, language and both booking flows.');
 } finally {await browser?.close();await server.close();await rm(fixture,{recursive:true,force:true});}
