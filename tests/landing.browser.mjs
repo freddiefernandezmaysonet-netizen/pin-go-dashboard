@@ -44,6 +44,7 @@ try {
  assert.equal(await page.locator('#hardware button').filter({hasText:'6 meses'}).count(),0);
  assert.equal(await page.locator('#hardware button').filter({hasText:'1 Dispositivo'}).count(),0);
  assert.equal(await page.locator('.ota-logos img').count(),4);
+ await page.locator('.ota-logos').scrollIntoViewIfNeeded();await page.waitForFunction(()=>Array.from(document.querySelectorAll('.ota-logos img')).every(n=>n.complete&&n.naturalWidth>0));
  for(const img of await page.locator('.ota-logos img').all())assert(await img.evaluate(n=>n.complete&&n.naturalWidth>0),'OTA logo loads');
  assert((await page.locator('#cleaning').innerText()).includes('03 · FINALIZACIÓN'));
  assert((await page.locator('#options').getByRole('link',{name:'Activar',exact:true}).getAttribute('href')).includes('plan=platform'));
