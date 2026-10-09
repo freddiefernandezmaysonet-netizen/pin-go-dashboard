@@ -298,7 +298,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
             </div>
 
             <div style={styles.totalPeriod}>
-              {pendingPlans ? (lang === "es" ? `Pago mensual • ${termLabel}` : `Monthly payment • ${termLabel}`) : lang === "es"
+              {pendingPlans ? (lang === "es" ? `Pago mensual + impuestos • ${termLabel}` : `Monthly payment + taxes • ${termLabel}`) : lang === "es"
                 ? "/ mes • contrato 24 meses"
                 : "/ month • 24-month agreement"}
             </div>
