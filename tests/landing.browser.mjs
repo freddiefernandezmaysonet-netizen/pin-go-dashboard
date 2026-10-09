@@ -41,15 +41,21 @@ try {
   await page.locator('#hardware').scrollIntoViewIfNeeded();await page.screenshot({path:resolve(output,`${width}-hardware.png`),fullPage:false});
  }
  await page.setViewportSize({width:1280,height:900});
- for(const name of ['Essential Lock','Pro Lock','Elite Lock']){
+ assert.equal(await page.locator('#hardware button').filter({hasText:'6 meses'}).count(),0);
+ assert.equal(await page.locator('#hardware button').filter({hasText:'1 Dispositivo'}).count(),0);
+ assert.equal(await page.locator('.ota-logos img').count(),4);
+ await page.locator('.ota-logos').scrollIntoViewIfNeeded();await page.waitForFunction(()=>Array.from(document.querySelectorAll('.ota-logos img')).every(n=>n.complete&&n.naturalWidth>0));
+ for(const img of await page.locator('.ota-logos img').all())assert(await img.evaluate(n=>n.complete&&n.naturalWidth>0),'OTA logo loads');
+ assert((await page.locator('#cleaning').innerText()).includes('03 · FINALIZACIÓN'));
+ assert((await page.locator('#options').getByRole('link',{name:'Activar',exact:true}).getAttribute('href')).includes('plan=platform'));
+ for(const [model,values] of Object.entries({essential:{12:54.99,24:44.99},pro:{12:74.99,24:64.99},elite:{12:84.99,24:74.99}})){
+  const name=model.charAt(0).toUpperCase()+model.slice(1)+' Lock';
   await page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})}).click();
-  for(const auto of ['Sin Automatización','1 Dispositivo','2 Dispositivos']){
-   await page.locator('#hardware').getByRole('button').filter({hasText:auto}).click();
-   for(const term of ['6 meses','1 año','2 años']){
-    const b=page.locator('#hardware button[aria-pressed]').filter({hasText:term});await b.click();assert.equal(await b.getAttribute('aria-pressed'),'true');
-    assert((await page.locator('#hardware aside').innerText()).includes(term));
-    assert((await page.locator('#hardware aside').innerText()).includes('Por definir'));
-   }
+  for(const term of [12,24]){
+   await page.locator('#hardware button[aria-pressed]').filter({hasText:term+' meses'}).click();
+   assert((await page.locator('#hardware aside').innerText()).includes('$'+values[term].toFixed(2)));
+   const href=await page.locator('#hardware').getByRole('link',{name:'Activar y pagar',exact:true}).getAttribute('href');
+   assert(href.includes('lock='+model));assert(href.includes('termMonths='+term));assert(href.includes('smartDevices=none'));assert(href.includes('lang=es'));
   }
  }
  await page.getByRole('button',{name:'EN',exact:true}).click();
@@ -75,5 +81,5 @@ assert((await page.locator('#hardware').getByRole('link',{name:'Activate and pay
  await page.getByRole('button',{name:'Continue to secure checkout',exact:true}).click();await page.getByRole('heading',{name:'Fixture checkout',exact:true}).waitFor();assert.equal(checkoutBody.billingInterval,'yearly');assert.equal(checkoutBody.plan,'platform');assert.equal(checkoutBody.haasSelection,null);
  await page.goto(url+'?signupFixture&plan=haas&lock=pro&termMonths=6');assert(await page.getByRole('button',{name:'Continuar al pago seguro',exact:true}).isDisabled());
  assert.deepEqual(errors,[]);
- console.log('PASS: original hardware totals/signup, 27 pending combinations, images, mobile widths, language and both booking flows.');
+ console.log('PASS: original hardware totals/signup, six approved priced packages, images, mobile widths, language and both booking flows.');
 } finally {await browser?.close();await server.close();await rm(fixture,{recursive:true,force:true});}
