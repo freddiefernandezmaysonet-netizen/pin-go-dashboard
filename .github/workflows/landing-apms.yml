@@ -5,6 +5,8 @@ on:
     paths:
       - 'src/pages/Landing*'
       - 'src/components/HaasConfigurator.tsx'
+      - 'public/locks/**'
+      - 'public/channels/**'
       - 'tests/landing.browser.mjs'
       - '.github/workflows/landing-apms.yml'
 permissions:
