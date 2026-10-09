@@ -44,11 +44,11 @@ export default function LandingPage() {
         </div>
         <section className="section" id="setup">
           <div className="container">
-            <div className="section-label">ONBOARDING</div>
+            <div className="section-label">{es ? "CONFIGURACIÓN INICIAL" : "ONBOARDING"}</div>
             <h2 className="section-title">{es ? "¿Prefieres ayuda configurando Pin&Go?" : "Want help setting up Pin&Go?"}</h2>
             <p className="section-copy">{es ? "Nuestro equipo puede ayudarte a configurar tus propiedades, conectar canales y cerraduras compatibles, y preparar tus automatizaciones en una sesión guiada." : "Our team can help configure your properties, connect channels and compatible locks, and prepare your automations in a guided session."}</p>
             <div className="setup-actions">
-              <button className="button primary" type="button" onClick={() => schedule("onboarding")}>{es ? "Agendar onboarding" : "Book onboarding"}</button>
+              <button className="button primary" type="button" onClick={() => schedule("onboarding")}>{es ? "Agendar configuración" : "Book onboarding"}</button>
               <button className="button outline-dark" type="button" onClick={() => schedule("demo")}>{es ? "Agendar llamada" : "Book a call"}</button>
             </div>
           </div>
@@ -56,7 +56,7 @@ export default function LandingPage() {
         <LandingFinal lang={lang} />
       </main>
       <footer><div className="footer-inner">
-        <div>© Pin&amp;Go · All In One Property Management System</div>
+        <div>© Pin&amp;Go · {es ? "Sistema de gestión de propiedades todo en uno" : "All In One Property Management System"}</div>
         <div className="footer-links">
           <a href="https://app.pin-ngo.com/legal/terms">{es ? "Términos" : "Terms"}</a>
           <a href="https://app.pin-ngo.com/legal/privacy">{es ? "Privacidad" : "Privacy"}</a>

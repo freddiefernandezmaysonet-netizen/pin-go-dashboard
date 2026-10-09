@@ -127,7 +127,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
 
           <h2 style={styles.title}>
             {lang === "es"
-              ? "Construye tu paquete Smart Property"
+              ? "Construye tu paquete de propiedad inteligente"
               : "Build your Smart Property package"}
           </h2>
 
@@ -150,8 +150,17 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
           }}
         >
           <div>
-            <h3 style={styles.stepTitle}>
-              {lang === "es" ? "1. Escoge tu cerradura" : "1. Choose your lock"}
+            {pendingPlans && <>
+              <h3 style={styles.stepTitle}>{lang === "es" ? "1. Escoge el término del contrato" : "1. Choose the contract term"}</h3>
+              <div style={styles.automationGrid}>
+                {[12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
+                  <div style={styles.automationLabel}>{`${term} ${lang === "es" ? "meses" : "months"}`}</div>
+                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual" : "Monthly payment"}</p>
+                </button>)}
+              </div>
+            </>}
+            <h3 style={{ ...styles.stepTitle, ...(pendingPlans ? { marginTop: 34 } : {}) }}>
+              {`${pendingPlans ? 2 : 1}. ${lang === "es" ? "Escoge tu cerradura" : "Choose your lock"}`}
             </h3>
 
             <div style={styles.lockGrid}>
@@ -205,8 +214,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
 
             <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>
               {lang === "es"
-                ? "2. Añade Automatización Inteligente"
-                : "2. Add Smart Automation"}
+                ? `${pendingPlans ? 3 : 2}. Añade automatización inteligente`
+                : `${pendingPlans ? 3 : 2}. Add Smart Automation`}
             </h3>
 
             <div style={styles.automationGrid}>
@@ -257,15 +266,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                 );
               })}
             </div>
-            {pendingPlans && <>
-              <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>{lang === "es" ? "3. Escoge el plazo" : "3. Choose the term"}</h3>
-              <div style={styles.automationGrid}>
-                {[12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
-                  <div style={styles.automationLabel}>{`${term} ${lang === "es" ? "meses" : "months"}`}</div>
-                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual" : "Monthly payment"}</p>
-                </button>)}
-              </div>
-            </>}
+
           </div>
 
           <aside
@@ -309,7 +310,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                 ? "/ mes • contrato 24 meses"
                 : "/ month • 24-month agreement"}
             </div>
-            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Identity Check con selfie: $2.50 por verificación utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Identity Check with selfie: $2.50 per verification used."}</p>}
+            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Verificación de identidad con selfie: $2.50 por verificación utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Identity Check with selfie: $2.50 per verification used."}</p>}
             <div style={styles.savingsBox}>
   {lang === "es"
     ? "Evita grandes costos iniciales de hardware e instalación."

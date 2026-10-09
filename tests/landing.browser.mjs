@@ -27,6 +27,9 @@ try {
  }
  await page.goto(url);await page.getByRole('heading',{name:'Pin&Go administra. Tú ganas libertad.'}).waitFor();
  await page.frameLocator('iframe').first().getByText('Reservas activas',{exact:true}).waitFor();
+ assert.deepEqual(await page.locator('.loop-number').allTextContents(),['01 — RESERVA','02 — PROTECCIÓN','03 — OPERACIÓN','04 — CIERRE']);
+ assert.deepEqual(await page.locator('#hardware h3').allTextContents(),['1. Escoge el término del contrato','2. Escoge tu cerradura','3. Añade automatización inteligente','Pro Lock']);
+ await page.frameLocator('iframe').nth(1).getByText('Asistente de tu estadía',{exact:true}).waitFor();
  for(const width of [1280,390,320]){
   await page.setViewportSize({width,height:900});await page.evaluate(()=>scrollTo(0,0));
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Page fits '+width);
@@ -57,6 +60,9 @@ try {
  await page.getByRole('button',{name:'EN',exact:true}).click();
  assert((await page.locator('h1').innerText()).includes('You gain freedom.'));
  await page.frameLocator('iframe').first().getByText('Active reservations',{exact:true}).waitFor();
+ assert.deepEqual(await page.locator('.loop-number').allTextContents(),['01 — SELL','02 — SECURE','03 — OPERATE','04 — CLOSE']);
+ assert.equal(await page.locator('#hardware h3').first().innerText(),'1. Choose the contract term');
+ await page.frameLocator('iframe').nth(1).getByText('Your stay assistant',{exact:true}).waitFor();
  assert((await page.locator('#options').innerText()).includes('$39.99 / month'));
  assert.equal(await page.locator('iframe[sandbox=""]').count(),2);
  for(const name of ['Book onboarding','Book a call']){
