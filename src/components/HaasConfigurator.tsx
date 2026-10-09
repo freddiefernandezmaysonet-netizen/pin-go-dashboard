@@ -44,6 +44,12 @@ const locks = [
   },
 ];
 
+const rentalPrices: Record<string, Record<number, number>> = {
+  essential: { 12: 54.99, 24: 44.99 },
+  pro: { 12: 74.99, 24: 64.99 },
+  elite: { 12: 84.99, 24: 74.99 },
+};
+
 const automationOptions = [
   {
     id: "none",
@@ -79,10 +85,10 @@ const automationOptions = [
 
 export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = false }: Props) {
   const [selectedLockId, setSelectedLockId] = useState("pro");
-  const [selectedAutomationId, setSelectedAutomationId] = useState("one");
+  const [selectedAutomationId, setSelectedAutomationId] = useState(pendingPlans ? "none" : "one");
   const [selectedTerm, setSelectedTerm] = useState(24);
   const pendingPrice = lang === "es" ? "Por definir" : "Pending";
-  const termLabel = lang === "es" ? (selectedTerm === 6 ? "6 meses" : selectedTerm === 12 ? "1 año" : "2 años") : (selectedTerm === 6 ? "6 months" : selectedTerm === 12 ? "1 year" : "2 years");
+  const termLabel = `${selectedTerm} ${lang === "es" ? "meses" : "months"}`;
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -105,7 +111,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
     [selectedAutomationId]
   );
 
-  const total = selectedLock.price + selectedAutomation.price;
+  const basePrice = pendingPlans ? rentalPrices[selectedLock.id][selectedTerm] : selectedLock.price;
+  const total = basePrice + selectedAutomation.price;
   const signupUrl = pendingPlans ? `/signup?plan=haas&lock=${selectedLock.id}&termMonths=${selectedTerm}&smartDevices=none&lang=${lang}` : `/signup?plan=haas&lock=${selectedLock.id}&smartDevices=${selectedAutomation.id}`;
   
   return (
@@ -113,21 +120,21 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
       <div style={styles.container}>
         <div style={styles.header}>
           <div style={styles.badge}>
-            {pendingPlans ? (lang === "es" ? "HARDWARE COMO SERVICIO • 6, 12 O 24 MESES" : "HARDWARE AS A SERVICE • 6, 12 OR 24 MONTHS") : lang === "es"
+            {pendingPlans ? (lang === "es" ? "HARDWARE COMO SERVICIO • 12 O 24 MESES" : "HARDWARE AS A SERVICE • 12 OR 24 MONTHS") : lang === "es"
               ? "HARDWARE COMO SERVICIO • CONTRATO 24 MESES"
               : "HARDWARE AS A SERVICE • 24-MONTH AGREEMENT"}
           </div>
 
           <h2 style={styles.title}>
             {lang === "es"
-              ? "Construye tu paquete Smart Property"
+              ? "Construye tu paquete de propiedad inteligente"
               : "Build your Smart Property package"}
           </h2>
 
           <p style={styles.subtitle}>
            {lang === "es"
-              ? "Escoge tu cerradura, añade automatización inteligente y opera tu propiedad con hardware, software, instalación y soporte incluidos."
-              : "Choose your smart lock, add intelligent automation, and operate your property with hardware, software, installation, and support included."}
+              ? (pendingPlans ? "Escoge el término de tu contrato y tu cerradura. Opera tu propiedad con hardware, software, instalación y soporte incluidos." : "Escoge tu cerradura, añade automatización inteligente y opera tu propiedad con hardware, software, instalación y soporte incluidos.")
+              : (pendingPlans ? "Choose your contract term and smart lock. Operate your property with hardware, software, installation, and support included." : "Choose your smart lock, add intelligent automation, and operate your property with hardware, software, installation, and support included.")}
           </p>
         </div>
   <p style={styles.hardwareDisclaimer}>
@@ -143,8 +150,17 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
           }}
         >
           <div>
-            <h3 style={styles.stepTitle}>
-              {lang === "es" ? "1. Escoge tu cerradura" : "1. Choose your lock"}
+            {pendingPlans && <>
+              <h3 style={styles.stepTitle}>{lang === "es" ? "1. Escoge el término del contrato" : "1. Choose the contract term"}</h3>
+              <div style={styles.automationGrid}>
+                {[12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
+                  <div style={styles.automationLabel}>{`${term} ${lang === "es" ? "meses" : "months"}`}</div>
+                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual" : "Monthly payment"}</p>
+                </button>)}
+              </div>
+            </>}
+            <h3 style={{ ...styles.stepTitle, ...(pendingPlans ? { marginTop: 34 } : {}) }}>
+              {`${pendingPlans ? 2 : 1}. ${lang === "es" ? "Escoge tu cerradura" : "Choose your lock"}`}
             </h3>
 
             <div style={styles.lockGrid}>
@@ -186,9 +202,9 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                     </p>
 
                     <div style={styles.lockPrice}>
-                      {pendingPlans ? pendingPrice : `$${lock.price.toFixed(2)}`}
+                      {`$${(pendingPlans ? rentalPrices[lock.id][selectedTerm] : lock.price).toFixed(2)}`}
                       <span style={styles.period}>
-                        {pendingPlans ? "" : lang === "es" ? " / mes" : " / mo"}
+                        {lang === "es" ? " / mes" : " / mo"}
                       </span>
                     </div>
                   </button>
@@ -196,10 +212,12 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
               })}
             </div>
 
+            {/* Smart device add-ons are paused on the new landing. Keep the existing configurator for later reactivation. */}
+            {!pendingPlans && <>
             <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>
               {lang === "es"
-                ? "2. Añade Automatización Inteligente"
-                : "2. Add Smart Automation"}
+                ? `${pendingPlans ? 3 : 2}. Añade automatización inteligente`
+                : `${pendingPlans ? 3 : 2}. Add Smart Automation`}
             </h3>
 
             <div style={styles.automationGrid}>
@@ -250,15 +268,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                 );
               })}
             </div>
-            {pendingPlans && <>
-              <h3 style={{ ...styles.stepTitle, marginTop: 34 }}>{lang === "es" ? "3. Escoge el plazo" : "3. Choose the term"}</h3>
-              <div style={styles.automationGrid}>
-                {[6, 12, 24].map((term) => <button key={term} type="button" aria-pressed={selectedTerm === term} onClick={() => setSelectedTerm(term)} style={{ ...styles.automationCard, ...(selectedTerm === term ? styles.automationCardActive : {}) }}>
-                  <div style={styles.automationLabel}>{lang === "es" ? (term === 6 ? "6 meses" : term === 12 ? "1 año" : "2 años") : (term === 6 ? "6 months" : term === 12 ? "1 year" : "2 years")}</div>
-                  <p style={styles.automationDesc}>{lang === "es" ? "Pago mensual · precio por definir" : "Monthly payment · price pending"}</p>
-                </button>)}
-              </div>
             </>}
+
           </div>
 
           <aside
@@ -277,10 +288,11 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
             </h3>
 
             <div style={styles.summaryRow}>
-              <span>{lang === "es" ? "Cerradura" : "Lock"}</span>
-              <strong>{pendingPlans ? pendingPrice : `$${selectedLock.price.toFixed(2)}`}</strong>
+              <span>{pendingPlans ? (lang === "es" ? "Pin&Go + cerradura" : "Pin&Go + lock") : (lang === "es" ? "Cerradura" : "Lock")}</span>
+              <strong>{`$${basePrice.toFixed(2)}`}</strong>
             </div>
 
+            {!pendingPlans && <>
             <div style={styles.summaryRow}>
               <span>
                 {lang === "es"
@@ -289,12 +301,13 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
               </span>
               <strong>{pendingPlans && selectedAutomation.price !== 0 ? pendingPrice : `$${selectedAutomation.price.toFixed(2)}`}</strong>
             </div>
+            </>}
 
             <div style={styles.divider} />
 
             <div style={styles.totalRow}>
               <span>Total</span>
-              <strong>{pendingPlans ? pendingPrice : `$${total.toFixed(2)}`}</strong>
+              <strong>{pendingPlans && selectedAutomation.price !== 0 ? pendingPrice : `$${total.toFixed(2)}`}</strong>
             </div>
 
             <div style={styles.totalPeriod}>
@@ -302,7 +315,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                 ? "/ mes • contrato 24 meses"
                 : "/ month • 24-month agreement"}
             </div>
-            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Identity Check con selfie: $2.50 por verificación utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Identity Check with selfie: $2.50 per verification used."}</p>}
+            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Verificación de identidad con selfie: $2.50 por verificación utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Identity Check with selfie: $2.50 per verification used."}</p>}
             <div style={styles.savingsBox}>
   {lang === "es"
     ? "Evita grandes costos iniciales de hardware e instalación."
