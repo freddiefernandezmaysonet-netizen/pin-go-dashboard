@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'src/pages/admin/AdminHaasPage.tsx'
+      - 'src/pages/admin/AdminHaasPage.css'
       - 'src/app/routes/router.tsx'
       - 'src/app/layout/AppShell.tsx'
       - 'tests/admin-haas.browser.mjs'
