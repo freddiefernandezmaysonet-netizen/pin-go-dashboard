@@ -33,7 +33,7 @@ try {
   await page.screenshot({path:resolve(output,`${width}-hero.png`)});
   for(const img of await page.locator('#hardware img').all())assert(await img.evaluate(n=>n.complete&&n.naturalWidth>0),'Original hardware image loaded');
   await page.locator('.ota-logos').scrollIntoViewIfNeeded();
-  for(const img of await page.locator('.ota-logos img').all()){await img.evaluate(n=>n.decode());assert(await img.evaluate(n=>n.naturalWidth>0),'OTA logo loaded');}
+  for(const img of await page.locator('.ota-logos img').all()){await img.evaluate(n=>{n.loading='eager'});await img.waitFor();await page.waitForFunction(el=>el.complete&&el.naturalWidth>0,await img.elementHandle());assert(await img.evaluate(n=>n.naturalWidth>0),'OTA logo loaded');}
   await page.screenshot({path:resolve(output,`${width}-channels.png`)});
   await page.locator('#hardware').scrollIntoViewIfNeeded();await page.screenshot({path:resolve(output,`${width}-hardware.png`),fullPage:false});
  }
