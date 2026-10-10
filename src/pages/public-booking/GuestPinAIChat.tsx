@@ -544,6 +544,31 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
   const [restored, setRestored] = useState(false);
   const [paymentChecks, setPaymentChecks] = useState<Record<string, "VERIFIED" | "ERROR">>({});
   const paymentNavigation = useRef<AbortController | null>(null);
+  const messageList = useRef<HTMLDivElement | null>(null);
+  const followReplies = useRef(true);
+  const previousScrollTop = useRef(0);
+  const previousMessageCount = useRef(0);
+  useEffect(() => {
+    const appended = messages.length > previousMessageCount.current;
+    previousMessageCount.current = messages.length;
+    const list = messageList.current;
+    const latest = list?.lastElementChild as HTMLElement | null;
+    // Restoring history and refreshing payment cards must not move the reader.
+    if (restoring || !appended || !list || !latest) return;
+    const reveal = () => {
+      if (!followReplies.current) return;
+      const top = messages.at(-1)?.role === "assistant"
+        ? list.scrollTop + latest.getBoundingClientRect().top - list.getBoundingClientRect().top
+        : list.scrollHeight;
+      list.scrollTop = Math.max(0, Math.min(top, list.scrollHeight - list.clientHeight));
+      previousScrollTop.current = list.scrollTop;
+    };
+    reveal();
+    // Markdown loads lazily; align again when the reply gains its final height.
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(reveal);
+    observer?.observe(latest);
+    return () => observer?.disconnect();
+  }, [messages, restoring]);
   useEffect(() => () => { paymentNavigation.current?.abort(); }, []);
   const pendingProposalIds = JSON.stringify(messages.filter(message =>
     message.actionResult?.outcome === "WAITING_FOR_PAYMENT"
@@ -734,6 +759,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
       text: message,
     };
 
+    followReplies.current = true;
     setMessages((current) => [...current, guestMessage]);
     setDraft("");
     setError(null);
@@ -816,7 +842,13 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
       ) : null}
 
       {messages.length > 0 ? (
-        <div style={styles.messages} aria-live="polite">
+        <div ref={messageList} style={styles.messages} aria-live="polite"
+          onScroll={event => {
+            const list = event.currentTarget;
+            if (list.scrollTop < previousScrollTop.current - 2) followReplies.current = false;
+            else if (list.scrollHeight - list.clientHeight - list.scrollTop < 24) followReplies.current = true;
+            previousScrollTop.current = list.scrollTop;
+          }}>
           {messages.map((message) => (
             <div
               key={message.id}
