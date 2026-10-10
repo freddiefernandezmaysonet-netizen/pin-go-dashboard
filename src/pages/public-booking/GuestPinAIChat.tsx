@@ -670,6 +670,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
         return;
       }
       const history = server.value.length > 0 ? server.value : browser.status === "fulfilled" ? browser.value.messages : [];
+      previousMessageCount.current = history.length;
       setMessages(history);
       setRestored(history.length > 0);
       if (browser.status === "fulfilled") setSession(browser.value.cache);
