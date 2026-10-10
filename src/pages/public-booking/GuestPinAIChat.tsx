@@ -21,6 +21,14 @@ type ReservationActionQuote = Readonly<{
   amountDifferenceCents: number;
   currency: string;
   financialAction: string;
+  reservationChange?: Readonly<{
+    currentCheckIn: string;
+    currentCheckOut: string;
+    proposedCheckIn: string;
+    proposedCheckOut: string;
+    consentText: string;
+    language: "en" | "es";
+  }>;
   stayTime?: Readonly<{
     operation: "EARLY_CHECKIN" | "LATE_CHECKOUT";
     requestedLocalTime: string;
@@ -252,6 +260,7 @@ function ReservationActionCard({
   }, [result]);
   const expired = isPinAIProposalExpired(proposal, now);
   const stayTime = proposal.quote.stayTime;
+  const reservationChange = proposal.quote.reservationChange;
   const early = stayTime?.operation === "EARLY_CHECKIN";
   const copy =
     language === "es"
@@ -320,6 +329,15 @@ function ReservationActionCard({
           {formatQuoteExpiry(early ? stayTime.proposedCheckIn : stayTime.proposedCheckOut, proposal.quote.propertyTimezone, language)}</div>
         <div>{proposal.quote.propertyTimezone}</div>
       </div>}
+      {reservationChange && <div style={styles.actionExpiry}>
+        <div><strong>{language === "es" ? "Estadía actual" : "Current stay"}:</strong>{" "}
+          {formatQuoteExpiry(reservationChange.currentCheckIn, proposal.quote.propertyTimezone, language)}{" — "}
+          {formatQuoteExpiry(reservationChange.currentCheckOut, proposal.quote.propertyTimezone, language)}</div>
+        <div><strong>{language === "es" ? "Nueva estadía" : "New stay"}:</strong>{" "}
+          {formatQuoteExpiry(reservationChange.proposedCheckIn, proposal.quote.propertyTimezone, language)}{" — "}
+          {formatQuoteExpiry(reservationChange.proposedCheckOut, proposal.quote.propertyTimezone, language)}</div>
+        <div>{proposal.quote.propertyTimezone}</div>
+      </div>}
       <div style={styles.actionGrid}>
         <div>
           <span style={styles.actionLabel}>{copy.current}</span>
@@ -370,6 +388,7 @@ function ReservationActionCard({
           : "The time is not held. It will be checked again when you confirm."
         : copy.availability}</div>}
       {!result && stayTime && <div style={styles.actionExpiry}>{stayTime.consentText}</div>}
+      {!result && reservationChange && <div style={styles.actionExpiry}>{reservationChange.consentText}</div>}
 
       {outcomeText ? <div style={styles.actionOutcome}>{outcomeText}</div> : null}
       {stayTime && result?.outcome === "EXECUTED" && <div style={styles.actionExpiry}>
@@ -877,7 +896,7 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
                 ) : null}
                 {message.role === "assistant" && message.actionProposal ? (
                   <ReservationActionCard
-                    language={message.actionProposal.quote.stayTime?.language ?? language}
+                    language={message.actionProposal.quote.stayTime?.language ?? message.actionProposal.quote.reservationChange?.language ?? language}
                     proposal={message.actionProposal}
                     result={message.actionResult}
                     confirming={confirmingProposalId === message.actionProposal.proposalId}
