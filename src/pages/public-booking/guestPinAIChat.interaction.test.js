@@ -143,7 +143,7 @@ function proposal(expiresAt = deadline) {
 }
 
 let fixtureSequence = 0;
-async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAITING_FOR_PAYMENT", stayTime } = {}) {
+async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAITING_FOR_PAYMENT", stayTime, reservationChange } = {}) {
   // A prior unmounted fixture can still finish encryption. Separate scopes keep
   // its pending writes from repopulating this fixture's cleared session.
   const guestToken = `synthetic-guest-token-${++fixtureSequence}`;
@@ -182,7 +182,7 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
     calls.push({ url, body: JSON.parse(init.body) });
     return { ok: true, status: 200, async json() { return url.endsWith("/messages")
       ? { ok: true, reply: "Cotización preparada.", requiresHumanReview: false,
-          actionProposal: { ...proposal(expiry), quote: { ...proposal(expiry).quote, ...(stayTime ? { stayTime } : {}) } } }
+          actionProposal: { ...proposal(expiry), quote: { ...proposal(expiry).quote, ...(stayTime ? { stayTime } : {}), ...(reservationChange ? { reservationChange } : {}) } } }
       : { ok: true, action: { actionType: "RESERVATION_MODIFICATION", proposalId: "synthetic-proposal",
           outcome, actionExecuted: outcome === "EXECUTED", checkoutUrl: "https://checkout.example.test/synthetic",
           modificationId: "synthetic-modification", modificationStatus: "AWAITING_PAYMENT", paymentExpiresAt: new Date(deadline + 3_600_000).toISOString() } }; } };
@@ -217,6 +217,26 @@ async function mount(t, { language = "es-PR", expiry = deadline, outcome = "WAIT
     },
     confirm: () => [...container.querySelectorAll("button")].find(b => /Confirmar cambio|Confirm change/.test(b.textContent)) };
 }
+
+for (const cardLanguage of ["es", "en"]) test(`date-change offer shows server dates and exact consent before confirming: ${cardLanguage}`, async t => {
+  const reservationChange = { language: cardLanguage,
+    currentCheckIn: "2026-09-27T20:00:00Z", proposedCheckIn: "2026-09-27T20:00:00Z",
+    currentCheckOut: "2026-09-28T16:00:00Z", proposedCheckOut: "2026-09-29T16:00:00Z",
+    consentText: cardLanguage === "es" ? "Confirmo salir el 29 de septiembre a las 12:00 por USD 1.12."
+      : "I confirm checkout on September 29 at 12:00 for USD 1.12." };
+  const h = await mount(t, { language: cardLanguage === "es" ? "en-US" : "es-PR", reservationChange });
+  for (const check of [() => {}, () => h.remount()]) {
+    await check();
+    assert.match(h.container.textContent, cardLanguage === "es" ? /Estadía actual/ : /Current stay/);
+    assert.match(h.container.textContent, cardLanguage === "es" ? /Nueva estadía/ : /New stay/);
+    assert.ok(h.container.textContent.includes(reservationChange.consentText));
+    assert.match(h.container.textContent, /America\/Puerto_Rico/);
+    assert.equal(h.confirm().textContent, cardLanguage === "es" ? "Confirmar cambio" : "Confirm change");
+    assert.doesNotMatch(h.container.innerHTML, /private-synthetic-confirmation/);
+  }
+  await act(async () => h.confirm().click());
+  assert.deepEqual(h.calls[1].body, { confirmationToken: "private-synthetic-confirmation" });
+});
 
 for (const cardLanguage of ["es", "en"]) test(`offer language survives reload and overrides browser: ${cardLanguage}`, async t => {
   const h = await mount(t, { language: cardLanguage === "es" ? "en-US" : "es-PR", stayTime: {
