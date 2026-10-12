@@ -37,9 +37,9 @@ async function settle(check) {
   assert.fail("UI did not settle");
 }
 async function mount(t, { organizationEnabled = true, saveFails = false, saveError = "PIN_AI_ACTIVATION_CONFLICT",
-  acceptedVersion = null, acceptedAt = null, exempt } = {}) {
+  acceptedVersion = null, acceptedAt = null, exempt, hybrid = false } = {}) {
   let data = { ok: true, propertyId: "property-a", name: "Synthetic", enabled: false, revision: 0,
-    billing: { version: "pin-ai-connect-usd-1-reservation-v1", amountCents: 100, currency: "USD", acceptedVersion, acceptedAt, collectionReady: false, ...(exempt === undefined ? {} : { exempt }) },
+    billing: { version: hybrid ? "pin-ai-hybrid-usd-1-reservation-v2" : "pin-ai-connect-usd-1-reservation-v1", ...(hybrid ? { collectionMethod: "DIRECT_APPLICATION_FEE_OR_MEMBERSHIP" } : {}), amountCents: 100, currency: "USD", acceptedVersion, acceptedAt, collectionReady: false, ...(exempt === undefined ? {} : { exempt }) },
     organization: { enabled: organizationEnabled, revision: 1 }, state: "DISABLED" };
   const writes = [];
   t.mock.method(globalThis, "fetch", async (url, init) => {
@@ -204,3 +204,17 @@ for (const [code, message] of Object.entries({
     assert.equal(h.writes.length, 1);
   });
 }
+
+ test("hybrid billing discloses intake timing, membership and cancellation before renewed consent", async t => {
+  const h = await mount(t, { hybrid: true, acceptedVersion: "pin-ai-connect-usd-1-reservation-v1", acceptedAt: "2026-10-01T12:00:00Z" });
+  assert.match(h.container.textContent, /guest total stays the same/);
+  assert.match(h.container.textContent, /next Pin&Go membership invoice/);
+  assert.match(h.container.textContent, /24 hours before check-in/);
+  await act(async () => h.toggle().click());
+  assert.equal(h.button("Save").disabled, true);
+  assert.match(h.container.textContent, /cancelled reservations have no net Pin AI fee/);
+  await act(async () => h.container.querySelectorAll('input[type="checkbox"]')[1].click());
+  await act(async () => h.button("Save").click());
+  await settle(() => h.writes.length === 1);
+  assert.equal(h.writes[0].acceptedTermsVersion, "pin-ai-hybrid-usd-1-reservation-v2");
+ });
