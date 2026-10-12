@@ -4,7 +4,9 @@ import { useOrg } from "../../auth/useOrg";
 const labels: Record<string, string> = { PENDING_CONNECT: "Pending Connect debit",
   PENDING_BALANCE: "Pending available balance", PAID: "Paid",
   PENDING_INVOICE: "Legacy record · review required", INVOICED: "Legacy record · review required",
-  NEEDS_REVIEW: "Review required" };
+  PENDING_MEMBERSHIP: "Pending membership", ON_MEMBERSHIP: "Added to membership invoice",
+  PENDING_DIRECT_EVIDENCE: "Verifying reservation payment", REVERSING: "Reversal in progress",
+  REVERSED: "Reversed · net USD 0.00", NEEDS_REVIEW: "Review required" };
 const money = (cents: number) => `USD ${(cents / 100).toFixed(2)}`;
 export function PinAIBillingCard() {
   const { orgId, user, isReady } = useOrg();
@@ -12,7 +14,9 @@ export function PinAIBillingCard() {
     queryFn: ({ signal }) => getPinAIFeeOverview(signal), retry: false });
   return <section aria-labelledby="pin-ai-billing-title" className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
     <h2 id="pin-ai-billing-title" className="text-lg font-semibold">Pin AI · Reservation charges</h2>
-    <p>USD $1.00 per reservation with Pin AI enabled, from any source, starting 24 hours before check-in. It is debited from your available Stripe Connect balance. If the balance is insufficient, the charge remains pending.</p>
+    {query.data?.billingTerms?.collectionMethod === "DIRECT_APPLICATION_FEE_OR_MEMBERSHIP"
+      ? <p>USD $1.00 per new reservation with Pin AI enabled. Direct Booking fees are deducted from the host’s reservation proceeds; OTA and manual reservation fees are included in the next Pin&Go membership invoice. Cancelled reservations have no net Pin AI fee. Exempt properties remain free.</p>
+      : <p>USD $1.00 per reservation with Pin AI enabled, from any source, starting 24 hours before check-in. It is debited from your available Stripe Connect balance. If the balance is insufficient, the charge remains pending.</p>}
     {query.isPending ? <p role="status">Loading charges…</p> : null}
     {query.isError ? <p role="alert">Pin AI charges could not be loaded.</p> : null}
     {query.data && !query.isError ? <>
