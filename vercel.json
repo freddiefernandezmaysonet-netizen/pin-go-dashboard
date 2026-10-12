@@ -1,6 +1,7 @@
 {
   "git": {
     "deploymentEnabled": {
+      "agent/fix-single-calendar-cancelled-reservations": false,
       "agent/property-arrival-unit-v1": false,
       "agent/channex-host-inbox-v1": false,
       "agent/staff-preferred-language-ui-v1": false,

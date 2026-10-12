@@ -164,4 +164,43 @@ test("Single restores the monthly calendar, supports month navigation and proper
   }
 });
 
+test("Single excludes cancelled stays while preserving active bookings, checkout and manual blocks", async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/calendar" });
+  const previous = { window: globalThis.window, document: globalThis.document, fetch: globalThis.fetch };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const stays = [
+    { id: "cancelled", guestName: "Cancelled guest", status: "CANCELLED", operationalStatus: "CANCELLED", checkIn: "2026-12-30T20:00:00Z", checkOut: "2027-01-01T15:00:00Z" },
+    { id: "active", guestName: "Active guest", status: "ACTIVE", operationalStatus: "UPCOMING", checkIn: "2026-12-31T20:00:00Z", checkOut: "2027-01-01T15:00:00Z" },
+    { id: "cancelled-on-block", status: "CANCELLED", checkIn: "2026-12-28T20:00:00Z", checkOut: "2026-12-29T15:00:00Z" },
+    { id: "operational-cancelled", operationalStatus: "CANCELLED", checkIn: "2026-12-27T20:00:00Z", checkOut: "2026-12-28T15:00:00Z" },
+  ];
+  globalThis.fetch = async (url) => {
+    const path = String(url);
+    return { ok: true, json: async () =>
+      path.endsWith("/api/dashboard/properties") ? { items: [{ id: "p1", name: "Demo" }] }
+      : path.includes("/api/dashboard/reservations?") ? { items: stays }
+      : path.endsWith("/blocked-dates") ? { items: [{ id: "block", startDate: "2026-12-28", endDate: "2026-12-29" }] }
+      : { item: { name: "Demo", baseNightlyRate: 90 }, rates: [], items: [] }
+    };
+  };
+  const root = createRoot(document.getElementById("root"));
+  const day = (date) => document.querySelector(`[data-calendar-date="${date}"]`);
+  try {
+    await act(async () => root.render(React.createElement(MemoryRouter, { initialEntries: ["/calendar?propertyId=p1&from=2026-12-01"] }, React.createElement(HostCalendarPage))));
+    assert.match(day("2026-12-30").getAttribute("aria-label"), /Available/);
+    assert.match(day("2026-12-27").getAttribute("aria-label"), /Available/);
+    assert.match(day("2026-12-28").getAttribute("aria-label"), /Blocked/);
+    assert.match(day("2026-12-31").getAttribute("aria-label"), /Booked.*Active guest/);
+    assert.match(day("2027-01-01").getAttribute("aria-label"), /Available/);
+    assert.doesNotMatch(document.querySelector(".pgc-calendarGrid").textContent, /Cancelled guest/);
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+    Object.assign(globalThis, previous);
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
 test.after(() => rmSync(temp, { recursive: true, force: true }));
