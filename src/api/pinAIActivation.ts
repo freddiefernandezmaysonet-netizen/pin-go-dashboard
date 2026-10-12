@@ -2,11 +2,11 @@ import { loginPathForSessionError } from "../auth/sessionExpiry";
 const base = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 export type PinAIPropertySettings = { propertyId: string; name: string; enabled: boolean; revision: number;
   billing: { version: string; amountCents: number; currency: string; acceptedVersion: string | null;
-    acceptedAt: string | null; collectionReady: boolean; exempt?: boolean };
+    acceptedAt: string | null; collectionReady: boolean; collectionMethod?: string; exempt?: boolean };
   organization: { enabled: boolean; revision: number };
   state: "EXISTING_SCOPE" | "DISABLED" | "ENABLED" | "PENDING_ACTIVATION" };
 export type PinAIOrganization = { id: string; name: string; pinAIEnabled: boolean; pinAIRevision: number };
-export type PinAIFeeOverview = { currency: "USD"; serviceReviews: number; totals: { status: string; count: number; amountCents: number }[];
+export type PinAIFeeOverview = { currency: "USD"; billingTerms?: { collectionMethod: string }; serviceReviews: number; totals: { status: string; count: number; amountCents: number }[];
   recent: { reservationId: string; reservationNumber: string | null; propertyName: string; amountCents: number;
     status: string; recordedAt: string }[] };
 export class PinAIActivationError extends Error {
