@@ -26,6 +26,7 @@ function PropertySettings({ propertyId }: { propertyId: string }) {
   const [acceptedPrice, setAcceptedPrice] = useState(false);
   const busy = useRef(false);
   const view = query.data;
+  const hybrid = view?.billing.collectionMethod === "DIRECT_APPLICATION_FEE_OR_MEMBERSHIP";
   const needsAcceptance = !!view && (view.billing.acceptedVersion !== view.billing.version || !view.billing.acceptedAt);
   async function reload() {
     if (busy.current) return;
@@ -79,13 +80,15 @@ function PropertySettings({ propertyId }: { propertyId: string }) {
         onClick={() => { setDraft(true); setAcceptedPrice(false); }}>{view.billing.exempt === true ? "Review and renew Pin AI terms" : "Review and renew billing authorization"}</button> : null}
       <p style={{ ...paragraphStyle, padding: 14, border: "1px solid #e2e8f0", borderRadius: 12, background: "#f8fafc" }}>{view.billing.exempt === true
         ? "Host fee: Exempt. This property is excluded from the USD $1.00 Pin AI reservation fee for Direct Booking and OTA reservations. No Pin AI reservation fee will be debited while this exemption applies. Prices for early check-in and late checkout remain separate."
+        : hybrid ? <>Host fee: USD $1.00 per new reservation with Pin AI enabled. For Direct Booking, it is deducted from the host’s proceeds within the reservation payment; the guest total stays the same. For OTA and manual reservations, it is added to the next Pin&Go membership invoice. One fee per reservation. Cancellations remove the pending fee or return it to the host through a refund or membership credit. {view.billing.collectionReady ? "Charge collection is enabled." : "Charge collection is pending enablement."}</>
         : <>Host fee: USD $1.00 per reservation with Pin AI enabled, regardless of its source, debited from your Stripe Connect account. One charge per reservation, starting 24 hours before check-in; reservations canceled before that window are excluded. {view.billing.collectionReady ? "Eligible charges are collected from your Connect balance." : "Charge collection is pending enablement."}</>}</p>
       {draft === true && needsAcceptance ? <label style={{ ...labelStyle, padding: 14, border: "1px solid #bfdbfe", borderRadius: 12, background: "#eff6ff", color: "#1e40af" }}><input type="checkbox" style={checkboxStyle} checked={acceptedPrice}
         disabled={saving || needsReload || query.isFetching} onChange={event => setAcceptedPrice(event.target.checked)} />
         {view.billing.exempt === true
           ? "I accept the Pin AI terms for this property. Its Pin AI reservation fee is waived while the exemption applies."
+          : hybrid ? "I authorize Pin&Go to deduct USD $1.00 from each new Direct Booking payment at this property and to add USD $1.00 per new OTA or manual reservation to my Pin&Go membership invoice. One fee per reservation; cancelled reservations have no net Pin AI fee."
           : "I authorize Pin&Go to debit USD $1.00 from the available balance of my Stripe Connect account for each reservation with Pin AI enabled at this property, regardless of its source, starting 24 hours before check-in. If the balance is insufficient, I authorize retrying the pending charge when funds become available."}</label> : null}
-      <p style={paragraphStyle}>Reservation changes and OTA channel replies require separate enablement. Disabling this assistance preserves existing incidents so you can address them.</p>
+      <p style={paragraphStyle}>Guest assistance is available from 24 hours before check-in until 24 hours after checkout. Reservation changes and OTA channel replies require separate enablement. Disabling this assistance preserves existing incidents so you can address them.</p>
     </> : null}
     {notice ? <p role={needsReload ? "alert" : "status"} style={{ ...paragraphStyle, padding: 12, borderRadius: 8,
       background: needsReload ? "#fef2f2" : "#f0fdf4", color: needsReload ? "#991b1b" : "#166534" }}>{notice}</p> : null}
