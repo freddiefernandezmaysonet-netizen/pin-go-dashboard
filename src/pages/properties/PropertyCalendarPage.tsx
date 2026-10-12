@@ -225,6 +225,11 @@ export function PropertyCalendarPage({ view = "combined", propertyId }: { view?:
     const dayKey = getDateKey(day);
 
     return reservations.find((reservation) => {
+      if (
+        reservation.status === "CANCELLED" ||
+        reservation.operationalStatus === "CANCELLED"
+      ) return false;
+
       const checkInKey = getIsoDateKey(reservation.checkIn);
       const checkOutKey = getIsoDateKey(reservation.checkOut);
 
