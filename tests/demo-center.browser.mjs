@@ -76,6 +76,10 @@ try {
   const address = `http://127.0.0.1:4178/${fixture.split('/').at(-1)}/index.html`;
   prep.ready = false;
   prep.blockers = ["PRIMARY_ADMIN_MISSING", "PIN_AI_INCIDENT_NOTIFICATIONS_ENABLED_DISABLED", "GUEST_CARDS_UNAVAILABLE"];
+  prep.guestNfcDiagnostics = [{ label: "Guest-1", status: "ASSIGNED", assignments: [{ status: "FAILED",
+    reservationNumber: "PG-SYNTHETIC-OLD", reservationStatus: "ACTIVE", checkOut: "2026-10-14T15:00:00Z",
+    startsAt: "2026-10-11T19:00:00Z", endsAt: "2026-10-14T15:00:00Z",
+    errorCategory: "TTLOCK_EXPIRE_GUEST_FAILED", providerCode: "-2012" }] }];
   await page.goto(address);
   await page.getByText("principal@example.invalid", { exact: true }).waitFor();
   await page.getByText("Se necesitan dos tarjetas NFC Guest disponibles en la propiedad Demo.", { exact: false }).waitFor();
@@ -83,6 +87,11 @@ try {
   await page.getByRole("status").getByText("Referencia para soporte", { exact: true }).nth(1).click();
   assert.equal(await page.getByText("PIN_AI_INCIDENT_NOTIFICATIONS_ENABLED_DISABLED", { exact: true }).isVisible(), true);
   assert.equal(await page.getByRole("button", { name: "Crear reserva Demo" }).isEnabled(), false);
+  await page.getByText("Ver tarjetas Guest y asignaciones pendientes", { exact: true }).click();
+  await page.getByText("TTLOCK_EXPIRE_GUEST_FAILED", { exact: true }).waitFor();
+  assert.equal(await page.getByText("-2012", { exact: true }).isVisible(), true);
+  assert.equal(await page.getByText("Reserva PG-SYNTHETIC-OLD", { exact: false }).isVisible(), true);
+  assert.equal(commands.length, 0, "viewing diagnostics cannot create a reservation or recover cards");
   await page.screenshot({ path: resolve(output, "preparation-blockers.png"), fullPage: true });
   prep.ready = true; prep.blockers = [];
   await page.getByRole("button", { name: "Actualizar preparación", exact: true }).click();
