@@ -9,6 +9,9 @@ on:
       - 'public/locks/**'
       - 'public/channels/**'
       - 'tests/landing.browser.mjs'
+      - 'tests/landing-knowledge.test.mjs'
+      - 'scripts/landingKnowledgePlugin.ts'
+      - 'vite.config.ts'
       - '.github/workflows/landing-apms.yml'
 permissions:
   contents: read
@@ -28,6 +31,7 @@ jobs:
       - run: npx eslint src/pages/LandingPage.tsx src/pages/LandingContent.tsx src/components/HaasConfigurator.tsx src/pages/auth/SignupPage.tsx
       - run: npx tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --jsx react-jsx --lib ES2022,DOM --types vite/client src/pages/LandingPage.tsx src/pages/auth/SignupPage.tsx
       - run: npm run build
+      - run: node --test tests/landing-knowledge.test.mjs
       - run: npm install --prefix /tmp/landing-playwright --no-audit --no-fund playwright@1.58.2
       - run: node /tmp/landing-playwright/node_modules/playwright/cli.js install chromium --only-shell
       - run: node tests/landing.browser.mjs
