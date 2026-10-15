@@ -69,6 +69,12 @@ try {
         breakdown: { totalAmount: demo ? 0 : 250, nightlySubtotal: 0, cleaningFee: 0, taxesTotal: 0, amenitiesTotal: 0, refundableBase: 0 } } });
     if (!demo && url.pathname.endsWith("/property-protection-case")) return reply({ ok: true, available: false });
     if (!demo && url.pathname.endsWith("/modification-options")) return reply({ ok: true, modificationAllowed: false });
+    // The production chat now waits for the server-authoritative availability
+    // endpoint. Keep the existing visibility/order assertions with that contract.
+    if (url.pathname.endsWith("/pin-ai/availability")) return reply({ ok: true, available: phase !== "POST_STAY",
+      checkedAt: new Date(phase === "POST_STAY" ? Date.parse(run.reservation.checkOut) + 86460000 : Date.now()).toISOString(),
+      opensAt: new Date(Date.parse(run.reservation.checkIn) - 86400000).toISOString(),
+      closesAt: new Date(Date.parse(run.reservation.checkOut) + 86400000).toISOString() });
     if (url.pathname.endsWith("/pin-ai/history")) return reply({ ok: true, version: 1, messages: [] });
     if (url.pathname.endsWith("/pin-ai/incident-updates")) return reply({ ok: true, incidents: [], updates: [], nextAfter: null });
     unexpected.push(`${request.method()} ${url.pathname}`); return route.abort();
@@ -129,6 +135,7 @@ try {
   await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
   assert.equal(await page.getByRole("heading", { name: "Secure Pre-check-in · Demo", exact: true }).count(), 1);
   assert.equal(await page.getByText("Simulated · no charge", { exact: true }).count(), 1);
+  await page.locator("#pin-ai-chat-title").waitFor();
   assert.equal(await page.evaluate(() => {
     const reservation = [...document.querySelectorAll('h2')].find(h => h.textContent === 'Pin&Go Demo Property');
     const chat = document.getElementById('pin-ai-chat-title');
@@ -145,6 +152,7 @@ try {
   await page.screenshot({ path: resolve(output, "desktop-manage-reservation.png"), fullPage: true });
   phase = "IN_STAY"; await page.reload();
   await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
+  await page.locator("#pin-ai-chat-title").waitFor();
   assert.equal(await page.locator("textarea").count(), 1, "in-stay Demo retains full details and Pin AI");
   // Advance the browser clock beyond the original checkout without editing the stay.
   await page.clock.install({ time: new Date(Date.parse(run.reservation.checkOut) + 60000) });
@@ -153,7 +161,7 @@ try {
   phase = "POST_STAY"; await page.reload();
   await page.getByText("Reservation #PG-2026-000999", { exact: true }).waitFor();
   await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
-  assert.equal(await page.locator("textarea").count(), 0, "existing post-stay Pin AI policy is preserved");
+  assert.equal(await page.locator("textarea").count(), 0, "closed server availability hides Pin AI");
   demo = false; phase = "PRE_STAY"; await page.reload();
   await page.getByRole("button", { name: "Cancel reservation", exact: true }).waitFor();
   assert.equal(await page.getByRole("heading", { name: "Secure Pre-check-in completed", exact: true }).count(), 1);
