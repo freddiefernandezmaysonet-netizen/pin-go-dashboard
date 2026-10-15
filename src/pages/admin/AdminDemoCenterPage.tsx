@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
-type Preparation = { ready: boolean; blockers: string[]; property: { name: string; timezone: string; cleaningStartOffsetMinutes: number; cleaningAccessMinutes: number };
+type GuestNfcDiagnostic = { label: string | null; status: string; assignments: { status: string; startsAt: string; endsAt: string;
+  reservationNumber: string | null; reservationStatus: string; checkOut: string; errorCategory: string | null; providerCode: string | null }[] };
+type Preparation = { ready: boolean; blockers: string[]; guestNfcDiagnostics?: GuestNfcDiagnostic[]; property: { name: string; timezone: string; cleaningStartOffsetMinutes: number; cleaningAccessMinutes: number };
   primaryAdmin: { email: string; fullName: string | null } | null;
   cleaner: { id: string; name: string; phone: string; language: string } | null; lock: { name: string | null } | null };
 type Grant = { id: string; type: string; status: string; startsAt: string; endsAt: string; accessCodeMasked: string | null };
@@ -142,6 +144,18 @@ export default function AdminDemoCenterPage() {
           <ul>{prep.blockers.map(code => <li key={code} style={{marginBottom:10}}>{preparationText(code)}
             <details><summary>Referencia para soporte</summary><code style={{overflowWrap:"anywhere"}}>{code}</code></details>
           </li>)}</ul>
+          {prep.guestNfcDiagnostics?.length ? <details>
+            <summary>Ver tarjetas Guest y asignaciones pendientes</summary>
+            <p>Estas asignaciones pueden mantener ocupado el inventario aunque su horario ya haya terminado. Antes de liberar una tarjeta hay que comprobar su estado en la cerradura.</p>
+            {prep.guestNfcDiagnostics.map((card, index) => <div key={`${card.label}-${index}`} style={{borderTop:"1px solid #dbe4ef",padding:"12px 0",overflowWrap:"anywhere"}}>
+              <strong>{card.label ?? "Tarjeta Guest"}</strong> · {states[card.status] ?? card.status}
+              {card.assignments.map((assignment, assignmentIndex) => <div key={assignmentIndex} style={{marginTop:8}}>
+                <div>Reserva {assignment.reservationNumber ?? "sin número"} · {states[assignment.status] ?? assignment.status}</div>
+                <div>{format(assignment.startsAt)} → {format(assignment.endsAt)}</div>
+                {assignment.errorCategory ? <div>Referencia del fallo: <code>{assignment.errorCategory}</code>{assignment.providerCode ? <> · TTLock <code>{assignment.providerCode}</code></> : null}</div> : null}
+              </div>)}
+            </div>)}
+          </details> : null}
         </div> : <p style={{color:"#166534"}}>Configuración comprobada. La operación física se verifica durante la presentación.</p>}
       </> : <p>Cargando preparación…</p>}
       <button type="button" onClick={() => void prepare()} style={{...button,background:"#e2e8f0",color:"#0f172a"}}>Actualizar preparación</button>
