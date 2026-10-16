@@ -13,11 +13,11 @@ type Item = {
   reports: { id: string; kind: string; reason: string; estimatedAt: string | null; reportedAt: string }[];
 };
 type Result = { items: Item[]; nextCursor: string | null; properties: { id: string; name: string }[]; staff: { id: string; fullName: string }[] };
-const statuses: Record<string, string> = { PENDING: "Pendiente de aceptación", CONFIRMED: "Confirmada", IN_PROGRESS: "En progreso", COMPLETED: "Completada", CANCELLED: "Cancelada", DECLINED: "Rechazada", REASSIGNED: "Reasignada", EXPIRED: "Vencida" };
-const views = [["today", "Hoy"], ["upcoming", "Próximas"], ["history", "Historial"], ["all", "Todas"]];
+const statuses: Record<string, string> = { PENDING: "Awaiting acceptance", CONFIRMED: "Confirmed", IN_PROGRESS: "In progress", COMPLETED: "Completed", CANCELLED: "Cancelled", DECLINED: "Declined", REASSIGNED: "Reassigned", EXPIRED: "Expired" };
+const views = [["today", "Today"], ["upcoming", "Upcoming"], ["history", "History"], ["all", "All"]];
 function date(value: string | null, timezone: string) {
-  if (!value) return "Sin registrar";
-  return new Intl.DateTimeFormat("es-PR", { dateStyle: "medium", timeStyle: "short", timeZone: timezone }).format(new Date(value));
+  if (!value) return "Not recorded";
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: timezone }).format(new Date(value));
 }
 export default function HostCleaningsPage() {
   const { user } = useAuth();
@@ -36,31 +36,31 @@ export default function HostCleaningsPage() {
     if (value) next.set(key, value); else next.delete(key);
     setCursors([]); setParams(next);
   }
-  if (!canRead) return <p role="alert">Necesitas permisos de administración para consultar las limpiezas.</p>;
+  if (!canRead) return <p role="alert">Administrator permissions are required to view cleanings.</p>;
   return <section className="pg-host-cleanings">
-    <header><div><h1>Limpiezas</h1><p>Supervisa el trabajo de tu equipo y consulta los horarios registrados.</p></div><button type="button" onClick={() => void result.refetch()} disabled={result.isFetching}>Actualizar</button></header>
-    <nav aria-label="Vistas de limpiezas">{views.map(([key, label]) => <button type="button" key={key} aria-pressed={view === key} onClick={() => filter("view", key)}>{label}</button>)}</nav>
+    <header><div><h1>Cleanings</h1><p>Monitor your team’s work and review recorded cleaning times.</p></div><button type="button" onClick={() => void result.refetch()} disabled={result.isFetching}>Refresh</button></header>
+    <nav aria-label="Cleaning views">{views.map(([key, label]) => <button type="button" key={key} aria-pressed={view === key} onClick={() => filter("view", key)}>{label}</button>)}</nav>
     <div className="pg-cleaning-filters">
-      <label>Propiedad<select value={params.get("propertyId") ?? ""} onChange={e => filter("propertyId", e.target.value)}><option value="">Todas las propiedades</option>{result.data?.properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-      <label>Cleaner<select value={params.get("staffMemberId") ?? ""} onChange={e => filter("staffMemberId", e.target.value)}><option value="">Todo el equipo</option>{result.data?.staff.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}</select></label>
-      <label>Estado<select value={params.get("status") ?? ""} onChange={e => filter("status", e.target.value)}><option value="">Todos los estados</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-      {params.has("reservationId") && <button type="button" onClick={() => filter("reservationId", "")}>Quitar filtro de reserva</button>}
+      <label>Property<select value={params.get("propertyId") ?? ""} onChange={e => filter("propertyId", e.target.value)}><option value="">All properties</option>{result.data?.properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+      <label>Cleaner<select value={params.get("staffMemberId") ?? ""} onChange={e => filter("staffMemberId", e.target.value)}><option value="">All cleaners</option>{result.data?.staff.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}</select></label>
+      <label>Status<select value={params.get("status") ?? ""} onChange={e => filter("status", e.target.value)}><option value="">All statuses</option>{Object.entries(statuses).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      {params.has("reservationId") && <button type="button" onClick={() => filter("reservationId", "")}>Clear reservation filter</button>}
     </div>
-    <p className="pg-cleaning-note">Las horas corresponden a la zona horaria de cada propiedad. Inicio y finalización reales son los registros del cleaner.</p>
-    {result.isPending && <p role="status">Cargando limpiezas…</p>}
-    {result.isError && <p role="alert">No se pudieron actualizar las limpiezas. Pulsa Actualizar para reintentar.</p>}
+    <p className="pg-cleaning-note">Times use each property’s time zone. Actual start and completion are recorded by the cleaner.</p>
+    {result.isPending && <p role="status">Loading cleanings…</p>}
+    {result.isError && <p role="alert">Unable to refresh cleanings. Select Refresh to try again.</p>}
     {result.data && !result.isError && <>
-      <p role="status">{result.data.items.length ? `${result.data.items.length} limpiezas en esta página` : "No hay limpiezas para estos filtros."}</p>
+      <p role="status">{result.data.items.length ? `${result.data.items.length} cleanings on this page` : "No cleanings match these filters."}</p>
       <div className="pg-cleaning-list">{result.data.items.map(item => <article key={item.id}>
-        <header><div><h2>{item.property.name}</h2><p>{item.cleaner.fullName} · <Link to={`/reservations/${item.reservation.id}`}>{item.reservation.number ?? "Ver reserva"}</Link></p></div><span className={`pg-cleaning-state state-${item.status.toLowerCase()}`}>{statuses[item.status] ?? item.status}</span></header>
+        <header><div><h2>{item.property.name}</h2><p>{item.cleaner.fullName} · <Link to={`/reservations/${item.reservation.id}`}>{item.reservation.number ?? "View reservation"}</Link></p></div><span className={`pg-cleaning-state state-${item.status.toLowerCase()}`}>{statuses[item.status] ?? item.status}</span></header>
         <p className="pg-cleaning-note">{item.property.timezone}</p>
-        <dl>{[["Inicio programado", date(item.scheduledStartAt, item.property.timezone)], ["Finalización comprometida", item.committedEndAt ? date(item.committedEndAt, item.property.timezone) : "Pendiente de compromiso"], ["Inicio real", date(item.startedAt, item.property.timezone)], ["Finalización real", date(item.completedAt, item.property.timezone)], ["Duración real", item.actualDurationMinutes === null ? "Sin registrar" : `${item.actualDurationMinutes} min`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <details><summary>Checklist · {item.checklist ? `${item.checklist.filter(i => i.checked).length}/${item.checklist.length}` : "sin registro"} · Reportes ({item.reports.length})</summary>
-          {item.checklist?.length ? <ul>{item.checklist.map(task => <li key={task.id}>{task.checked ? "✓" : "○"} {task.labelEs || task.labelEn}{task.required ? " · Obligatoria" : ""}{task.checkedAt && <small> · {date(task.checkedAt, item.property.timezone)}</small>}</li>)}</ul> : <p>No hay checklist registrado para esta limpieza.</p>}
-          {item.reports.map(report => <div className="pg-cleaning-report" key={report.id}><strong>{{ DELAY: "Retraso", MORE_TIME: "Más tiempo", INCOMPLETE: "Trabajo incompleto" }[report.kind] ?? report.kind}</strong><p>{report.reason}</p><small>{date(report.reportedAt, item.property.timezone)}{report.estimatedAt ? ` · Estimado: ${date(report.estimatedAt, item.property.timezone)}` : ""}</small></div>)}
+        <dl>{[["Scheduled start", date(item.scheduledStartAt, item.property.timezone)], ["Committed completion", item.committedEndAt ? date(item.committedEndAt, item.property.timezone) : "Awaiting commitment"], ["Actual start", date(item.startedAt, item.property.timezone)], ["Actual completion", date(item.completedAt, item.property.timezone)], ["Actual duration", item.actualDurationMinutes === null ? "Not recorded" : `${item.actualDurationMinutes} min`]].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+        <details><summary>Checklist · {item.checklist ? `${item.checklist.filter(i => i.checked).length}/${item.checklist.length}` : "not recorded"} · Reports ({item.reports.length})</summary>
+          {item.checklist?.length ? <ul>{item.checklist.map(task => <li key={task.id}>{task.checked ? "✓" : "○"} {task.labelEn || task.labelEs}{task.required ? " · Required" : ""}{task.checkedAt && <small> · {date(task.checkedAt, item.property.timezone)}</small>}</li>)}</ul> : <p>No checklist is recorded for this cleaning.</p>}
+          {item.reports.map(report => <div className="pg-cleaning-report" key={report.id}><strong>{{ DELAY: "Delay", MORE_TIME: "More time", INCOMPLETE: "Incomplete work" }[report.kind] ?? report.kind}</strong><p>{report.reason}</p><small>{date(report.reportedAt, item.property.timezone)}{report.estimatedAt ? ` · Estimated: ${date(report.estimatedAt, item.property.timezone)}` : ""}</small></div>)}
         </details>
       </article>)}</div>
-      <div className="pg-cleaning-pagination"><button type="button" disabled={!cursors.length || result.isFetching} onClick={() => setCursors(previous => previous.slice(0, -1))}>Anterior</button><button type="button" disabled={!result.data.nextCursor || result.isFetching} onClick={() => setCursors(previous => [...previous, result.data!.nextCursor!])}>Siguiente</button></div>
+      <div className="pg-cleaning-pagination"><button type="button" disabled={!cursors.length || result.isFetching} onClick={() => setCursors(previous => previous.slice(0, -1))}>Previous</button><button type="button" disabled={!result.data.nextCursor || result.isFetching} onClick={() => setCursors(previous => [...previous, result.data!.nextCursor!])}>Next</button></div>
     </>}
   </section>;
 }

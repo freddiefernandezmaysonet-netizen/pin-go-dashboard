@@ -934,7 +934,7 @@ export function ReservationDetailPage() {
             }}
           >
             <ClipboardCheck size={18} aria-hidden="true" />
-            Ver limpieza
+            View cleaning
           </Link>
 
           {canCancelManualReservation ? (
