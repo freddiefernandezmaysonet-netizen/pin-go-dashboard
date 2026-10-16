@@ -1753,7 +1753,7 @@ export default function GuestCancellationPage() {
 
             {!preview?.demo ? guestAssistant : null}
             {preview?.demo ? <div style={{...styles.securePreCheckinCard, marginBottom: 22}}>
-              <strong>Pin&Go · Demo — Pago e identidad simulados / Simulated payment and identity</strong>
+              <strong>{preview.demo.identitySimulated ? "Pin&Go · Demo — Pago e identidad simulados / Simulated payment and identity" : "Pin&Go · Demo — Pago simulado / Simulated payment"}</strong>
               <p>No se realizó ningún cobro. Puedes revisar los detalles y políticas de la reserva; pagos, cambios y reembolsos están deshabilitados.</p>
               <p>No charge was made. Reservation details and policies are available; payments, changes and refunds are disabled.</p>
             </div> : null}
@@ -2287,18 +2287,18 @@ export default function GuestCancellationPage() {
     </h2>
 
     <p style={styles.securePreCheckinText}>
-      {preview.demo ? "Demo registration is prepared. Identity and payment are simulated; no identity documents or payment are requested." : preview.securePreCheckin.completed
+      {preview.demo?.identitySimulated ? "Demo registration is prepared. Identity and payment are simulated; no identity documents or payment are requested." : preview.securePreCheckin.completed
         ? "Your required pre-arrival steps are complete."
         : "Complete the required pre-arrival process before access credentials can be released."}
     </p>
 
     <p style={styles.securePreCheckinText}>
-      {preview.demo ? "El registro de demostración está preparado. Identidad y pago simulados; no se solicitan documentos ni cobros." : preview.securePreCheckin.completed
+      {preview.demo?.identitySimulated ? "El registro de demostración está preparado. Identidad y pago simulados; no se solicitan documentos ni cobros." : preview.securePreCheckin.completed
         ? "Sus pasos requeridos antes de la llegada están completados."
         : "Complete el proceso requerido antes de la llegada para que se puedan liberar las credenciales de acceso."}
     </p>
 
-    {!preview.demo && !preview.securePreCheckin.completed &&
+    {!preview.securePreCheckin.completed &&
     preview.securePreCheckin.url ? (
       <a
         href={preview.securePreCheckin.url}
