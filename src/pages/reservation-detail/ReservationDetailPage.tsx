@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ClipboardCheck } from "lucide-react";
 import { useParams, Link } from "react-router-dom";
 import {
   getVisibleReservationProviderLabel,
@@ -913,6 +914,29 @@ export function ReservationDetailPage() {
         >
           <div>{statusPill(data.operationalStatus)}</div>
 
+          <Link
+            to={`/cleanings?reservationId=${encodeURIComponent(id ?? "")}&view=all`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              minHeight: 44,
+              boxSizing: "border-box",
+              border: "1px solid #d1d5db",
+              borderRadius: 10,
+              padding: "8px 12px",
+              background: "#fff",
+              color: "#111827",
+              fontSize: 14,
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            <ClipboardCheck size={18} aria-hidden="true" />
+            Ver limpieza
+          </Link>
+
           {canCancelManualReservation ? (
             <button
               type="button"
@@ -994,7 +1018,6 @@ export function ReservationDetailPage() {
     >
       {data.guestName}
     </h1>
-    <Link to={`/cleanings?reservationId=${encodeURIComponent(id ?? "")}&view=all`}>Ver limpieza y horarios registrados</Link>
 
     <div
       style={{
