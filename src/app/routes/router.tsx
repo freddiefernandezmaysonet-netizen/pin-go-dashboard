@@ -69,6 +69,7 @@ import { useBrand } from "../../branding/BrandProvider";
 import { shouldShowLegacyPmsUi } from "../../lib/dashboardPresentation";
 import { reviewsE1Enabled } from "../../lib/reviewsConfig";
 
+const HostCleaningsPage = lazy(() => import("../../pages/host-cleanings/HostCleaningsPage"));
 const HostIncidentsPage = lazy(() => import("../../pages/pin-ai/HostIncidentsPage"));
 const AdminHaasPage = lazy(() => import("../../pages/admin/AdminHaasPage"));
 const AdminPinAIActivationPage = lazy(() => import("../../pages/admin/AdminPinAIActivationPage"));
@@ -333,6 +334,7 @@ export const router = createBrowserRouter([
 
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
+      { path: "/cleanings", element: <Suspense fallback={<p role="status">Cargando limpiezas…</p>}><HostCleaningsPage /></Suspense> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
       {

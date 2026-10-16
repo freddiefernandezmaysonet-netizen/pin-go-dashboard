@@ -994,6 +994,7 @@ export function ReservationDetailPage() {
     >
       {data.guestName}
     </h1>
+    <Link to={`/cleanings?reservationId=${encodeURIComponent(id ?? "")}&view=all`}>Ver limpieza y horarios registrados</Link>
 
     <div
       style={{
