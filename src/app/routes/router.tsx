@@ -334,7 +334,7 @@ export const router = createBrowserRouter([
 
       { path: "/access", element: <AccessPage /> },
       { path: "/staff", element: <StaffMembersPage /> },
-      { path: "/cleanings", element: <Suspense fallback={<p role="status">Cargando limpiezas…</p>}><HostCleaningsPage /></Suspense> },
+      { path: "/cleanings", element: <Suspense fallback={<p role="status">Loading cleanings…</p>}><HostCleaningsPage /></Suspense> },
       { path: "/team", element: <TeamPage /> },
       { path: "/organization", element: <OrganizationRoute /> },
       {
