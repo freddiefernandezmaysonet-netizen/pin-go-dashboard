@@ -23,6 +23,7 @@ const baseNav = [
   
   { to: "/messages", label: "Messages" },
   ...(reviewsE1Enabled ? [{ to: "/reputation", label: "Reputation" }] : []),
+  { to: "/cleanings", label: "Limpiezas" },
   { to: "/staff", label: "Staff Members" },
 
   ...(shouldShowLegacyPmsUi()
@@ -68,6 +69,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/team")) return "Team";
   if (pathname.startsWith("/organization/branding-review")) return "Brand Approval";
   if (pathname.startsWith("/organization")) return "Organization";
+  if (pathname.startsWith("/cleanings")) return "Limpiezas";
   if (pathname.startsWith("/staff")) return "Staff Members";
   if (pathname.startsWith("/health")) return "Health Center";
   if (pathname.startsWith("/apms/decision-history")) return "APMS Decision History";
