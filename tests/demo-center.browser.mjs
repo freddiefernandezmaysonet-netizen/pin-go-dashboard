@@ -33,7 +33,7 @@ try {
   const prep = { ready: true, blockers: [], property: { name: "Pin&Go Demo Property", timezone: "America/Puerto_Rico",
     cleaningStartOffsetMinutes: 15, cleaningAccessMinutes: 30 }, primaryAdmin: { email: "principal@example.invalid", fullName: "Demo host" },
     cleaner: { id: "synthetic-cleaner", name: "Demo Cleaner", phone: "+12025550123", language: "es" }, lock: { name: "Demo" } };
-  let run = null, phase = "PRE_STAY", demo = true;
+  let run = null, phase = "PRE_STAY", demo = true, registrationCompleted = true, identitySimulated = true;
   await page.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.hostname === "127.0.0.1") return route.continue();
@@ -59,9 +59,9 @@ try {
     }
     if (url.pathname.includes("/demo/runs/")) return reply(run ? { ok: true, data: run } : { ok: false }, run ? 200 : 404);
     if (url.pathname.endsWith("/cancellation-preview")) return reply({ ok: true, managementPhase: phase,
-      cancellationAllowed: !demo, ...(demo ? {demo: { paymentSimulated: true, identitySimulated: true, timezone: prep.property.timezone }} : {}),
+      cancellationAllowed: !demo, ...(demo ? {demo: { paymentSimulated: true, identitySimulated, timezone: prep.property.timezone }} : {}),
       reservation: { ...run.reservation, propertyName: prep.property.name, status: "ACTIVE", paymentState: "PAID", currency: "usd", totalAmount: demo ? 0 : 250 },
-      securePreCheckin: { completed: true, url: "https://demo-api.example.invalid/secure-precheckin/synthetic-token" },
+      securePreCheckin: { completed: registrationCompleted, url: "https://demo-api.example.invalid/secure-precheckin/synthetic-token" },
       policy: { name: "Flexible policy", type: "FLEXIBLE", refundBasis: "TOTAL_AMOUNT", guestFacingSummary: "Full refund at least seven days before arrival.",
         refundRules: [{ label: "Full refund", minHoursBeforeCheckIn: 168, refundPercent: 100 }], nonRefundableScenarios: [] },
       evaluation: { requestedAt: new Date().toISOString(), checkIn: run.reservation.checkIn, freeCancellationDeadline: run.reservation.checkIn,
@@ -69,6 +69,9 @@ try {
         breakdown: { totalAmount: demo ? 0 : 250, nightlySubtotal: 0, cleaningFee: 0, taxesTotal: 0, amenitiesTotal: 0, refundableBase: 0 } } });
     if (!demo && url.pathname.endsWith("/property-protection-case")) return reply({ ok: true, available: false });
     if (!demo && url.pathname.endsWith("/modification-options")) return reply({ ok: true, modificationAllowed: false });
+    if (url.pathname.endsWith("/pin-ai/availability")) return reply({ ok: true,
+      available: phase !== "POST_STAY", checkedAt: new Date().toISOString(),
+      opensAt: new Date(Date.now() - 86400000).toISOString(), closesAt: new Date(Date.now() + 86400000).toISOString() });
     if (url.pathname.endsWith("/pin-ai/history")) return reply({ ok: true, version: 1, messages: [] });
     if (url.pathname.endsWith("/pin-ai/incident-updates")) return reply({ ok: true, incidents: [], updates: [], nextAfter: null });
     unexpected.push(`${request.method()} ${url.pathname}`); return route.abort();
@@ -120,6 +123,7 @@ try {
   await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
   assert.equal(await page.getByRole("heading", { name: "Secure Pre-check-in · Demo", exact: true }).count(), 1);
   assert.equal(await page.getByText("Simulated · no charge", { exact: true }).count(), 1);
+  await page.locator("#pin-ai-chat-title").waitFor();
   assert.equal(await page.evaluate(() => {
     const reservation = [...document.querySelectorAll('h2')].find(h => h.textContent === 'Pin&Go Demo Property');
     const chat = document.getElementById('pin-ai-chat-title');
@@ -134,6 +138,16 @@ try {
   await page.screenshot({ path: resolve(output, "mobile-manage-reservation.png"), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.screenshot({ path: resolve(output, "desktop-manage-reservation.png"), fullPage: true });
+  registrationCompleted = false; identitySimulated = false;
+  await page.reload();
+  const registrationLink = page.getByRole("link", { name: /Continue Secure Pre-check-in/ });
+  await registrationLink.waitFor();
+  assert.equal(await registrationLink.getAttribute("href"), "https://demo-api.example.invalid/secure-precheckin/synthetic-token");
+  assert.equal(await page.getByText("El registro de demostración está preparado.", { exact: false }).count(), 0);
+  assert.equal(await page.getByText("Pin&Go · Demo — Pago simulado / Simulated payment", { exact: true }).count(), 1);
+  assert.equal(await page.getByRole("button", { name: /Cancel reservation|Confirm cancellation/i }).count(), 0);
+  await page.screenshot({ path: resolve(output, "demo-pending-precheckin.png"), fullPage: true });
+  registrationCompleted = true; identitySimulated = true;
   phase = "IN_STAY"; await page.reload();
   await page.getByRole("heading", { name: "Flexible policy", exact: true }).waitFor();
   assert.equal(await page.locator("textarea").count(), 1, "in-stay Demo retains full details and Pin AI");

@@ -127,7 +127,7 @@ export default function AdminDemoCenterPage() {
       <div style={{color:"#93c5fd",fontWeight:800}}>PIN&GO · DEMO CENTER</div>
       <h1 style={{fontSize:30,margin:"10px 0"}}>Una reserva. Todo el recorrido.</h1>
       <p style={{margin:0,lineHeight:1.6}}>Reserva, comunicación, acceso, Pin AI y limpieza en la misma presentación.</p>
-      <p style={{marginBottom:0,color:"#bfdbfe"}}>Pago e identidad simulados. Los mensajes y accesos requieren evidencia real.</p>
+      <p style={{marginBottom:0,color:"#bfdbfe"}}>Pago simulado, sin cobro. El huésped completa el registro desde su correo. Los mensajes y accesos requieren evidencia real.</p>
     </header>
     {error || run?.lastError ? <div role="alert" style={{...card,background:"#fff7ed",borderColor:"#fdba74"}}>{error || errorText(run?.lastError ?? "")}</div> : null}
     <section style={card}>
@@ -172,7 +172,7 @@ export default function AdminDemoCenterPage() {
       <p>La siguiente presentación se habilita al terminar la limpieza y quedar cerrados los accesos registrados.</p>
     </section>}
     {run ? <div style={grid}>
-      {stage("1 · Reserva y registro", <p>{run.secureReady ? "Registro Demo preparado." : "Registro pendiente."} Pago e identidad simulados, sin cobro.</p>)}
+      {stage("1 · Reserva y registro", <p>{run.secureReady ? "Registro completado." : "Registro pendiente: el huésped debe completarlo desde su correo o Manage Reservation."} Pago simulado, sin cobro.</p>)}
       {stage("2 · Comunicaciones", <>{run.messages.length ? run.messages.map(m=><div key={m.id} style={{padding:"10px 0",borderBottom:"1px solid #e2e8f0",overflowWrap:"anywhere"}}><strong>{names[m.communicationType ?? ""] ?? "Mensaje de la reserva"}</strong><div>{m.to}</div><small>{states[m.delivery] ?? "Pendiente de confirmación"}</small></div>) : <p>Sin envíos registrados todavía.</p>}</>)}
       {stage("3 · Acceso real", <>{run.reservation.accessGrants.map(g=><p key={g.id}>{g.type === "GUEST" ? "Huésped" : "Cleaner"}: <strong>{states[g.status] ?? g.status}</strong><br/>{format(g.startsAt)} → {format(g.endsAt)}<br/>{g.accessCodeMasked ?? "Credencial pendiente"}</p>)}<p>Comprobar apertura y expiración en la cerradura Demo. Un estado registrado no sustituye esa prueba.</p></>)}
       {stage("4 · Pin AI", <><p>{run.pinAI.conversationStarted ? "Conversación registrada para esta reserva." : "Abre el portal e inicia la conversación."}</p><p>Pregunta por la propiedad y el horario de acceso. Después reporta un incidente de prueba.</p></>)}
