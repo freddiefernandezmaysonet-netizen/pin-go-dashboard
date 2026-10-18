@@ -142,11 +142,11 @@ test("Vrbo existing connection is managed without repeating preparation and refr
   assert.match(connect, /!existingBookingCom && !existingExpedia && !existingVrbo/);
 
   const completion = declaration(page, "completeSession");
-  assert.match(completion, /current\.provider === "VRBO"/);
-  assert.match(completion, /await reconcileDistributionChannel\(id, current\.provider\)/);
+  assert.match(completion, /current\\.provider === "VRBO"/);
+  assert.match(completion, /await reconcileDistributionChannel\\(id, current\\.provider\\)/);
 
-  assert.match(page, /isVrboConnectionExisting\(channel\) \? "Manage Vrbo"/);
-  assert.match(page, /channel\.provider === "VRBO" && !isVrboConnectionExisting\(channel\)/);
+  assert.match(page, /isVrboConnectionExisting\\(channel\\) \\? "Manage Vrbo"/);
+  assert.match(page, /channel\\.provider === "VRBO" && !isVrboConnectionExisting\\(channel\\)/);
 });
 
 

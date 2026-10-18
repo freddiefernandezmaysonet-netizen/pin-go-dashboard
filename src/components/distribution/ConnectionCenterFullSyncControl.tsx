@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, LoaderCircle, RefreshCw, TriangleAlert } from "lucide-react";
 import { useParams, useSearchParams } from "react-router-dom";
 
-import { getDistributionConnectionCenter, reconcileDistributionChannel, type DistributionConnectionCenter } from "../../api/distribution";
+import { getDistributionConnectionCenter, type DistributionConnectionCenter } from "../../api/distribution";
 import {
   DistributionFullSyncApiError,
   getDistributionRuntimeState,
@@ -13,9 +13,6 @@ import {
 import { useAuth } from "../../auth/AuthProvider";
 
 const ADMIN_ROLES = new Set(["ORG_ADMIN", "ADMIN", "PLATFORM_ADMIN"]);
-const VERIFICATION_DELAYS_MS = [10_000, 20_000, 30_000] as const;
-type QueuedSync = DistributionFullSyncResult & { propertyId: string; verifyAirbnb: boolean };
-type VerificationStatus = "IDLE" | "CHECKING" | "CONFIRMED" | "PENDING" | "FAILED";
 const CARD_STYLE = {
   border: "1px solid #e5e7eb",
   borderRadius: 18,
@@ -58,10 +55,7 @@ export function ConnectionCenterFullSyncControl() {
   const [runtimeState, setRuntimeState] = useState<DistributionRuntimeState | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
-  const [queued, setQueued] = useState<QueuedSync | null>(null);
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("IDLE");
-  const [verificationRun, setVerificationRun] = useState(0);
-  const submitting = useRef(false);
+  const [queued, setQueued] = useState<DistributionFullSyncResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -93,75 +87,26 @@ export function ConnectionCenterFullSyncControl() {
     };
   }, [id, isAdmin, simulated]);
 
-  useEffect(() => {
-    if (!id || !isAdmin || simulated || !queued || queued.propertyId !== id || !queued.verifyAirbnb) return;
-    const propertyId = id;
-    const syncRequest = queued;
-    let cancelled = false;
-    let attempt = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const notify = () => window.dispatchEvent(new CustomEvent("pin-go:distribution-status-updated", { detail: { propertyId } }));
-    async function verify() {
-      if (cancelled) return;
-      let failed = false;
-      try {
-        // Reconciliation verifies existing evidence. It never submits another Full Sync.
-        await reconcileDistributionChannel(propertyId, "AIRBNB");
-        if (cancelled) return;
-        const nextCenter = await getDistributionConnectionCenter(propertyId);
-        if (cancelled) return;
-        setCenter(nextCenter);
-        const airbnb = nextCenter.channels.find(channel => channel.provider === "AIRBNB");
-        const confirmedAt = Date.parse(airbnb?.lastFullSyncConfirmedAt ?? "");
-        const requestedAt = Date.parse(syncRequest.requestedAt);
-        if (airbnb?.status === "ACTIVE" && Number.isFinite(confirmedAt) && Number.isFinite(requestedAt) && confirmedAt >= requestedAt) {
-          setVerificationStatus("CONFIRMED");
-          notify();
-          return;
-        }
-      } catch {
-        if (cancelled) return;
-        failed = true;
-      }
-      attempt++;
-      if (attempt < VERIFICATION_DELAYS_MS.length) {
-        timer = setTimeout(() => void verify(), VERIFICATION_DELAYS_MS[attempt]);
-      } else {
-        setVerificationStatus(failed ? "FAILED" : "PENDING");
-        notify();
-      }
-    }
-    timer = setTimeout(() => void verify(), verificationRun > 0 ? 0 : VERIFICATION_DELAYS_MS[0]);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [id, isAdmin, simulated, queued, verificationRun]);
-
   const lastConfirmed = useMemo(() => latestConfirmedAt(center), [center]);
   const runtimeActive = Boolean(
     runtimeState?.distributionEnabled === true &&
       runtimeState.distributionStatus.toUpperCase() === "ACTIVE"
   );
   const ready = Boolean(center?.provisioningStatus === "READY" && runtimeActive);
-  const currentSync = queued?.propertyId === id ? queued : null;
-  const canRequest = Boolean(id && isAdmin && !simulated && ready && !running && (!currentSync || verificationStatus === "CONFIRMED"));
+  const canRequest = Boolean(id && isAdmin && !simulated && ready && !running && !queued);
 
   if (!id || !isAdmin) return null;
   if (!simulated && loading) return null;
 
   async function runFullSync() {
-    if (!id || !canRequest || submitting.current) return;
-    submitting.current = true;
+    if (!canRequest) return;
     try {
       setRunning(true);
       setError(null);
-      const result = await requestDistributionFullSync(id);
-      const verifyAirbnb = Boolean(center?.channels.some(channel => channel.provider === "AIRBNB" && channel.channelLinked));
-      setVerificationStatus(verifyAirbnb ? "CHECKING" : "IDLE");
-      setVerificationRun(0);
-      setQueued({ ...result, propertyId: id, verifyAirbnb });
+      setQueued(await requestDistributionFullSync(id));
     } catch (caught) {
       setError(friendlyError(caught));
     } finally {
-      submitting.current = false;
       setRunning(false);
     }
   }
@@ -178,7 +123,7 @@ export function ConnectionCenterFullSyncControl() {
           </div>
           <div style={{ color: "#6b7280", fontSize: 12 }}>
             {lastConfirmed
-              ? `Most recent verified channel sync: ${new Date(lastConfirmed).toLocaleString()}`
+              ? `Last confirmed Full Sync: ${new Date(lastConfirmed).toLocaleString()}`
               : "No confirmed Full Sync is recorded yet."}
           </div>
         </div>
@@ -204,7 +149,7 @@ export function ConnectionCenterFullSyncControl() {
           }}
         >
           {running ? <LoaderCircle size={16} /> : <RefreshCw size={16} />}
-          {running ? "Queuing Full Sync…" : currentSync && verificationStatus !== "CONFIRMED" ? "Full Sync queued" : "Sync availability & rates"}
+          {running ? "Queuing Full Sync…" : queued ? "Full Sync queued" : "Sync availability & rates"}
         </button>
       </div>
 
@@ -216,26 +161,9 @@ export function ConnectionCenterFullSyncControl() {
         <div role="status" style={{ marginTop: 14, border: "1px solid #fde68a", borderRadius: 10, padding: "10px 12px", background: "#fffbeb", color: "#92400e", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <TriangleAlert size={15} /> Distribution setup and runtime must both be active before a Full Sync can be requested.
         </div>
-      ) : currentSync && !error ? (
-        <div role="status" style={{ marginTop: 14,
-          border: verificationStatus === "CONFIRMED" ? "1px solid #a7f3d0" : verificationStatus === "PENDING" || verificationStatus === "FAILED" ? "1px solid #fde68a" : "1px solid #bfdbfe",
-          borderRadius: 10, padding: "10px 12px",
-          background: verificationStatus === "CONFIRMED" ? "#ecfdf5" : verificationStatus === "PENDING" || verificationStatus === "FAILED" ? "#fffbeb" : "#eff6ff",
-          color: verificationStatus === "CONFIRMED" ? "#065f46" : verificationStatus === "PENDING" || verificationStatus === "FAILED" ? "#92400e" : "#1d4ed8",
-          fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
-          {verificationStatus === "CHECKING" ? <LoaderCircle size={15} /> : verificationStatus === "PENDING" || verificationStatus === "FAILED" ? <TriangleAlert size={15} /> : <CheckCircle2 size={15} />}
-          <div style={{ display: "grid", gap: 8 }}>
-            {verificationStatus === "CONFIRMED"
-              ? "Availability and rates sync verified for Airbnb. The connection status has been updated."
-              : verificationStatus === "CHECKING"
-                ? "Full Sync queued successfully. Pin&Go is checking Airbnb's verified connection status."
-                : verificationStatus === "PENDING"
-                  ? "Airbnb's sync is not verified yet. Review the Airbnb connection checks above, then check status again."
-                  : verificationStatus === "FAILED"
-                    ? "Pin&Go could not verify the sync result yet. The queued request has not been repeated. Check status again."
-                    : "Full Sync queued successfully. Pin&Go will process availability and rates/restrictions through the existing distribution runtime."}
-            {(verificationStatus === "PENDING" || verificationStatus === "FAILED") && <button type="button" onClick={() => { setVerificationStatus("CHECKING"); setVerificationRun(value => value + 1); }} style={{ border: "1px solid #d1d5db", borderRadius: 8, padding: "8px 12px", background: "#fff", color: "#111827", fontWeight: 600, cursor: "pointer" }}>Check sync status</button>}
-          </div>
+      ) : queued ? (
+        <div role="status" style={{ marginTop: 14, border: "1px solid #a7f3d0", borderRadius: 10, padding: "10px 12px", background: "#ecfdf5", color: "#065f46", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+          <CheckCircle2 size={15} /> Full Sync queued successfully. Pin&Go will process availability and rates/restrictions through the existing distribution runtime.
         </div>
       ) : error ? (
         <div role="alert" style={{ marginTop: 14, border: "1px solid #fecaca", borderRadius: 10, padding: "10px 12px", background: "#fef2f2", color: "#991b1b", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>

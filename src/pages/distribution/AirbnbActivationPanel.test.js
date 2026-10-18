@@ -3,6 +3,8 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import { jsx, jsxs } from "react/jsx-runtime";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const source = readFileSync(new URL("./AirbnbActivationPanel.tsx", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -151,4 +153,53 @@ test("active Airbnb evidence offers canonical refresh without activation or Full
   assert.match(source, /This does not request activation or Full Sync\./);
   assert.doesNotMatch(source, /Airbnb activation confirmed\./);
   assert.match(source, /Airbnb reports this channel as active\./);
+});
+
+const pageSource = readFileSync(new URL("./ConnectionCenterPage.tsx", import.meta.url), "utf8");
+const pageAst = ts.createSourceFile("page.tsx", pageSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const checksDeclaration = pageAst.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "AirbnbConnectionChecks");
+assert.ok(checksDeclaration);
+const checksCode = ts.transpileModule(checksDeclaration.getText(pageAst), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const renderChecks = runInNewContext(`${checksCode}\nAirbnbConnectionChecks`, { exports: {}, require: () => ({ jsx, jsxs }) });
+const pendingChannel = {
+  status: "DEGRADED", attentionCode: "OTA_FULL_SYNC_NOT_QUALIFIED",
+  readiness: { authorization: "READY", mapping: "READY", distribution: "IN_PROGRESS" },
+  lastReadinessCheckedAt: "2026-10-18T15:31:22.360Z",
+};
+
+test("Airbnb sync warning separates verified authorization and mapping from pending sync, with explicit recovery", () => {
+  const html = renderToStaticMarkup(renderChecks({ channel: pendingChannel }));
+  assert.match(html, /Account authorization/);
+  assert.match(html, /Property mapping/);
+  assert.equal((html.match(/>Verified</g) ?? []).length, 2);
+  assert.match(html, /Pending verification/);
+  assert.match(html, /after a channel update/);
+  assert.match(html, /href="#distribution-full-sync-title"/);
+  assert.match(html, /After the sync finishes, use Refresh verified status/);
+  assert.match(html, /does not confirm completion/);
+  assert.match(html, /Connection details for support/);
+  assert.match(html, /OTA_FULL_SYNC_NOT_QUALIFIED/);
+  assert.match(html, /dateTime="2026-10-18T15:31:22.360Z"/);
+  assert.doesNotMatch(checksDeclaration.getText(pageAst), /\bfetch\(|reconcileDistributionChannel|requestDistributionFullSync|activateAirbnbForHost|confirmAirbnbHostMapping/);
+});
+
+test("verified Active Airbnb has no warning or new recovery request", () => {
+  assert.equal(renderChecks({ channel: { ...pendingChannel, status: "ACTIVE" } }), null);
+});
+
+test("an unrelated or unknown blocker offers status verification and support instead of prescribing a sync", () => {
+  for (const attentionCode of ["CHANNEL_MAPPING_NOT_VERIFIED", "FUTURE_DIAGNOSTIC_CODE"]) {
+    const html = renderToStaticMarkup(renderChecks({ channel: { ...pendingChannel, attentionCode } }));
+    assert.match(html, /Refresh verified status to check the existing connection/);
+    assert.match(html, /contact support/);
+    assert.doesNotMatch(html, /href="#distribution-full-sync-title"/);
+  }
+});
+
+test("invalid or absent verification dates do not crash the diagnostic card", () => {
+  for (const lastReadinessCheckedAt of [null, "not-a-date"]) {
+    const html = renderToStaticMarkup(renderChecks({ channel: { ...pendingChannel, lastReadinessCheckedAt } }));
+    assert.doesNotMatch(html, /Invalid Date|Last verified/);
+    assert.match(html, /OTA_FULL_SYNC_NOT_QUALIFIED/);
+  }
 });

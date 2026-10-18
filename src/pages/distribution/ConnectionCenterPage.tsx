@@ -218,7 +218,8 @@ function AirbnbConnectionChecks({ channel }: { channel: DistributionConnectionCe
     {syncRequired && <div style={{ border: "1px solid #fde68a", borderRadius: 10, padding: 12, background: "#fffbeb", color: "#92400e" }}>
       <strong>Availability and rates need a new sync verification.</strong>
       <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>A previous sync is not confirmed for the current Airbnb connection. This can happen after a channel update.</p>
-      <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>Review your Pin&amp;Go calendar, rates and restrictions, then use <a href="#distribution-full-sync-title" style={{ color: "inherit", fontWeight: 700 }}>Sync availability &amp; rates</a> below. Pin&amp;Go will check Airbnb after you request the sync.</p>
+      <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>Review your Pin&amp;Go calendar, rates and restrictions, then use <a href="#distribution-full-sync-title" style={{ color: "inherit", fontWeight: 700 }}>Sync availability &amp; rates</a> below.</p>
+      <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>After the sync finishes, use Refresh verified status on this Airbnb card to check the result. Queued means the request was received; it does not confirm completion.</p>
     </div>}
     {!syncRequired && channel.attentionCode && <p style={{ margin: 0, lineHeight: 1.55 }}>Refresh verified status to check the existing connection. If it still needs attention, contact support with the connection details below.</p>}
     {checkedAt && Number.isFinite(checkedAt.getTime()) && <p style={{ margin: 0, color: "#6b7280", fontSize: 12 }}>Last verified: <time dateTime={checkedAt.toISOString()}>{checkedAt.toLocaleString()}</time></p>}
@@ -481,14 +482,6 @@ export function ConnectionCenterPage() {
     finally { setLoading(false); }
   }, [id, simulated]);
   useEffect(() => { void load(); }, [load]);
-
-  useEffect(() => {
-    const refreshStatus = (event: Event) => {
-      if ((event as CustomEvent<{ propertyId: string }>).detail?.propertyId === id) void load();
-    };
-    window.addEventListener("pin-go:distribution-status-updated", refreshStatus);
-    return () => window.removeEventListener("pin-go:distribution-status-updated", refreshStatus);
-  }, [id, load]);
 
   useEffect(() => {
     if (!id || simulated || !center) return;
