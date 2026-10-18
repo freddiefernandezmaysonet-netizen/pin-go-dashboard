@@ -126,7 +126,7 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
       : channel.status === "READINESS_CHECK"
         ? "Airbnb is linked to this property. Pin&Go is checking the remaining setup requirements."
         : needsAttention
-          ? "Airbnb remains linked to this property, but the connection needs attention before it can become active."
+          ? "Airbnb remains linked to this property. Review the connection checks below to restore verified status in Pin&Go."
           : "Airbnb is linked to this property. Additional setup is required before the channel becomes active.";
     return {
       status: airbnbSetupLinked ? "Setup in progress" : statusLabel(channel.status),
@@ -195,6 +195,39 @@ function providerPresentation(channel: DistributionConnectionCenter["channels"][
       ? "Authorize your Airbnb account to begin setup. Pin&Go never receives or stores your Airbnb password."
       : "Connect this channel to begin setup for the property.",
   };
+}
+
+function AirbnbConnectionChecks({ channel }: { channel: DistributionConnectionCenter["channels"][number] }) {
+  if (channel.status === "ACTIVE") return null;
+  const syncRequired = channel.attentionCode === "OTA_FULL_SYNC_NOT_QUALIFIED";
+  const labels: Record<string, string> = {
+    READY: "Verified", REQUIRED: "Required", NOT_STARTED: "Not checked",
+    IN_PROGRESS: "Pending verification", BLOCKED: "Needs review", NOT_APPLICABLE: "Not required",
+  };
+  const checkedAt = channel.lastReadinessCheckedAt ? new Date(channel.lastReadinessCheckedAt) : null;
+  return <section aria-label="Airbnb connection checks" style={{ display: "grid", gap: 10, fontSize: 13 }}>
+    <dl style={{ display: "grid", gap: 6, margin: 0 }}>
+      {([
+        ["Account authorization", channel.readiness.authorization],
+        ["Property mapping", channel.readiness.mapping],
+        ["Availability & rates sync", channel.readiness.distribution],
+      ] as const).map(([label, value]) => <div key={label} style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+        <dt>{label}</dt><dd style={{ margin: 0, fontWeight: 600 }}>{labels[value]}</dd>
+      </div>)}
+    </dl>
+    {syncRequired && <div style={{ border: "1px solid #fde68a", borderRadius: 10, padding: 12, background: "#fffbeb", color: "#92400e" }}>
+      <strong>Availability and rates need a new sync verification.</strong>
+      <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>A previous sync is not confirmed for the current Airbnb connection. This can happen after a channel update.</p>
+      <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>Review your Pin&amp;Go calendar, rates and restrictions, then use <a href="#distribution-full-sync-title" style={{ color: "inherit", fontWeight: 700 }}>Sync availability &amp; rates</a> below.</p>
+      <p style={{ margin: "6px 0 0", lineHeight: 1.55 }}>After the sync finishes, use Refresh verified status on this Airbnb card to check the result. Queued means the request was received; it does not confirm completion.</p>
+    </div>}
+    {!syncRequired && channel.attentionCode && <p style={{ margin: 0, lineHeight: 1.55 }}>Refresh verified status to check the existing connection. If it still needs attention, contact support with the connection details below.</p>}
+    {checkedAt && Number.isFinite(checkedAt.getTime()) && <p style={{ margin: 0, color: "#6b7280", fontSize: 12 }}>Last verified: <time dateTime={checkedAt.toISOString()}>{checkedAt.toLocaleString()}</time></p>}
+    {channel.attentionCode && <details style={{ color: "#6b7280", fontSize: 12 }}>
+      <summary style={{ cursor: "pointer" }}>Connection details for support</summary>
+      <p style={{ margin: "6px 0 0", overflowWrap: "anywhere" }}>{channel.attentionCode}</p>
+    </details>}
+  </section>;
 }
 
 function listingMeta(listing: AirbnbHostListing): string | null {
@@ -658,6 +691,8 @@ export function ConnectionCenterPage() {
                 </div>
 
                 <p style={{ margin: 0, color: "#6b7280", fontSize: 14, lineHeight: 1.55 }}>{presentation.description}</p>
+
+                {airbnbChannelLinked && <AirbnbConnectionChecks channel={channel} />}
 
                 {canConnect && channel.provider === "BOOKING_COM" && !isBookingComConnectionExisting(channel) && (
                   <BookingComConnectionGuide simulated={simulated} />
