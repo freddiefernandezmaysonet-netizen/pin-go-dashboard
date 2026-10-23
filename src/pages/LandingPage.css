@@ -318,3 +318,24 @@
 .pingo-landing .ota-logos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:24px}.pingo-landing .ota-logo{display:flex;align-items:center;justify-content:center;min-width:0;min-height:76px;border:1px solid #e3e7ee;border-radius:14px;background:#fff;padding:16px}.pingo-landing .ota-logo img{display:block;width:100%;max-width:140px;height:40px;object-fit:contain}
 
 .pingo-landing .ota-booking{gap:8px;color:#003b95;font-size:15px;font-weight:750;white-space:nowrap}.pingo-landing .ota-booking img{width:24px;height:24px;flex:none}@media(max-width:380px){.pingo-landing .ota-logo{padding:12px 8px}.pingo-landing .ota-booking{font-size:12px;gap:4px}.pingo-landing .ota-booking img{width:18px;height:18px}}
+
+/* Sales voice assistant: reuse the landing's typography, buttons and blue accent. */
+.pingo-landing .voice-hero-note{margin:18px 0 0;font-size:13px;color:#586174;line-height:1.7}
+.pingo-landing .voice-hero-note span{display:block;font-weight:650;letter-spacing:.02em}
+.pingo-landing .voice-section{background:#f5f8ff}
+.pingo-landing .voice-panel{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:center;gap:64px}
+.pingo-landing .voice-copy .section-title{max-width:680px}
+.pingo-landing .voice-topics{padding-left:20px;margin:24px 0 0;color:#586174;line-height:1.8;font-size:15px}
+.pingo-landing .voice-topics li+li{margin-top:8px}
+.pingo-landing .voice-call-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:36px 28px;border:1px solid #dbe5f7;border-radius:28px;background:#fff;box-shadow:0 16px 48px rgba(37,99,235,.06)}
+.pingo-landing .voice-phone-icon{width:52px;height:52px;padding:12px;border-radius:16px;color:#2563eb;background:#eff6ff}
+.pingo-landing .voice-call-heading{font-size:20px;font-weight:650;letter-spacing:-.02em;margin:20px 0 24px}
+.pingo-landing .voice-call-card .button{width:100%}
+.pingo-landing .voice-number{display:inline-flex;align-items:center;min-height:44px;margin-top:12px;color:#1d4ed8;font-size:18px;font-weight:650;text-decoration:none}
+.pingo-landing .voice-number:hover{text-decoration:underline}
+.pingo-landing .voice-disclosure{max-width:270px;margin:12px 0 0;color:#586174;font-size:12px;line-height:1.6}
+.pingo-landing #talk-to-pin{scroll-margin-top:90px}
+@media(max-width:760px){
+  .pingo-landing .voice-panel{grid-template-columns:minmax(0,1fr);gap:32px}
+  .pingo-landing .voice-call-card{padding:28px 20px}
+}
