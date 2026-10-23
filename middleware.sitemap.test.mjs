@@ -5,10 +5,10 @@ import ts from 'typescript';
 const code = ts.transpileModule(fs.readFileSync(new URL('./middleware.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { default: middleware } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
 const request = (path, method = 'GET') => new Request('https://app.pin-ngo.com' + path, { method });
-test('app robots advertises its own sitemap without fetching a custom brand', async () => {
+test('app robots advertises the public booking sitemap without fetching a custom brand', async () => {
   const result = await middleware(request('/robots.txt'));
   assert.equal(result.status, 200);
-  assert.match(await result.text(), /Sitemap: https:\/\/app.pin-ngo.com\/sitemap.xml/);
+  assert.match(await result.text(), /Sitemap: https:\/\/pin-ngo.com\/sitemap.xml/);
 });
 test('app sitemap serves XML and HEAD with correct type', async t => {
   t.mock.method(globalThis, 'fetch', async url => {
