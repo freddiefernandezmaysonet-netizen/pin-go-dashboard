@@ -1,4 +1,6 @@
 const PUBLIC_API_BASE = "https://api.pin-ngo.com";
+const PUBLIC_BOOKING_HOST = "pin-ngo.com";
+const STANDARD_BOOKING_HOSTS = new Set([PUBLIC_BOOKING_HOST, "www.pin-ngo.com", "app.pin-ngo.com"]);
 const METADATA_FETCH_TIMEOUT_MS = 2_500;
 
 type PublicBrandContext = {
@@ -390,10 +392,10 @@ async function handleCrawlerEndpoint(
     });
   }
 
-  if (url.hostname === "app.pin-ngo.com") {
+  if (STANDARD_BOOKING_HOSTS.has(url.hostname)) {
     const isHead = request.method === "HEAD";
     if (url.pathname === "/robots.txt") {
-      return new Response(isHead ? null : "User-agent: *\nAllow: /\nSitemap: https://app.pin-ngo.com/sitemap.xml\n", {
+      return new Response(isHead ? null : `User-agent: *\nAllow: /\nSitemap: https://${PUBLIC_BOOKING_HOST}/sitemap.xml\n`, {
         headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=300" },
       });
     }
@@ -404,7 +406,12 @@ async function handleCrawlerEndpoint(
       if (!upstream.ok || !upstream.headers.get("content-type")?.includes("application/xml")) {
         throw new Error("Sitemap source unavailable");
       }
-      const xml = await upstream.text();
+      // The upstream sitemap retains legacy app URLs for backward compatibility.
+      // Only rewrite standard booking locations; custom-domain URLs stay intact.
+      const xml = (await upstream.text()).replaceAll(
+        "<loc>https://app.pin-ngo.com/book/",
+        `<loc>https://${PUBLIC_BOOKING_HOST}/book/`
+      );
       return new Response(isHead ? null : xml, {
         headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=0, s-maxage=300", "x-content-type-options": "nosniff" },
       });
@@ -529,7 +536,8 @@ function resolveCanonicalTarget(
   organizationSlug: string,
   url: URL
 ): { canonicalUrl: string; canonicalHostname: string | null } {
-  const canonicalHostname = resolvePublishedCustomDomain(brand, organizationSlug);
+  const canonicalHostname = resolvePublishedCustomDomain(brand, organizationSlug)
+    ?? (STANDARD_BOOKING_HOSTS.has(url.hostname) ? PUBLIC_BOOKING_HOST : null);
   const canonicalOrigin = canonicalHostname
     ? `https://${canonicalHostname}`
     : url.origin;

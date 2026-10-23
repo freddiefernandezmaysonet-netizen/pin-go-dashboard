@@ -1,4 +1,5 @@
 import { PropertyEditTabs } from "../../components/properties/PropertyEditTabs";
+import { resolvePublicBookingOrigin } from "../../lib/publicBookingOrigin";
 import "./PropertyEditPage.css";
 import { useEffect, useRef, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
@@ -1560,8 +1561,9 @@ async function handleSaveRecommendedSeasonAdjustment(
   const derivedCheckInTime =
     Number(form.cleaningDurationMinutes) === 240 ? "4:00 PM" : "3:00 PM";
 
-  const publicBaseUrl =
-    import.meta.env.VITE_PUBLIC_SITE_URL ?? window.location.origin;
+  const publicBaseUrl = resolvePublicBookingOrigin(
+    window.location.origin, import.meta.env.VITE_PUBLIC_SITE_URL
+  );
 
   const publicPropertyUrl =
     organizationSlug && form.slug

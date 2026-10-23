@@ -5,6 +5,7 @@ import {
   type DashboardOrganization,
 } from "../../api/organization";
 import { useAuth } from "../../auth/AuthProvider";
+import { resolvePublicBookingOrigin } from "../../lib/publicBookingOrigin";
 
 function normalizeSlug(value: string) {
   return value
@@ -33,8 +34,9 @@ export default function OrganizationSettingsPage() {
 
   const normalizedSlug = useMemo(() => normalizeSlug(slug), [slug]);
 
-  const publicBaseUrl =
-    import.meta.env.VITE_PUBLIC_SITE_URL ?? window.location.origin;
+  const publicBaseUrl = resolvePublicBookingOrigin(
+    window.location.origin, import.meta.env.VITE_PUBLIC_SITE_URL
+  );
 
   const directBookingUrl = normalizedSlug
     ? `${publicBaseUrl}/book/${normalizedSlug}`
