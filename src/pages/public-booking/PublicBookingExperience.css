@@ -1207,3 +1207,30 @@
     padding: 24px;
   }
 }
+
+/* Keep the selected stay within reach while browsing the property. */
+.pbe-page--reservation-bar { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.pbe-reservation-bar {
+  position: fixed;
+  z-index: 20;
+  inset: auto 0 0;
+  padding: 16px max(20px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  border-top: 1px solid var(--pbe-line);
+  background: var(--pbe-paper);
+  color: var(--pbe-ink);
+  box-shadow: 0 -8px 30px rgba(20, 41, 32, .08);
+}
+.pbe-reservation-bar-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pbe-reservation-bar-summary { min-width: 0; }
+.pbe-reservation-bar-label { display: block; color: var(--pbe-muted); font-size: 13px; }
+.pbe-reservation-bar-dates { display: block; min-height: 44px; padding: 4px 0; border: 0; background: transparent; color: var(--pbe-forest); text-align: left; font-weight: 700 !important; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.pbe-reservation-bar-action { flex-shrink: 0; min-height: 48px; max-width: 45%; padding: 12px 24px; border: 0; border-radius: 10px; background: var(--pbe-forest); color: white; font-weight: 700 !important; cursor: pointer; }
+.pbe-reservation-bar-action:hover { background: var(--pbe-forest-deep); }
+.pbe-reservation-bar-action:disabled { opacity: .6; cursor: wait; }
+#pbe-stay-calendar, #pbe-confirm-dates, #pbe-guest-details { scroll-margin-top: 110px; }
+@media (max-width: 460px) {
+  .pbe-reservation-bar { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .pbe-reservation-bar-inner { gap: 12px; }
+  .pbe-reservation-bar-dates { font-size: 14px !important; }
+  .pbe-reservation-bar-action { padding: 12px 18px; font-size: 14px !important; }
+}
