@@ -2398,8 +2398,26 @@ guestAcceptedSecurePreCheckinRequirementSource:
     }
   }
 
+const showReservationBar = !loading && !pageError && !!property && selectedPhotoIndex === null && !legalDocument;
+  const hasSelectedStay = !!checkIn && !!checkOut && nights > 0;
+
+  function goToReservation(editDates = false) {
+    const target = document.getElementById(
+      editDates || !hasSelectedStay
+        ? "pbe-stay-calendar"
+        : checkoutStarted
+        ? "pbe-guest-details"
+        : "pbe-confirm-dates"
+    );
+    target?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+    target?.focus({ preventScroll: true });
+  }
+
 return (
-  <div className="pbe-page" style={styles.page}>
+  <div className={`pbe-page${showReservationBar ? " pbe-page--reservation-bar" : ""}`} style={styles.page}>
     <header className="pbe-header" style={styles.header}>
       <div className="pbe-header-inner" style={styles.headerInner}>
         <Link
@@ -3327,7 +3345,7 @@ return (
                       </div>
                     </div>
 
-                  <div className="pbe-legacy-calendar pbe-calendar-stage" style={styles.calendarBox}>
+                  <div id="pbe-stay-calendar" tabIndex={-1} className="pbe-legacy-calendar pbe-calendar-stage" style={styles.calendarBox}>
   <div className="pbe-date-summary" style={styles.calendarHeader}>
     <div className="pbe-date-summary-card" style={styles.calendarDatePanel}>
   <div style={styles.calendarLabel}>
@@ -3497,6 +3515,7 @@ return (
                     {!checkoutStarted ? (
                       <>
                         <button
+                          id="pbe-confirm-dates"
                           className="pbe-primary pbe-continue-action"
                           type="button"
                           disabled={!checkIn || !checkOut}
@@ -3514,7 +3533,7 @@ return (
                         </p>
                       </>
                     ) : (
-                      <div className="pbe-checkout-stage pbe-client-stage">
+                      <div id="pbe-guest-details" tabIndex={-1} className="pbe-checkout-stage pbe-client-stage">
                         <div className="pbe-checkout-stage-heading">
                           <div>
                             <span>
@@ -4241,6 +4260,32 @@ property.propertyProtection.maxDamageLiabilityAmount !== null ? (
     </div>
   </div>
 )}
+
+      {showReservationBar && (
+        <aside className="pbe-reservation-bar" aria-label={preferredLanguage === "es" ? "Tu reservación" : "Your reservation"}>
+          <div className="pbe-reservation-bar-inner">
+            <div className="pbe-reservation-bar-summary">
+              <span className="pbe-reservation-bar-label">
+                {hasSelectedStay
+                  ? `${nights} ${preferredLanguage === "es" ? (nights === 1 ? "noche" : "noches") : (nights === 1 ? "night" : "nights")}`
+                  : preferredLanguage === "es" ? "Planea tu estadía" : "Plan your stay"}
+              </span>
+              <button type="button" className="pbe-reservation-bar-dates" onClick={() => goToReservation(true)}
+                aria-label={preferredLanguage === "es" ? "Editar fechas de la estadía" : "Edit stay dates"}>
+                {checkIn ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy", { locale: preferredLanguage === "es" ? es : enUS }) : copy.checkInDate}
+                {" – "}
+                {checkOut ? format(fromDateInputValue(checkOut)!, "MMM d, yyyy", { locale: preferredLanguage === "es" ? es : enUS }) : copy.checkOutDate}
+                <span aria-hidden="true"> ›</span>
+              </button>
+            </div>
+            <button type="button" className="pbe-reservation-bar-action" onClick={() => goToReservation()} disabled={submitting}>
+              {submitting ? copy.preparingCheckout : hasSelectedStay
+                ? preferredLanguage === "es" ? "Reservar" : "Book now"
+                : preferredLanguage === "es" ? "Elegir fechas" : "Select dates"}
+            </button>
+          </div>
+        </aside>
+      )}
 
       <footer className="pbe-footer" style={styles.footer}>
         <div style={styles.container}>
