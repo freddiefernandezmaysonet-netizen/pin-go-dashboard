@@ -27,6 +27,7 @@ export default function LandingPage() {
             <a href="#platform">{es ? "Plataforma" : "Platform"}</a>
             <a href="#pin-ai">Pin AI</a>
             <a href="#hardware">Hardware</a>
+            <a href="https://book.pin-ngo.com/">{es ? "Buscar alojamiento" : "Find a stay"}</a>
           </div>
           <div className="nav-actions">
             <div className="lang" aria-label={es ? "Idioma" : "Language"}>
