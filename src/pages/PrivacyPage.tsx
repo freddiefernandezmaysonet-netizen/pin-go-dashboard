@@ -64,6 +64,12 @@ export default function PrivacyPage() {
   for compliance, security, operational auditing, and fraud prevention purposes.
 </p>
 
+      <h3>Pin AI and OpenAI</h3>
+      <p>You do not need to type personal details to get help from Pin AI. Avoid sending your name, phone number, email address, identity documents, payment details or access codes.</p>
+      <p>Pin AI uses OpenAI to process messages, relevant conversation history and property or stay context to provide assistance. This context may include internal guest, reservation, property and organization identifiers, stay dates, property instructions and information returned by enabled operational tools, such as access status, reservation changes, payment status or incidents. Information you include in a message may also be processed by OpenAI.</p>
+      <p>In versions of Pin&amp;Go Guest that provide the first-use permission screen, you can accept this sharing or continue using other available stay features without AI. Your decision is remembered for the same authenticated stay session on your device. You can withdraw permission on the Pin AI screen. Withdrawal stops future use through that screen; it does not recall requests already sent or automatically delete existing records. This permission is separate from SMS consent.</p>
+      <p>To ask about privacy or request access, correction or deletion of your information, contact support@pin-ngo.com. Requests are subject to identity verification and applicable operational, security and legal retention requirements. OpenAI documents its API data handling and retention controls at <a href="https://developers.openai.com/api/docs/guides/your-data">OpenAI API data controls</a>. Retention depends on the service and configuration; this notice does not promise zero retention.</p>
+
       <h3>Data Sharing</h3>
       <p>
         Pin&amp;Go does not sell customer personal information. We may share
