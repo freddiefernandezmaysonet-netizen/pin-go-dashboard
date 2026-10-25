@@ -467,7 +467,7 @@ export default function MessagesPage() {
                       {isChannex(m) ? <div style={{ display: "grid", gap: 6 }}>
                         <strong>{m.guestName || "Reservation guest"}</strong>
                         {m.reservationNumber && m.reservationId && <Link to={`/reservations/${encodeURIComponent(m.reservationId)}`}>{m.reservationNumber}</Link>}
-                        <span style={{ fontSize: 12, color: "#6b7280" }}>{m.channelLabel || "Booking channel"} · via Channex</span>
+                        <span style={{ fontSize: 12, color: "#6b7280" }}>{m.channelLabel || "Booking channel"}</span>
                       </div> : m.to}
                     </td>
 
