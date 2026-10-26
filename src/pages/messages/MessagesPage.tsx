@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ChannexInbox from "./ChannexInbox";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
@@ -9,6 +10,9 @@ type MessageRow = {
   channel?: string | null;
   to: string;
   body: string;
+  guestName?: string | null;
+  reservationNumber?: string | null;
+  channelLabel?: string | null;
   subject?: string | null;
   messageType?: string | null;
   displayBody?: string | null;
@@ -36,7 +40,24 @@ type PropertyOption = {
   name: string;
 };
 
+function isChannex(message: MessageRow) {
+  return String(message.channel ?? "").toLowerCase() === "channex";
+}
+
 function getDisplayBody(message: MessageRow) {
+  if (isChannex(message)) {
+    if (message.displayBody && !message.displayBody.trim().startsWith("{")) return message.displayBody;
+    // Support existing rows while the API presentation update is being deployed.
+    try {
+      const parsed = JSON.parse(message.body);
+      const labels: Record<string, string> = {
+        PRECHECKIN: "Pre-check-in instructions",
+        GUEST_ACCESS_PASSCODE: "Guest access instructions",
+        CHECKOUT: "Check-out message",
+      };
+      return labels[parsed?.type] ?? "Guest message via booking channel";
+    } catch { return "Guest message via booking channel"; }
+  }
   return typeof message.displayBody === "string" && message.displayBody.trim()
     ? message.displayBody
     : message.body;
@@ -442,17 +463,29 @@ export default function MessagesPage() {
                       borderBottom: "1px solid #e5e7eb",
                     }}
                   >
-                    <td style={td}>{m.to}</td>
+                    <td style={td}>
+                      {isChannex(m) ? <div style={{ display: "grid", gap: 6 }}>
+                        <strong>{m.guestName || "Reservation guest"}</strong>
+                        {m.reservationNumber && m.reservationId && <Link to={`/reservations/${encodeURIComponent(m.reservationId)}`}>{m.reservationNumber}</Link>}
+                        <span style={{ fontSize: 12, color: "#6b7280" }}>{m.channelLabel || "Booking channel"}</span>
+                      </div> : m.to}
+                    </td>
 
                     <td style={td}>{m.propertyName ?? "—"}</td>
 
                     <td style={td}>
-                      <StatusBadge status={m.status} />
+                      {isChannex(m) && m.status === "SENT"
+                        ? <span style={badge("#eff6ff", "#1d4ed8", "#bfdbfe")}>ACCEPTED</span>
+                        : isChannex(m) && ["CHANNEX_SENDING", "CHANNEX_UNKNOWN"].includes(m.status ?? "")
+                          ? <span style={badge("#fffbeb", "#92400e", "#fde68a")}>{m.status === "CHANNEX_SENDING" ? "SENDING" : "UNCONFIRMED"}</span>
+                          : <StatusBadge status={m.status} />}
                     </td>
 
                     <td style={td}>
                       <div style={{ display: "grid", gap: 6 }}>
-                        <DeliveryBadge status={m.providerDeliveryStatus} />
+                        {isChannex(m) && !m.providerDeliveryStatus
+                          ? <span style={{ fontSize: 12, color: "#6b7280" }}>Not confirmed by channel</span>
+                          : <DeliveryBadge status={m.providerDeliveryStatus} />}
                         {m.providerStatusUpdatedAt ? (
                           <span style={{ fontSize: 11, color: "#6b7280" }}>
                             {new Date(m.providerStatusUpdatedAt).toLocaleString()}
@@ -490,6 +523,7 @@ export default function MessagesPage() {
                       {getDisplayBody(m).length > 220
                         ? `${getDisplayBody(m).slice(0, 220)}...`
                         : getDisplayBody(m)}
+                      {isChannex(m) && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>Activity summary. View the conversation for the message text.</div>}
                     </td>
 
                     <td style={td}>
