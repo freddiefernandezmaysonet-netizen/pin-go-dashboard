@@ -24,6 +24,12 @@ export default function GuestPrivacyNoticePage() {
       <h3>Service providers</h3>
       <p>Information may be processed by service providers used to deliver the reservation experience, including payment, identity verification, messaging, cloud, and smart-access providers, when necessary to provide or secure the service or comply with applicable obligations.</p>
 
+      <h3>Pin AI and OpenAI</h3>
+      <p>Pin AI is an optional assistant for your stay. You can use the other available features of Pin&amp;Go Guest without activating it. You do not need to enter additional personal details in the chat to ask for help.</p>
+      <p>With your permission in the Guest app, Pin AI shares your messages, relevant conversation history and the information needed about your stay and accommodation with OpenAI to answer your questions. This may include internal references associated with your reservation and accommodation, stay dates, property instructions, and relevant access, payment, reservation-change or incident information. OpenAI also processes information you choose to include in your messages.</p>
+      <p>Pin&amp;Go stores conversation history linked to your reservation to maintain continuity of assistance. The retention and security provisions in this notice apply to that history. OpenAI's processing and retention depend on the service configuration described in its <a href="https://developers.openai.com/api/docs/guides/your-data">API data controls</a>.</p>
+      <p>You can withdraw permission from the Pin AI screen in the Guest app. This stops future use through that screen; it does not recall requests already sent or automatically delete existing records. This permission is separate from SMS consent. For privacy questions or requests to access, correct or delete your information, contact <a href="mailto:support@pin-ngo.com">support@pin-ngo.com</a>. Applicable retention requirements may affect deletion requests.</p>
+
       <h3>Retention and security</h3>
       <p>Pin&amp;Go retains information as reasonably necessary to provide services, maintain reservation and audit records, resolve disputes, enforce applicable agreements, protect security, and comply with legal obligations. Commercially reasonable safeguards are used to protect information.</p>
 
@@ -47,6 +53,12 @@ export default function GuestPrivacyNoticePage() {
 
       <h3>Proveedores de servicios</h3>
       <p>La información puede ser procesada por proveedores utilizados para ofrecer la experiencia de reservación, incluyendo proveedores de pago, verificación de identidad, mensajería, nube y acceso inteligente, cuando sea necesario para prestar o proteger el servicio o cumplir obligaciones aplicables.</p>
+
+      <h3>Pin AI y OpenAI</h3>
+      <p>Pin AI es un asistente opcional para tu estadía. Puedes utilizar las demás funciones disponibles de Pin&amp;Go Guest sin activarlo. No necesitas escribir datos personales adicionales en el chat para solicitar ayuda.</p>
+      <p>Con tu autorización en la aplicación Guest, Pin AI comparte con OpenAI tus mensajes, el historial pertinente de la conversación y la información necesaria de tu estadía y alojamiento para atender tus consultas. Esto puede incluir referencias internas asociadas con tu reservación y alojamiento, fechas de estadía, instrucciones de la propiedad e información pertinente sobre acceso, pagos, cambios de reservación o incidentes. OpenAI también procesa la información que decidas incluir en tus mensajes.</p>
+      <p>Pin&amp;Go conserva un historial de conversación vinculado a tu reservación para dar continuidad a la asistencia. A ese historial le aplican las disposiciones de retención y seguridad de este aviso. El procesamiento y la retención de OpenAI dependen de la configuración del servicio descrita en sus <a href="https://developers.openai.com/api/docs/guides/your-data">controles de datos de la API</a>.</p>
+      <p>Puedes retirar tu autorización desde la pantalla de Pin AI en la aplicación Guest. Esto detiene el uso futuro desde esa pantalla; no revierte solicitudes ya enviadas ni elimina automáticamente los registros existentes. Esta autorización es independiente del consentimiento SMS. Para consultas de privacidad o solicitudes de acceso, corrección o eliminación de información, escribe a <a href="mailto:support@pin-ngo.com">support@pin-ngo.com</a>. Los requisitos de retención aplicables pueden afectar las solicitudes de eliminación.</p>
 
       <h3>Retención y seguridad</h3>
       <p>Pin&amp;Go conserva información durante el tiempo razonablemente necesario para prestar servicios, mantener registros de reservación y auditoría, resolver disputas, hacer cumplir acuerdos aplicables, proteger la seguridad y cumplir obligaciones legales. Se utilizan salvaguardas comercialmente razonables para proteger la información.</p>
