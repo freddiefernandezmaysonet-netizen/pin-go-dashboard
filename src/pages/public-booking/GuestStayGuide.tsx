@@ -2,6 +2,39 @@ import "./GuestStayGuide.css";
 
 type GuideProps = Readonly<{ language: "en" | "es"; enabled?: boolean }>;
 
+export function GuestAppUsageGuide({ language, enabled = false }: GuideProps) {
+  const es = language === "es";
+  return (
+    <section className="pg-stay-guide-ai" aria-label={es ? "Cómo usar Pin&Go Guest" : "How to use Pin&Go Guest"}>
+      <p className="pg-stay-guide-eyebrow">PIN&amp;GO GUEST</p>
+      <h3>{es ? "Tu reservación en tu teléfono" : "Your reservation on your phone"}</h3>
+      <p>{es
+        ? "La app Pin&Go Guest es opcional. Su descarga pública para iPhone y Android estará disponible cuando se complete la aprobación en App Store y Google Play. Mientras tanto, administra tu estadía desde el enlace seguro de tu correo, en el navegador."
+        : "The Pin&Go Guest app is optional. Public downloads for iPhone and Android will be available once App Store and Google Play approval is complete. Meanwhile, manage your stay in your browser using the secure link in your email."}</p>
+      <ol>
+        <li>{es
+          ? "Cuando esté publicada, descarga Pin&Go Guest desde App Store en iPhone o Google Play en Android. Si ya la tienes instalada, continúa con el siguiente paso."
+          : "Once published, download Pin&Go Guest from the App Store on iPhone or Google Play on Android. If it is already installed, continue to the next step."}</li>
+        <li>{es
+          ? "Desde el teléfono donde instalaste la app, abre el enlace de registro o acceso de tu reservación y selecciona Usar Pin&Go Guest. Solicita el código de verificación, revísalo en el correo de tu reservación y confirma tu dispositivo. Ese código no es el PIN de la puerta."
+          : "On the phone where you installed the app, open your reservation’s registration or access link and select Use Pin&Go Guest. Request the verification code, check your reservation email, and confirm your device. This code is not your door PIN."}</li>
+        <li>{es
+          ? "Pulsa Abrir en Pin&Go Guest para vincular tu estadía. En Stay consulta tu reserva; en Access revisa el acceso y su horario; en Help busca ayuda."
+          : "Tap Open in Pin&Go Guest to link your stay. Use Stay to review your reservation, Access to check entry details and times, and Help for assistance."}</li>
+        <li>{es
+          ? "Si Access muestra una llave Bluetooth, activa Bluetooth, permite los permisos que solicite la app y acércate a la cerradura para abrir desde Access. Su disponibilidad depende del alojamiento, de completar el registro y del horario autorizado de tu reserva."
+          : "If Access shows a Bluetooth key, turn on Bluetooth, allow the permissions requested by the app, and stand near the lock to unlock from Access. Availability depends on the accommodation, completed registration, and your reservation’s authorized access times."}</li>
+        {enabled === true ? <li>{es
+          ? "En Pin AI puedes conversar con el asistente de tu estadía durante su período de atención."
+          : "Use Pin AI to chat with your stay assistant during its service window."}</li> : null}
+      </ol>
+      <p className="pg-stay-guide-note">{es
+        ? "Guarda tu correo. Si la app no abre, continúa en el navegador y vuelve al enlace de tu reservación cuando la tengas instalada. No compartas tus enlaces, códigos de verificación ni credenciales de acceso."
+        : "Keep your email. If the app does not open, continue in your browser and return to your reservation link after installing it. Do not share your links, verification codes, or access credentials."}</p>
+    </section>
+  );
+}
+
 export function PinAIUsageGuide({ language, enabled = false }: GuideProps) {
   if (enabled !== true) return null;
   const es = language === "es";
