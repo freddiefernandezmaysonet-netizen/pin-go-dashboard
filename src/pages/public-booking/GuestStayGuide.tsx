@@ -1,16 +1,17 @@
 import "./GuestStayGuide.css";
 
-type GuideProps = Readonly<{ language: "en" | "es" }>;
+type GuideProps = Readonly<{ language: "en" | "es"; enabled?: boolean }>;
 
-export function PinAIUsageGuide({ language }: GuideProps) {
+export function PinAIUsageGuide({ language, enabled = false }: GuideProps) {
+  if (enabled !== true) return null;
   const es = language === "es";
   return (
     <div className="pg-stay-guide-ai">
       <p className="pg-stay-guide-eyebrow">PIN AI</p>
       <h3>{es ? "Conoce al asistente de tu estadía" : "Meet your stay assistant"}</h3>
       <p>{es
-        ? "Si tu alojamiento ofrece Pin AI, puedes conversar con este asistente de inteligencia artificial sobre tu reserva, la llegada y dudas durante la estadía."
-        : "If your accommodation offers Pin AI, you can chat with this AI assistant about your reservation, arrival, and questions during your stay."}</p>
+        ? "Tu alojamiento tiene Pin AI activo. Puedes conversar con este asistente de inteligencia artificial sobre tu reserva, la llegada y dudas durante la estadía."
+        : "Your accommodation has Pin AI enabled. You can chat with this AI assistant about your reservation, arrival, and questions during your stay."}</p>
       <details>
         <summary>{es ? "Cómo abrir Pin AI y qué puedes preguntarle" : "How to open Pin AI and what to ask"}</summary>
         <ol>
@@ -42,7 +43,7 @@ export function PinAIUsageGuide({ language }: GuideProps) {
   );
 }
 
-export function GuestStayGuide({ language }: GuideProps) {
+export function GuestStayGuide({ language, enabled = false }: GuideProps) {
   const es = language === "es";
   const steps = es ? [
     ["Elige y reserva", "Selecciona tus fechas y huéspedes. Revisa el precio total, los cargos, las reglas y la política de cancelación antes de pagar."],
@@ -70,7 +71,7 @@ export function GuestStayGuide({ language }: GuideProps) {
           </li>
         ))}
       </ol>
-      <PinAIUsageGuide language={language} />
+      <PinAIUsageGuide language={language} enabled={enabled} />
     </section>
   );
 }

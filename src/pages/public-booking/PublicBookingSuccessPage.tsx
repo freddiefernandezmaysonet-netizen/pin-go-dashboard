@@ -2,7 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
-import { PinAIUsageGuide } from "./GuestStayGuide";
+import { PropertyPinAIUsageGuide } from "./PropertyPinAIUsageGuide";
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "https://api.pin-ngo.com";
 
 export default function PublicBookingSuccessPage() {
   usePublicNoIndex();
@@ -11,6 +16,7 @@ export default function PublicBookingSuccessPage() {
   );
   const organizationSlug =
     query.get("organization") || "";
+  const propertySlug = query.get("property") || "";
   const identityVerificationRequired =
     query.get("identityCheck") !== "optional";
   const language = (() => {
@@ -147,7 +153,12 @@ export default function PublicBookingSuccessPage() {
           </div>
         </div>
 
-        <PinAIUsageGuide language={language} />
+        <PropertyPinAIUsageGuide
+          apiBase={API_BASE}
+          organizationSlug={organizationSlug}
+          propertySlug={propertySlug}
+          language={language}
+        />
 
         <p className="pbe-success-intro">
           {isSpanish

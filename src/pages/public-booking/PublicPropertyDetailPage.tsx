@@ -22,6 +22,7 @@ const PublicReviewsSection = lazy(async () => {
 });
 
 type PublicProperty = {
+  pinAIEnabled?: boolean;
   id: string;
   organizationId: string;
   name: string;
@@ -3086,7 +3087,7 @@ return (
                   </section>
                 ) : null}
 
-                <GuestStayGuide language={preferredLanguage} />
+                <GuestStayGuide language={preferredLanguage} enabled={property.pinAIEnabled === true} />
 
                 <section className="pbe-section pbe-booking-section" aria-labelledby="pbe-booking-title">
                   <div className="pbe-booking-intro">
