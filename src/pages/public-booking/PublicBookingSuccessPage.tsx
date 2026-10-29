@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
+import { PinAIUsageGuide } from "./GuestStayGuide";
 
 export default function PublicBookingSuccessPage() {
   usePublicNoIndex();
@@ -145,6 +146,14 @@ export default function PublicBookingSuccessPage() {
             </p>
           </div>
         </div>
+
+        <PinAIUsageGuide language={language} />
+
+        <p className="pbe-success-intro">
+          {isSpanish
+            ? "Guarda tu correo de confirmación: desde Administrar reservación puedes consultar tu estadía y las opciones de cambios o cancelación disponibles. Revisa las condiciones antes de confirmar una solicitud. Tu enlace es privado; evita compartirlo."
+            : "Keep your confirmation email: Manage reservation lets you review your stay and available change or cancellation options. Review the conditions before confirming a request. Your link is private; avoid sharing it."}
+        </p>
 
         <Link
           to={`/book/${organizationSlug}`}

@@ -14,6 +14,7 @@ import { parseBookingSearchHandoff } from "./bookingSearchHandoff";
 import { PublicListingDetailsSections, listingFactLabels } from "./PublicListingDetailsSections";
 import type { PublicListingDetails } from "./publicListingDetails.types";
 import "./PublicBookingExperience.css";
+import { GuestStayGuide } from "./GuestStayGuide";
 
 const PublicReviewsSection = lazy(async () => {
   const module = await import("../../components/reviews/PublicReviewsSection");
@@ -3084,6 +3085,8 @@ return (
                     </div>
                   </section>
                 ) : null}
+
+                <GuestStayGuide language={preferredLanguage} />
 
                 <section className="pbe-section pbe-booking-section" aria-labelledby="pbe-booking-title">
                   <div className="pbe-booking-intro">
