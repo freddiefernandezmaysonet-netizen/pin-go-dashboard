@@ -28,7 +28,7 @@ const errors = [], unexpected = [], commands = [], archives = [];
 try {
   await server.listen();
   browser = await chromium.launch({ headless: true });
-  page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, timezoneId: "America/Puerto_Rico" });
+  page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, timezoneId: "America/Los_Angeles" });
   page.on("pageerror", error => errors.push(error.message));
   const prep = { ready: true, blockers: [], property: { name: "Pin&Go Demo Property", timezone: "America/Puerto_Rico",
     cleaningStartOffsetMinutes: 15, cleaningAccessMinutes: 30 }, primaryAdmin: { email: "principal@example.invalid", fullName: "Demo host" },
@@ -107,6 +107,13 @@ try {
   await page.getByRole("button", { name: "Actualizar preparación", exact: true }).click();
   await page.getByText("Configuración comprobada.", { exact: false }).waitFor();
   assert.equal(await page.getByRole("button", { name: "Crear reserva Demo" }).isEnabled(), false);
+  const defaultStart = await page.getByLabel("Entrada", { exact: true }).inputValue();
+  const defaultEnd = await page.getByLabel("Salida", { exact: true }).inputValue();
+  assert.equal(Date.parse(defaultEnd) - Date.parse(defaultStart), 120 * 60000);
+  await page.getByLabel("Entrada", { exact: true }).fill("2026-10-29T11:45");
+  await page.getByLabel("Salida", { exact: true }).fill("2026-10-29T13:45");
+  const propertyPreview = await page.getByText("Horario de la propiedad (America/Puerto_Rico):", { exact: false }).textContent();
+  assert.ok(propertyPreview.includes("2:45:00") && propertyPreview.includes("4:45:00"), propertyPreview);
   await page.getByLabel("Email del huésped", { exact: true }).fill("guest@example.invalid");
   await page.getByLabel("Teléfono del huésped", { exact: true }).fill("+12025550125");
   await page.getByLabel("El huésped autoriza los SMS de esta demostración.").check();
@@ -115,6 +122,8 @@ try {
   await page.getByRole("button", { name: "Crear reserva Demo" }).click();
   await page.getByRole("heading", { name: "Reserva PG-2026-000999", exact: true }).waitFor();
   assert.equal(commands.length, 1);
+  assert.equal(commands[0].checkIn, "2026-10-29T18:45:00.000Z");
+  assert.equal(commands[0].checkOut, "2026-10-29T20:45:00.000Z");
   assert.equal(Date.parse(commands[0].checkOut) - Date.parse(commands[0].checkIn), 120 * 60000,
     "default Demo stay provides two hours for participant steps");
   const requestId = commands[0].requestId;

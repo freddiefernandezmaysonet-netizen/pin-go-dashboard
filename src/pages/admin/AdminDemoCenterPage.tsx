@@ -187,6 +187,9 @@ export default function AdminDemoCenterPage() {
         <label>Teléfono del huésped<input type="tel" required placeholder="+17875550123" value={guestPhone} onChange={e=>setGuestPhone(e.target.value)} style={inputStyle}/></label>
         <label>Idioma<select value={language} onChange={e=>setLanguage(e.target.value)} style={inputStyle}><option value="es">Español</option><option value="en">English</option></select></label>
       </div>
+      {checkIn && checkOut && <p aria-live="polite">
+        Horario de la propiedad ({prep?.property.timezone ?? "America/Puerto_Rico"}): <strong>{format(checkIn)} → {format(checkOut)}</strong>
+      </p>}
       <p><label><input required type="checkbox" checked={sms} onChange={e=>setSms(e.target.checked)}/> El huésped autoriza los SMS de esta demostración.</label></p>
       <p><label><input required type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/> Los destinatarios mostrados participan en la demo y el cleaner autoriza recibir su invitación ahora, incluso fuera del horario habitual.</label></p>
       <button disabled={busy || !prep?.ready || !consent || !sms} style={{...button,opacity:busy || !prep?.ready || !consent || !sms ? .5 : 1}}>Crear reserva Demo</button>
