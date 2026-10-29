@@ -2,7 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
-import { PropertyPinAIUsageGuide } from "./PropertyPinAIUsageGuide";
+import { PinAIUsageGuide } from "./GuestStayGuide";
+import { useCheckoutConfirmation } from "./useCheckoutConfirmation";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -16,9 +17,10 @@ export default function PublicBookingSuccessPage() {
   );
   const organizationSlug =
     query.get("organization") || "";
-  const propertySlug = query.get("property") || "";
-  const identityVerificationRequired =
-    query.get("identityCheck") !== "optional";
+  const confirmation = useCheckoutConfirmation({ apiBase: API_BASE, sessionId: query.get("session_id") || "" });
+  const confirmed = confirmation.status === "CONFIRMED";
+  const checking = confirmation.status === "CHECKING" || confirmation.status === "PENDING";
+  const identityVerificationRequired = confirmation.identityVerificationRequired !== false;
   const language = (() => {
     try {
       return window.localStorage.getItem("pingo_guest_preferred_language") === "es"
@@ -57,24 +59,32 @@ export default function PublicBookingSuccessPage() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M20 6 9 17l-5-5" />
+            {confirmed ? <path d="M20 6 9 17l-5-5" /> : <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>}
           </svg>
         </div>
 
         <div className="pbe-success-eyebrow">
-          {isSpanish ? "PAGO RECIBIDO" : "PAYMENT RECEIVED"}
+          {confirmed ? (isSpanish ? "PAGO RECIBIDO" : "PAYMENT RECEIVED") : (isSpanish ? "ESTADO DE TU RESERVACIÓN" : "YOUR RESERVATION STATUS")}
         </div>
 
         <h1 id="booking-success-title">
-          {isSpanish ? "Tu estadía está confirmada." : "Your stay is confirmed."}
+          {confirmed ? (isSpanish ? "Tu estadía está confirmada." : "Your stay is confirmed.")
+            : checking ? (isSpanish ? "Estamos confirmando tu reservación." : "We are confirming your reservation.")
+            : confirmation.status === "UNAVAILABLE" ? (isSpanish ? "Esta reservación no está disponible." : "This reservation is unavailable.")
+            : (isSpanish ? "Aún no pudimos confirmar tu reservación." : "We could not confirm your reservation yet.")}
         </h1>
 
         <p className="pbe-success-intro">
-          {isSpanish
-            ? "Todo está en orden. Pin&Go está preparando una llegada segura y sin llaves."
-            : "Everything is in order. Pin&Go is preparing your secure, keyless arrival."}
+          {confirmed ? (isSpanish
+            ? "Pin&Go confirmó tu pago y tu reservación. Revisa los próximos pasos para preparar tu llegada."
+            : "Pin&Go confirmed your payment and reservation. Review the next steps to prepare for arrival.")
+            : checking ? (isSpanish ? "Estamos consultando la confirmación del pago y la creación de tu reservación. Esto puede tomar unos segundos."
+              : "We are checking payment confirmation and reservation creation. This may take a few seconds.")
+            : (isSpanish ? "Revisa tu correo o contacta al alojamiento antes de intentar pagar otra vez. Este mensaje no significa que el pago haya fallado."
+              : "Check your email or contact the accommodation before trying to pay again. This message does not mean your payment failed.")}
         </p>
 
+        {confirmed ? <>
         <div className="pbe-success-journey">
           <div className="pbe-success-journey-heading">
             <div className="pbe-success-lock" aria-hidden="true">
@@ -153,12 +163,7 @@ export default function PublicBookingSuccessPage() {
           </div>
         </div>
 
-        <PropertyPinAIUsageGuide
-          apiBase={API_BASE}
-          organizationSlug={organizationSlug}
-          propertySlug={propertySlug}
-          language={language}
-        />
+        <PinAIUsageGuide language={language} enabled={confirmation.pinAIEnabled === true} />
 
         <p className="pbe-success-intro">
           {isSpanish
@@ -166,8 +171,15 @@ export default function PublicBookingSuccessPage() {
             : "Keep your confirmation email: Manage reservation lets you review your stay and available change or cancellation options. Review the conditions before confirming a request. Your link is private; avoid sharing it."}
         </p>
 
+        </> : !checking ? (
+          <button type="button" className="pbe-success-action" onClick={() => window.location.reload()}>
+            {isSpanish ? "Verificar nuevamente" : "Check again"}
+          </button>
+        ) : <p role="status" aria-live="polite">{isSpanish ? "Verificando…" : "Checking…"}</p>}
+
         <Link
-          to={`/book/${organizationSlug}`}
+          to={(confirmation.organizationSlug || organizationSlug)
+            ? `/book/${encodeURIComponent(confirmation.organizationSlug || organizationSlug)}` : "/home"}
           className="pbe-success-action"
         >
           {isSpanish ? "Volver a la página de reservaciones" : "Return to booking page"}
