@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
-import { PinAIUsageGuide } from "./GuestStayGuide";
+import { GuestAppUsageGuide, PinAIUsageGuide } from "./GuestStayGuide";
 import { useCheckoutConfirmation } from "./useCheckoutConfirmation";
 
 const API_BASE =
@@ -163,6 +163,7 @@ export default function PublicBookingSuccessPage() {
           </div>
         </div>
 
+        <GuestAppUsageGuide language={language} enabled={confirmation.pinAIEnabled === true} />
         <PinAIUsageGuide language={language} enabled={confirmation.pinAIEnabled === true} />
 
         <p className="pbe-success-intro">
