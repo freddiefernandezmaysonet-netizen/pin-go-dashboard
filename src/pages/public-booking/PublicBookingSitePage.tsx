@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useBrand } from "../../branding/BrandProvider";
 import { usePublicDocumentMetadata } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
+import { GuestStayGuide } from "./GuestStayGuide";
 
 type PublicProperty = {
   id: string;
@@ -420,6 +421,11 @@ export default function PublicBookingSitePage() {
             )}
           </div>
         </section>
+        {!loading && !error && organization ? (
+          <div style={styles.container}>
+            <GuestStayGuide language={preferredLanguage} />
+          </div>
+        ) : null}
       </main>
 
       <footer className="pbe-collection-footer" style={styles.footer}>

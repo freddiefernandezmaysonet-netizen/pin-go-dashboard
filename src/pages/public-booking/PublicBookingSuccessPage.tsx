@@ -2,6 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { usePublicNoIndex } from "../../lib/publicDocumentMetadata";
 import "./PublicBookingExperience.css";
+import { PropertyPinAIUsageGuide } from "./PropertyPinAIUsageGuide";
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "https://api.pin-ngo.com";
 
 export default function PublicBookingSuccessPage() {
   usePublicNoIndex();
@@ -10,6 +16,7 @@ export default function PublicBookingSuccessPage() {
   );
   const organizationSlug =
     query.get("organization") || "";
+  const propertySlug = query.get("property") || "";
   const identityVerificationRequired =
     query.get("identityCheck") !== "optional";
   const language = (() => {
@@ -145,6 +152,19 @@ export default function PublicBookingSuccessPage() {
             </p>
           </div>
         </div>
+
+        <PropertyPinAIUsageGuide
+          apiBase={API_BASE}
+          organizationSlug={organizationSlug}
+          propertySlug={propertySlug}
+          language={language}
+        />
+
+        <p className="pbe-success-intro">
+          {isSpanish
+            ? "Guarda tu correo de confirmación: desde Administrar reservación puedes consultar tu estadía y las opciones de cambios o cancelación disponibles. Revisa las condiciones antes de confirmar una solicitud. Tu enlace es privado; evita compartirlo."
+            : "Keep your confirmation email: Manage reservation lets you review your stay and available change or cancellation options. Review the conditions before confirming a request. Your link is private; avoid sharing it."}
+        </p>
 
         <Link
           to={`/book/${organizationSlug}`}

@@ -14,6 +14,7 @@ import { parseBookingSearchHandoff } from "./bookingSearchHandoff";
 import { PublicListingDetailsSections, listingFactLabels } from "./PublicListingDetailsSections";
 import type { PublicListingDetails } from "./publicListingDetails.types";
 import "./PublicBookingExperience.css";
+import { GuestStayGuide } from "./GuestStayGuide";
 
 const PublicReviewsSection = lazy(async () => {
   const module = await import("../../components/reviews/PublicReviewsSection");
@@ -21,6 +22,7 @@ const PublicReviewsSection = lazy(async () => {
 });
 
 type PublicProperty = {
+  pinAIEnabled?: boolean;
   id: string;
   organizationId: string;
   name: string;
@@ -3084,6 +3086,8 @@ return (
                     </div>
                   </section>
                 ) : null}
+
+                <GuestStayGuide language={preferredLanguage} enabled={property.pinAIEnabled === true} />
 
                 <section className="pbe-section pbe-booking-section" aria-labelledby="pbe-booking-title">
                   <div className="pbe-booking-intro">

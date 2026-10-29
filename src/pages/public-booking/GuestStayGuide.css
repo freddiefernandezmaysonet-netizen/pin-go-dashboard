@@ -1,0 +1,29 @@
+.pg-stay-guide {
+  max-width: 1200px;
+  margin: 48px auto;
+  padding: clamp(22px, 4vw, 48px);
+  color: var(--pbe-ink, #17241f);
+  background: var(--pbe-paper, #fffdf8);
+  border: 1px solid var(--pbe-line, #dce3dd);
+  border-radius: 22px;
+  text-align: left;
+}
+.pg-stay-guide *, .pg-stay-guide-ai * { box-sizing: border-box; }
+.pg-stay-guide h2 { margin: 0 0 16px; font-size: clamp(26px, 3vw, 40px); line-height: 1.15; letter-spacing: -.03em; }
+.pg-stay-guide h3, .pg-stay-guide-ai h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.4; }
+.pg-stay-guide p, .pg-stay-guide-ai p, .pg-stay-guide-ai li { font-size: 14px; line-height: 1.7; }
+.pg-stay-guide .pg-stay-guide-eyebrow, .pg-stay-guide-ai .pg-stay-guide-eyebrow { margin: 0 0 12px; color: #426354; font-size: 11px; font-weight: 750; letter-spacing: .1em; }
+.pg-stay-guide-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; padding: 0; margin: 30px 0; list-style: none; }
+.pg-stay-guide-steps > li { display: flex; align-items: flex-start; gap: 14px; }
+.pg-stay-guide-steps > li > span { display: grid; place-items: center; flex: 0 0 32px; height: 32px; background: #e7eee8; color: #173d31; border-radius: 50%; font-size: 13px; font-weight: 700; }
+.pg-stay-guide-steps p { margin: 0; color: #52645b; }
+.pg-stay-guide-ai { margin: 28px 0; padding: clamp(18px, 3vw, 28px); color: #17241f; background: #f0f5f1; border: 1px solid #cddcd1; border-radius: 16px; text-align: left; overflow-wrap: anywhere; }
+.pg-stay-guide-ai summary { padding: 10px 0; color: #173d31; font-size: 14px; line-height: 1.5; font-weight: 700; cursor: pointer; }
+.pg-stay-guide-ai summary:focus-visible { outline: 2px solid #2563eb; outline-offset: 4px; border-radius: 4px; }
+.pg-stay-guide-ai ol, .pg-stay-guide-ai ul { padding-left: 22px; }
+.pg-stay-guide-ai li + li { margin-top: 8px; }
+.pg-stay-guide-ai .pg-stay-guide-note { margin-bottom: 0; padding-top: 14px; border-top: 1px solid #cddcd1; color: #52645b; font-size: 13px; }
+@media (max-width: 640px) {
+  .pg-stay-guide { margin: 24px 0; }
+  .pg-stay-guide-steps { grid-template-columns: 1fr; }
+}

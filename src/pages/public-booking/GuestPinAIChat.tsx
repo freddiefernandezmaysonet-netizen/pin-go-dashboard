@@ -527,6 +527,11 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
             "Pregúntame sobre tu reservación, acceso, horarios, políticas o solicitudes durante tu estadía.",
           safety:
             "Pin AI puede orientarte y revisar tu reservación. Algunas solicitudes necesitan revisión antes de realizar cambios.",
+          helpTitle: "Cómo aprovechar Pin AI",
+          helpIntro: "Escribe con tus propias palabras. Este chat ya está vinculado a tu reservación; no necesitas instalar una app para usarlo aquí.",
+          examples: ["¿Cómo accedo al alojamiento?", "¿Cómo me conecto al Wi-Fi?", "La televisión no funciona. ¿Me ayudas?", "¿Puedo solicitar una salida más tarde?"],
+          helpLimits: "Las respuestas dependen de la información del alojamiento. Si reportas un problema, revisa las actualizaciones para saber si se ha avisado al anfitrión. Las solicitudes de cambios están sujetas a disponibilidad, condiciones y posibles cargos; espera la confirmación antes de dar un cambio por hecho.",
+          helpWindow: "Disponible desde 24 horas antes de la entrada hasta 24 horas después de la salida. Fuera de ese período, utiliza el contacto de tu confirmación.",
           placeholder: "Escribe tu pregunta…",
           send: "Enviar",
           sending: "Pensando…",
@@ -542,6 +547,11 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
             "Ask me about your reservation, access, schedules, policies, or requests during your stay.",
           safety:
             "Pin AI can guide you and review your reservation. Some requests require review before any change is made.",
+          helpTitle: "Make the most of Pin AI",
+          helpIntro: "Write in your own words. This chat is already linked to your reservation; you do not need to install an app to use it here.",
+          examples: ["How do I access the accommodation?", "How do I connect to Wi-Fi?", "The TV is not working. Can you help?", "Can I request a later checkout?"],
+          helpLimits: "Answers depend on the accommodation’s information. If you report a problem, check updates to see whether the host has been notified. Change requests are subject to availability, conditions, and possible charges; wait for confirmation before treating a change as final.",
+          helpWindow: "Available from 24 hours before check-in until 24 hours after checkout. Outside that period, use the contact in your confirmation.",
           placeholder: "Type your question…",
           send: "Send",
           sending: "Thinking…",
@@ -837,6 +847,15 @@ function GuestPinAIChatSession({ apiBase, guestToken }: GuestPinAIChatProps) {
       </div>
 
       <div style={styles.safetyNotice}>{copy.safety}</div>
+      <details style={styles.safetyNotice}>
+        <summary style={{ cursor: "pointer" }}>{copy.helpTitle}</summary>
+        <p>{copy.helpIntro}</p>
+        <ul style={{ paddingLeft: 20 }}>
+          {copy.examples.map(example => <li key={example}>{example}</li>)}
+        </ul>
+        <p>{copy.helpLimits}</p>
+        <p>{copy.helpWindow}</p>
+      </details>
 
       {historyRecoveryFailed ? (
         <div role="alert" style={styles.safetyNotice}>
