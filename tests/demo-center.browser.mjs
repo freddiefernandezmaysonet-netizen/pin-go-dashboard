@@ -24,7 +24,7 @@ createRoot(document.getElementById('root')!).render(guest ? <BrandProvider><Memo
 const server = await createServer({ root, server: { host: "127.0.0.1", port: 4178, strictPort: true },
   define: { "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://demo-api.example.invalid") } });
 let browser, page;
-const errors = [], unexpected = [], commands = [];
+const errors = [], unexpected = [], commands = [], archives = [];
 try {
   await server.listen();
   browser = await chromium.launch({ headless: true });
@@ -42,6 +42,12 @@ try {
       kind: "PIN_GO_STANDARD", displayName: "Pin&Go", logoUrl: null, faviconUrl: null, primaryColor: null,
       onPrimaryColor: null, organizationSlug: null, version: null, poweredByPinGo: true } });
     if (url.pathname.endsWith("/demo/preparation")) return reply({ ok: true, data: prep });
+    if (url.pathname.endsWith("/demo/archive-expired-cleaning")) {
+      const input = request.postDataJSON(); archives.push(input);
+      assert.deepEqual(input, { workId: "synthetic-expired-work" });
+      prep.ready = true; prep.blockers = []; prep.cleaningBlockers = [];
+      return reply({ ok: true, data: { replayed: false } });
+    }
     if (url.pathname.endsWith("/demo/run")) {
       const input = request.postDataJSON(); commands.push(input);
       if (input.guestEmail === "invalid@example.invalid") return reply({ ok: false, safeToEdit: true, error: "DEMO_RECIPIENTS_CHANGED" }, 409);
@@ -87,6 +93,16 @@ try {
   assert.equal(await page.getByText("PIN_AI_INCIDENT_NOTIFICATIONS_ENABLED_DISABLED", { exact: true }).isVisible(), true);
   assert.equal(await page.getByRole("button", { name: "Crear reserva Demo" }).isEnabled(), false);
   await page.screenshot({ path: resolve(output, "preparation-blockers.png"), fullPage: true });
+  prep.blockers = ["CLEANER_UNFINISHED_WORK"];
+  prep.cleaningBlockers = [{ workId: "synthetic-expired-work", reservationNumber: "PG-2026-000069",
+    startedAt: "2026-10-19T12:31:00Z", canArchive: true }];
+  await page.getByRole("button", { name: "Actualizar preparación", exact: true }).click();
+  await page.getByRole("button", { name: "Archivar prueba vencida", exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Crear reserva Demo" }).isEnabled(), false);
+  await page.screenshot({ path: resolve(output, "expired-demo-cleaning.png"), fullPage: true });
+  await page.getByRole("button", { name: "Archivar prueba vencida", exact: true }).click();
+  await page.getByText("Configuración comprobada.", { exact: false }).waitFor();
+  assert.equal(archives.length, 1); assert.equal(commands.length, 0);
   prep.ready = true; prep.blockers = [];
   await page.getByRole("button", { name: "Actualizar preparación", exact: true }).click();
   await page.getByText("Configuración comprobada.", { exact: false }).waitFor();
@@ -99,6 +115,8 @@ try {
   await page.getByRole("button", { name: "Crear reserva Demo" }).click();
   await page.getByRole("heading", { name: "Reserva PG-2026-000999", exact: true }).waitFor();
   assert.equal(commands.length, 1);
+  assert.equal(Date.parse(commands[0].checkOut) - Date.parse(commands[0].checkIn), 120 * 60000,
+    "default Demo stay provides two hours for participant steps");
   const requestId = commands[0].requestId;
   prep.ready = false; prep.blockers = ["GUEST_CARDS_UNAVAILABLE"];
   await page.reload();
