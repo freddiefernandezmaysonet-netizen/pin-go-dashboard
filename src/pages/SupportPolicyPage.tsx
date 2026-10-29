@@ -43,7 +43,7 @@ export default function SupportPolicyPage() {
       <p>
         Hardware support may include assistance with installed smart locks,
         gateways, and smart devices provided or managed by Pin&amp;Go under an
-        active service plan or eligible 24-month agreement.
+        active service plan or eligible 12-month or 24-month agreement.
       </p>
 
       <h3>Battery Replacement</h3>
@@ -55,9 +55,9 @@ export default function SupportPolicyPage() {
 
       <h3>Warranty-Related Support</h3>
       <p>
-        Eligible 24-month plans may include replacement of equipment that fails
+        Eligible plans may include replacement of equipment that fails
         due to normal use or manufacturer-related defects during the active
-        agreement term.
+        agreement term, subject to the applicable service agreement.
       </p>
 
       <h3>Customer Responsibilities</h3>
