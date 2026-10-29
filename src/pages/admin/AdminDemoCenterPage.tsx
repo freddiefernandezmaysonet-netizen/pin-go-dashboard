@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
-type Preparation = { ready: boolean; blockers: string[]; property: { name: string; timezone: string; cleaningStartOffsetMinutes: number; cleaningAccessMinutes: number };
+type Preparation = { ready: boolean; blockers: string[];
+  cleaningBlockers?: { workId: string; reservationNumber: string | null; startedAt: string | null; canArchive: boolean }[];
+  property: { name: string; timezone: string; cleaningStartOffsetMinutes: number; cleaningAccessMinutes: number };
   primaryAdmin: { email: string; fullName: string | null } | null;
   cleaner: { id: string; name: string; phone: string; language: string } | null; lock: { name: string | null } | null };
 type Grant = { id: string; type: string; status: string; startsAt: string; endsAt: string; accessCodeMasked: string | null };
@@ -40,6 +42,7 @@ function preparationText(code: string) {
     PRIMARY_ADMIN_MISSING: "Falta identificar el administrador que recibirá los avisos de esta demo.",
     CLEANER_MISSING: "Falta un cleaner activo con teléfono asignado a la propiedad Demo.",
     CLEANER_COMPLETION_FLOW_NOT_CONFIGURED: "Falta configurar el tiempo de limpieza del cleaner Demo.",
+    CLEANER_UNFINISHED_WORK: "El cleaner tiene un trabajo iniciado sin finalizar. Revisa las pruebas vencidas antes de crear otra demo.",
     CLEANER_CARD_MISSING: "Falta la tarjeta NFC del cleaner en la propiedad Demo.",
     GUEST_CARDS_UNAVAILABLE: "Se necesitan dos tarjetas NFC Guest disponibles en la propiedad Demo.",
     TTLOCK_CONNECTION_MISSING: "Falta conectar TTLock para esta organización.",
@@ -57,7 +60,7 @@ function preparationText(code: string) {
 export default function AdminDemoCenterPage() {
   const [request, setRequest] = useState<Request | null>(stored);
   const [checkIn, setCheckIn] = useState(() => localDate(new Date(Date.now()+5*60000)));
-  const [checkOut, setCheckOut] = useState(() => localDate(new Date(Date.now()+25*60000)));
+  const [checkOut, setCheckOut] = useState(() => localDate(new Date(Date.now()+125*60000)));
   const [guestName, setGuestName] = useState("Pin&Go Demo Guest");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
@@ -67,6 +70,7 @@ export default function AdminDemoCenterPage() {
   const [prep, setPrep] = useState<Preparation | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [busy, setBusy] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [error, setError] = useState("");
   const submitting = useRef(false);
   const polling = useRef<AbortController | null>(null);
@@ -117,6 +121,19 @@ export default function AdminDemoCenterPage() {
     finally { submitting.current = false; setBusy(false); }
   };
   const format = (s: string) => new Date(s).toLocaleString("es-PR", { timeZone: run?.timezone ?? prep?.property.timezone ?? "America/Puerto_Rico" });
+  const archiveCleaning = async (workId: string) => {
+    if (archiving) return;
+    setArchiving(true); setError("");
+    try {
+      const response = await fetch(`${API}/api/internal/admin/demo/archive-expired-cleaning`, {
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workId }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.ok !== true) throw new Error();
+      await prepare();
+    } catch { setError("No se pudo archivar la prueba. Actualiza la preparación para revisar su estado."); }
+    finally { setArchiving(false); }
+  };
   const noActiveCredentials = !!run && run.reservation.accessGrants.every(g => ["REVOKED","EXPIRED"].includes(g.status)) &&
     run.reservation.NfcAssignment.every(g => ["REVOKED","EXPIRED","CANCELLED","ENDED"].includes(g.status));
   const canPrepareNext = !!run && new Date(run.reservation.checkOut).getTime() < Date.now() && noActiveCredentials &&
@@ -137,6 +154,19 @@ export default function AdminDemoCenterPage() {
           <div><strong>Administrador principal</strong><p>{prep.primaryAdmin?.email ?? "Pendiente"}</p></div>
           <div><strong>Cleaner de demostración</strong><p>{prep.cleaner?.name ?? "Pendiente"} · {prep.cleaner?.phone}</p></div></div>
         <p>Acceso de limpieza: checkout + {prep.property.cleaningStartOffsetMinutes} minutos; hasta {prep.property.cleaningAccessMinutes} minutos, limitado por la próxima ocupación.</p>
+        {Boolean(prep.cleaningBlockers?.length) && <div role="status">
+          <p>El cleaner tiene una limpieza iniciada sin finalizar. Esto bloquea la aceptación de otra reserva.</p>
+          {prep.cleaningBlockers?.map(work => <div key={work.workId} style={{marginBottom:12}}>
+            <strong>{work.reservationNumber ?? "Trabajo pendiente de revisión"}</strong>
+            {work.startedAt && <p>Inicio registrado: {format(work.startedAt)}</p>}
+            {work.canArchive ? <>
+              <p>Esta prueba Demo está vencida. Se conservará el historial y se registrará como interrumpida, sin marcarla completada ni modificar la cerradura.</p>
+              <button type="button" disabled={archiving || busy} onClick={() => void archiveCleaning(work.workId)} style={button}>
+                {archiving ? "Archivando…" : "Archivar prueba vencida"}
+              </button>
+            </> : <p>Requiere revisión del host; no puede cerrarse desde Demo Center.</p>}
+          </div>)}
+        </div>}
         {run ? <p>La preparación se volverá a comprobar antes de la siguiente demo. Las tarjetas Guest de esta reserva permanecen asignadas hasta el checkout.</p> : !prep.ready ? <div role="status">
           <p>Preparación incompleta: {prep.blockers.length} comprobaciones pendientes. La demo todavía no puede iniciarse.</p>
           <ul>{prep.blockers.map(code => <li key={code} style={{marginBottom:10}}>{preparationText(code)}
@@ -148,7 +178,7 @@ export default function AdminDemoCenterPage() {
     </section>
     {!request ? <form style={card} onSubmit={e => {e.preventDefault(); void start();}}>
       <h2 style={{marginTop:0}}>Iniciar presentación</h2>
-      <p>Selecciona los horarios en la zona de este dispositivo. El resultado mostrará la hora de la propiedad.</p>
+      <p>La estancia propuesta dura dos horas. Selecciona los horarios en la zona de este dispositivo; el resultado mostrará la hora de la propiedad.</p>
       <div style={grid}>
         <label>Entrada<input required type="datetime-local" value={checkIn} onChange={e=>setCheckIn(e.target.value)} style={inputStyle}/></label>
         <label>Salida<input required type="datetime-local" min={checkIn} value={checkOut} onChange={e=>setCheckOut(e.target.value)} style={inputStyle}/></label>
