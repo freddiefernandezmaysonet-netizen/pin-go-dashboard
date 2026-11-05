@@ -9,12 +9,13 @@ export function GuestAppUsageGuide({ language, enabled = false }: GuideProps) {
       <p className="pg-stay-guide-eyebrow">PIN&amp;GO GUEST</p>
       <h3>{es ? "Tu reservación en tu teléfono" : "Your reservation on your phone"}</h3>
       <p>{es
-        ? "La app Pin&Go Guest es opcional. Su descarga pública para iPhone y Android estará disponible cuando se complete la aprobación en App Store y Google Play. Mientras tanto, administra tu estadía desde el enlace seguro de tu correo, en el navegador."
-        : "The Pin&Go Guest app is optional. Public downloads for iPhone and Android will be available once App Store and Google Play approval is complete. Meanwhile, manage your stay in your browser using the secure link in your email."}</p>
+        ? "La app Pin&Go Guest es opcional. Descárgala para iPhone o administra tu estadía en el navegador desde el enlace seguro de tu correo."
+        : "The Pin&Go Guest app is optional. Download it for iPhone or manage your stay in your browser using the secure link in your email."}</p>
+      <p><a href="https://apps.apple.com/app/id6823247069" target="_blank" rel="noopener noreferrer">{es ? "Descargar Pin&Go Guest para iPhone" : "Download Pin&Go Guest for iPhone"}</a></p>
       <ol>
         <li>{es
-          ? "Cuando esté publicada, descarga Pin&Go Guest desde App Store en iPhone o Google Play en Android. Si ya la tienes instalada, continúa con el siguiente paso."
-          : "Once published, download Pin&Go Guest from the App Store on iPhone or Google Play on Android. If it is already installed, continue to the next step."}</li>
+          ? "Instala Pin&Go Guest antes de vincular tu reservación. Si ya la tienes instalada, continúa con el siguiente paso."
+          : "Install Pin&Go Guest before linking your reservation. If it is already installed, continue to the next step."}</li>
         <li>{es
           ? "Desde el teléfono donde instalaste la app, abre el enlace de registro o acceso de tu reservación y selecciona Usar Pin&Go Guest. Solicita el código de verificación, revísalo en el correo de tu reservación y confirma tu dispositivo. Ese código no es el PIN de la puerta."
           : "On the phone where you installed the app, open your reservation’s registration or access link and select Use Pin&Go Guest. Request the verification code, check your reservation email, and confirm your device. This code is not your door PIN."}</li>
