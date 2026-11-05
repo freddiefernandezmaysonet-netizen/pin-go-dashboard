@@ -9,9 +9,10 @@ export function GuestAppUsageGuide({ language, enabled = false }: GuideProps) {
       <p className="pg-stay-guide-eyebrow">PIN&amp;GO GUEST</p>
       <h3>{es ? "Tu reservación en tu teléfono" : "Your reservation on your phone"}</h3>
       <p>{es
-        ? "La app Pin&Go Guest es opcional. Descárgala para iPhone o administra tu estadía en el navegador desde el enlace seguro de tu correo."
-        : "The Pin&Go Guest app is optional. Download it for iPhone or manage your stay in your browser using the secure link in your email."}</p>
+        ? "La app Pin&Go Guest es opcional. Descárgala para iPhone o Android, o administra tu estadía en el navegador desde el enlace seguro de tu correo."
+        : "The Pin&Go Guest app is optional. Download it for iPhone or Android, or manage your stay in your browser using the secure link in your email."}</p>
       <p><a href="https://apps.apple.com/app/id6823247069" target="_blank" rel="noopener noreferrer">{es ? "Descargar Pin&Go Guest para iPhone" : "Download Pin&Go Guest for iPhone"}</a></p>
+<p><a href="https://play.google.com/store/apps/details?id=com.pingo.guest" target="_blank" rel="noopener noreferrer">{es ? "Descargar Pin&Go Guest para Android" : "Download Pin&Go Guest for Android"}</a></p>
       <ol>
         <li>{es
           ? "Instala Pin&Go Guest antes de vincular tu reservación. Si ya la tienes instalada, continúa con el siguiente paso."
