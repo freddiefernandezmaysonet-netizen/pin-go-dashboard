@@ -11,6 +11,7 @@ const framePolicy = readFileSync(new URL("../lib/distributionFramePolicy.ts", im
 const vercel = JSON.parse(readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"));
 const propertyEditor = readFileSync(new URL("../pages/properties/PropertyEditPage.tsx", import.meta.url), "utf8");
 const router = readFileSync(new URL("../app/routes/router.tsx", import.meta.url), "utf8");
+const hostGuard = readFileSync(new URL("../auth/RequireCleaner.tsx", import.meta.url), "utf8");
 const connectionCenterPage = readFileSync(new URL("../pages/distribution/ConnectionCenterPage.tsx", import.meta.url), "utf8");
 const callbackPage = readFileSync(new URL("../pages/distribution/AirbnbConnectionCallbackPage.tsx", import.meta.url), "utf8");
 const propertyDetail = readFileSync(new URL("../pages/property-detail/PropertyDetailPage.tsx", import.meta.url), "utf8");
@@ -85,7 +86,8 @@ test("Airbnb authorization handoff remains credentialed and separate from frame 
 
 test("Airbnb callback is authenticated, strips OAuth artifacts, and verifies server-side", () => {
   assert.match(router, /distribution\/airbnb\/callback/);
-  assert.match(router, /<RequireAuth>\s*<AppShell\s*\/>\s*<\/RequireAuth>/);
+  assert.match(router, /<RequireHost>\s*<AppShell\s*\/>\s*<\/RequireHost>/);
+  assert.match(hostGuard, /export function RequireHost[\s\S]*<RequireAuth>\{children\}<\/RequireAuth>/);
   assert.match(callbackPage, /searchParams\.get\("channel_id"\)/);
   assert.match(callbackPage, /searchParams\.get\("token"\)/);
   assert.match(callbackPage, /history\.replaceState/);
