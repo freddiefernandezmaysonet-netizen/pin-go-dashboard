@@ -48,7 +48,7 @@ try {
  for(const img of await page.locator('.ota-logos img').all())assert(await img.evaluate(n=>n.complete&&n.naturalWidth>0),'OTA logo loads');
  assert((await page.locator('#cleaning').innerText()).includes('03 · FINALIZACIÓN'));
  assert((await page.locator('#options').getByRole('link',{name:'Activar',exact:true}).getAttribute('href')).includes('plan=platform'));
- for(const [model,values] of Object.entries({essential:{12:54.99,24:44.99},pro:{12:74.99,24:64.99},elite:{12:84.99,24:74.99}})){
+ for(const [model,values] of Object.entries({essential:{12:59.99,24:49.99},pro:{12:79.99,24:69.99},elite:{12:89.99,24:79.99}})){
   const name=model.charAt(0).toUpperCase()+model.slice(1)+' Lock';
   await page.locator('#hardware').getByRole('button').filter({has:page.getByRole('heading',{name,exact:true})}).click();
   for(const term of [12,24]){
@@ -67,7 +67,7 @@ try {
   await page.getByRole('button',{name:'×',exact:true}).click();
  }
 assert((await page.locator('#hardware').getByRole('link',{name:'Activate and pay',exact:true}).getAttribute('href')).includes('lang=en'));
- for(const [model,values] of Object.entries({essential:{12:54.99,24:44.99},pro:{12:74.99,24:64.99},elite:{12:84.99,24:74.99}}))for(const term of [12,24]){
+ for(const [model,values] of Object.entries({essential:{12:59.99,24:49.99},pro:{12:79.99,24:69.99},elite:{12:89.99,24:79.99}}))for(const term of [12,24]){
   await page.goto(url+`?signupFixture&plan=haas&lock=${model}&termMonths=${term}&lang=es&smartDevices=none`);
   await page.getByRole('heading',{name:'Crear cuenta',exact:true}).waitFor();assert((await page.locator('main').innerText()).includes('$'+values[term].toFixed(2)));
   for(const width of [1280,390,320]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Signup fits '+width);}
