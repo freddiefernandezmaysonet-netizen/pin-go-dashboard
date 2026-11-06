@@ -181,7 +181,8 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                       {lang === "es" ? lock.badgeEs : lock.badgeEn}
                     </div>
 
-                    <div style={styles.imageWrap}>
+                    <div style={{ ...styles.imageWrap, ...(lock.id !== "elite" ? { paddingLeft: 52 } : {}) }}>
+                      {lock.id !== "elite" && <span role="img" aria-label="TTLock" style={styles.ttlockBadge} />}
                       <img
                         src={lock.image}
                         alt={lang === "es" ? lock.nameEs : lock.nameEn}
@@ -493,7 +494,23 @@ layout: {
     fontWeight: 800,
     marginBottom: 14,
   },
+  ttlockBadge: {
+    position: "absolute",
+    top: 8,
+    left: 6,
+    width: 44,
+    height: 54,
+    borderRadius: 6,
+    backgroundColor: "#fff",
+    // Reuse the original TTLock logo already present in the Elite product photo.
+    backgroundImage: 'url("/locks/elite-lock.png.jpg")',
+    backgroundSize: "375px 375px",
+    backgroundPosition: "-9px -6px",
+    backgroundRepeat: "no-repeat",
+  },
   imageWrap: {
+    position: "relative",
+    boxSizing: "border-box",
     height: 280,
     borderRadius: 18,
     background:
