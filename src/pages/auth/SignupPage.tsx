@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3000';
-const prices: Record<string, Record<number, number>> = { essential:{12:54.99,24:44.99},pro:{12:74.99,24:64.99},elite:{12:84.99,24:74.99} };
+const prices: Record<string, Record<number, number>> = { essential:{12:59.99,24:49.99},pro:{12:79.99,24:69.99},elite:{12:89.99,24:79.99} };
 export default function SignupPage() {
   const [params] = useState(()=>new URLSearchParams(window.location.search));
   const es = params.get('lang') !== 'en';
