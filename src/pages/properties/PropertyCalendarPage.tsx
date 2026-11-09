@@ -97,6 +97,11 @@ export function PropertyCalendarPage({ view = "combined", propertyId }: { view?:
     [month]
   );
 
+  // Fetch every visible cell, including the adjacent months. Keep the
+  // monthly Mission Control window and explicit action range unchanged.
+  const calendarFrom = view === "actions" ? from : format(calendarDays[0], "yyyy-MM-dd");
+  const calendarTo = view === "actions" ? to : format(addDays(calendarDays[calendarDays.length - 1], 1), "yyyy-MM-dd");
+
   useEffect(() => {
     if (!id) return;
 
@@ -113,13 +118,13 @@ export function PropertyCalendarPage({ view = "combined", propertyId }: { view?:
         const propertyData = await propertyRes.json();
 
         const ratesRes = await fetch(
-          `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
+          `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${calendarFrom}&to=${calendarTo}`,
           { credentials: "include" }
         );
         const ratesData = await ratesRes.json();
 
         const reservationsRes = await fetch(
-          `${API_BASE}/api/dashboard/reservations?propertyId=${id}&from=${from}&to=${to}&pageSize=100&sort=checkIn_asc`,
+          `${API_BASE}/api/dashboard/reservations?propertyId=${id}&from=${calendarFrom}&to=${calendarTo}&pageSize=100&sort=checkIn_asc`,
           { credentials: "include" }
         );
         const reservationsData = await reservationsRes.json();
@@ -161,7 +166,7 @@ export function PropertyCalendarPage({ view = "combined", propertyId }: { view?:
     return () => {
       active = false;
     };
-  }, [id, from, to]);
+  }, [id, calendarFrom, calendarTo]);
 
   useEffect(() => {
     if (!id || view === "actions" || view === "single") return;
@@ -371,9 +376,9 @@ useEffect(() => {
   }
 
   function getDisplayRateForDay(day: Date, rate: any) {
-    const finalRate = rate ? Number(rate.rate ?? 0) : baseNightlyRate;
+    const finalRate = rate ? Number(rate.rate) : NaN;
 
-    if (!finalRate || finalRate <= 0) {
+    if (!Number.isFinite(finalRate) || finalRate <= 0) {
       return null;
     }
 
@@ -1434,7 +1439,7 @@ const occupancySummary = useMemo(() => {
       }
 
       const ratesRes = await fetch(
-        `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${from}&to=${to}`,
+        `${API_BASE}/api/dashboard/properties/${id}/nightly-rates?from=${calendarFrom}&to=${calendarTo}`,
         { credentials: "include" }
       );
 
