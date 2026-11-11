@@ -1,3 +1,4 @@
+import { DirectBookingDiscountsCard } from "../../components/properties/DirectBookingDiscountsCard";
 import { PropertyEditTabs } from "../../components/properties/PropertyEditTabs";
 import { resolvePublicBookingOrigin } from "../../lib/publicBookingOrigin";
 import "./PropertyEditPage.css";
@@ -2576,6 +2577,7 @@ ai: <>
 {id ? <PinAISettingsCard propertyId={id} /> : null}
 </>,
 pricing: <>
+{id ? <DirectBookingDiscountsCard propertyId={id} /> : null}
 <div className="property-edit-card"><div style={responsiveGridStyle}>
   <div style={{ display: "grid", gap: 6 }}>
     <div style={labelStyle}>Nightly Rate</div>

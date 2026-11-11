@@ -109,6 +109,9 @@ type PublicProperty = {
 };
 
 type PublicPricingQuote = {
+  accommodationDiscountTotal?: number;
+  accommodationSubtotalAfterDiscount?: number;
+  discounts?: Array<{ ruleId: string; type: "EARLY_BIRD" | "LENGTH_OF_STAY"; percent: number; amount: number }>;
   totalAmount: string | number | null;
   nightlySubtotal: string | number | null;
   cleaningFee: string | number | null;
@@ -2310,6 +2313,7 @@ useEffect(() => {
         },
        body: JSON.stringify({
   propertyId: property.id,
+  expectedTotalAmountCents: pricing?.totalAmount != null ? Math.round(Number(pricing.totalAmount) * 100) : undefined,
   checkIn,
   checkOut,
   guestName: guestName.trim(),
@@ -2362,6 +2366,19 @@ guestAcceptedSecurePreCheckinRequirementSource:
       });
 
       const data = await res.json();
+      if (res.status === 409 && data?.error === "QUOTE_CHANGED") {
+        setBookingError(data.message);
+        const quoteResponse = await fetch(`${API_BASE}/api/public-booking/quote`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ propertyId: property.id, checkIn, checkOut, selectedAmenityIds }),
+        });
+        if (quoteResponse.ok) {
+          const refreshed = await quoteResponse.json();
+          setPricing(refreshed.pricing);
+        }
+        return;
+      }
+
 
       if (
         res.status === 409 &&
@@ -3746,6 +3763,21 @@ return (
       )}
     </strong>
   </div>
+
+  {pricing?.discounts?.map(discount => (
+    <div key={discount.ruleId} style={styles.priceRow}>
+      <span>{discount.type === "EARLY_BIRD"
+        ? (preferredLanguage === "es" ? "Descuento por reserva anticipada" : "Early booking discount")
+        : (preferredLanguage === "es" ? "Descuento por duración de estadía" : "Length of stay discount")}</span>
+      <strong>−{formatMoney(discount.amount)}</strong>
+    </div>
+  ))}
+  {(pricing?.accommodationDiscountTotal ?? 0) > 0 ? (
+    <div style={styles.priceRow}>
+      <span>{preferredLanguage === "es" ? "Alojamiento con descuento" : "Accommodation after discounts"}</span>
+      <strong>{formatMoney(pricing?.accommodationSubtotalAfterDiscount ?? 0)}</strong>
+    </div>
+  ) : null}
 
   {pricing?.nightlyRates?.length ? (
     <div style={styles.nightlyRatesBreakdown}>
