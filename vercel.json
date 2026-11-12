@@ -63,7 +63,7 @@
   "rewrites": [
     {
       "source": "/backend/:path*",
-      "destination": "https://api.pin-ngo.com/:path*"
+      "destination": "https://direct-discounts-certification-certification.up.railway.app/:path*"
     },
     {
       "source": "/(.*)",
