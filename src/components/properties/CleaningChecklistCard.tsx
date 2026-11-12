@@ -36,7 +36,7 @@ export function CleaningChecklistCard({ propertyId }: { propertyId: string }) {
         <select id={`cleaning-preset-${propertyId}`} value={presetId} onChange={event => setPresetId(event.target.value)} style={{ width: "100%", padding: 12, borderRadius: 8 }}>
           {CLEANING_CHECKLIST_PRESETS.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
         </select>
-        <p style={{ margin: 0 }}>tasks</p>
+        <p style={{ margin: 0 }}>{preset.description} · {preset.items.length} tasks</p>
         <button type="button" onClick={() => { setDraft(checklistFromPreset(presetId, template.revision)); setError(""); }}>Use template</button>
         <small>The template replaces the editor list. Review and save to apply it to new cleanings.</small>
       </div>
