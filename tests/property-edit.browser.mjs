@@ -19,6 +19,8 @@ const server = await createServer({ root, server: { host: '127.0.0.1', port: 418
   'import.meta.env.VITE_API_BASE': JSON.stringify('https://property-api.example.invalid'),
   'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://property-api.example.invalid'),
   'import.meta.env.VITE_GOOGLE_MAPS_API_KEY': JSON.stringify('') } });
+let discountConfig = {enabled:false,combination:"BEST",maxDiscountPercent:100,minimumFinalNightlyRate:0,rules:[]};
+let discountVersion = 0; const discountWrites = [];
 let browser, page; const errors = [], writes = [], unknown = [];
 try {
   await server.listen(); browser = await chromium.launch({ headless: true });
@@ -35,6 +37,11 @@ try {
       if (request.method() === 'PATCH') { writes.push(request.postDataJSON()); return reply({ ok: true }); }
       return reply({ item: { id: 'property', name: 'Casa de prueba', address1: 'Puerto Rico', city: 'San Juan', country: 'PR', timezone: 'America/Puerto_Rico', maxGuests: 4, baseNightlyRate: 100, checkOutTime: '11:00' } });
     }
+    if (path === '/api/dashboard/properties/property/direct-discounts') {
+      if (request.method() === 'PUT') { const body=request.postDataJSON(); assert.equal(body.version,discountVersion);discountConfig=body.config;discountVersion++;discountWrites.push(body); }
+      return reply({config:discountConfig,version:discountVersion});
+    }
+    if (path === '/api/dashboard/properties/property/direct-discounts/preview') return reply({pricing:{accommodationSubtotalBeforeDiscount:700,accommodationDiscountTotal:101.5,accommodationSubtotalAfterDiscount:598.5,cleaningFee:75,amenitiesTotal:25,taxesTotal:48.9,totalAmount:747.4}});
     if (path.endsWith('/nearby-places') || path.endsWith('/seasons') || path.endsWith('/holiday-pricing')) return reply({ items: [] });
     if (path.endsWith('/listing-details')) return reply({ ok: true, listingDetails: null });
     if (path.endsWith('/cancellation-policy')) return reply({ ok: true, policy: null });
@@ -62,6 +69,27 @@ try {
   await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
   assert.equal(await page.getByRole('tab', { name: 'Reservas', exact: true }).getAttribute('aria-selected'), 'true');
   await booking.getByRole('checkbox', { name: /^Enable damage responsibility protection/ }).click();
+  await page.locator('#property-tab-pricing').click();
+  const discounts = page.locator('section').filter({has:page.getByRole('heading',{name:'Descuentos de reservas directas',exact:true})});
+  await discounts.getByLabel('Activar descuentos',{exact:true}).check();
+  await discounts.getByLabel('Combinación entre tipos',{exact:true}).selectOption('STACK');
+  await discounts.getByRole('button',{name:'Añadir nivel',exact:true}).click();
+  await discounts.getByLabel('Descuento (%)',{exact:true}).fill('10');
+  await discounts.getByRole('button',{name:'Añadir nivel',exact:true}).click();
+  await discounts.getByLabel('Tipo',{exact:true}).nth(1).selectOption('LENGTH_OF_STAY');
+  await discounts.getByLabel('Al menos esta cantidad de noches',{exact:true}).fill('7');
+  await discounts.getByRole('button',{name:'Guardar descuentos',exact:true}).click();
+  await discounts.getByText('Descuentos guardados.',{exact:true}).waitFor();
+  assert.equal(discountWrites.length,1);assert.equal(writes.length,0,'discount save must not submit parent property form');
+  assert.equal(discountWrites[0].config.combination,'STACK');assert.equal(discountWrites[0].config.rules.length,2);
+  await discounts.getByLabel('Check-in',{exact:true}).fill('2030-01-02');
+  await discounts.getByLabel('Check-out',{exact:true}).fill('2030-01-09');
+  await discounts.getByRole('button',{name:'Vista previa sin guardar',exact:true}).click();
+  await discounts.getByText('Total: $747.40',{exact:true}).waitFor();
+  await page.screenshot({path:resolve(output,'discounts-es.png'),fullPage:true});
+  await discounts.getByLabel('Idioma',{exact:true}).selectOption('en');
+  await page.getByRole('heading',{name:'Direct booking discounts',exact:true}).waitFor();
+  await page.screenshot({path:resolve(output,'discounts-en.png'),fullPage:true});
   for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     for (const id of ['general', 'cleaning', 'booking', 'access', 'ai', 'pricing', 'taxes']) {
