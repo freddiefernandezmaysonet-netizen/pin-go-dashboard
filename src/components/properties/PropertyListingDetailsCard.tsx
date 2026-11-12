@@ -228,7 +228,7 @@ function ListingDetailsEditor({ propertyId, maxGuests }: Props) {
       {form.animalsOnProperty === "YES" ? <div style={grid}><Field label="Animal disclosure (English)"><textarea style={input} maxLength={2000} value={form.animalsOnPropertyDisclosureEn} onChange={(e) => set("animalsOnPropertyDisclosureEn", e.target.value)} /></Field><Field label="Animal disclosure (Spanish)"><textarea style={input} maxLength={2000} value={form.animalsOnPropertyDisclosureEs} onChange={(e) => set("animalsOnPropertyDisclosureEs", e.target.value)} /></Field></div> : null}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button type="button" disabled={saving || loadState !== "ready"} onClick={() => void save()} style={{ border: 0, borderRadius: 10, padding: "10px 16px", fontWeight: 900, background: "#111827", color: "#fff", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
+        <button type="button" disabled={saving || loadState !== "ready"} onClick={() => void save()} style={{ border: 0, borderRadius: 10, padding: "10px 16px", fontWeight: 900, background: "var(--brand-primary-color, #2563eb)", color: "var(--brand-on-primary-color, #fff)", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
           {saving ? "Saving..." : "Save accommodation details"}
         </button>
       </div>
