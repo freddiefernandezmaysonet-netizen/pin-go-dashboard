@@ -1,3 +1,5 @@
+import { LoginRequestError } from "../auth/loginError";
+
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
   (import.meta.env.DEV ? "http://localhost:3000" : "");
@@ -140,12 +142,12 @@ export async function login(email: string, password: string): Promise<LoginResul
     },
     credentials: "include",
     body: JSON.stringify({ email, password }),
-  });
+  }).catch(() => { throw new LoginRequestError(0); });
 
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data?.error ?? "LOGIN_FAILED");
+    throw new LoginRequestError(res.status);
   }
 
   return data as LoginResult;
