@@ -85,7 +85,7 @@ test('host edits property checklist with revision protection and explicit confli
     await act(async () => { select.value = 'deep'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
     assert.equal(document.querySelectorAll('input[type="checkbox"]').length, 1);
     assert.equal(writes.length, 2);
-    await clickButton('Usar plantilla / Use template');
+    await clickButton('Use template');
     assert.equal(document.querySelectorAll('input[type="checkbox"]').length, 14);
     assert.equal(writes.length, 2);
     await clickButton('Reload');
@@ -93,7 +93,7 @@ test('host edits property checklist with revision protection and explicit confli
     server = { revision: 0, items: [] };
     await clickButton('Reload');
     await waitFor(() => document.querySelectorAll('input[type="checkbox"]').length === 10);
-    assert.match(document.querySelector('fieldset').textContent, /Propuesta inicial/);
+    assert.match(document.querySelector('fieldset').textContent, /Suggested turnover checklist/);
     assert.equal(writes.length, 2);
     await clickButton('Save checklist');
     await waitFor(() => writes.length === 3 && !document.querySelector('fieldset').disabled);
@@ -107,7 +107,7 @@ test('host edits property checklist with revision protection and explicit confli
     server = { revision: 3, items: [] };
     await clickButton('Reload');
     await waitFor(() => document.querySelectorAll('input[type="checkbox"]').length === 0);
-    assert.doesNotMatch(document.querySelector('fieldset').textContent, /Propuesta inicial/);
+    assert.doesNotMatch(document.querySelector('fieldset').textContent, /Suggested turnover checklist/);
     assert.equal([...document.querySelectorAll('button')].find(b => b.textContent === 'Save checklist').disabled, true);
   } finally {
     if (root) await act(async () => root.unmount());

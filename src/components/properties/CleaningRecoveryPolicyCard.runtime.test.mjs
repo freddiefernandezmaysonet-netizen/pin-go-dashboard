@@ -40,18 +40,18 @@ test('host policy card saves limits, preserves revision and reloads a conflict w
   await act(async()=>{details.open=true;details.dispatchEvent(new dom.window.Event('toggle'));});
   await waitFor(()=>document.querySelectorAll('input').length===3);
   assert.equal(document.querySelectorAll('form').length,1);
-  assert.equal(button('Guardar límites / Save limits').disabled,true);
+  assert.equal(button('Save limits').disabled,true);
   await change(1,60);
-  assert.equal(button('Guardar límites / Save limits').disabled,false);
-  await act(async()=>button('Guardar límites / Save limits').click());
+  assert.equal(button('Save limits').disabled,false);
+  await act(async()=>button('Save limits').click());
   await waitFor(()=>writes.length===1 && !document.querySelector('fieldset').disabled);
   assert.deepEqual(writes[0],{revision:0,maxDelayMinutes:30,maxAccessExtensionMinutes:60,arrivalSafetyMarginMinutes:0});
-  await change(0,45); await act(async()=>button('Guardar límites / Save limits').click());
-  await waitFor(()=>document.body.textContent.includes('Recarga antes de guardar'));
+  await change(0,45); await act(async()=>button('Save limits').click());
+  await waitFor(()=>document.body.textContent.includes('Reload before saving'));
   assert.equal(writes[1].revision,1);
-  await act(async()=>button('Recargar / Reload').click());
+  await act(async()=>button('Reload').click());
   await waitFor(()=>document.querySelector('input').value==='30');
-  assert.equal(button('Guardar límites / Save limits').disabled,true);
+  assert.equal(button('Save limits').disabled,true);
  } finally {
   if(root) await act(async()=>root.unmount());cache.clear();globalThis.fetch=originalFetch;dom.window.close();await rm(tmp,{recursive:true});
  }
