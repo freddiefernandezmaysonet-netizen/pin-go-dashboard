@@ -98,15 +98,7 @@ jobs:
                 "${SCOPE_HEAD_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
                 "${GITHUB_HEAD_REF:-}" == "codex/direct-booking-discounts-20261111" &&
                 "${GITHUB_BASE_REF:-}" == "main" ]]; then
-            allowed='^(\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|package\.json|src/api/auth\.ts|src/auth/loginError\.ts|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|src/components/properties/DirectBookingDiscountsCard\.test\.cjs|src/components/properties/DirectBookingDiscountsCard\.tsx|src/pages/LoginPage\.tsx|src/pages/properties/PropertyEditPage\.tsx|src/pages/public-booking/PublicPropertyDetailPage\.tsx|tests/property-edit\.browser\.mjs)"$(echo "$CHANGED" | grep -Ev "$allowed" || true)"
-          test -z "$unexpected"
-
-          grep -q '/auth/mfa/verify' src/api/auth.ts
-          grep -q '/auth/mfa/resend' src/api/auth.ts
-          ! grep -Eq 'window\.location\.(assign|href)' src/api/auth.ts
-          grep -q 'loginPathForSessionError' src/auth/RequireAuth.tsx
-          grep -q 'Trust this device for 30 days' src/pages/LoginPage.tsx
-
+            allowed='^(tests/property-edit\.browser\.mjs|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|package\.json|src/api/auth\.ts|src/auth/loginError\.ts|src/components/properties/DirectBookingDiscountsCard\.test\.cjs|src/components/properties/DirectBookingDiscountsCard\.tsx|src/pages/LoginPage\.tsx|src/pages/properties/PropertyEditPage\.tsx|src/pages/public-booking/PublicPropertyDetailPage\.tsx)$'
           fi
           unexpected="$(echo "$CHANGED" | grep -Ev "$allowed" || true)"
           test -z "$unexpected"

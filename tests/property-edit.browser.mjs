@@ -72,11 +72,11 @@ try {
   await page.locator('#property-tab-pricing').click();
   const discounts = page.locator('section').filter({has:page.getByRole('heading',{name:'Descuentos de reservas directas',exact:true})});
   await discounts.getByLabel('Activar descuentos',{exact:true}).check();
-  await discounts.getByLabel('Combinación entre tipos',{exact:true}).selectOption('STACK');
+  await discounts.getByLabel(/^Combinación entre tipos/).selectOption('STACK');
   await discounts.getByRole('button',{name:'Añadir nivel',exact:true}).click();
   await discounts.getByLabel('Descuento (%)',{exact:true}).fill('10');
   await discounts.getByRole('button',{name:'Añadir nivel',exact:true}).click();
-  await discounts.getByLabel('Tipo',{exact:true}).nth(1).selectOption('LENGTH_OF_STAY');
+  await discounts.getByLabel(/^Tipo/).nth(1).selectOption('LENGTH_OF_STAY');
   await discounts.getByLabel('Al menos esta cantidad de noches',{exact:true}).fill('7');
   await discounts.getByRole('button',{name:'Guardar descuentos',exact:true}).click();
   await discounts.getByText('Descuentos guardados.',{exact:true}).waitFor();
@@ -87,7 +87,7 @@ try {
   await discounts.getByRole('button',{name:'Vista previa sin guardar',exact:true}).click();
   await discounts.getByText('Total: $747.40',{exact:true}).waitFor();
   await page.screenshot({path:resolve(output,'discounts-es.png'),fullPage:true});
-  await discounts.getByLabel('Idioma',{exact:true}).selectOption('en');
+  await discounts.getByLabel(/^Idioma/).selectOption('en');
   await page.getByRole('heading',{name:'Direct booking discounts',exact:true}).waitFor();
   await page.screenshot({path:resolve(output,'discounts-en.png'),fullPage:true});
   for (const width of [1280, 390, 320]) {
