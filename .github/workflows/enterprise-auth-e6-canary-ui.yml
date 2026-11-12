@@ -11,6 +11,7 @@ on:
       - "src/auth/AuthProvider.tsx"
       - "src/auth/RequireAuth.tsx"
       - "src/auth/sessionExpiry.ts"
+      - "src/auth/loginError.ts"
       - "src/pages/LoginPage.tsx"
       - "src/auth/enterprise-auth-e6.contract.test.js"
       - "src/auth/enterprise-auth-e8b-ui.contract.test.js"
@@ -89,6 +90,15 @@ jobs:
                 "${GITHUB_BASE_REF:-}" == "main" ]]; then
             python3 scripts/verify-pin-ai-activation-scope.py
             allowed='^(\.github/workflows/pin\-ai\-property\-activation\-dashboard\.yml|src/api/auth\.ts|src/api/pinAIActivation\.ts|src/app/layout/AppShell\.tsx|src/app/routes/router\.tsx|src/components/properties/PinAIBillingCard\.tsx|src/components/properties/PinAISettingsCard\.tsx|src/components/properties/pinAISettings\.interaction\.test\.mjs|src/pages/admin/AdminPinAIActivationPage\.tsx|src/pages/dashboard/BillingPage\.tsx|src/pages/properties/PropertyEditPage\.tsx|scripts/verify\-pin\-ai\-activation\-scope\.py|\.github/workflows/enterprise\-auth\-e6\-canary\-ui\.yml|\.github/workflows/enterprise\-auth\-e8b\-session\-enforcement\-ui\.yml)$'
+          fi
+          # This exact discount PR includes its login error fix and regression tests.
+          if [[ "${GITHUB_EVENT_NAME:-}" == "pull_request" &&
+                "${GITHUB_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
+                "${SCOPE_PR_NUMBER:-}" == "244" &&
+                "${SCOPE_HEAD_REPOSITORY:-}" == "freddiefernandezmaysonet-netizen/pin-go-dashboard" &&
+                "${GITHUB_HEAD_REF:-}" == "codex/direct-booking-discounts-20261111" &&
+                "${GITHUB_BASE_REF:-}" == "main" ]]; then
+            allowed='^(tests/property-edit\.browser\.mjs|src/auth/enterprise-auth-e8b-ui\.contract\.test\.js|\.github/workflows/enterprise-auth-e6-canary-ui\.yml|\.github/workflows/enterprise-auth-e8b-session-enforcement-ui\.yml|package\.json|src/api/auth\.ts|src/auth/loginError\.ts|src/components/properties/DirectBookingDiscountsCard\.test\.cjs|src/components/properties/DirectBookingDiscountsCard\.tsx|src/pages/LoginPage\.tsx|src/pages/properties/PropertyEditPage\.tsx|src/pages/public-booking/PublicPropertyDetailPage\.tsx)$'
           fi
           unexpected="$(echo "$CHANGED" | grep -Ev "$allowed" || true)"
           test -z "$unexpected"

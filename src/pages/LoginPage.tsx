@@ -1,3 +1,4 @@
+import { loginErrorMessage } from "../auth/loginError";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -113,8 +114,8 @@ export default function LoginPage() {
 
       if (!("user" in result)) throw new Error("LOGIN_USER_MISSING");
       await finishSignIn(result.user);
-    } catch {
-      setError("Invalid email or password / Correo o contraseña incorrectos");
+    } catch (err) {
+      setError(loginErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

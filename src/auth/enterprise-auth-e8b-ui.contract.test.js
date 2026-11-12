@@ -93,7 +93,7 @@ const auth = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export cons
 const properties = data(`import {state} from ${JSON.stringify(bridgeUrl)}; export async function fetchProperties(){state.propertyReads++;return {items:[{}]};}`);
 const brand = data(`export const useBrand=()=>({brand:{kind:'PIN_GO',displayName:'Pin&Go'},isCustomBrand:false});`);
 const { default: Login } = await import(compile("../pages/LoginPage.tsx", { "react-router-dom":router, "../api/auth":api, "../api/properties":properties,
-  "../auth/AuthProvider":auth, "../auth/sessionExpiry":compile("./sessionExpiry.ts"), "../branding/BrandProvider":brand }));
+  "../auth/loginError":compile("./loginError.ts"), "../auth/AuthProvider":auth, "../auth/sessionExpiry":compile("./sessionExpiry.ts"), "../branding/BrandProvider":brand }));
 test("actual login and MFA preserve incident destination, and failures never navigate", async () => {
   for (const mfa of [false, true]) {
     Object.assign(state, { role:"ORG_ADMIN", search:`?returnTo=${encodeURIComponent(destination)}`,mfa,fail:false,navigation:[],refreshes:0,propertyReads:0 });
@@ -127,3 +127,14 @@ test("cleaner login ignores host incident destination and never fetches properti
 });
 
 }
+
+ test("login distinguishes transport and HTTP failures without mislabeling unrelated failures", async () => {
+  const ts = (await import("typescript")).default;
+  const source = fs.readFileSync(new URL("./loginError.ts", import.meta.url), "utf8");
+  const code = ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+  const {LoginRequestError,loginErrorMessage}=await import("data:text/javascript;base64,"+Buffer.from(code).toString("base64"));
+  for (const [status,message] of [[0,"No se pudo conectar"],[401,"Verifica tu correo"],[403,"Acceso no permitido"],[429,"Demasiados intentos"],[500,"No pudimos completar"]]) {
+    assert.ok(loginErrorMessage(new LoginRequestError(status)).includes(message));
+  }
+  for (const error of [new Error("LOGIN_USER_MISSING"),new TypeError("Failed to fetch"),null]) assert.ok(!loginErrorMessage(error).includes("contraseña"));
+});
