@@ -7,11 +7,11 @@ const form = await readFile(new URL("./propertyListingDetails.form.ts", import.m
 const types = await readFile(new URL("./propertyListingDetails.types.ts", import.meta.url), "utf8");
 
 test("discovery UI exposes canonical property types, features and free-form experience tags", () => {
-  assert.match(card, /Tipo de propiedad \/ Property type/);
-  assert.match(card, /\["CABIN", "Cabaña \/ Cabin"\]/);
+  assert.match(card, /Property type/);
+  assert.match(card, /\["CABIN", "Cabin"\]/);
   assert.match(card, /WOOD_CONSTRUCTION/);
   assert.match(card, /OCEAN_VIEW/);
-  assert.match(card, /Etiquetas de experiencia \/ Experience tags/);
+  assert.match(card, /Experience tags/);
   assert.match(card, /Romantic retreat, Couples retreat/);
 });
 

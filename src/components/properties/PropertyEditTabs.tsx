@@ -2,13 +2,13 @@ import { useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 
 export const PROPERTY_EDIT_TABS = [
-  { id: "general", label: "General", description: "Datos y ubicación de la propiedad." },
-  { id: "cleaning", label: "Limpieza", description: "Horarios, checklist y recuperación de limpiezas." },
-  { id: "booking", label: "Reservas", description: "Página pública, alojamiento y políticas de reserva." },
-  { id: "access", label: "Accesos y estadía", description: "Acceso del huésped y opciones de llegada y salida." },
-  { id: "ai", label: "Pin AI", description: "Asistencia automática para los huéspedes." },
-  { id: "pricing", label: "Tarifas", description: "Precios por noche, ajustes, servicios y cargos." },
-  { id: "taxes", label: "Impuestos", description: "Impuestos aplicables a la propiedad." },
+  { id: "general", label: "General", description: "Property details and location." },
+  { id: "cleaning", label: "Cleaning", description: "Schedules, checklists and cleaning recovery." },
+  { id: "booking", label: "Booking", description: "Public listing, accommodation and booking policies." },
+  { id: "access", label: "Access & stay", description: "Guest access and arrival and departure options." },
+  { id: "ai", label: "Pin AI", description: "Automated guest assistance." },
+  { id: "pricing", label: "Pricing", description: "Nightly rates, adjustments, amenities and fees." },
+  { id: "taxes", label: "Taxes", description: "Taxes aplicables a la propiedad." },
 ] as const;
 export type PropertyEditTabId = typeof PROPERTY_EDIT_TABS[number]["id"];
 
@@ -38,7 +38,7 @@ export function PropertyEditTabs({ panels }: { panels: Record<PropertyEditTabId,
       validationPending.current = false;
     }, 0);
   }}>
-    <div className="property-edit-tablist" role="tablist" aria-label="Configuración de la propiedad">
+    <div className="property-edit-tablist" role="tablist" aria-label="Property settings">
       {PROPERTY_EDIT_TABS.map((tab, index) => <button key={tab.id} ref={element => { buttons.current[index] = element; }}
         type="button" role="tab" id={`property-tab-${tab.id}`} aria-controls={`property-panel-${tab.id}`}
         aria-selected={active === tab.id} tabIndex={active === tab.id ? 0 : -1}
@@ -52,7 +52,7 @@ export function PropertyEditTabs({ panels }: { panels: Record<PropertyEditTabId,
           event.preventDefault(); setActive(PROPERTY_EDIT_TABS[next].id); buttons.current[next]?.focus();
         }}>{tab.label}</button>)}
     </div>
-    <p className="property-edit-save-note">Cambiar de pestaña conserva tus cambios. Usa “Save Changes” para guardar los campos de la propiedad; las tarjetas con su propio botón se guardan por separado.</p>
+    <p className="property-edit-save-note">Switching tabs preserves your changes. Use “Save Changes” to save property fields. Cards with their own save button are saved separately.</p>
     {PROPERTY_EDIT_TABS.map(tab => <div key={tab.id} role="tabpanel" id={`property-panel-${tab.id}`}
       aria-labelledby={`property-tab-${tab.id}`} data-property-tab={tab.id} hidden={active !== tab.id}
       className="property-edit-panel" tabIndex={0}>

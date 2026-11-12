@@ -26,25 +26,25 @@ export function CleaningChecklistCard({ propertyId }: { propertyId: string }) {
     finally { setBusy(false); }
   }
   return <details onToggle={event => setOpened(event.currentTarget.open)} style={{ padding: 18, border: "1px solid #dbeafe", borderRadius: 14 }}>
-    <summary style={{ cursor: "pointer", fontWeight: 800 }}>Cleaning checklist / Checklist de limpieza</summary>
-    <p>La lista también se aplica a limpiezas asignadas vacías que aún no hayan comenzado. Las que ya tengan tareas o hayan comenzado conservan su lista y progreso. / The list also applies to empty assigned cleanings that have not started. Populated or started checklists keep their list and progress.</p>
+    <summary style={{ cursor: "pointer", fontWeight: 800 }}>Cleaning checklist</summary>
+    <p>The list also applies to empty assigned cleanings that have not started. Populated or started checklists keep their list and progress.</p>
     {query.isPending && opened ? <p role="status">Loading…</p> : null}
     {query.isError || error ? <p role="alert">{error || "Could not load this property's checklist."}</p> : null}
     {template ? <fieldset disabled={busy} style={{ border: 0, padding: 0 }}><legend>Property checklist</legend>
       <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, marginBottom: 12, display: "grid", gap: 10 }}>
-        <label htmlFor={`cleaning-preset-${propertyId}`} style={{ fontWeight: 700 }}>Plantillas listas para usar / Ready-to-use templates</label>
+        <label htmlFor={`cleaning-preset-${propertyId}`} style={{ fontWeight: 700 }}>Ready-to-use templates</label>
         <select id={`cleaning-preset-${propertyId}`} value={presetId} onChange={event => setPresetId(event.target.value)} style={{ width: "100%", padding: 12, borderRadius: 8 }}>
           {CLEANING_CHECKLIST_PRESETS.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
         </select>
-        <p style={{ margin: 0 }}>{preset.description} · {preset.items.length} tareas / tasks</p>
-        <button type="button" onClick={() => { setDraft(checklistFromPreset(presetId, template.revision)); setError(""); }}>Usar plantilla / Use template</button>
-        <small>La plantilla reemplaza la lista del editor. Revisa y guarda para aplicarla a nuevas limpiezas. / The template replaces the editor list. Review and save to apply it to new cleanings.</small>
+        <p style={{ margin: 0 }}>{preset.description} · {preset.items.length} tasks</p>
+        <button type="button" onClick={() => { setDraft(checklistFromPreset(presetId, template.revision)); setError(""); }}>Use template</button>
+        <small>The template replaces the editor list. Review and save to apply it to new cleanings.</small>
       </div>
-      {suggested ? <p role="status">Propuesta inicial: limpieza entre reservas. Puedes guardarla directamente o personalizarla. / Suggested turnover checklist: save it directly or customize it.</p> : null}
+      {suggested ? <p role="status">Suggested turnover checklist: save it directly or customize it.</p> : null}
       {template.items.map((item, index) => <div key={item.id} style={{ padding: 12, borderBottom: "1px solid #e5e7eb", display: "grid", gap: 8 }}>
-        <label>Español — {index + 1}<input maxLength={500} value={item.es} onChange={event => update(item.id, { es: event.target.value })} style={{ width: "100%", padding: 12 }} /></label>
+        <label>Spanish — {index + 1}<input maxLength={500} value={item.es} onChange={event => update(item.id, { es: event.target.value })} style={{ width: "100%", padding: 12 }} /></label>
         <label>English — {index + 1}<input maxLength={500} value={item.en} onChange={event => update(item.id, { en: event.target.value })} style={{ width: "100%", padding: 12 }} /></label>
-        <label><input type="checkbox" checked={item.required} onChange={event => update(item.id, { required: event.target.checked })} /> Required before finishing / Obligatorio para finalizar</label>
+        <label><input type="checkbox" checked={item.required} onChange={event => update(item.id, { required: event.target.checked })} /> Required before finishing</label>
         <div><button type="button" disabled={index === 0} onClick={() => { const items = [...template.items]; [items[index - 1], items[index]] = [items[index]!, items[index - 1]!]; setDraft({ ...template, items }); }}>Move up</button> <button type="button" onClick={() => setDraft({ ...template, items: template.items.filter(candidate => candidate.id !== item.id) })}>Remove</button></div>
       </div>)}
       <p>One language is enough; add the other translation when available. The original is used if a translation is missing.</p>

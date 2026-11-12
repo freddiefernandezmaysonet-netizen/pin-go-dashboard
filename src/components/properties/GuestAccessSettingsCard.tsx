@@ -845,17 +845,17 @@ function removeRule(
 <div style={sectionStyle}>
   <div>
     <div style={sectionTitleStyle}>
-      Acuerdo del huésped en español
+      Guest agreement (Spanish)
     </div>
 
     <div style={sectionDescriptionStyle}>
-      Contenido contractual en español mostrado
-      cuando el idioma de la reservación es español.
+      Spanish agreement content shown to guests
+      whose reservation language is Spanish.
     </div>
   </div>
 
   <label style={labelStyle}>
-    Título del acuerdo
+    Agreement title (Spanish)
     <input
       value={form.titleEs}
       disabled={isBusy}
@@ -865,13 +865,13 @@ function removeRule(
           titleEs: event.target.value,
         }))
       }
-      placeholder="Acuerdo del huésped"
+      placeholder="Guest agreement title (Spanish)"
       style={inputStyle}
     />
   </label>
 
   <label style={labelStyle}>
-    Resumen para el huésped
+    Guest-facing summary (Spanish)
     <textarea
       value={form.guestFacingSummaryEs}
       disabled={isBusy}
@@ -882,13 +882,13 @@ function removeRule(
             event.target.value,
         }))
       }
-      placeholder="Explique lo que el huésped debe completar antes de recibir acceso."
+      placeholder="Explain what the guest must complete before receiving access (Spanish)."
       style={summaryTextareaStyle}
     />
   </label>
 
   <label style={labelStyle}>
-    Texto del acuerdo
+    Agreement text (Spanish)
     <textarea
       value={form.agreementTextEs}
       disabled={isBusy}
@@ -899,7 +899,7 @@ function removeRule(
             event.target.value,
         }))
       }
-      placeholder="Ingrese el acuerdo completo en español."
+      placeholder="Enter the full agreement in Spanish."
       style={agreementTextareaStyle}
     />
   </label>
@@ -909,12 +909,12 @@ function removeRule(
   <div style={rulesHeaderStyle}>
     <div>
       <div style={sectionTitleStyle}>
-        Reglas de la propiedad en español
+        Property rules (Spanish)
       </div>
 
       <div style={sectionDescriptionStyle}>
-        Estas reglas se muestran cuando el idioma
-        de la reservación es español.
+        These rules are shown when the reservation
+        language is Spanish.
       </div>
     </div>
 
@@ -931,7 +931,7 @@ function removeRule(
             : "pointer",
       }}
     >
-      Añadir regla
+      Add rule
     </button>
   </div>
 
@@ -939,7 +939,7 @@ function removeRule(
     {form.rulesEs.map((rule, index) => (
       <div key={index} style={ruleRowStyle}>
         <label style={labelStyle}>
-          Regla {index + 1}
+          Rule {index + 1}
           <input
             value={rule}
             disabled={isBusy}
@@ -950,7 +950,7 @@ function removeRule(
                 event.target.value
               )
             }
-            placeholder="Ejemplo: No se permite fumar dentro de la propiedad."
+            placeholder="Enter a property rule in Spanish."
             style={inputStyle}
           />
         </label>
@@ -970,7 +970,7 @@ function removeRule(
                 : "pointer",
           }}
         >
-          Eliminar
+          Remove
         </button>
       </div>
     ))}
@@ -978,7 +978,7 @@ function removeRule(
 
   {normalizedRulesEs.length === 0 ? (
     <div style={emptyStateStyle}>
-      Añada al menos una regla en español.
+      Add at least one Spanish property rule.
     </div>
   ) : null}
 </div>

@@ -52,11 +52,11 @@ test("Enter in a listing input cannot submit the outer property form", () => {
 
 test("shared spaces, safety and additional considerations are editable", () => {
   assert.match(card, /ListingCollectionsEditor/);
-  assert.match(collections, /Espacios compartidos \/ Shared spaces/);
-  assert.match(collections, /Consideraciones de seguridad \/ Safety considerations/);
-  assert.match(collections, /Condiciones particulares \/ Additional considerations/);
+  assert.match(collections, /Shared spaces/);
+  assert.match(collections, /Safety considerations/);
+  assert.match(collections, /Additional considerations/);
 });
-test("host listing configuration presents bilingual section labels", () => {
-  assert.match(card, /Información del alojamiento y requisitos \/ Accommodation & guest requirements/);
-  assert.match(editor, /Distribución de habitaciones y camas \/ Room & bed layout/);
+test("host listing configuration uses the Dashboard language for section labels", () => {
+  assert.match(card, /Accommodation & guest requirements/);
+  assert.match(editor, /Room & bed layout/);
 });

@@ -55,9 +55,9 @@ export function ListingCollectionsEditor({
       <section style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 900 }}>Espacios compartidos / Shared spaces</div>
+            <div style={{ fontWeight: 900 }}>Shared spaces</div>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>
-              Añade solo espacios que el huésped realmente compartirá. / Add only spaces the guest will actually share.
+              Add only spaces the guest will actually share.
             </div>
           </div>
           <button
@@ -69,7 +69,7 @@ export function ListingCollectionsEditor({
               ])
             }
           >
-            + Añadir / Add
+            + Add
           </button>
         </div>
         {sharedSpaces.map((space, index) => (
@@ -103,7 +103,7 @@ export function ListingCollectionsEditor({
               <input
                 style={control}
                 value={space.labelEs ?? ""}
-                placeholder="Etiqueta (Español)"
+                placeholder="Label (Spanish)"
                 maxLength={200}
                 onChange={(event) =>
                   onSharedSpacesChange(sharedSpaces.map((current, i) =>
@@ -116,7 +116,7 @@ export function ListingCollectionsEditor({
               type="button"
               onClick={() => onSharedSpacesChange(normalizeOrder(sharedSpaces.filter((_, i) => i !== index)))}
             >
-              Eliminar / Remove
+              Remove
             </button>
           </div>
         ))}
@@ -125,9 +125,9 @@ export function ListingCollectionsEditor({
       <section style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 900 }}>Consideraciones de seguridad / Safety considerations</div>
+            <div style={{ fontWeight: 900 }}>Safety considerations</div>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>
-              Describe riesgos físicos conocidos sin inferir accesibilidad. / Describe known physical considerations without inferring accessibility.
+              Describe known physical considerations without inferring accessibility.
             </div>
           </div>
           <button
@@ -139,7 +139,7 @@ export function ListingCollectionsEditor({
               ])
             }
           >
-            + Añadir / Add
+            + Add
           </button>
         </div>
         {safetyConsiderations.map((consideration, index) => (
@@ -171,7 +171,7 @@ export function ListingCollectionsEditor({
               <textarea
                 style={control}
                 value={consideration.descriptionEs ?? ""}
-                placeholder="Descripción (Español)"
+                placeholder="Description (Spanish)"
                 maxLength={2000}
                 onChange={(event) =>
                   onSafetyConsiderationsChange(safetyConsiderations.map((current, i) =>
@@ -190,13 +190,13 @@ export function ListingCollectionsEditor({
                   ))
                 }
               />
-              Activa / Active
+              Active
             </label>
             <button
               type="button"
               onClick={() => onSafetyConsiderationsChange(normalizeOrder(safetyConsiderations.filter((_, i) => i !== index)))}
             >
-              Eliminar / Remove
+              Remove
             </button>
           </div>
         ))}
@@ -205,9 +205,9 @@ export function ListingCollectionsEditor({
       <section style={{ display: "grid", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontWeight: 900 }}>Condiciones particulares / Additional considerations</div>
+            <div style={{ fontWeight: 900 }}>Additional considerations</div>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>
-              Para detalles importantes que no encajan en una regla estándar. / For important property-specific details not covered by a standard rule.
+              For important property-specific details not covered by a standard rule.
             </div>
           </div>
           <button
@@ -219,7 +219,7 @@ export function ListingCollectionsEditor({
               ])
             }
           >
-            + Añadir / Add
+            + Add
           </button>
         </div>
         {additionalConsiderations.map((consideration, index) => (
@@ -239,7 +239,7 @@ export function ListingCollectionsEditor({
               <input
                 style={control}
                 value={consideration.titleEs ?? ""}
-                placeholder="Título (Español)"
+                placeholder="Title (Spanish)"
                 maxLength={200}
                 onChange={(event) =>
                   onAdditionalConsiderationsChange(additionalConsiderations.map((current, i) =>
@@ -261,7 +261,7 @@ export function ListingCollectionsEditor({
               <textarea
                 style={control}
                 value={consideration.descriptionEs ?? ""}
-                placeholder="Descripción (Español)"
+                placeholder="Description (Spanish)"
                 maxLength={2000}
                 onChange={(event) =>
                   onAdditionalConsiderationsChange(additionalConsiderations.map((current, i) =>
@@ -280,13 +280,13 @@ export function ListingCollectionsEditor({
                   ))
                 }
               />
-              Activa / Active
+              Active
             </label>
             <button
               type="button"
               onClick={() => onAdditionalConsiderationsChange(normalizeOrder(additionalConsiderations.filter((_, i) => i !== index)))}
             >
-              Eliminar / Remove
+              Remove
             </button>
           </div>
         ))}

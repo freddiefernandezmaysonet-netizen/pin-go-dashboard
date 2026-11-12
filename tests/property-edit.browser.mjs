@@ -24,7 +24,7 @@ let discountVersion = 0; const discountWrites = [];
 let browser, page; const errors = [], writes = [], unknown = [];
 try {
   await server.listen(); browser = await chromium.launch({ headless: true });
-  page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page = await browser.newPage({ viewport: { width: 1280, height: 900 }, locale: 'es-PR' });
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname;
@@ -43,6 +43,8 @@ try {
     }
     if (path === '/api/dashboard/properties/property/direct-discounts/preview') return reply({pricing:{accommodationSubtotalBeforeDiscount:700,accommodationDiscountTotal:101.5,accommodationSubtotalAfterDiscount:598.5,cleaningFee:75,amenitiesTotal:25,taxesTotal:48.9,totalAmount:747.4}});
     if (path.endsWith('/nearby-places') || path.endsWith('/seasons') || path.endsWith('/holiday-pricing')) return reply({ items: [] });
+    if (path.endsWith('/cleaning-checklist')) return reply({ revision: 0, items: [] });
+    if (path.endsWith('/cleaning-recovery-policy')) return reply({ revision: 0, maxDelayMinutes: 30, maxAccessExtensionMinutes: 0, arrivalSafetyMarginMinutes: 0 });
     if (path.endsWith('/listing-details')) return reply({ ok: true, listingDetails: null });
     if (path.endsWith('/cancellation-policy')) return reply({ ok: true, policy: null });
     if (path.endsWith('/guest-access-settings')) return reply({ ok: true, settings: { propertyId: 'property', propertyName: 'Casa de prueba', maxGuests: 4, guestAccessMode: 'PASSCODE_ONLY', cleaningNfcEnabled: false, configured: false, activeAgreement: null, identityBilling: { version: 'v1', amountCents: 100, currency: 'USD', accepted: true, acceptedAt: '2026-10-08T12:00:00Z' } } });
@@ -54,12 +56,12 @@ try {
   await page.getByRole('tab', { name: 'General', exact: true }).waitFor();
   const general = page.locator('#property-panel-general'), booking = page.locator('#property-panel-booking');
   await general.locator('input').first().fill('Nombre editado');
-  await page.getByRole('tab', { name: 'Reservas', exact: true }).click();
+  await page.getByRole('tab', { name: 'Booking', exact: true }).click();
   await booking.locator('textarea').first().fill('Descripción pendiente');
   await page.getByRole('tab', { name: 'General', exact: true }).click();
   assert.equal(await general.locator('input').first().inputValue(), 'Nombre editado');
   await general.locator('input').first().fill('');
-  await page.getByRole('tab', { name: 'Reservas', exact: true }).click();
+  await page.getByRole('tab', { name: 'Booking', exact: true }).click();
   await booking.getByRole('checkbox', { name: /^Enable damage responsibility protection/ }).click();
   await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
   assert.equal(await page.getByRole('tab', { name: 'General', exact: true }).getAttribute('aria-selected'), 'true');
@@ -67,27 +69,26 @@ try {
   assert.equal(writes.length, 0);
   await general.locator('input').first().fill('Nombre editado');
   await page.getByRole('button', { name: 'Save Changes', exact: true }).click();
-  assert.equal(await page.getByRole('tab', { name: 'Reservas', exact: true }).getAttribute('aria-selected'), 'true');
+  assert.equal(await page.getByRole('tab', { name: 'Booking', exact: true }).getAttribute('aria-selected'), 'true');
   await booking.getByRole('checkbox', { name: /^Enable damage responsibility protection/ }).click();
   await page.locator('#property-tab-pricing').click();
-  const discounts = page.locator('section').filter({has:page.getByRole('heading',{name:'Descuentos de reservas directas',exact:true})});
-  await discounts.getByLabel('Activar descuentos',{exact:true}).check();
-  await discounts.getByLabel(/^Combinación entre tipos/).selectOption('STACK');
-  await discounts.getByRole('button',{name:'Añadir nivel',exact:true}).click();
-  await discounts.getByLabel('Descuento (%)',{exact:true}).fill('10');
-  await discounts.getByRole('button',{name:'Añadir nivel',exact:true}).click();
-  await discounts.getByLabel(/^Tipo/).nth(1).selectOption('LENGTH_OF_STAY');
-  await discounts.getByLabel('Al menos esta cantidad de noches',{exact:true}).fill('7');
-  await discounts.getByRole('button',{name:'Guardar descuentos',exact:true}).click();
-  await discounts.getByText('Descuentos guardados.',{exact:true}).waitFor();
+  const discounts = page.locator('section').filter({has:page.getByRole('heading',{name:'Direct booking discounts',exact:true})});
+  await discounts.getByLabel('Enable discounts',{exact:true}).check();
+  await discounts.getByLabel(/^Combining discount types/).selectOption('STACK');
+  await discounts.getByRole('button',{name:'Add level',exact:true}).click();
+  await discounts.getByLabel('Discount (%)',{exact:true}).fill('10');
+  await discounts.getByRole('button',{name:'Add level',exact:true}).click();
+  await discounts.getByLabel(/^Type/).nth(1).selectOption('LENGTH_OF_STAY');
+  await discounts.getByLabel('At least this many nights',{exact:true}).fill('7');
+  await discounts.getByRole('button',{name:'Save discounts',exact:true}).click();
+  await discounts.getByText('Discounts saved.',{exact:true}).waitFor();
   assert.equal(discountWrites.length,1);assert.equal(writes.length,0,'discount save must not submit parent property form');
   assert.equal(discountWrites[0].config.combination,'STACK');assert.equal(discountWrites[0].config.rules.length,2);
   await discounts.getByLabel('Check-in',{exact:true}).fill('2030-01-02');
   await discounts.getByLabel('Check-out',{exact:true}).fill('2030-01-09');
-  await discounts.getByRole('button',{name:'Vista previa sin guardar',exact:true}).click();
+  await discounts.getByRole('button',{name:'Preview without saving',exact:true}).click();
   await discounts.getByText('Total: $747.40',{exact:true}).waitFor();
-  await page.screenshot({path:resolve(output,'discounts-es.png'),fullPage:true});
-  await discounts.getByLabel(/^Idioma/).selectOption('en');
+  assert.equal(await discounts.getByRole('combobox').count(), 3, 'no independent language selector');
   await page.getByRole('heading',{name:'Direct booking discounts',exact:true}).waitFor();
   await page.screenshot({path:resolve(output,'discounts-en.png'),fullPage:true});
   for (const width of [1280, 390, 320]) {
@@ -95,6 +96,14 @@ try {
     for (const id of ['general', 'cleaning', 'booking', 'access', 'ai', 'pricing', 'taxes']) {
       await page.locator(`#property-tab-${id}`).click();
       assert.equal(await page.locator('[role="tabpanel"]:visible').count(), 1);
+      if (id === 'cleaning') {
+        for (const details of await page.locator('#property-panel-cleaning details').all()) { if ((await details.getAttribute('open')) === null) await details.locator('summary').click(); }
+        await page.getByRole('button', {name:'Save checklist',exact:true}).waitFor();
+        await page.getByRole('button', {name:'Save limits',exact:true}).waitFor();
+      }
+      const panelText = await page.locator('[role="tabpanel"]:visible').innerText();
+      assert.doesNotMatch(panelText, /Configuración|Descuentos|Guardar|Cargando|Información del alojamiento|Límites|Espacios compartidos|Acuerdo del huésped/);
+      if (id === 'access') assert.match(panelText, /Early check-in/);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth ? [...document.querySelectorAll('[role=tabpanel]:not([hidden]) *')].filter(n => n.getBoundingClientRect().right > innerWidth + 1).map(n => ({ tag: n.tagName, text: n.textContent?.slice(0, 70), style: n.getAttribute('style'), width: n.getBoundingClientRect().width })).slice(-12) : []);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${width}/${id}: no horizontal overflow: ${JSON.stringify(overflow)}`);
       await page.screenshot({ path: resolve(output, `${width}-${id}.png`), fullPage: true });

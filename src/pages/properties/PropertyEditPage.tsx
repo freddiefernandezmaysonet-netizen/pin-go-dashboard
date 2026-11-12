@@ -1689,7 +1689,7 @@ general: <>
             <input id="property-unit-number" value={form.unitNumber} maxLength={32}
               onChange={(e) => setForm((s) => ({ ...s, unitNumber: e.target.value }))}
               placeholder="Ej. 107B" style={inputStyle} />
-            <div style={helperTextStyle}>Se incluye en las instrucciones de llegada y acceso del huésped.</div>
+            <div style={helperTextStyle}>Included in the guest’s arrival and access instructions.</div>
           </div>
 <div style={{ display: "grid", gap: 8 }}>
             <div style={labelStyle}>Address</div>
@@ -2142,7 +2142,7 @@ booking: <>
         publicDescriptionEs: e.target.value,
       }))
     }
-    placeholder="Describa la experiencia, ubicación, amenidades y características únicas de la propiedad."
+    placeholder="Describe the experience, location, amenities and unique features of the property (Spanish)."
     style={{
       ...inputStyle,
       height: 120,
@@ -2279,7 +2279,7 @@ booking: <>
     <input
       value={newNearbyPlace.nameEs}
       onChange={(e) => setNewNearbyPlace((s) => ({ ...s, nameEs: e.target.value }))}
-      placeholder="Nombre del lugar (Español)"
+      placeholder="Place name (Spanish)"
       style={inputStyle}
     />
     <select
@@ -2307,7 +2307,7 @@ booking: <>
   <textarea
     value={newNearbyPlace.descriptionEs}
     onChange={(e) => setNewNearbyPlace((s) => ({ ...s, descriptionEs: e.target.value }))}
-    placeholder="Descripción breve para huéspedes (Español)"
+    placeholder="Short description for guests (Spanish)"
     style={{ ...inputStyle, minHeight: 80, resize: "vertical" }}
   />
 
@@ -2400,7 +2400,7 @@ booking: <>
                     onChange={(e) =>
                       setEditingNearbyPlace((s) => s ? ({ ...s, nameEs: e.target.value }) : s)
                     }
-                    placeholder="Nombre (Español)"
+                    placeholder="Name (Spanish)"
                     style={inputStyle}
                   />
                   <select
@@ -2429,7 +2429,7 @@ booking: <>
                   onChange={(e) =>
                     setEditingNearbyPlace((s) => s ? ({ ...s, descriptionEs: e.target.value }) : s)
                   }
-                  placeholder="Descripción (Español)"
+                  placeholder="Description (Spanish)"
                   style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
                 />
                 <div style={responsiveGridStyle}>
@@ -2571,7 +2571,7 @@ booking: <>
 </>,
 access: <>
 {id ? <GuestAccessSettingsCard propertyId={id} /> : null}
-{id ? <StayTimeSettingsCard propertyId={id} /> : null}
+{id ? <StayTimeSettingsCard propertyId={id} language="en" /> : null}
 </>,
 ai: <>
 {id ? <PinAISettingsCard propertyId={id} /> : null}
