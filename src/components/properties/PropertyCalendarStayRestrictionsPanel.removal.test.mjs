@@ -192,3 +192,25 @@ test('candidate deployment is disabled without disabling main', () => {
   assert.equal(config.git.deploymentEnabled['agent/stay-restrictions-removal-ui-v1'], false);
   assert.notEqual(config.git.deploymentEnabled.main, false);
 });
+
+test('restores nightly rates for the selected range without restriction fields', async () => {
+  await dates('2026-11-12');
+  await click(button('Restore automatic pricing'));
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /\/properties\/property-1\/nightly-rates$/);
+  assert.equal(calls[0].method, 'DELETE');
+  assert.deepEqual(calls[0].body, { dateKeys: ['2026-11-10', '2026-11-11', '2026-11-12'] });
+  assert.match(confirmations[0], /2026-11-10 through 2026-11-12/);
+  assert.match(host.textContent, /Automatic pricing restored/);
+});
+test('restore validates dates and respects cancellation', async () => {
+  await click(button('Restore automatic pricing')); assert.equal(calls.length, 0);
+  await dates(); window.confirm = () => false;
+  await click(button('Restore automatic pricing')); assert.equal(calls.length, 0);
+});
+test('failed restore displays error without reporting success', async () => {
+  await dates(); globalThis.fetch = async () => response({ ok: false, error: 'Prices changed concurrently.' }, false);
+  await click(button('Restore automatic pricing'));
+  assert.match(host.textContent, /Prices changed concurrently/);
+  assert.doesNotMatch(host.textContent, /Automatic pricing restored/);
+});

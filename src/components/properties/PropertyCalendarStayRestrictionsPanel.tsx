@@ -50,6 +50,7 @@ export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { property
   const [maximumNightsInput, setMaximumNightsInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [removeMinimum, setRemoveMinimum] = useState(false);
   const [removeMaximum, setRemoveMaximum] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { property
   const mutationPending = useRef(false);
   const propertyIdRef = useRef(id);
   propertyIdRef.current = id;
-  const busy = saving || removing;
+  const busy = saving || removing || restoring;
 
   const selectedDateCount = useMemo(() => {
     const start = parseDateKey(fromDate);
@@ -140,6 +141,31 @@ export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { property
     }
   }
 
+  async function handleRestorePricing() {
+    if (!id || mutationPending.current) return;
+    setMessage(null); setError(null);
+    if (selectedDateCount < 1 || selectedDateCount > 500) { setError("Select between 1 and 500 dates to restore automatic pricing."); return; }
+    const dateKeys = inclusiveDateKeys(fromDate, toDate || fromDate);
+    if (!dateKeys?.length) { setError("Select a valid start date and end date."); return; }
+    const range = dateKeys.length === 1 ? dateKeys[0] : `${dateKeys[0]} through ${dateKeys.at(-1)}`;
+    if (!window.confirm(`Remove manual nightly rates for ${range} (${dateKeys.length} dates)?\n\nThe base price and enabled Dynamic Pricing rules will apply. Existing reservations, blocked dates and stay restrictions will not change.`)) return;
+    try {
+      mutationPending.current = true; setRestoring(true);
+      const response = await fetch(`${API_BASE}/api/dashboard/properties/${encodeURIComponent(id)}/nightly-rates`, {
+        method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dateKeys }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok !== true) throw new Error(data.error || "Failed to restore automatic pricing");
+      if (!Number.isInteger(data.affectedDates) || data.affectedDates < 0 || data.affectedDates > dateKeys.length) throw new Error("The server did not confirm the result. Review the dates before retrying.");
+      if (propertyIdRef.current !== id) return;
+      setRateInput("");
+      setMessage(data.affectedDates === 0 ? "No manual nightly rates were found for these dates. Nothing was changed."
+        : `Automatic pricing restored for ${data.affectedDates} date${data.affectedDates === 1 ? "" : "s"}. ${data.dynamicPricingEnabled ? "Base price and enabled Dynamic Pricing rules apply." : "Base price applies; Dynamic Pricing is disabled."}${data.syncQueued ? " Channel price update queued." : ""}`);
+    } catch (requestError: unknown) {
+      if (propertyIdRef.current === id) setError(requestError instanceof Error ? requestError.message : "Failed to restore automatic pricing");
+    } finally { mutationPending.current = false; setRestoring(false); }
+  }
+
   return (
     <section className="pgs-panel" style={styles.panel}>
       <div className="pgs-header" style={styles.header}>
@@ -168,6 +194,13 @@ export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { property
           <label className="pgs-removalChoice" style={styles.removalChoice}><input type="checkbox" aria-label="Remove Minimum Nights" disabled={busy} checked={removeMinimum} onChange={(event) => setRemoveMinimum(event.target.checked)} />Minimum Nights</label>
           <label className="pgs-removalChoice" style={styles.removalChoice}><input type="checkbox" aria-label="Remove Maximum Nights" disabled={busy} checked={removeMaximum} onChange={(event) => setRemoveMaximum(event.target.checked)} />Maximum Nights</label>
           <button type="button" onClick={handleRemove} disabled={busy || (!removeMinimum && !removeMaximum)} className="pgs-removeButton" style={{ ...styles.removeButton, ...(busy || (!removeMinimum && !removeMaximum) ? styles.buttonDisabled : {}) }}>{removing ? "Removing..." : "Remove Stay Restrictions"}</button>
+        </div>
+      </details>
+      <details className="pgs-removalPanel" style={styles.removalPanel}>
+        <summary className="pgs-removalSummary" style={styles.removalSummary}>Restore automatic pricing</summary>
+        <p className="pgs-subtitle" style={styles.subtitle}>Use the Start Date and End Date above to remove manual nightly rates. The base price and enabled Dynamic Pricing rules will apply. Existing reservations, blocked dates and stay restrictions stay unchanged.</p>
+        <div className="pgs-removalActions" style={styles.removalActions}>
+          <button type="button" onClick={handleRestorePricing} disabled={busy} className="pgs-button" style={{ ...styles.button, ...(busy ? styles.buttonDisabled : {}) }}>{restoring ? "Restoring..." : "Restore automatic pricing"}</button>
         </div>
       </details>
     </section>
