@@ -1,3 +1,4 @@
+import { PrecheckinCampaignCard } from "../../components/dashboard/PrecheckinCampaignCard";
 
 import {
   useEffect,
@@ -258,6 +259,8 @@ export function OverviewPage() {
           to="/properties"
         />
       </div>
+
+      <PrecheckinCampaignCard />
 
       <CardLink
         to="/locks"
