@@ -123,7 +123,8 @@ test("host can select nights and manage them; failed refresh never retains open 
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
-test("Single restores the monthly calendar, supports month navigation and property changes, and returns to Multi", async () => {
+test("Single restores the monthly calendar, supports month navigation and property changes, and returns to Multi", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-01T12:00:00Z") });
   const dom = new JSDOM('<div id="root"></div>', { url: "https://example.test/calendar" });
   const previous = { window: globalThis.window, document: globalThis.document, fetch: globalThis.fetch };
   globalThis.window = dom.window;
