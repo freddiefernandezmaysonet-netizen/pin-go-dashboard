@@ -10,6 +10,7 @@ export function PrecheckinCampaignCard() {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true); setError(false);
@@ -21,11 +22,19 @@ export function PrecheckinCampaignCard() {
     return () => controller.abort();
   }, [revision]);
   return <section aria-labelledby="precheckin-campaign-heading" style={{ border: "1px solid #e5e7eb", borderRadius: 18, padding: 20, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", minWidth: 0 }}>
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-      <h2 id="precheckin-campaign-heading" style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Bookings from pre-check-in emails</h2>
-      <button type="button" disabled={loading} onClick={() => setRevision(value => value + 1)} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "8px 12px", background: "#fff", color: "#111827", fontSize: 13, fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>Refresh</button>
-    </div>
-    <p style={{ color: "#6b7280", fontSize: 13, margin: "6px 0 16px" }}>Direct bookings attributed to pre-check-in emails · Last 30 days</p>
+    <div aria-hidden="true" style={{ width: 42, height: 6, borderRadius: 999, background: "#2563eb", marginBottom: 14 }} />
+    <h2 id="precheckin-campaign-heading" style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 400, color: "#6b7280" }}>Email Bookings · Last 30 days</h2>
+    <div aria-live="polite" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.1, color: "#111827" }}>{loading ? "…" : error ? "—" : summary?.bookings ?? "—"}</div>
+    {error ? <p role="alert" style={{ fontSize: 13, color: "#b91c1c", margin: "10px 0 0" }}>Results unavailable. Open details to retry.</p> : null}
+    <button type="button" aria-expanded={expanded} aria-controls="precheckin-campaign-details" onClick={() => setExpanded(value => !value)}
+      style={{ marginTop: 12, padding: "4px 0", border: 0, background: "transparent", color: "#2563eb", font: "inherit", fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
+      {expanded ? "Hide details" : "View details"}
+    </button>
+    {expanded ? <div id="precheckin-campaign-details" style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Bookings from pre-check-in emails</h3>
+        <button type="button" disabled={loading} onClick={() => setRevision(value => value + 1)} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: "8px 12px", background: "#fff", color: "#111827", font: "inherit", fontSize: 13, cursor: loading ? "wait" : "pointer" }}>Refresh</button>
+      </div>
     {loading ? <p role="status">Loading campaign results…</p> : error ? <p role="alert" style={{ color: "#b91c1c" }}>Campaign results could not be loaded. Please refresh to try again.</p> : summary ? <>
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", marginBottom: 16 }}>
         {[
@@ -53,5 +62,6 @@ export function PrecheckinCampaignCard() {
       </details>
       <p style={{ color: "#6b7280", fontSize: 12 }}>Updated: {new Date(summary.to).toLocaleString("en-US")}</p>
     </> : null}
+    </div> : null}
   </section>;
 }

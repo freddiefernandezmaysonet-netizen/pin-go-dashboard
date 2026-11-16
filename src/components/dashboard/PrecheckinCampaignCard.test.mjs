@@ -29,14 +29,23 @@ async function mount(t, response) {
 }
 test("zero campaign bookings use an explicit empty state", async t => {
   const element = await mount(t, empty);
+  const toggle = element.querySelector("button");
+  assert.equal(toggle.textContent.trim(), "View details");
+  assert.equal(toggle.getAttribute("aria-expanded"), "false");
+  assert.equal(element.querySelector("#precheckin-campaign-details"), null);
+  await act(async () => toggle.click());
+  assert.equal(toggle.getAttribute("aria-expanded"), "true");
   assert.match(element.textContent, /No paid reservations have been attributed/);
   assert.equal(element.querySelector("table"), null);
+  await act(async () => toggle.click());
+  assert.equal(element.querySelector("#precheckin-campaign-details"), null);
 });
 test("currencies and refunds render separately", async t => {
   const element = await mount(t, { ...empty, bookings: 3, cancelled: 1, currencies: [
     { currency: "USD", bookings: 2, cancelled: 1, collected: "120.10", refunded: "20.10", retained: "100.00" },
     { currency: "EUR", bookings: 1, cancelled: 0, collected: "80.00", refunded: "0.00", retained: "80.00" },
   ] });
+  await act(async () => element.querySelector("button").click());
   assert.equal(element.querySelectorAll("tbody tr").length, 2);
   assert.match(element.textContent, /USD/); assert.match(element.textContent, /EUR/);
   assert.match(element.textContent, /100\.00/); assert.match(element.textContent, /before fees and host payouts/);
@@ -45,8 +54,9 @@ test("API failure is not presented as zero bookings and can be refreshed", async
   const element = await mount(t, null);
   assert.ok(element.querySelector('[role="alert"]'));
   assert.doesNotMatch(element.textContent, /No paid reservations/);
-  t.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => empty }));
   await act(async () => element.querySelector("button").click());
+  t.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => empty }));
+  await act(async () => [...element.querySelectorAll("button")].find(button => button.textContent === "Refresh").click());
   assert.equal(element.querySelector('[role="alert"]'), null);
   assert.match(element.textContent, /No paid reservations/);
 });
