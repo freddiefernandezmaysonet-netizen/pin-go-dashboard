@@ -204,10 +204,10 @@ async def exercise(page, browser_name):
     await geometry(page,f'{browser_name} manual reservation form',390)
     await page.get_by_label('Minimum Nights',exact=True).fill('3')
     before_put = sum(c['method']=='PUT' for c in STATE['calls'])
-    await page.locator('.pgs-button').click()
+    await page.get_by_role('button',name='Apply Stay Restrictions',exact=True).click()
     await expect(page.get_by_role('status')).to_contain_text('Applied')
     assert sum(c['method']=='PUT' for c in STATE['calls']) == before_put+1
-    await page.locator('.pgs-removalSummary').click()
+    await page.locator('summary').filter(has_text='Remove saved stay restrictions').click()
     await page.get_by_label('Remove Minimum Nights',exact=True).check()
     await geometry(page,f'{browser_name} expanded removal controls',390)
     before = sum(c['method']=='DELETE' for c in STATE['calls'])
