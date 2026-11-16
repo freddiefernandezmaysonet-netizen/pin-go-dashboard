@@ -1,9 +1,10 @@
+import { parseBookingCampaign } from "./bookingCampaign";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { DayPicker, type DateRange } from "react-day-picker";
 import { addDays, format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import "react-day-picker/style.css";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import GuestBookingTermsPage from "../GuestBookingTermsPage";
 import GuestPrivacyNoticePage from "../GuestPrivacyNoticePage";
 import { useBrand } from "../../branding/BrandProvider";
@@ -1640,6 +1641,7 @@ function buildSecurePreCheckinDisclosureText(
 
 export default function PublicPropertyDetailPage() {
   const { organizationSlug, propertySlug } = useParams();
+  const { search: bookingSearch } = useLocation();
   const { brand, isCustomBrand } = useBrand();
   const brandLogoUrl =
     brand.kind === "CUSTOM_BRAND" ? brand.logoUrl : "/pin-go-logo.png";
@@ -2313,6 +2315,7 @@ useEffect(() => {
         },
        body: JSON.stringify({
   propertyId: property.id,
+  bookingCampaign: parseBookingCampaign(bookingSearch),
   expectedTotalAmountCents: pricing?.totalAmount != null ? Math.round(Number(pricing.totalAmount) * 100) : undefined,
   checkIn,
   checkOut,
