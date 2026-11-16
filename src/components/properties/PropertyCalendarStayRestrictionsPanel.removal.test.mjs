@@ -73,6 +73,20 @@ async function selectField(label) {
 }
 async function dates(end) { await value('Start Date', '2026-11-10'); if (end) await value('End Date', end); }
 
+test('end date follows the start into a new month and preserves a later chosen end', async () => {
+  await value('Start Date', '2026-12-10');
+  assert.equal(input('End Date').value, '2026-12-10');
+  assert.equal(input('End Date').min, '2026-12-10');
+  await value('End Date', '2026-12-20');
+  await value('Start Date', '2026-12-12');
+  assert.equal(input('End Date').value, '2026-12-20');
+  await value('Start Date', '2027-01-05');
+  assert.equal(input('End Date').value, '2027-01-05');
+  await value('Start Date', '');
+  assert.equal(input('End Date').value, '2027-01-05');
+  assert.equal(calls.length, 0);
+});
+
 for (const [labels, fields] of [
   [['Minimum Nights'], ['minimumNights']],
   [['Maximum Nights'], ['maximumNights']],
