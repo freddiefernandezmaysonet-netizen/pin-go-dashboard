@@ -60,6 +60,13 @@ export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { property
   propertyIdRef.current = id;
   const busy = saving || removing || restoring;
 
+  function handleStartDateChange(value: string) {
+    setFromDate(value);
+    if (parseDateKey(value)) {
+      setToDate(current => !current || current < value ? value : current);
+    }
+  }
+
   const selectedDateCount = useMemo(() => {
     const start = parseDateKey(fromDate);
     const end = parseDateKey(toDate || fromDate);
@@ -177,7 +184,7 @@ export function PropertyCalendarStayRestrictionsPanel({ propertyId }: { property
         <div className="pgs-countBadge" style={styles.countBadge}>{selectedDateCount > 0 ? `${selectedDateCount} date${selectedDateCount === 1 ? "" : "s"}` : "No dates selected"}</div>
       </div>
       <div className="pgs-grid" style={styles.grid}>
-        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Start Date</span><input type="date" disabled={busy} value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="pgs-input" style={styles.input} /></label>
+        <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Start Date</span><input type="date" disabled={busy} value={fromDate} onChange={(event) => handleStartDateChange(event.target.value)} className="pgs-input" style={styles.input} /></label>
         <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>End Date</span><input type="date" disabled={busy} value={toDate} min={fromDate || undefined} onChange={(event) => setToDate(event.target.value)} className="pgs-input" style={styles.input} /></label>
         <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Nightly Rate</span><input type="number" disabled={busy} min="0.01" step="0.01" value={rateInput} onChange={(event) => setRateInput(event.target.value)} placeholder="432.00" className="pgs-input" style={styles.input} /></label>
         <label className="pgs-field" style={styles.field}><span className="pgs-label" style={styles.label}>Minimum Nights</span><input type="number" disabled={busy} min="1" step="1" value={minimumNightsInput} onChange={(event) => setMinimumNightsInput(event.target.value)} placeholder="2" className="pgs-input" style={styles.input} /></label>
