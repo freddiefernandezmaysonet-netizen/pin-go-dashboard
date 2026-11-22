@@ -131,6 +131,18 @@ type PublicPricingQuote = {
   }>;
 };
 
+type StayQuoteRequest = {
+  propertyId: string;
+  checkIn: string;
+  checkOut: string;
+  selectedAmenityIds: string[];
+};
+
+type StayQuoteResult = {
+  request: StayQuoteRequest;
+  pricing: PublicPricingQuote | null;
+};
+
 type PublicCancellationRefundRule = {
   minHoursBeforeCheckIn: number;
   refundPercent: number;
@@ -287,6 +299,11 @@ const PUBLIC_PROPERTY_COPY = {
     "Please complete check-in, check-out, name and email.",
   checkOutAfterCheckIn:
     "Check-out must be after check-in.",
+  stayTotal: "Stay total",
+  stayTotalInclusions: "Includes taxes and required charges. Selected extras are added to the total.",
+  quoteLoading: "Calculating your stay total…",
+  quoteUnavailable: "We couldn’t calculate your stay total. Try again or choose different dates.",
+  retryQuote: "Retry price",
   securePreCheckinRequiredError:
     "Please confirm that you understand the Secure Pre-check-in requirement before continuing.",
   cancellationTermsRequiredError:
@@ -415,6 +432,11 @@ refundCalculation:
     "Complete las fechas de entrada y salida, el nombre y el correo electrónico.",
   checkOutAfterCheckIn:
     "La fecha de salida debe ser posterior a la fecha de entrada.",
+  stayTotal: "Total de la estadía",
+  stayTotalInclusions: "Incluye impuestos y cargos obligatorios. Los extras seleccionados se añaden al total.",
+  quoteLoading: "Calculando el total de tu estadía…",
+  quoteUnavailable: "No pudimos calcular el total de tu estadía. Intenta de nuevo o elige otras fechas.",
+  retryQuote: "Volver a calcular",
   securePreCheckinRequiredError:
     "Confirme que entiende el requisito de Registro Seguro antes de continuar.",
   cancellationTermsRequiredError:
@@ -1688,7 +1710,8 @@ export default function PublicPropertyDetailPage() {
   setSecurePreCheckinRequirementAccepted,
 ] = useState(false);
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
-  const [pricing, setPricing] = useState<PublicPricingQuote | null>(null);
+  const [quoteResult, setQuoteResult] = useState<StayQuoteResult | null>(null);
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
@@ -1905,62 +1928,53 @@ const securePreCheckinDisclosureText =
     preferredLanguage
   );
 
+const propertyId = property?.id;
+const hasSelectedStay = Boolean(checkIn && checkOut && nights > 0);
+const minimumNights = property?.minimumNights ?? 1;
+const maximumNights = property?.maximumNights;
+const stayLimitMessage = hasSelectedStay && nights < minimumNights
+  ? `${copy.minimumStayPrefix} ${minimumNights} ${copy.nightCountSuffix}`
+  : hasSelectedStay && maximumNights && nights > maximumNights
+  ? `${copy.maximumStayPrefix} ${maximumNights} ${copy.nightCountSuffix}`
+  : null;
+
+const quoteRequest = useMemo(() => {
+  if (!propertyId || !hasSelectedStay || stayLimitMessage) return null;
+  return {
+    propertyId,
+    checkIn,
+    checkOut,
+    selectedAmenityIds,
+    attempt: quoteAttempt,
+  };
+}, [propertyId, hasSelectedStay, stayLimitMessage, checkIn, checkOut, selectedAmenityIds, quoteAttempt]);
+
+// Match the exact request, not just the dates: switching A → B → A or
+// retrying the same dates must not briefly expose a previous total.
+const currentQuote = quoteRequest && quoteResult?.request === quoteRequest
+  ? quoteResult
+  : null;
+const pricing = currentQuote?.pricing ?? null;
+const quoteStatusMessage = stayLimitMessage ?? (currentQuote
+  ? copy.quoteUnavailable
+  : copy.quoteLoading);
+const retryPricing = () => setQuoteAttempt((attempt) => attempt + 1);
+
 const reserveButtonDisabled =
   submitting ||
-  !checkIn ||
-  !checkOut ||
+  !pricing ||
   !securePreCheckinRequirementAccepted ||
   (requiresCancellationTermsAcceptance && !cancellationTermsAccepted);
-  const nightlyRate = Number(property?.baseNightlyRate ?? 0);
-  const cleaningFee = Number(property?.cleaningFee ?? 0);
-  const subtotal = nights * nightlyRate;
-  const totalGuests = adults + children;
+const totalGuests = adults + children;
 
-  const optionalAmenities =
-    property?.amenities?.filter((a) => a.chargeMode === "OPTIONAL") ?? [];
+const optionalAmenities =
+  property?.amenities?.filter((a) => a.chargeMode === "OPTIONAL") ?? [];
 
-  const requiredAmenities =
-    property?.amenities?.filter((a) => a.chargeMode === "REQUIRED") ?? [];
+const requiredAmenities =
+  property?.amenities?.filter((a) => a.chargeMode === "REQUIRED") ?? [];
 
-  const includedAmenities =
-    property?.amenities?.filter((a) => a.chargeMode === "INCLUDED") ?? [];
-
-  const requiredAmenitiesTotal = requiredAmenities.reduce(
-    (sum, amenity) => sum + calculateAmenityAmount(amenity, nights),
-    0
-  );
-
- const optionalAmenitiesTotal = optionalAmenities.reduce((sum, amenity) => {
-  if (!selectedAmenityIds.includes(amenity.id)) {
-    return sum;
-  }
-
-  return sum + calculateAmenityAmount(amenity, nights);
-}, 0);
-
-const taxableSubtotal =
-  subtotal +
-  cleaningFee +
-  requiredAmenitiesTotal +
-  optionalAmenitiesTotal;
-
-const taxesTotal = (property?.taxes ?? []).reduce((sum, tax) => {
-  const percentage = Number(tax.percentage ?? 0);
-
-  if (!Number.isFinite(percentage) || percentage <= 0) {
-    return sum;
-  }
-
-  return sum + taxableSubtotal * (percentage / 100);
-}, 0);
-
-const total =
-  pricing?.totalAmount ??
-  taxableSubtotal + taxesTotal;
-  
-const displayNightlySubtotal = pricing?.nightlySubtotal ?? subtotal;
-const displayCleaningFee = pricing?.cleaningFee ?? cleaningFee;
-const displayTotal = pricing?.totalAmount ?? total;
+const includedAmenities =
+  property?.amenities?.filter((a) => a.chargeMode === "INCLUDED") ?? [];
 
 const location = [
     property?.city,
@@ -2177,59 +2191,42 @@ useEffect(() => {
 }, [refreshBlockedDates]);
 
 useEffect(() => {
-  let active = true;
+  if (!quoteRequest) return;
+
+  const controller = new AbortController();
+  const request = quoteRequest;
+  const { propertyId, checkIn, checkOut, selectedAmenityIds } = request;
 
   async function loadPricing() {
     try {
-      if (!property?.id || !checkIn || !checkOut || nights <= 0) {
-        setPricing(null);
-        return;
-      }
-
       const res = await fetch(`${API_BASE}/api/public-booking/quote`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          propertyId: property.id,
-          checkIn,
-          checkOut,
-          selectedAmenityIds,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyId, checkIn, checkOut, selectedAmenityIds }),
+        signal: controller.signal,
       });
-
       const data = await res.json();
+      if (controller.signal.aborted) return;
 
-      if (!active) return;
-
-      if (!res.ok || !data.ok) {
-        setPricing(null);
-        return;
-      }
-
-      setPricing(data.pricing);
+      const amount = data.pricing?.totalAmount;
+      const validAmount =
+        (typeof amount === "number" || (typeof amount === "string" && amount.trim() !== "")) &&
+        Number.isFinite(Number(amount)) && Number(amount) >= 0;
+      setQuoteResult({
+        request,
+        pricing: res.ok && data.ok && validAmount ? data.pricing : null,
+      });
     } catch (err) {
-      console.error("[pricing quote error]", err);
-
-      if (active) {
-        setPricing(null);
+      if (!controller.signal.aborted) {
+        console.error("[pricing quote error]", err);
+        setQuoteResult({ request, pricing: null });
       }
     }
   }
 
-  loadPricing();
-
-  return () => {
-    active = false;
-  };
-}, [
-  property?.id,
-  checkIn,
-  checkOut,
-  selectedAmenityIds,
-  nights,
-]);
+  void loadPricing();
+  return () => controller.abort();
+}, [quoteRequest]);
 
 useEffect(() => {
   setCancellationTermsAccepted(false);
@@ -2371,14 +2368,7 @@ guestAcceptedSecurePreCheckinRequirementSource:
       const data = await res.json();
       if (res.status === 409 && data?.error === "QUOTE_CHANGED") {
         setBookingError(data.message);
-        const quoteResponse = await fetch(`${API_BASE}/api/public-booking/quote`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ propertyId: property.id, checkIn, checkOut, selectedAmenityIds }),
-        });
-        if (quoteResponse.ok) {
-          const refreshed = await quoteResponse.json();
-          setPricing(refreshed.pricing);
-        }
+        retryPricing();
         return;
       }
 
@@ -2387,7 +2377,7 @@ guestAcceptedSecurePreCheckinRequirementSource:
         res.status === 409 &&
         data?.error === "Property is not available for the selected dates"
       ) {
-        setPricing(null);
+        if (quoteRequest) setQuoteResult({ request: quoteRequest, pricing: null });
         await refreshBlockedDates();
         setBookingError(
           preferredLanguage === "es"
@@ -2421,7 +2411,6 @@ guestAcceptedSecurePreCheckinRequirementSource:
   }
 
 const showReservationBar = !loading && !pageError && !!property && selectedPhotoIndex === null && !legalDocument;
-  const hasSelectedStay = !!checkIn && !!checkOut && nights > 0;
 
   function goToReservation(editDates = false) {
     const target = document.getElementById(
@@ -2429,7 +2418,7 @@ const showReservationBar = !loading && !pageError && !!property && selectedPhoto
         ? "pbe-stay-calendar"
         : checkoutStarted
         ? "pbe-guest-details"
-        : "pbe-confirm-dates"
+        : "pbe-stay-total"
     );
     target?.scrollIntoView({
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
@@ -3411,8 +3400,15 @@ return (
         to: fromDateInputValue(checkOut),
       }}
       onSelect={(range: DateRange | undefined) => {
-        setCheckIn(toDateInputValue(range?.from));
-        setCheckOut(toDateInputValue(range?.to));
+        const nextCheckIn = toDateInputValue(range?.from);
+        const nextCheckOut = toDateInputValue(range?.to);
+        if (checkIn !== nextCheckIn || checkOut !== nextCheckOut) {
+          setCheckoutStarted(false);
+          setConfirmationStarted(false);
+          setBookingError(null);
+        }
+        setCheckIn(nextCheckIn);
+        setCheckOut(nextCheckOut);
       }}  
       disabled={(date) =>
         date < new Date(new Date().setHours(0, 0, 0, 0)) ||
@@ -3536,13 +3532,38 @@ return (
                       </div>
                     </div>
 
+                    <div id="pbe-stay-total" tabIndex={-1} style={{ scrollMarginTop: 110 }}>
+                      {hasSelectedStay && (
+                        <div className="pbe-price-summary" style={styles.priceBox}>
+                          <div role="status" aria-live="polite" aria-atomic="true">
+                            {pricing ? (
+                              <>
+                                <div style={{ ...styles.totalRow, marginTop: 0, paddingTop: 0, borderTop: 0 }}>
+                                  <span>{copy.stayTotal}</span>
+                                  <strong>{formatMoney(pricing.totalAmount)}</strong>
+                                </div>
+                                <p style={{ ...styles.bookingSubtitle, marginBottom: 0 }}>
+                                  {copy.stayTotalInclusions}
+                                </p>
+                              </>
+                            ) : quoteStatusMessage}
+                          </div>
+                          {!pricing && currentQuote && (
+                            <button type="button" onClick={retryPricing} disabled={submitting}>
+                              {copy.retryQuote}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     {!checkoutStarted ? (
                       <>
                         <button
                           id="pbe-confirm-dates"
                           className="pbe-primary pbe-continue-action"
                           type="button"
-                          disabled={!checkIn || !checkOut}
+                          disabled={!pricing}
                           onClick={() => setCheckoutStarted(true)}
                         >
                           {preferredLanguage === "es"
@@ -3716,7 +3737,7 @@ return (
                         <button
                           className="pbe-primary pbe-review-action"
                           type="button"
-                          disabled={!guestName.trim() || !guestEmail.trim()}
+                          disabled={!pricing || !guestName.trim() || !guestEmail.trim()}
                           onClick={() => setConfirmationStarted(true)}
                         >
                           {preferredLanguage === "es" ? "Revisar estadía y acuerdos" : "Review stay and agreements"}
@@ -3739,6 +3760,7 @@ return (
                             {preferredLanguage === "es" ? "Editar información" : "Edit information"}
                           </button>
                         </div>
+{pricing && (
 <div className="pbe-legacy-price pbe-price-summary" style={styles.priceBox}>
   <div style={styles.priceBoxTitle}>
     {copy.priceDetails}
@@ -3751,18 +3773,14 @@ return (
 
   <div style={styles.priceRow}>
     <span>
-      {pricing?.nightlyRates?.length
-        ? preferredLanguage === "es"
-          ? `Alojamiento · ${nights} ${nights === 1 ? "noche" : "noches"}`
-          : `Accommodation · ${nights} ${nights === 1 ? "night" : "nights"}`
-        : `${formatMoney(property.baseNightlyRate)} × ${
-            nights || 0
-          } ${copy.nights}`}
+      {preferredLanguage === "es"
+        ? `Alojamiento · ${nights} ${nights === 1 ? "noche" : "noches"}`
+        : `Accommodation · ${nights} ${nights === 1 ? "night" : "nights"}`}
     </span>
 
     <strong>
       {formatNightlyDisplayMoney(
-        displayNightlySubtotal
+        pricing.nightlySubtotal
       )}
     </strong>
   </div>
@@ -3806,7 +3824,7 @@ return (
   ) : null}
                        <div style={styles.priceRow}>
                          <span>{copy.cleaningFeeLabel}</span>
-                         <strong>{formatMoney(displayCleaningFee)}</strong>
+                         <strong>{formatMoney(pricing.cleaningFee)}</strong>
                        </div>
                       {requiredAmenities.map((amenity) => (
                         <div key={amenity.id} style={styles.priceRow}>
@@ -3844,9 +3862,10 @@ return (
 
                      <div style={styles.totalRow}>
   <span>{copy.totalLabel}</span>
-  <strong>{formatMoney(displayTotal)}</strong>
+  <strong>{formatMoney(pricing.totalAmount)}</strong>
 </div>
                     </div>
+)}
 
 {property.propertyProtection?.enabled &&
 property.propertyProtection.maxDamageLiabilityAmount !== null ? (
@@ -4309,6 +4328,9 @@ property.propertyProtection.maxDamageLiabilityAmount !== null ? (
                   ? `${nights} ${preferredLanguage === "es" ? (nights === 1 ? "noche" : "noches") : (nights === 1 ? "night" : "nights")}`
                   : preferredLanguage === "es" ? "Planea tu estadía" : "Plan your stay"}
               </span>
+              {pricing && (
+                <strong>{formatMoney(pricing.totalAmount)} · {copy.stayTotal}</strong>
+              )}
               <button type="button" className="pbe-reservation-bar-dates" onClick={() => goToReservation(true)}
                 aria-label={preferredLanguage === "es" ? "Editar fechas de la estadía" : "Edit stay dates"}>
                 {checkIn ? format(fromDateInputValue(checkIn)!, "MMM d, yyyy", { locale: preferredLanguage === "es" ? es : enUS }) : copy.checkInDate}
