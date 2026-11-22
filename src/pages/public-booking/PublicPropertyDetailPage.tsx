@@ -131,10 +131,18 @@ type PublicPricingQuote = {
   }>;
 };
 
-type StayQuoteRequest = {
+type StayAvailabilityRequest = {
   propertyId: string;
   checkIn: string;
   checkOut: string;
+};
+
+type StayAvailabilityResult = {
+  request: StayAvailabilityRequest;
+  status: "available" | "unavailable" | "conflict" | "error";
+};
+
+type StayQuoteRequest = StayAvailabilityRequest & {
   selectedAmenityIds: string[];
 };
 
@@ -301,6 +309,11 @@ const PUBLIC_PROPERTY_COPY = {
     "Check-out must be after check-in.",
   stayTotal: "Stay total",
   stayTotalInclusions: "Includes taxes and required charges. Selected extras are added to the total.",
+  availabilityLoading: "Checking availability for your dates…",
+  stayUnavailable: "These dates are not available. Choose different dates to continue.",
+  stayBecameUnavailable: "These dates just became unavailable. Select different dates to continue.",
+  availabilityError: "We couldn’t verify availability. Try again or choose different dates.",
+  retryAvailability: "Check availability again",
   quoteLoading: "Calculating your stay total…",
   quoteUnavailable: "We couldn’t calculate your stay total. Try again or choose different dates.",
   retryQuote: "Retry price",
@@ -434,6 +447,11 @@ refundCalculation:
     "La fecha de salida debe ser posterior a la fecha de entrada.",
   stayTotal: "Total de la estadía",
   stayTotalInclusions: "Incluye impuestos y cargos obligatorios. Los extras seleccionados se añaden al total.",
+  availabilityLoading: "Verificando la disponibilidad de tus fechas…",
+  stayUnavailable: "Estas fechas no están disponibles. Elige otras fechas para continuar.",
+  stayBecameUnavailable: "Estas fechas acaban de dejar de estar disponibles. Selecciona otras fechas para continuar.",
+  availabilityError: "No pudimos verificar la disponibilidad. Intenta de nuevo o elige otras fechas.",
+  retryAvailability: "Volver a verificar disponibilidad",
   quoteLoading: "Calculando el total de tu estadía…",
   quoteUnavailable: "No pudimos calcular el total de tu estadía. Intenta de nuevo o elige otras fechas.",
   retryQuote: "Volver a calcular",
@@ -1710,6 +1728,8 @@ export default function PublicPropertyDetailPage() {
   setSecurePreCheckinRequirementAccepted,
 ] = useState(false);
   const [selectedAmenityIds, setSelectedAmenityIds] = useState<string[]>([]);
+  const [availabilityResult, setAvailabilityResult] = useState<StayAvailabilityResult | null>(null);
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   const [quoteResult, setQuoteResult] = useState<StayQuoteResult | null>(null);
   const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -1940,31 +1960,48 @@ const stayLimitMessage = hasSelectedStay && nights < minimumNights
   ? `${copy.maximumStayPrefix} ${maximumNights} ${copy.nightCountSuffix}`
   : null;
 
+const validStay = hasSelectedStay && !stayLimitMessage;
+const availabilityRequest = useMemo(() => {
+  if (!propertyId || !validStay) return null;
+  return { propertyId, checkIn, checkOut, attempt: availabilityAttempt };
+}, [propertyId, validStay, checkIn, checkOut, availabilityAttempt]);
+
+// Match the specific request so a retry or A → B → A selection cannot
+// reopen the guest form with availability from an earlier selection.
+const currentAvailability =
+  availabilityRequest && availabilityResult?.request === availabilityRequest
+    ? availabilityResult.status
+    : null;
+
 const quoteRequest = useMemo(() => {
-  if (!propertyId || !hasSelectedStay || stayLimitMessage) return null;
+  if (!availabilityRequest || currentAvailability !== "available") return null;
   return {
-    propertyId,
-    checkIn,
-    checkOut,
+    propertyId: availabilityRequest.propertyId,
+    checkIn: availabilityRequest.checkIn,
+    checkOut: availabilityRequest.checkOut,
     selectedAmenityIds,
     attempt: quoteAttempt,
   };
-}, [propertyId, hasSelectedStay, stayLimitMessage, checkIn, checkOut, selectedAmenityIds, quoteAttempt]);
+}, [availabilityRequest, currentAvailability, selectedAmenityIds, quoteAttempt]);
 
-// Match the exact request, not just the dates: switching A → B → A or
-// retrying the same dates must not briefly expose a previous total.
 const currentQuote = quoteRequest && quoteResult?.request === quoteRequest
   ? quoteResult
   : null;
 const pricing = currentQuote?.pricing ?? null;
-const quoteStatusMessage = stayLimitMessage ?? (currentQuote
-  ? copy.quoteUnavailable
-  : copy.quoteLoading);
+const canContinue = currentAvailability === "available" && Boolean(pricing);
+const quoteStatusMessage = stayLimitMessage ?? (
+  currentAvailability === "conflict" ? copy.stayBecameUnavailable :
+  currentAvailability === "unavailable" ? copy.stayUnavailable :
+  currentAvailability === "error" ? copy.availabilityError :
+  currentAvailability !== "available" ? copy.availabilityLoading :
+  currentQuote ? copy.quoteUnavailable : copy.quoteLoading
+);
+const retryAvailability = () => setAvailabilityAttempt((attempt) => attempt + 1);
 const retryPricing = () => setQuoteAttempt((attempt) => attempt + 1);
 
 const reserveButtonDisabled =
   submitting ||
-  !pricing ||
+  !canContinue ||
   !securePreCheckinRequirementAccepted ||
   (requiresCancellationTermsAcceptance && !cancellationTermsAccepted);
 const totalGuests = adults + children;
@@ -2193,6 +2230,36 @@ useEffect(() => {
 }, [refreshBlockedDates]);
 
 useEffect(() => {
+  if (!availabilityRequest) return;
+
+  const request = availabilityRequest;
+  const { propertyId, checkIn, checkOut } = request;
+  const controller = new AbortController();
+
+  async function loadAvailability() {
+    try {
+      const response = await fetch(`${API_BASE}/api/public-booking/check-availability`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propertyId, checkIn, checkOut }),
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      if (controller.signal.aborted) return;
+      const status = !response.ok || data?.ok !== true || typeof data.available !== "boolean"
+        ? "error"
+        : data.available ? "available" : "unavailable";
+      setAvailabilityResult({ request, status });
+    } catch {
+      if (!controller.signal.aborted) setAvailabilityResult({ request, status: "error" });
+    }
+  }
+
+  void loadAvailability();
+  return () => controller.abort();
+}, [availabilityRequest]);
+
+useEffect(() => {
   if (!quoteRequest) return;
 
   const controller = new AbortController();
@@ -2307,6 +2374,7 @@ useEffect(() => {
           } ${copy.nightCountSuffix}`
         );
       }
+      if (!canContinue) throw new Error(quoteStatusMessage);
       const res = await fetch(`${API_BASE}/api/public-booking/create-checkout`, {
         method: "POST",
         headers: {
@@ -2379,13 +2447,11 @@ guestAcceptedSecurePreCheckinRequirementSource:
         res.status === 409 &&
         data?.error === "Property is not available for the selected dates"
       ) {
-        if (quoteRequest) setQuoteResult({ request: quoteRequest, pricing: null });
+        if (availabilityRequest) {
+          setAvailabilityResult({ request: availabilityRequest, status: "conflict" });
+        }
         await refreshBlockedDates();
-        setBookingError(
-          preferredLanguage === "es"
-            ? "Estas fechas acaban de dejar de estar disponibles. Selecciona otras fechas para continuar."
-            : "These dates just became unavailable. Select different dates to continue."
-        );
+        setBookingError(copy.stayBecameUnavailable);
         window.setTimeout(() => {
           document.getElementById("pbe-booking-title")?.scrollIntoView({
             behavior: "smooth",
@@ -2418,7 +2484,7 @@ const showReservationBar = !loading && !pageError && !!property && selectedPhoto
     const target = document.getElementById(
       editDates || !hasSelectedStay
         ? "pbe-stay-calendar"
-        : checkoutStarted
+        : checkoutStarted && currentAvailability === "available"
         ? "pbe-guest-details"
         : "pbe-stay-total"
     );
@@ -3108,8 +3174,8 @@ return (
                     </h2>
                     <p className="pbe-lead">
                       {preferredLanguage === "es"
-                        ? "Solo se muestran fechas disponibles. Confirmaremos el precio antes del pago."
-                        : "Only available dates are shown. We will confirm the price before payment."}
+                        ? "Verificaremos la disponibilidad de toda la estadía antes de pedirte tus datos."
+                        : "We’ll verify availability for your full stay before asking for your details."}
                     </p>
                   </div>
                   <div className="pbe-booking-layout" style={styles.detailGrid}>
@@ -3412,10 +3478,16 @@ return (
         setCheckIn(nextCheckIn);
         setCheckOut(nextCheckOut);
       }}  
-      disabled={(date) =>
-        date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-        blockedDates.includes(toLocalDateKey(date))
-      }
+      disabled={(date) => {
+        if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+        const key = toLocalDateKey(date);
+        if (!blockedDates.includes(key)) return false;
+
+        // A blocked night cannot start a stay, but may be its departure
+        // date. The availability endpoint determines whether turnover fits.
+        const choosingDeparture = checkIn && (!checkOut || checkIn === checkOut);
+        return !choosingDeparture || key <= checkIn;
+      }}
       components={{
         DayButton: ({ day, modifiers, ...buttonProps }) => {
           const dateKey = toLocalDateKey(day.date);
@@ -3550,6 +3622,11 @@ return (
                               </>
                             ) : quoteStatusMessage}
                           </div>
+                          {currentAvailability === "error" && (
+                            <button type="button" onClick={retryAvailability} disabled={submitting}>
+                              {copy.retryAvailability}
+                            </button>
+                          )}
                           {!pricing && currentQuote && (
                             <button type="button" onClick={retryPricing} disabled={submitting}>
                               {copy.retryQuote}
@@ -3559,14 +3636,16 @@ return (
                       )}
                     </div>
 
-                    {!checkoutStarted ? (
+                    {!checkoutStarted || currentAvailability !== "available" ? (
                       <>
                         <button
                           id="pbe-confirm-dates"
                           className="pbe-primary pbe-continue-action"
                           type="button"
-                          disabled={!pricing}
-                          onClick={() => setCheckoutStarted(true)}
+                          disabled={!canContinue}
+                          onClick={() => {
+                            if (canContinue) setCheckoutStarted(true);
+                          }}
                         >
                           {preferredLanguage === "es"
                             ? "Confirmar fechas y continuar"
@@ -3739,7 +3818,7 @@ return (
                         <button
                           className="pbe-primary pbe-review-action"
                           type="button"
-                          disabled={!pricing || !guestName.trim() || !guestEmail.trim()}
+                          disabled={!canContinue || !guestName.trim() || !guestEmail.trim()}
                           onClick={() => setConfirmationStarted(true)}
                         >
                           {preferredLanguage === "es" ? "Revisar estadía y acuerdos" : "Review stay and agreements"}
