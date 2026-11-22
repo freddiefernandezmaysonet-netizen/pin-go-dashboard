@@ -1718,7 +1718,9 @@ export default function PublicPropertyDetailPage() {
  
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [calendarRatesByDate, setCalendarRatesByDate] = useState<Record<string, number>>({});
-  const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() =>
+    fromDateInputValue(bookingSearchHandoff?.checkIn ?? "") ?? new Date()
+  );
 
   const [adults, setAdults] = useState(bookingSearchHandoff?.guests ?? 1);
   const [children, setChildren] = useState(0);
