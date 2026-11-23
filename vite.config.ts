@@ -5,6 +5,7 @@ import {landingKnowledgePlugin} from './scripts/landingKnowledgePlugin'
 // https://vite.dev/config/
 export default defineConfig(({ command }) => ({
   plugins: [react(), landingKnowledgePlugin()],
+  build: { rollupOptions: { input: { app: "index.html", landing: "home.html" } } },
   define:
     command === 'build'
       ? {
