@@ -60,6 +60,7 @@ function MobileApps({ lang }: { lang: "es" | "en" }) {
   const apps = [
     {
       name: "Pin&Go Host",
+      icon: "/app-downloads/host.jpg",
       audience: es ? "Para el anfitrión" : "For hosts",
       description: es ? "¿Quién llega hoy? Revisa las reservas, consulta quién aceptó la limpieza y responde mensajes desde tu teléfono con tu cuenta de anfitrión." : "Who's arriving today? Check reservations, see who accepted the cleaning and reply to messages from your phone with your host account.",
       apple: "https://apps.apple.com/us/app/pin-go-host/id6823248790",
@@ -67,6 +68,7 @@ function MobileApps({ lang }: { lang: "es" | "en" }) {
     },
     {
       name: "Pin&Go Guest",
+      icon: "/app-downloads/guest.jpg",
       audience: es ? "Para el huésped" : "For guests",
       description: es ? "Tu huésped puede consultar los detalles de su estadía y su código de acceso. Al llegar a una cerradura compatible, puede abrirla por Bluetooth durante el horario autorizado." : "Guests can check their stay details and access code. When they reach a compatible lock, they can unlock it with Bluetooth during their access window.",
       apple: "https://apps.apple.com/us/app/pin-go-guest/id6823247069",
@@ -80,12 +82,17 @@ function MobileApps({ lang }: { lang: "es" | "en" }) {
         <div className="capabilities">
           {apps.map(app => (
             <article className="cap half" key={app.name}>
+              <img className="app-icon" src={app.icon} alt="" width="72" height="72" loading="lazy" />
               <div className="cap-icon">{app.audience}</div>
               <h3>{app.name}</h3>
               <p>{app.description}</p>
               <div className="hero-actions">
-                <a className="button outline-dark" href={app.apple} aria-label={app.name + (es ? " en App Store" : " on the App Store")}>App Store</a>
-                <a className="button outline-dark" href={app.google} aria-label={app.name + (es ? " en Google Play" : " on Google Play")}>Google Play</a>
+                <a className="store-badge" href={app.apple} aria-label={app.name + (es ? " en App Store" : " on the App Store")}>
+                  <img height="44" src={es ? "/app-downloads/apple-es.svg" : "/app-downloads/apple-en-us.svg"} alt="App Store" />
+                </a>
+                <a className="store-badge" href={app.google} aria-label={app.name + (es ? " en Google Play" : " on Google Play")}>
+                  <img height="64" src={es ? "/app-downloads/google-es-419.png" : "/app-downloads/google-en.png"} alt="Google Play" />
+                </a>
               </div>
             </article>
           ))}
