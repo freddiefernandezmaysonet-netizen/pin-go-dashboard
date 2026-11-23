@@ -347,3 +347,14 @@
   .pingo-landing #options .software-price { font-size: 26px !important; line-height: 1.2; }
   .pingo-landing #options { scroll-margin-top: 110px; }
 }
+
+.host-scenarios .scenario-list { margin: 1.5rem 0; max-width: 54rem; }
+.host-scenarios details { border-bottom: 1px solid #ccd6d8; }
+.host-scenarios summary { cursor: pointer; padding: 1.1rem .25rem; font-size: 1.12rem; font-weight: 700; }
+.host-scenarios summary::marker { color: #11675d; }
+.host-scenarios :is(summary, a):focus-visible { outline: 3px solid #11675d; outline-offset: 3px; }
+.host-scenarios .scenario-body { max-width: 42rem; padding: 0 .3rem 1.3rem; line-height: 1.55; }
+.host-scenarios .scenario-body p { margin: 0 0 .8rem; }
+.host-scenarios .scenario-example { display: grid; gap: .3rem; background: #edf7f4; color: #143d37; padding: 1rem; border-radius: .8rem; }
+.host-scenarios .scenario-body img { display: block; max-width: 100%; width: 26rem; height: auto; margin-bottom: .6rem; border-radius: .6rem; }
+.host-scenarios a { color: #075d54; text-decoration: underline; font-weight: 700; }
