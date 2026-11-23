@@ -66,6 +66,30 @@
       "destination": "https://api.pin-ngo.com/:path*"
     },
     {
+      "source": "/home",
+      "destination": "/home.html"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.pin-ngo.com"
+        }
+      ],
+      "destination": "/home.html"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "pin-ngo.com"
+        }
+      ],
+      "destination": "/home.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -339,3 +339,11 @@
   .pingo-landing .voice-panel{grid-template-columns:minmax(0,1fr);gap:32px}
   .pingo-landing .voice-call-card{padding:28px 20px}
 }
+
+@media (max-width: 650px) {
+  .pingo-landing .nav { position: sticky; top: 0; }
+  .pingo-landing .hero { padding-top: 28px; }
+  .pingo-landing .hero h1 { font-size: clamp(36px, 10vw, 54px); }
+  .pingo-landing #options .software-price { font-size: 26px !important; line-height: 1.2; }
+  .pingo-landing #options { scroll-margin-top: 110px; }
+}

@@ -316,7 +316,7 @@ export default function HaasConfigurator({ lang, onScheduleCall, pendingPlans = 
                 ? "/ mes • contrato 24 meses"
                 : "/ month • 24-month agreement"}
             </div>
-            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Verificación de identidad con selfie: $2.50 por verificación utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Identity Check with selfie: $2.50 per verification used."}</p>}
+            {pendingPlans && <p style={styles.totalPeriod}>{lang === "es" ? "Una mensualidad incluye Pin&Go y el alquiler del hardware seleccionado. Pin AI: $1.00 por reservación si lo activas. Verificación de identidad opcional en reservas directas: $2.50 por verificación con selfie utilizada." : "One monthly payment includes Pin&Go and the selected hardware rental. Pin AI: $1.00 per reservation if enabled. Optional Identity Check for direct bookings: $2.50 per selfie verification used."}</p>}
             <div style={styles.savingsBox}>
   {lang === "es"
     ? "Evita grandes costos iniciales de hardware e instalación."
