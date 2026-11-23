@@ -360,12 +360,8 @@
 .host-scenarios a { color: #075d54; text-decoration: underline; font-weight: 700; }
 
 .pingo-landing #apps .cap h3 { margin-top: 12px; }
-.pingo-landing #apps .hero-actions { justify-content: flex-start; margin-top: 20px; }
-.pingo-landing #apps .button {
-  background: #192236;
-  color: #fff;
-  border: 1px solid #192236;
-  min-height: 44px;
-}
-.pingo-landing #apps .button:hover { background: #283851; }
-.pingo-landing #apps .button:focus-visible { outline: 3px solid #185bbf; outline-offset: 3px; }
+.pingo-landing #apps .app-icon { display: block; margin-bottom: 14px; border-radius: 16px; }
+.pingo-landing #apps .hero-actions { justify-content: flex-start; align-items: center; gap: 0 6px; margin-top: 16px; }
+.pingo-landing #apps .store-badge { display: inline-flex; align-items: center; min-height: 44px; border-radius: 6px; }
+.pingo-landing #apps .store-badge img { display: block; width: auto; max-width: 100%; }
+.pingo-landing #apps .store-badge:focus-visible { outline: 3px solid #185bbf; outline-offset: 3px; }
