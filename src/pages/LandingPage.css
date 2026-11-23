@@ -358,3 +358,14 @@
 .host-scenarios .scenario-example { display: grid; gap: .3rem; background: #edf7f4; color: #143d37; padding: 1rem; border-radius: .8rem; }
 .host-scenarios .scenario-body img { display: block; max-width: 100%; width: 26rem; height: auto; margin-bottom: .6rem; border-radius: .6rem; }
 .host-scenarios a { color: #075d54; text-decoration: underline; font-weight: 700; }
+
+.pingo-landing #apps .cap h3 { margin-top: 12px; }
+.pingo-landing #apps .hero-actions { justify-content: flex-start; margin-top: 20px; }
+.pingo-landing #apps .button {
+  background: #192236;
+  color: #fff;
+  border: 1px solid #192236;
+  min-height: 44px;
+}
+.pingo-landing #apps .button:hover { background: #283851; }
+.pingo-landing #apps .button:focus-visible { outline: 3px solid #185bbf; outline-offset: 3px; }
