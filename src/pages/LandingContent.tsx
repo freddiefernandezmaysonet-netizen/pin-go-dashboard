@@ -5,6 +5,56 @@ const PIN_VOICE_PHONE = "+1 (888) 828-4337";
 const PIN_VOICE_HREF = "tel:+18888284337";
 
 // Public presentation markup from the approved landing proposal. Preview screens use fictitious data.
+function HostScenarios({ lang }: { lang: "es" | "en" }) {
+  const es = lang === "es";
+  return (
+    <section className="section host-scenarios" aria-labelledby="host-scenarios-title">
+      <div className="container">
+        <h2 id="host-scenarios-title" className="section-title">
+          {es ? "¿Qué parte de tu alquiler todavía coordinas a mano?" : "Which parts of hosting do you still handle by hand?"}
+        </h2>
+        <div className="scenario-list">
+          <details>
+            <summary>{es ? "Un huésped quiere volver. ¿Dónde puede reservar?" : "A guest wants to come back. Where can they book?"}</summary>
+            <div className="scenario-body">
+              <p>{es ? "Envíale el enlace de tu propiedad para que consulte fechas y reserve directamente contigo. Así se ve la página de Serena Studio en Palmas del Mar." : "Send them your property's link so they can check dates and book directly with you. See how Serena Studio in Palmas del Mar welcomes returning guests."}</p>
+              <a href="https://pin-ngo.com/book/serena-studio/palmasdelmar" target="_blank" rel="noopener noreferrer">
+                <img src="/serena-booking-preview.webp" loading="lazy" alt="" />
+                {es ? "Ver la página de reservas de Serena Studio" : "View Serena Studio’s booking page"}
+              </a>
+            </div>
+          </details>
+          <details>
+            <summary>{es ? "Mi huésped llegó. ¿Cómo abre la puerta?" : "My guest just arrived. How do they open the door?"}</summary>
+            <div className="scenario-body">
+              <p>{es ? "En Pin&Go Guest, el huésped puede consultar su código. Frente a una cerradura compatible, también puede abrirla por Bluetooth durante el horario autorizado." : "Guests can find their access code in Pin&Go Guest. At a compatible lock, they can also unlock the door with Bluetooth during their access window."}</p>
+              <div className="scenario-example">
+                <small>{es ? "Ejemplo de acceso · Pin&Go Guest" : "Sample access · Pin&Go Guest"}</small>
+                <strong>{es ? "Acceso listo" : "Access ready"}</strong>
+                <span>{es ? "Válido desde el viernes a las 4 p. m. hasta el domingo al mediodía" : "Valid from Friday at 4 p.m. through Sunday at noon"}</span>
+                <span>{es ? "Opciones disponibles · Código de acceso y apertura por Bluetooth" : "Available options · Access code and Bluetooth unlock"}</span>
+              </div>
+            </div>
+          </details>
+          <details>
+            <summary>{es ? "Mañana hay una salida. ¿Quién confirmó la limpieza?" : "A guest checks out tomorrow. Who confirmed the cleaning?"}</summary>
+            <div className="scenario-body">
+              <p>{es ? "Desde el panel puedes consultar quién aceptó la limpieza y a qué hora le toca. La persona asignada ve las tareas de esa propiedad en Mis limpiezas." : "Your dashboard shows who accepted the cleaning and when it’s scheduled. The assigned cleaner sees the property's checklist in My Cleanings."}</p>
+              <div className="scenario-example">
+                <small>{es ? "Ejemplo de limpieza" : "Sample cleaning assignment"}</small>
+                <strong>{es ? "Ana confirmó la limpieza" : "Ana confirmed the cleaning"}</strong>
+                <span>{es ? "Domingo · 12:30 p. m. a 2:30 p. m." : "Sunday · 12:30 p.m. to 2:30 p.m."}</span>
+                <span>{es ? "Tareas asignadas · Cambiar sábanas y reponer toallas" : "Assigned tasks · Change linens and restock towels"}</span>
+              </div>
+            </div>
+          </details>
+        </div>
+        <a className="scenario-diagnostic" href={`https://diagnostico.pin-ngo.com/?lang=${lang}`}>{es ? "Evaluar mi propiedad" : "Assess my property"}</a>
+      </div>
+    </section>
+  );
+}
+
 export function LandingContent({lang}:{lang:"es"|"en"}) { return <>
 <section className={"hero"}><div className={"hero-inner"}><div className={"eyebrow reveal"}><span className={"dot"}></span><span>{lang === "es" ? "Sistema de gestión de propiedades todo en uno" : "All In One Property Management System"}</span></div><h1 className="reveal">{lang === "es" ? "Tu huésped reserva." : "Your guest books."}<br /><span className="gradient">{lang === "es" ? "Pin&Go coordina el acceso y la limpieza." : "Pin&Go coordinates access and cleaning."}</span></h1>
 <p className="hero-copy reveal">{lang === "es" ? "Administra tu alquiler a corto plazo desde un solo lugar. Recibe reservas en tu propia página, sincroniza calendarios y tarifas y controla cuándo pueden entrar el huésped y el equipo de limpieza." : "Manage your vacation rental in one place. Take bookings on your own website, sync calendars and rates, and control when guests and cleaners can enter."}</p>
@@ -24,6 +74,7 @@ export function LandingContent({lang}:{lang:"es"|"en"}) { return <>
     ? "El correo con tus credenciales puede tardar hasta una hora en llegar. Tendrás 24 horas para explorar Pin&Go desde tu primer inicio de sesión."
     : "Your sign-in details may take up to one hour to arrive. You’ll have 24 hours to explore Pin&Go from your first sign-in."}</p>
 </section><div className={"mission reveal"}><div className={"preview-caption"}>{lang === "es" ? "Mission Control · interfaz actual con datos ficticios · vista de solo lectura" : "Mission Control · current interface with sample data · read-only view"}</div><iframe className={"actual-screen"} title={lang === "es" ? "Mission Control actual — datos ficticios" : "Current Mission Control — sample data"} sandbox={""} loading={"lazy"} style={{"height":"650px"}} srcDoc={missionPreview[lang]}></iframe></div></div></section>
+<HostScenarios lang={lang} />
 <section className={"section dark"}><div className={"container"}><div className={"section-label reveal"}>{lang === "es" ? "El ciclo completo" : "The complete operating loop"}</div><h2 className={"section-title reveal"}>{lang === "es" ? "Desde la reserva hasta la próxima estadía." : "From booking to the next stay."}</h2><p className={"section-copy reveal"}>{lang === "es" ? "Pin&Go organiza el trabajo alrededor del ciclo real de una propiedad, no alrededor de módulos desconectados." : "Pin&Go organizes work around the real operating cycle of a property, not around disconnected modules."}</p><div className={"operating-loop"}><div className={"loop-card reveal"}><div className={"loop-number"}>{lang === "es" ? "01 — RESERVA" : "01 — SELL"}</div><h3>{lang === "es" ? "Captura la reserva." : "Capture the booking."}</h3><p>{lang === "es" ? "Reservas directas, disponibilidad, tarifas y distribución operan desde el mismo inventario." : "Direct Booking, availability, rates, and distribution operate from the same inventory."}</p><div className={"loop-line"}></div></div><div className={"loop-card reveal"}><div className={"loop-number"}>{lang === "es" ? "02 — PROTECCIÓN" : "02 — SECURE"}</div><h3>{lang === "es" ? "Confirma y protege." : "Confirm and protect."}</h3><p>{lang === "es" ? "Pagos, reglas, identidad y requisitos de estadía se convierten en condiciones operativas claras." : "Payments, rules, identity, and stay requirements become clear operational conditions."}</p><div className={"loop-line"}></div></div><div className={"loop-card reveal"}><div className={"loop-number"}>{lang === "es" ? "03 — OPERACIÓN" : "03 — OPERATE"}</div><h3>{lang === "es" ? "Ejecuta la estadía." : "Run the stay."}</h3><p>{lang === "es" ? "Acceso inteligente, mensajería operativa, dispositivos y limpieza siguen el estado de la reserva." : "Smart access, operational messaging, devices, and cleaning follow the reservation state."}</p><div className={"loop-line"}></div></div><div className={"loop-card reveal"}><div className={"loop-number"}>{lang === "es" ? "04 — CIERRE" : "04 — CLOSE"}</div><h3>{lang === "es" ? "Cierra y prepara." : "Close and reset."}</h3><p>{lang === "es" ? "Salida, revocación de acceso, limpieza y auditoría dejan la propiedad lista para volver a operar." : "Checkout, access revocation, cleaning, and audit leave the property ready to operate again."}</p><div className={"loop-line"}></div></div></div></div></section>
 <section id={"platform"} className={"section white"}><div className={"container"}><div className={"section-label reveal"}>{lang === "es" ? "Una plataforma. Toda la operación." : "One platform. The entire operation."}</div><h2 className={"section-title reveal"}>{lang === "es" ? "Todo lo que antes vivía en herramientas separadas." : "Everything that used to live in separate tools."}</h2><div className={"capabilities"}><article className={"cap big reveal"}><div className={"glow"}></div><div className={"cap-icon"}>{lang === "es" ? "Reservas directas" : "Direct Booking"}</div><h3>{lang === "es" ? "Tu canal directo, conectado a la operación." : "Your direct channel, connected to operations."}</h3><p>{lang === "es" ? "Disponibilidad, tarifas, pagos, políticas, portal del huésped y seguimiento de la reserva en un mismo flujo." : "Availability, pricing, payments, policies, guest portal, and reservation follow-through in one flow."}</p>
 <a href="https://pin-ngo.com/book/serena-studio/palmasdelmar" target="_blank" rel="noopener noreferrer"
